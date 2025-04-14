@@ -98,8 +98,43 @@ const renderTree = () => {
 };
 
 const handleKey = (e, node, input) => {
-  e.stopPropagation();
   const parentList = findParentList(treeData, node.id);
+
+  const shouldBlur =
+    e.key === 'Tab' ||
+    (e.ctrlKey && ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Enter'].includes(e.key)) ||
+    (!e.ctrlKey && ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.key)) ||
+    (e.key === ' ' && !e.ctrlKey);
+
+  if (shouldBlur) input.blur();
+
+  if (!e.ctrlKey && e.key === 'ArrowUp') {
+    e.preventDefault();
+    moveFocusRelative(-1, node.id);
+    return;
+  }
+
+  if (!e.ctrlKey && e.key === 'ArrowDown') {
+    e.preventDefault();
+    moveFocusRelative(1, node.id);
+    return;
+  }
+
+  if (!e.ctrlKey && e.key === 'ArrowLeft') {
+    e.preventDefault();
+    node.collapsed = true;
+    save(); renderTree();
+    setTimeout(() => focusNode(node.id), 0);
+    return;
+  }
+
+  if (!e.ctrlKey && e.key === 'ArrowRight') {
+    e.preventDefault();
+    node.collapsed = false;
+    save(); renderTree();
+    setTimeout(() => focusNode(node.id), 0);
+    return;
+  }
 
   if (e.key === 'Enter' && !e.ctrlKey) {
     e.preventDefault();
@@ -107,9 +142,10 @@ const handleKey = (e, node, input) => {
     parentList.splice(parentList.indexOf(node) + 1, 0, sibling);
     save(); renderTree();
     setTimeout(() => focusNode(sibling.id), 0);
+    return;
   }
 
-  if (e.key === 'Tab' && !e.shiftKey || (e.ctrlKey && e.key === 'ArrowRight')) {
+  if ((e.key === 'Tab' && !e.shiftKey) || (e.ctrlKey && e.key === 'ArrowRight')) {
     e.preventDefault();
     const idx = parentList.indexOf(node);
     if (idx > 0) {
@@ -119,9 +155,10 @@ const handleKey = (e, node, input) => {
       save(); renderTree();
       setTimeout(() => focusNode(node.id), 0);
     }
+    return;
   }
 
-  if (e.key === 'Tab' && e.shiftKey || (e.ctrlKey && e.key === 'ArrowLeft')) {
+  if ((e.key === 'Tab' && e.shiftKey) || (e.ctrlKey && e.key === 'ArrowLeft')) {
     e.preventDefault();
     const [parent, list] = findParent(treeData, node.id);
     if (parent) {
@@ -131,6 +168,7 @@ const handleKey = (e, node, input) => {
       save(); renderTree();
       setTimeout(() => focusNode(node.id), 0);
     }
+    return;
   }
 
   if (e.ctrlKey && e.key === 'ArrowUp') {
@@ -141,6 +179,7 @@ const handleKey = (e, node, input) => {
       save(); renderTree();
       setTimeout(() => focusNode(node.id), 0);
     }
+    return;
   }
 
   if (e.ctrlKey && e.key === 'ArrowDown') {
@@ -151,6 +190,7 @@ const handleKey = (e, node, input) => {
       save(); renderTree();
       setTimeout(() => focusNode(node.id), 0);
     }
+    return;
   }
 
   if (e.key === 'Enter' && e.ctrlKey) {
@@ -158,12 +198,35 @@ const handleKey = (e, node, input) => {
     doneTasks.push(node.text);
     parentList.splice(parentList.indexOf(node), 1);
     save(); renderTree();
+    return;
   }
 
   if (e.key === ' ' && !e.ctrlKey) {
     e.preventDefault();
     node.collapsed = !node.collapsed;
     save(); renderTree();
+    return;
+  }
+};
+
+const getAllVisibleNodes = (list = treeData) => {
+  const result = [];
+  const recurse = (nodes) => {
+    for (let node of nodes) {
+      result.push(node);
+      if (!node.collapsed) recurse(node.children);
+    }
+  };
+  recurse(list);
+  return result;
+};
+
+const moveFocusRelative = (direction, currentId) => {
+  const nodes = getAllVisibleNodes();
+  const idx = nodes.findIndex(n => n.id === currentId);
+  const target = nodes[idx + direction];
+  if (target) {
+    setTimeout(() => focusNode(target.id), 0);
   }
 };
 
