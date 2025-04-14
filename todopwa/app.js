@@ -1,4 +1,3 @@
-// --- Helpers & Constants ---
 const treeContainer = document.getElementById('tree');
 const doneContainer = document.getElementById('done');
 const timerSelect = document.getElementById('timer');
@@ -13,7 +12,6 @@ const save = () => {
   localStorage.setItem('mindtree-done', JSON.stringify(doneTasks));
 };
 
-// --- Tree Node Constructor ---
 const createNode = (text = '', children = []) => ({
   id: crypto.randomUUID(),
   text,
@@ -21,14 +19,38 @@ const createNode = (text = '', children = []) => ({
   children
 });
 
-// --- Render Functions ---
 const renderTree = () => {
   treeContainer.innerHTML = '';
   doneContainer.innerHTML = '';
+
   const render = (node, depth = 0, parentEl = treeContainer) => {
     const div = document.createElement('div');
     div.className = `ml-${depth * 4} group flex items-center space-x-2`;
     div.dataset.id = node.id;
+
+    // --- Drag & Drop ---
+    div.setAttribute('draggable', true);
+    div.addEventListener('dragstart', e => {
+      e.dataTransfer.setData('text/plain', node.id);
+      e.stopPropagation();
+    });
+    div.addEventListener('dragover', e => {
+      e.preventDefault();
+      div.classList.add('bg-yellow-100', 'dark:bg-yellow-800');
+    });
+    div.addEventListener('dragleave', () => {
+      div.classList.remove('bg-yellow-100', 'dark:bg-yellow-800');
+    });
+    div.addEventListener('drop', e => {
+      e.preventDefault();
+      div.classList.remove('bg-yellow-100', 'dark:bg-yellow-800');
+      const draggedId = e.dataTransfer.getData('text/plain');
+      if (draggedId === node.id) return;
+      const [draggedNode, draggedList] = removeNode(treeData, draggedId);
+      node.children.push(draggedNode);
+      draggedNode.collapsed = false;
+      save(); renderTree();
+    });
 
     const toggle = document.createElement('button');
     toggle.textContent = node.children.length ? (node.collapsed ? '+' : '-') : '';
@@ -65,7 +87,6 @@ const renderTree = () => {
   });
 };
 
-// --- Keyboard Navigation ---
 const handleKey = (e, node, input) => {
   e.stopPropagation();
   const parentList = findParentList(treeData, node.id);
@@ -78,7 +99,7 @@ const handleKey = (e, node, input) => {
     setTimeout(() => focusNode(sibling.id), 0);
   }
 
-  if (e.key === 'Tab' && !e.shiftKey) {
+  if (e.key === 'Tab' && !e.shiftKey || (e.ctrlKey && e.key === 'ArrowRight')) {
     e.preventDefault();
     const idx = parentList.indexOf(node);
     if (idx > 0) {
@@ -90,13 +111,33 @@ const handleKey = (e, node, input) => {
     }
   }
 
-  if (e.key === 'Tab' && e.shiftKey) {
+  if (e.key === 'Tab' && e.shiftKey || (e.ctrlKey && e.key === 'ArrowLeft')) {
     e.preventDefault();
     const [parent, list] = findParent(treeData, node.id);
     if (parent) {
       const idx = list.indexOf(node);
       parentList.splice(parentList.indexOf(parent) + 1, 0, node);
       list.splice(idx, 1);
+      save(); renderTree();
+      setTimeout(() => focusNode(node.id), 0);
+    }
+  }
+
+  if (e.ctrlKey && e.key === 'ArrowUp') {
+    e.preventDefault();
+    const idx = parentList.indexOf(node);
+    if (idx > 0) {
+      [parentList[idx], parentList[idx - 1]] = [parentList[idx - 1], parentList[idx]];
+      save(); renderTree();
+      setTimeout(() => focusNode(node.id), 0);
+    }
+  }
+
+  if (e.ctrlKey && e.key === 'ArrowDown') {
+    e.preventDefault();
+    const idx = parentList.indexOf(node);
+    if (idx < parentList.length - 1) {
+      [parentList[idx], parentList[idx + 1]] = [parentList[idx + 1], parentList[idx]];
       save(); renderTree();
       setTimeout(() => focusNode(node.id), 0);
     }
@@ -114,17 +155,13 @@ const handleKey = (e, node, input) => {
     node.collapsed = !node.collapsed;
     save(); renderTree();
   }
-
-  // Arrow keys can be extended here for more
 };
 
-// --- Utility to Focus Node ---
 const focusNode = id => {
   const el = document.querySelector(`[data-id="${id}"] input`);
   if (el) el.focus();
 };
 
-// --- Find Parent Node ---
 const findParentList = (list, id) => {
   for (let node of list) {
     if (node.id === id) return list;
@@ -143,7 +180,18 @@ const findParent = (list, id, parent = null) => {
   return [null, null];
 };
 
-// --- Timer & Notifications ---
+const removeNode = (list, id) => {
+  for (let i = 0; i < list.length; i++) {
+    if (list[i].id === id) {
+      return [list.splice(i, 1)[0], list];
+    } else {
+      const [found, sublist] = removeNode(list[i].children, id);
+      if (found) return [found, sublist];
+    }
+  }
+  return [null, null];
+};
+
 startTimerBtn.onclick = () => {
   const mins = parseInt(timerSelect.value);
   const ms = mins * 60 * 1000;
@@ -157,12 +205,10 @@ startTimerBtn.onclick = () => {
   }, ms);
 };
 
-// --- Theme Toggle ---
 toggleThemeBtn.onclick = () => {
   document.documentElement.classList.toggle('dark');
 };
 
-// --- Initial State ---
 if (treeData.length === 0) {
   treeData.push(createNode('New Task'));
 }
