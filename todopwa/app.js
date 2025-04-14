@@ -25,25 +25,30 @@ const renderTree = () => {
 
   const render = (node, depth = 0, parentEl = treeContainer) => {
     const div = document.createElement('div');
-    div.className = `ml-${depth * 4} group flex items-center space-x-2`;
+    div.className = `
+      relative group flex items-center gap-2 px-3 py-2 rounded-lg transition-all
+      border dark:border-gray-700 border-gray-300 
+      bg-white dark:bg-gray-800
+      shadow-sm hover:shadow-md focus-within:ring-2 focus-within:ring-indigo-500
+      ml-${depth * 4}
+    `;
     div.dataset.id = node.id;
-
-    // --- Drag & Drop ---
     div.setAttribute('draggable', true);
+
     div.addEventListener('dragstart', e => {
       e.dataTransfer.setData('text/plain', node.id);
       e.stopPropagation();
     });
     div.addEventListener('dragover', e => {
       e.preventDefault();
-      div.classList.add('bg-yellow-100', 'dark:bg-yellow-800');
+      div.classList.add('ring-2', 'ring-indigo-400');
     });
     div.addEventListener('dragleave', () => {
-      div.classList.remove('bg-yellow-100', 'dark:bg-yellow-800');
+      div.classList.remove('ring-2', 'ring-indigo-400');
     });
     div.addEventListener('drop', e => {
       e.preventDefault();
-      div.classList.remove('bg-yellow-100', 'dark:bg-yellow-800');
+      div.classList.remove('ring-2', 'ring-indigo-400');
       const draggedId = e.dataTransfer.getData('text/plain');
       if (draggedId === node.id) return;
       const [draggedNode, draggedList] = removeNode(treeData, draggedId);
@@ -53,8 +58,8 @@ const renderTree = () => {
     });
 
     const toggle = document.createElement('button');
-    toggle.textContent = node.children.length ? (node.collapsed ? '+' : '-') : '';
-    toggle.className = 'w-4 text-sm';
+    toggle.textContent = node.children.length ? (node.collapsed ? '▶' : '▼') : '';
+    toggle.className = 'text-gray-500 text-sm w-4 focus:outline-none';
     toggle.onclick = () => {
       node.collapsed = !node.collapsed;
       save();
@@ -63,7 +68,12 @@ const renderTree = () => {
 
     const input = document.createElement('input');
     input.value = node.text;
-    input.className = 'bg-transparent focus:outline-none flex-1';
+    input.className = `
+      bg-transparent flex-1 text-sm font-medium
+      text-gray-900 dark:text-gray-100 focus:outline-none
+      placeholder:text-gray-400
+    `;
+    input.placeholder = "New task...";
     input.oninput = () => {
       node.text = input.value;
       save();
@@ -207,7 +217,12 @@ startTimerBtn.onclick = () => {
 
 toggleThemeBtn.onclick = () => {
   document.documentElement.classList.toggle('dark');
+  localStorage.setItem('theme', document.documentElement.classList.contains('dark') ? 'dark' : 'light');
 };
+
+if (localStorage.getItem('theme') === 'dark') {
+  document.documentElement.classList.add('dark');
+}
 
 if (treeData.length === 0) {
   treeData.push(createNode('New Task'));
