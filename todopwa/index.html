@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>MindTree Todo</title>
+  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@3.3.2/dist/tailwind.min.css" rel="stylesheet">
+  <link rel="manifest" href="manifest.json">
+  <script>
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('sw.js');
+    }
+  </script>
+</head>
+<body class="bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 p-4">
+  <div class="flex justify-between items-center mb-4">
+    <h1 class="text-2xl font-bold">MindTree Todo</h1>
+    <button id="toggle-theme" class="bg-gray-300 dark:bg-gray-700 p-2 rounded">🌓</button>
+  </div>
+
+  <div class="mb-4">
+    <label for="timer" class="mr-2">Timer:</label>
+    <select id="timer" class="bg-white dark:bg-gray-800 border p-1">
+      <option value="3">3m</option>
+      <option value="5">5m</option>
+      <option value="10">10m</option>
+      <option value="15">15m</option>
+      <option value="20">20m</option>
+      <option value="30">30m</option>
+    </select>
+    <button id="start-timer" class="ml-2 bg-green-500 text-white p-2 rounded">Start</button>
+  </div>
+
+  <div id="tree" class="outline space-y-2 mb-8"></div>
+
+  <h2 class="text-xl font-bold">✅ Done</h2>
+  <div id="done" class="mt-2 space-y-2"></div>
+
+  <div class="mt-8 border-t pt-4 text-sm text-gray-500 dark:text-gray-400">
+    <h3 class="font-semibold mb-2">Keyboard Legend:</h3>
+    <ul class="list-disc ml-4">
+      <li><kbd>Enter</kbd>: Add sibling</li>
+      <li><kbd>Tab</kbd>: Add child</li>
+      <li><kbd>Shift + Tab</kbd>: Outdent</li>
+      <li><kbd>Ctrl + Arrow</kbd>: Move node</li>
+      <li><kbd>Ctrl + Enter</kbd>: Mark as done</li>
+      <li><kbd>Space</kbd>: Toggle collapse</li>
+    </ul>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
