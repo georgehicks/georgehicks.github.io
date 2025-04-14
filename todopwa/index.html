@@ -12,15 +12,15 @@
     }
   </script>
 </head>
-<body class="bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 p-4">
-  <div class="flex justify-between items-center mb-4">
-    <h1 class="text-2xl font-bold">MindTree Todo</h1>
-    <button id="toggle-theme" class="bg-gray-300 dark:bg-gray-700 p-2 rounded">🌓</button>
+<body class="bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 p-4 transition-colors duration-300">
+  <div class="flex flex-wrap justify-between items-center mb-4 gap-2">
+    <h1 class="text-lg font-semibold tracking-tight">MindTree Todo</h1>
+    <button id="toggle-theme" class="bg-gray-200 dark:bg-gray-700 px-3 py-1 rounded text-sm shadow">🌓</button>
   </div>
 
-  <div class="mb-4">
-    <label for="timer" class="mr-2">Timer:</label>
-    <select id="timer" class="bg-white dark:bg-gray-800 border p-1">
+  <div class="flex flex-wrap items-center gap-2 mb-4 text-sm">
+    <label for="timer" class="mr-1">Timer:</label>
+    <select id="timer" class="bg-gray-100 dark:bg-gray-800 px-2 py-1 rounded border dark:border-gray-600">
       <option value="3">3m</option>
       <option value="5">5m</option>
       <option value="10">10m</option>
@@ -28,17 +28,17 @@
       <option value="20">20m</option>
       <option value="30">30m</option>
     </select>
-    <button id="start-timer" class="ml-2 bg-green-500 text-white p-2 rounded">Start</button>
+    <button id="start-timer" class="bg-indigo-500 hover:bg-indigo-600 text-white px-3 py-1 rounded shadow text-sm">Start</button>
   </div>
 
-  <div id="tree" class="outline space-y-2 mb-8"></div>
+  <div id="tree" class="space-y-2 mb-8"></div>
 
-  <h2 class="text-xl font-bold">✅ Done</h2>
-  <div id="done" class="mt-2 space-y-2"></div>
+  <h2 class="text-base font-bold mb-1">✅ Done</h2>
+  <div id="done" class="space-y-1 mb-8 text-sm text-gray-500 dark:text-gray-400"></div>
 
-  <div class="mt-8 border-t pt-4 text-sm text-gray-500 dark:text-gray-400">
+  <div class="border-t pt-4 text-sm text-gray-500 dark:text-gray-400">
     <h3 class="font-semibold mb-2">Keyboard Legend:</h3>
-    <ul class="list-disc ml-4">
+    <ul class="list-disc ml-5 space-y-1">
       <li><kbd>Enter</kbd>: Add sibling</li>
       <li><kbd>Tab</kbd>: Add child</li>
       <li><kbd>Shift + Tab</kbd>: Outdent</li>
