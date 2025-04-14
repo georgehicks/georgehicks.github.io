@@ -1,0 +1,361 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>To Do Outline PWA</title>
+  <link rel="manifest" href="manifest.json">
+  <style>
+    body {
+  font-family: Arial, sans-serif;
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 20px;
+}
+ul {
+  list-style: none;
+  padding-left: 20px;
+}
+li {
+  padding: 5px;
+  cursor: pointer;
+}
+li.focused {
+  background: #e0f7fa;
+}
+li.completed span {
+  text-decoration: line-through;
+  color: #888;
+}
+li input {
+  border: 1px solid #ccc;
+  outline: none;
+  width: 100%;
+  padding: 2px;
+}
+ul.nested {
+  padding-left: 40px;
+}
+  </style>
+  <meta name="apple-mobile-web-app-capable" content="yes">
+</head>
+<body>
+  <div id="app">
+    <h1>My To Do Outline</h1>
+    <div id="time"></div>
+    <div id="focus">Focus: None</div>
+    <button id="login" style="display:none">Login</button>
+    <ul id="task-list"></ul>
+  </div>
+  <script src="https://alcdn.msauth.net/browser/3.17.0/js/msal-browser.min.js"></script>
+  <script>
+// PWA Service Worker registration
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('sw.js').catch(err => console.error('SW registration failed:', err));
+}
+
+// MSAL Configuration
+const msalConfig = {
+  auth: {
+    clientId: 'YOUR_CLIENT_ID', // Replace with your Azure App Client ID
+    authority: 'https://login.microsoftonline.com/common',
+    redirectUri: 'https://username.github.io/todo-pwa/' // Replace with your GitHub Pages URL
+  },
+  cache: {
+    cacheLocation: 'localStorage'
+  }
+};
+
+const msalInstance = new msal.PublicClientApplication(msalConfig);
+
+// Microsoft Graph API setup
+const GRAPH_ENDPOINT = 'https://graph.microsoft.com/v1.0/me/todo/lists';
+
+// App state
+let tasks = [];
+let hierarchy = JSON.parse(localStorage.getItem('taskHierarchy')) || { root: [], children: {} };
+let currentFocus = null;
+let taskListId = null;
+let accessToken = '';
+let editingTaskId = null;
+
+// DOM elements
+const taskList = document.getElementById('task-list');
+const timeDisplay = document.getElementById('time');
+const focusDisplay = document.getElementById('focus');
+const loginButton = document.getElementById('login');
+
+// Update time
+function updateTime() {
+  timeDisplay.textContent = new Date().toLocaleTimeString();
+}
+setInterval(updateTime, 1000);
+updateTime();
+
+// Save hierarchy to localStorage
+function saveHierarchy() {
+  localStorage.setItem('taskHierarchy', JSON.stringify(hierarchy));
+}
+
+// Login with MSAL
+async function login() {
+  try {
+    const loginResponse = await msalInstance.loginPopup({
+      scopes: ['Tasks.ReadWrite']
+    });
+    await handleLogin(loginResponse);
+  } catch (err) {
+    console.error('Login failed:', err);
+  }
+}
+
+async function handleLogin(loginResponse) {
+  accessToken = loginResponse.accessToken;
+  loginButton.style.display = 'none';
+  await getTaskListId();
+  await renderTasks();
+}
+
+// Get default task list ID
+async function getTaskListId() {
+  const response = await fetch(GRAPH_ENDPOINT, {
+    headers: { Authorization: `Bearer ${accessToken}` }
+  });
+  const data = await response.json();
+  taskListId = data.value.find(list => list.wellKnownListName === 'defaultList')?.id;
+  if (!taskListId) throw new Error('Default task list not found');
+}
+
+// Fetch tasks from Microsoft To Do
+async function fetchTasks() {
+  if (!taskListId) await getTaskListId();
+  const response = await fetch(`${GRAPH_ENDPOINT}/${taskListId}/tasks`, {
+    headers: { Authorization: `Bearer ${accessToken}` }
+  });
+  if (!response.ok) throw new Error('Failed to fetch tasks');
+  const data = await response.json();
+  return data;
+}
+
+// Add task to Microsoft To Do
+async function addTask(title) {
+  if (!taskListId) await getTaskListId();
+  const response = await fetch(`${GRAPH_ENDPOINT}/${taskListId}/tasks`, {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({ title })
+  });
+  if (!response.ok) throw new Error('Failed to add task');
+  return await response.json();
+}
+
+// Update task in Microsoft To Do (title or status)
+async function updateTask(taskId, updates) {
+  if (!taskListId) await getTaskListId();
+  const response = await fetch(`${GRAPH_ENDPOINT}/${taskListId}/tasks/${taskId}`, {
+    method: 'PATCH',
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify(updates)
+  });
+  if (!response.ok) throw new Error('Failed to update task');
+  return await response.json();
+}
+
+// Build task hierarchy
+async function buildHierarchy() {
+  const apiTasks = (await fetchTasks()).value;
+  const newTasks = apiTasks.filter(t => !tasks.find(existing => existing.id === t.id));
+  tasks = apiTasks;
+  newTasks.forEach(task => {
+    if (!hierarchy.children[task.id]) {
+      hierarchy.root.push(task.id);
+      hierarchy.children[task.id] = [];
+    }
+  });
+  saveHierarchy();
+}
+
+// Render tasks recursively
+function renderTaskNode(taskId, depth = 0) {
+  const task = tasks.find(t => t.id === taskId);
+  if (!task) return '';
+  const isFocused = taskId === currentFocus;
+  const isEditing = taskId === editingTaskId;
+  const isCompleted = task.status === 'completed';
+  const children = hierarchy.children[taskId] || [];
+  const childHtml = children.map(childId => renderTaskNode(childId, depth + 1)).join('');
+  return `
+    <li data-id="${taskId}" class="${isFocused ? 'focused' : ''} ${isCompleted ? 'completed' : ''}">
+      ${isEditing ? 
+        `<input type="text" value="${task.title}" autofocus>` : 
+        `<span>${task.title}</span>`}
+      ${childHtml ? `<ul class="nested">${childHtml}</ul>` : ''}
+    </li>
+  `;
+}
+
+async function renderTasks() {
+  await buildHierarchy();
+  taskList.innerHTML = hierarchy.root.map(id => renderTaskNode(id)).join('');
+  if (editingTaskId) {
+    const input = taskList.querySelector(`li[data-id="${editingTaskId}"] input`);
+    if (input) input.focus();
+  }
+}
+
+// Keyboard navigation
+taskList.addEventListener('click', e => {
+  const li = e.target.closest('li');
+  if (li && !editingTaskId) {
+    currentFocus = li.dataset.id;
+    focusDisplay.textContent = `Focus: ${tasks.find(t => t.id === currentFocus)?.title || 'None'}`;
+    renderTasks();
+  }
+});
+
+document.addEventListener('keydown', async e => {
+  const lis = Array.from(taskList.querySelectorAll('li'));
+  const currentLi = lis.find(li => li.dataset.id === currentFocus);
+  const idx = lis.findIndex(li => li.dataset.id === currentFocus);
+
+  if (editingTaskId) {
+    if (e.key === 'Enter') {
+      const input = taskList.querySelector(`li[data-id="${editingTaskId}"] input`);
+      const newTitle = input.value.trim();
+      if (newTitle) {
+        await updateTask(editingTaskId, { title: newTitle });
+        tasks = tasks.map(t => t.id === editingTaskId ? { ...t, title: newTitle } : t);
+      }
+      editingTaskId = null;
+      await renderTasks();
+    } else if (e.key === 'Escape') {
+      editingTaskId = null;
+      await renderTasks();
+    }
+    return;
+  }
+
+  if (e.key === 'Enter') {
+    const title = prompt('New task:');
+    if (title) {
+      const newTask = await addTask(title);
+      tasks.push(newTask);
+      hierarchy.root.push(newTask.id);
+      hierarchy.children[newTask.id] = [];
+      saveHierarchy();
+      await renderTasks();
+    }
+  } else if (e.key === 'ArrowDown') {
+    const nextIdx = idx + 1;
+    if (lis[nextIdx]) {
+      currentFocus = lis[nextIdx].dataset.id;
+      focusDisplay.textContent = `Focus: ${tasks.find(t => t.id === currentFocus)?.title || 'None'}`;
+      renderTasks();
+    }
+  } else if (e.key === 'ArrowUp') {
+    const prevIdx = idx - 1;
+    if (lis[prevIdx]) {
+      currentFocus = lis[prevIdx].dataset.id;
+      focusDisplay.textContent = `Focus: ${tasks.find(t => t.id === currentFocus)?.title || 'None'}`;
+      renderTasks();
+    }
+  } else if (e.key === 'Tab' && currentLi) {
+    e.preventDefault();
+    if (e.shiftKey) {
+      // Outdent
+      const parentId = findParent(currentFocus);
+      if (parentId) {
+        const parentList = hierarchy.children[parentId] || hierarchy.root;
+        const idx = parentList.indexOf(currentFocus);
+        if (idx > -1) {
+          parentList.splice(idx, 1);
+          const grandparentId = findParent(parentId) || 'root';
+          const targetList = grandparentId === 'root' ? hierarchy.root : hierarchy.children[grandparentId];
+          targetList.push(currentFocus);
+          saveHierarchy();
+          await renderTasks();
+        }
+      }
+    } else {
+      // Indent
+      const prevLi = lis[idx - 1];
+      if (prevLi) {
+        const prevId = prevLi.dataset.id;
+        const parentId = findParent(currentFocus) || 'root';
+        const sourceList = parentId === 'root' ? hierarchy.root : hierarchy.children[parentId];
+        const taskIdx = sourceList.indexOf(currentFocus);
+        if (taskIdx > -1) {
+          sourceList.splice(taskIdx, 1);
+          hierarchy.children[prevId] = hierarchy.children[prevId] || [];
+          hierarchy.children[prevId].push(currentFocus);
+          saveHierarchy();
+          await renderTasks();
+        }
+      }
+    }
+  } else if (e.key === 'e' && currentLi) {
+    editingTaskId = currentFocus;
+    await renderTasks();
+  } else if (e.key === 'c' && currentLi) {
+    const task = tasks.find(t => t.id === currentFocus);
+    const newStatus = task.status === 'completed' ? 'notStarted' : 'completed';
+    await updateTask(currentFocus, { status: newStatus });
+    tasks = tasks.map(t => t.id === currentFocus ? { ...t, status: newStatus } : t);
+    await renderTasks();
+  }
+});
+
+// Find parent task
+function findParent(taskId) {
+  for (const [parent, children] of Object.entries(hierarchy.children)) {
+    if (children.includes(taskId)) return parent;
+  }
+  if (hierarchy.root.includes(taskId)) return 'root';
+  return null;
+}
+
+// Push notification
+async function notifyMe() {
+  if (!('Notification' in window)) return;
+  if (Notification.permission === 'granted') {
+    new Notification('Task Reminder', { body: 'Check your focus!' });
+  } else if (Notification.permission !== 'denied') {
+    await Notification.requestPermission();
+    notifyMe();
+  }
+}
+
+// Check for existing account
+async function initialize() {
+  const accounts = msalInstance.getAllAccounts();
+  if (accounts.length > 0) {
+    try {
+      const tokenResponse = await msalInstance.acquireTokenSilent({
+        scopes: ['Tasks.ReadWrite'],
+        account: accounts[0]
+      });
+      await handleLogin(tokenResponse);
+    } catch (err) {
+      console.error('Silent token acquisition failed:', err);
+      loginButton.style.display = 'block';
+    }
+  } else {
+    loginButton.style.display = 'block';
+  }
+}
+
+loginButton.addEventListener('click', login);
+
+// Initial load
+initialize();
+setInterval(notifyMe, 300000);
+    
+  </script>
+</body>
+</html>
