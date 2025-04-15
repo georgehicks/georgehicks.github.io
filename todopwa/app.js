@@ -1,3 +1,6 @@
+const VERSION = '1.1.0';
+console.log(`MindTree Focus app.js v${VERSION}`);
+
 const treeContainer = document.getElementById('tree');
 const doneContainer = document.getElementById('done');
 const timerSelect = document.getElementById('timer');
