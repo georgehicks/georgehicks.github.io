@@ -15,7 +15,43 @@
       }
     };
   </script>
-
+<style>
+  #tree > div::before {
+    content: '';
+    position: absolute;
+    left: -1rem;
+    top: 0;
+    height: 100%;
+    width: 1px;
+    background: #d1d5db;
+  }
+  #tree > div.last-node::before {
+    height: 50%;
+  }
+  #tree > div > div::before {
+    content: '';
+    position: absolute;
+    left: -1rem;
+    top: 50%;
+    width: 1rem;
+    height: 1px;
+    background: #d1d5db;
+  }
+  #tree > div > div::after {
+    content: '';
+    position: absolute;
+    left: -1rem;
+    top: 0;
+    height: 50%;
+    width: 1px;
+    background: #d1d5db;
+  }
+  .dark #tree > div::before,
+  .dark #tree > div > div::before,
+  .dark #tree > div > div::after {
+    background: #4b5563;
+  }
+</style>
   <!-- Manifest for PWA -->
   <link rel="manifest" href="manifest.json" />
 </head>
