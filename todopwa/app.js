@@ -1,4 +1,4 @@
-const VERSION = '1.1.0';
+const VERSION = '1.2.0';
 console.log(`MindTree Focus app.js v${VERSION}`);
 
 const treeContainer = document.getElementById('tree');
@@ -95,6 +95,11 @@ const renderTree = () => {
     input.onfocus = () => {
       activeNodeId = node.id;
       showSelectedPanel(node);
+    };
+    input.onblur = () => {
+      if (activeNodeId === node.id) {
+        focusNode(node.id); // Reapply highlight after blur
+      }
     };
 
     div.append(toggle, input);
@@ -236,8 +241,8 @@ const focusNode = id => {
     const el = document.querySelector(`[data-id="${id}"] input`);
     const parentDiv = document.querySelector(`[data-id="${id}"]`);
     if (el && parentDiv) {
-      el.focus();
       parentDiv.classList.add('node-highlight');
+      el.focus();
     }
   }, 10);
 };
