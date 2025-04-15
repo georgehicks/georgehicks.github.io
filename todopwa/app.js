@@ -117,23 +117,19 @@ const handleKey = (e, node, input) => {
   keyTimeout = setTimeout(() => {
     const parentList = findParentList(treeData, node.id);
 
-    const blurKeys = ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Tab', ' '];
+    const blurKeys = ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Tab', 'Enter'];
     if (blurKeys.includes(e.key) || (e.ctrlKey && blurKeys.includes(e.key)) || (e.ctrlKey && e.key === 'Enter')) {
       input.blur();
     }
 
     if (!e.ctrlKey && e.key === 'ArrowUp') {
       e.preventDefault();
-      if (document.activeElement !== input) {
-        moveFocusRelative(-1, node.id);
-      }
+      moveFocusRelative(-1, node.id);
     }
 
     if (!e.ctrlKey && e.key === 'ArrowDown') {
       e.preventDefault();
-      if (document.activeElement !== input) {
-        moveFocusRelative(1, node.id);
-      }
+      moveFocusRelative(1, node.id);
     }
 
     if (!e.ctrlKey && e.key === 'ArrowLeft') {
@@ -202,12 +198,6 @@ const handleKey = (e, node, input) => {
       save(); renderTree();
     }
 
-    if (e.key === ' ' && !e.ctrlKey) {
-      e.preventDefault();
-      node.collapsed = !node.collapsed;
-      save(); renderTree(); focusNode(node.id);
-    }
-
     if (e.key === 'Escape') {
       e.preventDefault();
       input.blur();
@@ -231,7 +221,6 @@ const getAllVisibleNodes = (list = treeData) => {
 };
 
 const moveFocusRelative = (direction, currentId) => {
-  if (document.activeElement.tagName === 'INPUT') return;
   const nodes = getAllVisibleNodes();
   const idx = nodes.findIndex(n => n.id === currentId);
   const target = nodes[idx + direction];
@@ -240,7 +229,6 @@ const moveFocusRelative = (direction, currentId) => {
 
 const focusNode = id => {
   setTimeout(() => {
-    // Clear previous highlights
     document.querySelectorAll('.node-highlight').forEach(el => el.classList.remove('node-highlight'));
     const el = document.querySelector(`[data-id="${id}"] input`);
     const parentDiv = document.querySelector(`[data-id="${id}"]`);
@@ -273,7 +261,9 @@ const removeNode = (list, id) => {
   for (let i = 0; i < list.length; i++) {
     if (list[i].id === id) return [list.splice(i, 1)[0], list];
     const [found, sublist] = removeNode(list[i].children, id);
-    if (found) return [found, sublist  return [null, null];
+    if (found) return [found, sublist];
+  }
+  return [null, null];
 };
 
 const showSelectedPanel = (node) => {
