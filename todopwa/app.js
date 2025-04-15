@@ -110,99 +110,111 @@ const renderTree = () => {
   });
 };
 
+let keyTimeout;
 const handleKey = (e, node, input) => {
-  const parentList = findParentList(treeData, node.id);
+  clearTimeout(keyTimeout);
+  keyTimeout = setTimeout(() => {
+    const parentList = findParentList(treeData, node.id);
 
-  const blurKeys = ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Tab', ' '];
-  if (blurKeys.includes(e.key) || (e.ctrlKey && blurKeys.includes(e.key)) || (e.ctrlKey && e.key === 'Enter')) {
-    input.blur();
-  }
+    const blurKeys = ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Tab', ' '];
+    if (blurKeys.includes(e.key) || (e.ctrlKey && blurKeys.includes(e.key)) || (e.ctrlKey && e.key === 'Enter')) {
+      input.blur();
+    }
 
-  if (!e.ctrlKey && e.key === 'ArrowUp') {
-    e.preventDefault();
-    moveFocusRelative(-1, node.id);
-  }
+    if (!e.ctrlKey && e.key === 'ArrowUp') {
+      e.preventDefault();
+      if (document.activeElement !== input) {
+        moveFocusRelative(-1, node.id);
+      }
+    }
 
-  if (!e.ctrlKey && e.key === 'ArrowDown') {
-    e.preventDefault();
-    moveFocusRelative(1, node.id);
-  }
+    if (!e.ctrlKey && e.key === 'ArrowDown') {
+      e.preventDefault();
+      if (document.activeElement !== input) {
+        moveFocusRelative(1, node.id);
+      }
+    }
 
-  if (!e.ctrlKey && e.key === 'ArrowLeft') {
-    e.preventDefault();
-    node.collapsed = true;
-    save(); renderTree(); focusNode(node.id);
-  }
-
-  if (!e.ctrlKey && e.key === 'ArrowRight') {
-    e.preventDefault();
-    node.collapsed = false;
-    save(); renderTree(); focusNode(node.id);
-  }
-
-  if (e.key === 'Enter' && !e.ctrlKey) {
-    e.preventDefault();
-    const sibling = createNode('');
-    parentList.splice(parentList.indexOf(node) + 1, 0, sibling);
-    save(); renderTree(); focusNode(sibling.id);
-  }
-
-  if ((e.key === 'Tab' && !e.shiftKey) || (e.ctrlKey && e.key === 'ArrowRight')) {
-    e.preventDefault();
-    const idx = parentList.indexOf(node);
-    if (idx > 0) {
-      const prev = parentList[idx - 1];
-      prev.children.push(node);
-      parentList.splice(idx, 1);
+    if (!e.ctrlKey && e.key === 'ArrowLeft') {
+      e.preventDefault();
+      node.collapsed = true;
       save(); renderTree(); focusNode(node.id);
     }
-  }
 
-  if ((e.key === 'Tab' && e.shiftKey) || (e.ctrlKey && e.key === 'ArrowLeft')) {
-    e.preventDefault();
-    const [parent, list] = findParent(treeData, node.id);
-    if (parent) {
-      const idx = list.indexOf(node);
-      parentList.splice(parentList.indexOf(parent) + 1, 0, node);
-      list.splice(idx, 1);
+    if (!e.ctrlKey && e.key === 'ArrowRight') {
+      e.preventDefault();
+      node.collapsed = false;
       save(); renderTree(); focusNode(node.id);
     }
-  }
 
-  if (e.ctrlKey && e.key === 'ArrowUp') {
-    e.preventDefault();
-    const idx = parentList.indexOf(node);
-    if (idx > 0) {
-      [parentList[idx], parentList[idx - 1]] = [parentList[idx - 1], parentList[idx]];
+    if (e.key === 'Enter' && !e.ctrlKey) {
+      e.preventDefault();
+      const sibling = createNode('');
+      parentList.splice(parentList.indexOf(node) + 1, 0, sibling);
+      save(); renderTree(); focusNode(sibling.id);
+    }
+
+    if ((e.key === 'Tab' && !e.shiftKey) || (e.ctrlKey && e.key === 'ArrowRight')) {
+      e.preventDefault();
+      const idx = parentList.indexOf(node);
+      if (idx > 0) {
+        const prev = parentList[idx - 1];
+        prev.children.push(node);
+        parentList.splice(idx, 1);
+        save(); renderTree(); focusNode(node.id);
+      }
+    }
+
+    if ((e.key === 'Tab' && e.shiftKey) || (e.ctrlKey && e.key === 'ArrowLeft')) {
+      e.preventDefault();
+      const [parent, list] = findParent(treeData, node.id);
+      if (parent) {
+        const idx = list.indexOf(node);
+        parentList.splice(parentList.indexOf(parent) + 1, 0, node);
+        list.splice(idx, 1);
+        save(); renderTree(); focusNode(node.id);
+      }
+    }
+
+    if (e.ctrlKey && e.key === 'ArrowUp') {
+      e.preventDefault();
+      const idx = parentList.indexOf(node);
+      if (idx > 0) {
+        [parentList[idx], parentList[idx - 1]] = [parentList[idx - 1], parentList[idx]];
+        save(); renderTree(); focusNode(node.id);
+      }
+    }
+
+    if (e.ctrlKey && e.key === 'ArrowDown') {
+      e.preventDefault();
+      const idx = parentList.indexOf(node);
+      if (idx < parentList.length - 1) {
+        [parentList[idx], parentList[idx + 1]] = [parentList[idx + 1], parentList[idx]];
+        save(); renderTree(); focusNode(node.id);
+      }
+    }
+
+    if (e.key === 'Enter' && e.ctrlKey) {
+      e.preventDefault();
+      doneTasks.push(node.text);
+      parentList.splice(parentList.indexOf(node), 1);
+      save(); renderTree();
+    }
+
+    if (e.key === ' ' && !e.ctrlKey) {
+      e.preventDefault();
+      node.collapsed = !node.collapsed;
       save(); renderTree(); focusNode(node.id);
     }
-  }
 
-  if (e.ctrlKey && e.key === 'ArrowDown') {
-    e.preventDefault();
-    const idx = parentList.indexOf(node);
-    if (idx < parentList.length - 1) {
-      [parentList[idx], parentList[idx + 1]] = [parentList[idx + 1], parentList[idx]];
-      save(); renderTree(); focusNode(node.id);
+    if (e.key === 'Escape') {
+      e.preventDefault();
+      input.blur();
+      activeNodeId = null;
+      selectedPanel.classList.add('hidden');
+      save();
     }
-  }
-
-  if (e.key === 'Enter' && e.ctrlKey) {
-    e.preventDefault();
-    doneTasks.push(node.text);
-    parentList.splice(parentList.indexOf(node), 1);
-    save(); renderTree();
-  }
-
-  if (e.key === ' ' && !e.ctrlKey) {
-    e.preventDefault();
-    node.collapsed = !node.collapsed;
-    save(); renderTree(); focusNode(node.id);
-  }
-
-  if (e.key === 'Escape') {
-    input.blur();
-  }
+  }, 50);
 };
 
 const getAllVisibleNodes = (list = treeData) => {
@@ -218,15 +230,18 @@ const getAllVisibleNodes = (list = treeData) => {
 };
 
 const moveFocusRelative = (direction, currentId) => {
+  if (document.activeElement.tagName === 'INPUT') return;
   const nodes = getAllVisibleNodes();
   const idx = nodes.findIndex(n => n.id === currentId);
   const target = nodes[idx + direction];
-  if (target) setTimeout(() => focusNode(target.id), 0);
+  if (target) focusNode(target.id);
 };
 
 const focusNode = id => {
-  const el = document.querySelector(`[data-id="${id}"] input`);
-  if (el) el.focus();
+  setTimeout(() => {
+    const el = document.querySelector(`[data-id="${id}"] input`);
+    if (el) el.focus();
+  }, 10);
 };
 
 const findParentList = (list, id) => {
