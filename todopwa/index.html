@@ -3,25 +3,46 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>MindTree Todo</title>
-<link href="https://unpkg.com/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+  <title>MindTree Focus</title>
 
-  <link rel="manifest" href="manifest.json">
+  <!-- Tailwind via CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
   <script>
-    if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.register('sw.js');
-    }
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {}
+      }
+    };
   </script>
+
+  <!-- Manifest for PWA -->
+  <link rel="manifest" href="manifest.json" />
 </head>
-<body class="bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 p-4 transition-colors duration-300">
-  <div class="flex flex-wrap justify-between items-center mb-4 gap-2">
-    <h1 class="text-lg font-semibold tracking-tight">MindTree Todo</h1>
-    <button id="toggle-theme" class="bg-gray-200 dark:bg-gray-700 px-3 py-1 rounded text-sm shadow">🌓</button>
+<body class="bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 p-4 transition-colors duration-300 text-sm">
+
+  <!-- Header -->
+  <div class="flex flex-wrap justify-between items-center mb-3 opacity-70">
+    <h1 class="text-base font-semibold tracking-tight">MindTree Focus</h1>
+    <button id="toggle-theme" class="bg-gray-200 dark:bg-gray-700 px-2 py-1 rounded shadow text-xs">🌓</button>
   </div>
 
-  <div class="flex flex-wrap items-center gap-2 mb-4 text-sm">
-    <label for="timer" class="mr-1">Timer:</label>
-    <select id="timer" class="bg-gray-100 dark:bg-gray-800 px-2 py-1 rounded border dark:border-gray-600">
+  <!-- Focus Session Panel -->
+  <div id="selected-panel" class="mb-4 hidden border dark:border-gray-700 p-3 rounded bg-gray-50 dark:bg-gray-800">
+    <div class="flex justify-between items-center mb-2">
+      <div id="selected-title" class="font-bold text-sm text-indigo-500 truncate"></div>
+      <div id="countdown" class="text-xs text-gray-500 dark:text-gray-400"></div>
+    </div>
+    <div contenteditable="true" id="selected-notes"
+      class="text-sm bg-white dark:bg-gray-900 p-2 rounded border dark:border-gray-700 outline-none min-h-[60px]"
+      placeholder="Write notes here..."></div>
+  </div>
+
+  <!-- Timer Controls -->
+  <div class="flex flex-wrap items-center gap-2 mb-3 text-xs opacity-70">
+    <label for="timer">Focus time:</label>
+    <select id="timer"
+      class="bg-gray-100 dark:bg-gray-800 px-2 py-1 rounded border dark:border-gray-600 text-sm focus:outline-none">
       <option value="3">3m</option>
       <option value="5">5m</option>
       <option value="10">10m</option>
@@ -29,26 +50,32 @@
       <option value="20">20m</option>
       <option value="30">30m</option>
     </select>
-    <button id="start-timer" class="bg-indigo-500 hover:bg-indigo-600 text-white px-3 py-1 rounded shadow text-sm">Start</button>
+    <button id="start-timer"
+      class="bg-indigo-500 hover:bg-indigo-600 text-white px-3 py-1 rounded shadow text-xs">Start</button>
   </div>
 
-  <div id="tree" class="space-y-2 mb-8"></div>
+  <!-- Outline Tree -->
+  <div id="tree" class="space-y-2 mb-8 text-sm"></div>
 
-  <h2 class="text-base font-bold mb-1">✅ Done</h2>
-  <div id="done" class="space-y-1 mb-8 text-sm text-gray-500 dark:text-gray-400"></div>
+  <!-- Done Tasks -->
+  <h2 class="text-xs font-bold mb-1 text-gray-400 uppercase">Done</h2>
+  <div id="done" class="space-y-1 mb-8 text-xs text-gray-500 dark:text-gray-400"></div>
 
-  <div class="border-t pt-4 text-sm text-gray-500 dark:text-gray-400">
-    <h3 class="font-semibold mb-2">Keyboard Legend:</h3>
-    <ul class="list-disc ml-5 space-y-1">
+  <!-- Keyboard Legend -->
+  <div class="border-t pt-4 text-xs text-gray-400 dark:text-gray-500">
+    <h3 class="font-semibold mb-1">Shortcuts:</h3>
+    <ul class="list-disc ml-4 space-y-1">
       <li><kbd>Enter</kbd>: Add sibling</li>
-      <li><kbd>Tab</kbd>: Add child</li>
-      <li><kbd>Shift + Tab</kbd>: Outdent</li>
-      <li><kbd>Ctrl + Arrow</kbd>: Move node</li>
-      <li><kbd>Ctrl + Enter</kbd>: Mark as done</li>
-      <li><kbd>Space</kbd>: Toggle collapse</li>
+      <li><kbd>Ctrl + Enter</kbd>: Mark done</li>
+      <li><kbd>Tab</kbd> / <kbd>Shift+Tab</kbd>: Indent / Outdent</li>
+      <li><kbd>Arrow Keys</kbd>: Navigate</li>
+      <li><kbd>Ctrl + Arrows</kbd>: Move</li>
+      <li><kbd>Space</kbd>: Collapse/expand</li>
+      <li><kbd>Esc</kbd>: Exit edit</li>
     </ul>
   </div>
 
+  <!-- App Script -->
   <script src="app.js"></script>
 </body>
 </html>
