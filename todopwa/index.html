@@ -15,52 +15,55 @@
       }
     };
   </script>
-<style>
-  #tree > div::before {
-    content: '';
-    position: absolute;
-    left: -1rem;
-    top: 0;
-    height: 100%;
-    width: 1px;
-    background: #d1d5db;
-  }
-  #tree > div.last-node::before {
-    height: 50%;
-  }
-  #tree > div > div::before {
-    content: '';
-    position: absolute;
-    left: -1rem;
-    top: 50%;
-    width: 1rem;
-    height: 1px;
-    background: #d1d5db;
-  }
-  #tree > div > div::after {
-    content: '';
-    position: absolute;
-    left: -1rem;
-    top: 0;
-    height: 50%;
-    width: 1px;
-    background: #d1d5db;
-  }
-  .dark #tree > div::before,
-  .dark #tree > div > div::before,
-  .dark #tree > div > div::after {
-    background: #4b5563;
-  }
-.node-highlight {
-  background-color: #e0e7ff !important; /* Light indigo highlight */
-  transition: background-color 0.3s ease;
-}
-.dark .node-highlight {
-  background-color: #4b5e8e !important; /* Darker indigo for dark mode */
-}
-</style>
+
   <!-- Manifest for PWA -->
   <link rel="manifest" href="manifest.json" />
+
+  <!-- Styles for connectors and highlights -->
+  <style>
+    #tree > div::before {
+      content: '';
+      position: absolute;
+      left: -1rem;
+      top: 0;
+      height: 100%;
+      width: 1px;
+      background: #d1d5db;
+    }
+    #tree > div.last-node::before {
+      height: 50%;
+    }
+    #tree > div > div::before {
+      content: '';
+      position: absolute;
+      left: -1rem;
+      top: 50%;
+      width: 1rem;
+      height: 1px;
+      background: #d1d5db;
+    }
+    #tree > div > div::after {
+      content: '';
+      position: absolute;
+      left: -1rem;
+      top: 0;
+      height: 50%;
+      width: 1px;
+      background: #d1d5db;
+    }
+    .dark #tree > div::before,
+    .dark #tree > div > div::before,
+    .dark #tree > div > div::after {
+      background: #4b5563;
+    }
+    .node-highlight {
+      background-color: #e0e7ff !important;
+      transition: background-color 0.3s ease;
+    }
+    .dark .node-highlight {
+      background-color: #4b5e8e !important;
+    }
+  </style>
 </head>
 <body class="bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 p-4 transition-colors duration-300 text-sm">
 
@@ -113,7 +116,6 @@
       <li><kbd>Tab</kbd> / <kbd>Shift+Tab</kbd>: Indent / Outdent</li>
       <li><kbd>Arrow Keys</kbd>: Navigate</li>
       <li><kbd>Ctrl + Arrows</kbd>: Move</li>
-      <li><kbd>Space</kbd>: Collapse/expand</li>
       <li><kbd>Esc</kbd>: Exit edit</li>
     </ul>
   </div>
