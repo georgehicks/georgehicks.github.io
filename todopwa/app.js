@@ -32,14 +32,15 @@ const renderTree = () => {
   treeContainer.innerHTML = '';
   doneContainer.innerHTML = '';
 
-  const render = (node, depth = 0, parentEl = treeContainer) => {
+  const render = (node, depth = 0, parentEl = treeContainer, isLast = false) => {
     const div = document.createElement('div');
     div.className = `
       group flex items-center gap-2 px-3 py-1 rounded transition-all
       border dark:border-gray-700 border-gray-300 
       bg-white dark:bg-gray-800
       shadow-sm hover:shadow-md focus-within:ring-2 focus-within:ring-indigo-400
-      ml-${depth * 4}
+      ml-${depth * 4} relative
+      ${isLast ? 'last-node' : ''}
     `;
     div.dataset.id = node.id;
     div.setAttribute('draggable', true);
@@ -60,7 +61,7 @@ const renderTree = () => {
       div.classList.remove('ring-2', 'ring-indigo-400');
       const draggedId = e.dataTransfer.getData('text/plain');
       if (draggedId === node.id) return;
-      const [draggedNode, draggedList] = removeNode(treeData, draggedId);
+      const [draggedNode] = removeNode(treeData, draggedId);
       node.children.push(draggedNode);
       draggedNode.collapsed = false;
       save(); renderTree();
@@ -85,7 +86,7 @@ const renderTree = () => {
     input.placeholder = "New task...";
     input.onkeydown = e => handleKey(e, node, input);
     input.oninput = () => {
-      node.text = input.value;
+      node.text = input.value; // No trimming to allow spaces
       save();
     };
     input.onfocus = () => {
@@ -97,11 +98,11 @@ const renderTree = () => {
     parentEl.appendChild(div);
 
     if (!node.collapsed) {
-      node.children.forEach(child => render(child, depth + 1, parentEl));
+      node.children.forEach((child, idx) => render(child, depth + 1, parentEl, idx === node.children.length - 1));
     }
   };
 
-  treeData.forEach(node => render(node));
+  treeData.forEach((node, idx) => render(node, 0, treeContainer, idx === treeData.length - 1));
   doneTasks.forEach(text => {
     const doneEl = document.createElement('div');
     doneEl.textContent = text;
