@@ -51,6 +51,13 @@
   .dark #tree > div > div::after {
     background: #4b5563;
   }
+.node-highlight {
+  background-color: #e0e7ff !important; /* Light indigo highlight */
+  transition: background-color 0.3s ease;
+}
+.dark .node-highlight {
+  background-color: #4b5e8e !important; /* Darker indigo for dark mode */
+}
 </style>
   <!-- Manifest for PWA -->
   <link rel="manifest" href="manifest.json" />
