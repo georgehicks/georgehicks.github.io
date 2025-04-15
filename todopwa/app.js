@@ -1,4 +1,4 @@
-const VERSION = '1.2.0';
+const VERSION = '1.3.0';
 console.log(`MindTree Focus app.js v${VERSION}`);
 
 const treeContainer = document.getElementById('tree');
@@ -96,11 +96,6 @@ const renderTree = () => {
       activeNodeId = node.id;
       showSelectedPanel(node);
     };
-    input.onblur = () => {
-      if (activeNodeId === node.id) {
-        focusNode(node.id); // Reapply highlight after blur
-      }
-    };
 
     div.append(toggle, input);
     parentEl.appendChild(div);
@@ -121,14 +116,12 @@ const renderTree = () => {
 
 let keyTimeout;
 const handleKey = (e, node, input) => {
-  console.log(e.ctrlKey,e.key);
   clearTimeout(keyTimeout);
   keyTimeout = setTimeout(() => {
     const parentList = findParentList(treeData, node.id);
 
     const blurKeys = ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Tab', 'Enter'];
     if (blurKeys.includes(e.key) || (e.ctrlKey && blurKeys.includes(e.key)) || (e.ctrlKey && e.key === 'Enter')) {
-      console.log("blur triggered");
       input.blur();
     }
 
@@ -145,13 +138,13 @@ const handleKey = (e, node, input) => {
     if (!e.ctrlKey && e.key === 'ArrowLeft') {
       e.preventDefault();
       node.collapsed = true;
-      save(); renderTree(); focusNode(node.id);
+      save(); renderTree(); focusNode(node.id, false);
     }
 
     if (!e.ctrlKey && e.key === 'ArrowRight') {
       e.preventDefault();
       node.collapsed = false;
-      save(); renderTree(); focusNode(node.id);
+      save(); renderTree(); focusNode(node.id, false);
     }
 
     if (e.key === 'Enter' && !e.ctrlKey) {
@@ -213,6 +206,7 @@ const handleKey = (e, node, input) => {
       input.blur();
       activeNodeId = null;
       selectedPanel.classList.add('hidden');
+      document.querySelectorAll('.node-highlight').forEach(el => el.classList.remove('node-highlight'));
       save();
     }
   }, 50);
@@ -231,21 +225,20 @@ const getAllVisibleNodes = (list = treeData) => {
 };
 
 const moveFocusRelative = (direction, currentId) => {
-  console.log("move",direction,currentId);
   const nodes = getAllVisibleNodes();
   const idx = nodes.findIndex(n => n.id === currentId);
   const target = nodes[idx + direction];
   if (target) focusNode(target.id);
 };
 
-const focusNode = id => {
+const focusNode = (id, setFocus = true) => {
   setTimeout(() => {
     document.querySelectorAll('.node-highlight').forEach(el => el.classList.remove('node-highlight'));
     const el = document.querySelector(`[data-id="${id}"] input`);
     const parentDiv = document.querySelector(`[data-id="${id}"]`);
     if (el && parentDiv) {
       parentDiv.classList.add('node-highlight');
-      el.focus();
+      if (setFocus) el.focus();
     }
   }, 10);
 };
