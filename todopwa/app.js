@@ -121,12 +121,14 @@ const renderTree = () => {
 
 let keyTimeout;
 const handleKey = (e, node, input) => {
+  console.log(e.ctrlKey,e.key);
   clearTimeout(keyTimeout);
   keyTimeout = setTimeout(() => {
     const parentList = findParentList(treeData, node.id);
 
     const blurKeys = ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Tab', 'Enter'];
     if (blurKeys.includes(e.key) || (e.ctrlKey && blurKeys.includes(e.key)) || (e.ctrlKey && e.key === 'Enter')) {
+      console.log("blur triggered");
       input.blur();
     }
 
@@ -229,6 +231,7 @@ const getAllVisibleNodes = (list = treeData) => {
 };
 
 const moveFocusRelative = (direction, currentId) => {
+  console.log("move",direction,currentId);
   const nodes = getAllVisibleNodes();
   const idx = nodes.findIndex(n => n.id === currentId);
   const target = nodes[idx + direction];
