@@ -86,7 +86,7 @@ const renderTree = () => {
     input.placeholder = "New task...";
     input.onkeydown = e => handleKey(e, node, input);
     input.oninput = () => {
-      node.text = input.value; // No trimming to allow spaces
+      node.text = input.value;
       save();
     };
     input.onfocus = () => {
@@ -240,8 +240,14 @@ const moveFocusRelative = (direction, currentId) => {
 
 const focusNode = id => {
   setTimeout(() => {
+    // Clear previous highlights
+    document.querySelectorAll('.node-highlight').forEach(el => el.classList.remove('node-highlight'));
     const el = document.querySelector(`[data-id="${id}"] input`);
-    if (el) el.focus();
+    const parentDiv = document.querySelector(`[data-id="${id}"]`);
+    if (el && parentDiv) {
+      el.focus();
+      parentDiv.classList.add('node-highlight');
+    }
   }, 10);
 };
 
@@ -267,9 +273,7 @@ const removeNode = (list, id) => {
   for (let i = 0; i < list.length; i++) {
     if (list[i].id === id) return [list.splice(i, 1)[0], list];
     const [found, sublist] = removeNode(list[i].children, id);
-    if (found) return [found, sublist];
-  }
-  return [null, null];
+    if (found) return [found, sublist  return [null, null];
 };
 
 const showSelectedPanel = (node) => {
