@@ -1,0 +1,668 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>FreeMind-Style DOM Tree with SVG Curves</title>
+  <style>
+    html, body {
+      margin: 0;
+      height: 100%;
+      overflow: hidden;
+      font-family: sans-serif;
+    }
+    #container {
+      position: relative;
+      width: 100vw;
+      height: 100vh;
+      overflow: auto;
+    }
+    #mindmap {
+      position: relative;
+      display: flex;
+      flex-direction: row;
+      align-items: center;
+      justify-content: flex-start;
+      padding: 40px;
+      min-width: 100%;
+      min-height: 100%;
+      overflow: visible;
+      z-index: 1;
+    }
+    svg {
+      position: absolute;
+      top: 0;
+      left: 0;
+      z-index: 0;
+      pointer-events: none;
+    }
+    .node {
+      border: 1px solid #999;
+      background: #fff;
+      border-radius: 4px;
+      padding: 4px 8px;
+      margin: 0;
+      max-width: 400px; /* Max width for nodes */
+      white-space: normal; /* Allow text wrapping */
+      word-wrap: break-word; /* Break long words */
+      cursor: pointer;
+      position: relative;
+    }
+    .children {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      justify-content: center;
+      margin-left: 60px;
+      gap: 16px; /* Increased gap to prevent overlap */
+    }
+    .selected {
+      background-color: #FFFFE0; /* Light yellow */
+      border-color: #007acc;
+    }
+    .hidden {
+      display: none;
+    }
+    .editing textarea {
+      border: 1px solid #007acc;
+      border-radius: 4px;
+      padding: 3px 7px;
+      font-size: inherit;
+      outline: none;
+      max-width: 400px; /* Match node max-width */
+      resize: none; /* Prevent manual resizing */
+      font-family: sans-serif;
+    }
+    #controls {
+      position: absolute;
+      top: 10px;
+      left: 10px;
+      z-index: 10;
+      display: flex;
+      gap: 10px;
+    }
+    #infoIcon {
+      cursor: pointer;
+      font-size: 20px;
+      padding: 5px;
+      background: #fff;
+      border: 1px solid #999;
+      border-radius: 4px;
+    }
+    #shortcutsModal {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background: #fff;
+      border: 1px solid #999;
+      padding: 20px;
+      z-index: 20;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+      max-width: 400px;
+      display: none;
+    }
+    #shortcutsModal h3 {
+      margin-top: 0;
+    }
+    #shortcutsModal ul {
+      list-style: none;
+      padding: 0;
+    }
+    #shortcutsModal li {
+      margin: 5px 0;
+    }
+    #shortcutsModal .close {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      cursor: pointer;
+      font-size: 16px;
+    }
+  </style>
+</head>
+<body>
+  <div id="controls">
+    <input type="file" id="fileInput" accept=".mm">
+    <button id="downloadButton">Download</button>
+    <span id="infoIcon" title="Keyboard Shortcuts">ℹ</span>
+  </div>
+  <div id="shortcutsModal">
+    <span class="close">✖</span>
+    <h3>Keyboard Shortcuts</h3>
+    <ul>
+      <li><b>Enter</b>: Edit node / Stop editing</li>
+      <li><b>Ctrl+Enter</b>: Add child node</li>
+      <li><b>Shift+Enter</b>: Add sibling node</li>
+      <li><b>Arrow Left</b>: Navigate to parent</li>
+      <li><b>Arrow Right</b>: Navigate to first child</li>
+      <li><b>Arrow Up/Down</b>: Navigate to single sibling</li>
+      <li><b>Shift+Up/Down</b>: Select multiple siblings</li>
+      <li><b>Ctrl+Arrow Left</b>: Move selected nodes to parent's level</li>
+      <li><b>Ctrl+Arrow Right</b>: Move selected nodes as child of previous sibling</li>
+      <li><b>Ctrl+Arrow Up/Down</b>: Reorder selected nodes</li>
+      <li><b>Space</b>: Toggle collapse/expand</li>
+      <li><b>Ctrl+Insert</b>: Add child node</li>
+      <li><b>Insert</b>: Add sibling node</li>
+      <li><b>Delete</b>: Delete selected nodes (with confirmation)</li>
+      <li><b>F3</b>: Cycle selected nodes' color (red, dark green, blue, gray, normal)</li>
+    </ul>
+  </div>
+  <div id="container">
+    <svg id="lines"></svg>
+    <div id="mindmap"></div>
+  </div>
+
+  <script>
+    let selectedNodes = [];
+    let currentData = {
+      id: Math.random().toString(36).substr(2, 9),
+      text: "Root",
+      color: null,
+      collapsed: false,
+      parent: null,
+      children: []
+    };
+
+    function parseMM(xmlStr) {
+      const parser = new DOMParser();
+      const xml = parser.parseFromString(xmlStr, "text/xml");
+      const root = xml.querySelector("map > node");
+      if (!root) {
+        console.error("No <node> element found under <map>");
+        alert("Invalid FreeMind file: no root <node> found.");
+        return null;
+      }
+      return buildDataTree(root);
+    }
+
+    function buildDataTree(xmlNode) {
+      const obj = {
+        id: Math.random().toString(36).substr(2, 9),
+        text: xmlNode.getAttribute("TEXT") || "",
+        color: xmlNode.getAttribute("COLOR") || null,
+        collapsed: true,
+        parent: null,
+        children: []
+      };
+      for (const child of xmlNode.children) {
+        if (child.tagName === "node") {
+          const childObj = buildDataTree(child);
+          childObj.parent = obj;
+          obj.children.push(childObj);
+        }
+      }
+      return obj;
+    }
+
+    function generateMM(data) {
+      let xml = '<?xml version="1.0" encoding="UTF-8"?><map version="1.0.1">';
+      function nodeToXML(node) {
+        let colorAttr = node.color ? ` COLOR="${node.color}"` : "";
+        let xml = `<node TEXT="${node.text.replace(/"/g, '"')}"${colorAttr}>`;
+        node.children.forEach(child => {
+          xml += nodeToXML(child);
+        });
+        xml += '</node>';
+        return xml;
+      }
+      xml += nodeToXML(data);
+      xml += '</map>';
+      return xml;
+    }
+
+    function renderTree(node) {
+      console.log("Rendering node:", node.text, "ID:", node.id, "Parent:", node.parent ? node.parent.text : null);
+      const el = document.createElement("div");
+      el.className = "node";
+      el.setAttribute("tabindex", "0");
+      el.id = `node-${node.id}`;
+      if (selectedNodes.includes(node)) el.classList.add("selected");
+      if (node.editing) {
+        el.classList.add("editing");
+        el.innerHTML = `<textarea rows="2">${node.text}</textarea>`;
+        const textarea = el.querySelector("textarea");
+        textarea.style.color = node.color || 'inherit';
+        textarea.style.fontWeight = 'bold';
+        textarea.onblur = () => {
+          console.log("Textarea blur for node:", node.text);
+          setTimeout(() => {
+            node.text = textarea.value || node.text;
+            node.editing = false;
+            renderAll(currentData);
+          }, 0);
+        };
+        textarea.onkeydown = (e) => {
+          console.log("Textarea keydown:", e.key, "Editing:", node.editing);
+          if (e.key === "Enter" && !e.ctrlKey && !e.shiftKey) {
+            e.preventDefault();
+            e.stopPropagation();
+            console.log("Stopping edit for node:", node.text);
+            node.text = textarea.value || node.text;
+            node.editing = false;
+            renderAll(currentData);
+          } else if (e.key === "Escape") {
+            e.preventDefault();
+            e.stopPropagation();
+            node.editing = false;
+            renderAll(currentData);
+          } else if (e.key === "Enter" && e.ctrlKey) {
+            e.preventDefault();
+            e.stopPropagation();
+            node.text = textarea.value || node.text;
+            node.editing = false;
+            addChild();
+          } else if (e.key === "Enter" && e.shiftKey) {
+            e.preventDefault();
+            e.stopPropagation();
+            node.text = textarea.value || node.text;
+            node.editing = false;
+            addSibling();
+          }
+        };
+      } else {
+        const colorStyle = node.color ? `color: ${node.color}; font-size:.8rem; font-weight: lighter;` : "";
+        el.innerHTML = node.children.length
+          ? `<div style='display:flex;align-items:center;justify-content:center;${colorStyle}'><span style='display:inline-block;width:10px;height:10px;background:${node.collapsed ? '#666' : '#aaa'};border-radius:50%;opacity:${node.collapsed ? '0.5' : '0.25'};margin-right:6px;'></span>${node.text}</div>`
+          : `<span style="${colorStyle}">${node.text}</span>`;
+      }
+
+      el.onclick = (e) => {
+        e.stopPropagation();
+        if (node.editing) return;
+        selectedNodes = [node];
+        if (node.children.length > 0) {
+          node.collapsed = !node.collapsed;
+        }
+        renderAll(currentData);
+      };
+
+      const wrapper = document.createElement("div");
+      wrapper.style.display = "flex";
+      wrapper.style.alignItems = "center";
+      wrapper.appendChild(el);
+
+      if (!node.collapsed && node.children.length > 0) {
+        const childrenContainer = document.createElement("div");
+        childrenContainer.className = "children";
+        node.children.forEach(child => childrenContainer.appendChild(renderTree(child)));
+        wrapper.appendChild(childrenContainer);
+      }
+
+      console.log("Rendered node element:", el, "Wrapper:", wrapper);
+      return wrapper;
+    }
+
+    function drawLines(data) {
+      const svg = document.getElementById("lines");
+      const mindmap = document.getElementById("mindmap");
+      svg.innerHTML = "";
+      const mindmapBox = mindmap.getBoundingClientRect();
+      const containerBox = document.getElementById("container").getBoundingClientRect();
+      const svgWidth = Math.max(mindmap.scrollWidth, containerBox.width);
+      const svgHeight = Math.max(mindmap.scrollHeight, containerBox.height);
+      svg.setAttribute("width", svgWidth);
+      svg.setAttribute("height", svgHeight);
+
+      function connect(parentNode) {
+        if (!parentNode || parentNode.collapsed || !parentNode.children.length) return;
+        const parentEl = document.getElementById(`node-${parentNode.id}`);
+        if (!parentEl) return;
+        const parentBox = parentEl.getBoundingClientRect();
+        const parentX = parentBox.right - mindmapBox.left + mindmap.scrollLeft;
+        const parentY = parentBox.top + parentBox.height / 2 - mindmapBox.top + mindmap.scrollTop;
+
+        for (const child of parentNode.children) {
+          const childEl = document.getElementById(`node-${child.id}`);
+          if (!childEl) continue;
+          const childBox = childEl.getBoundingClientRect();
+          const childX = childBox.left - mindmapBox.left + mindmap.scrollLeft;
+          const childY = childBox.top + childBox.height / 2 - mindmapBox.top + mindmap.scrollTop;
+
+          const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+          const midX = (parentX + childX) / 2;
+          const d = `M${parentX},${parentY} C${midX},${parentY} ${midX},${childY} ${childX},${childY}`;
+          path.setAttribute("d", d);
+          path.setAttribute("stroke", "#888");
+          path.setAttribute("fill", "none");
+          path.setAttribute("stroke-width", "1");
+          svg.appendChild(path);
+
+          connect(child);
+        }
+      }
+      connect(data);
+    }
+
+    function renderAll(data) {
+      console.log("Rendering all, root node:", data.text, "ID:", data.id, "Children:", data.children.length);
+      const container = document.getElementById("mindmap");
+      container.innerHTML = "";
+      if (!data) {
+        console.error("No data to render");
+        return;
+      }
+      const tree = renderTree(data);
+      container.appendChild(tree);
+      console.log("Appended tree to #mindmap:", tree);
+      requestAnimationFrame(() => {
+        const selEl = selectedNodes.length ? document.getElementById(`node-${selectedNodes[0].id}`) : null;
+        if (selEl) {
+          selEl.scrollIntoView({ block: 'center', inline: 'center', behavior: 'smooth' });
+          if (selectedNodes[0].editing) {
+            const textarea = selEl.querySelector("textarea");
+            if (textarea) {
+              textarea.focus();
+              textarea.select();
+            }
+          } else {
+            selEl.focus();
+          }
+        } else {
+          console.warn("No selected node element found");
+        }
+        drawLines(data);
+      });
+    }
+
+    function selectFirstNode(data) {
+      console.log("Selecting first node:", data.text);
+      selectedNodes = [data];
+    }
+
+    function moveNodeUp() {
+      if (!selectedNodes.length || !selectedNodes[0].parent) return;
+      const parent = selectedNodes[0].parent;
+      const siblings = parent.children;
+      const indices = selectedNodes.map(n => siblings.indexOf(n)).sort((a, b) => a - b);
+      if (indices[0] === 0) return;
+      const movedNodes = selectedNodes.sort((a, b) => siblings.indexOf(a) - siblings.indexOf(b));
+      for (let i = 0; i < indices.length; i++) {
+        [siblings[indices[i] - 1], siblings[indices[i]]] = [siblings[indices[i]], siblings[indices[i] - 1]];
+      }
+      renderAll(currentData);
+    }
+
+    function moveNodeDown() {
+      if (!selectedNodes.length || !selectedNodes[0].parent) return;
+      const parent = selectedNodes[0].parent;
+      const siblings = parent.children;
+      const indices = selectedNodes.map(n => siblings.indexOf(n)).sort((a, b) => b - a);
+      if (indices[0] === siblings.length - 1) return;
+      const movedNodes = selectedNodes.sort((a, b) => siblings.indexOf(a) - siblings.indexOf(b));
+      for (let i = 0; i < indices.length; i++) {
+        [siblings[indices[i]], siblings[indices[i] + 1]] = [siblings[indices[i] + 1], siblings[indices[i]]];
+      }
+      renderAll(currentData);
+    }
+
+    function moveNodeLeft() {
+      if (!selectedNodes.length || !selectedNodes[0].parent || !selectedNodes[0].parent.parent) return;
+      const parent = selectedNodes[0].parent;
+      const grandparent = parent.parent;
+      const siblings = parent.children;
+      const indices = selectedNodes.map(n => siblings.indexOf(n)).sort((a, b) => a - b);
+      const movedNodes = selectedNodes.sort((a, b) => siblings.indexOf(a) - siblings.indexOf(b));
+      const parentIdx = grandparent.children.indexOf(parent);
+      movedNodes.forEach(node => {
+        const idx = siblings.indexOf(node);
+        siblings.splice(idx, 1);
+        node.parent = grandparent;
+        grandparent.children.splice(parentIdx + 1, 0, node);
+      });
+      renderAll(currentData);
+    }
+
+    function moveNodeRight() {
+      if (!selectedNodes.length || !selectedNodes[0].parent) return;
+      const parent = selectedNodes[0].parent;
+      const siblings = parent.children;
+      const indices = selectedNodes.map(n => siblings.indexOf(n)).sort((a, b) => a - b);
+      if (indices[0] === 0) return;
+      const movedNodes = selectedNodes.sort((a, b) => siblings.indexOf(a) - siblings.indexOf(b));
+      const newParent = siblings[indices[0] - 1];
+      movedNodes.forEach(node => {
+        const idx = siblings.indexOf(node);
+        siblings.splice(idx, 1);
+        node.parent = newParent;
+        newParent.children.push(node);
+      });
+      renderAll(currentData);
+    }
+
+    function editNode() {
+      if (!selectedNodes.length) return;
+      selectedNodes[0].editing = true;
+      renderAll(currentData);
+    }
+
+    function addSibling() {
+      if (!selectedNodes.length || !selectedNodes[0].parent) return;
+      const parent = selectedNodes[0].parent;
+      const newNode = {
+        id: Math.random().toString(36).substr(2, 9),
+        text: "",
+        color: selectedNodes[0].color || null,
+        collapsed: true,
+        parent: parent,
+        children: [],
+        editing: true
+      };
+      const siblings = parent.children;
+      const idx = siblings.indexOf(selectedNodes[selectedNodes.length - 1]);
+      siblings.splice(idx + 1, 0, newNode);
+      selectedNodes = [newNode];
+      renderAll(currentData);
+    }
+
+    function addChild() {
+      if (!selectedNodes.length) return;
+      const parentNode = selectedNodes[0];
+      console.log("Adding child to node:", parentNode.text, "ID:", parentNode.id);
+      const newNode = {
+        id: Math.random().toString(36).substr(2, 9),
+        text: "",
+        color: parentNode.color || null,
+        collapsed: true,
+        parent: parentNode,
+        children: [],
+        editing: true
+      };
+      parentNode.children.push(newNode);
+      parentNode.collapsed = false;
+      selectedNodes = [newNode];
+      console.log("New child added:", newNode, "Parent children:", parentNode.children);
+      renderAll(currentData);
+    }
+
+    function deleteNode() {
+      if (!selectedNodes.length || !selectedNodes[0].parent) return;
+      if (!confirm(`Delete ${selectedNodes.length} node(s) and their children?`)) return;
+      const parent = selectedNodes[0].parent;
+      const siblings = parent.children;
+      selectedNodes.forEach(node => {
+        const idx = siblings.indexOf(node);
+        if (idx !== -1) siblings.splice(idx, 1);
+      });
+      selectedNodes = [parent];
+      renderAll(currentData);
+    }
+
+    function navigate(direction) {
+      if (!selectedNodes.length) return;
+      const currentNode = selectedNodes[selectedNodes.length - 1];
+      if (direction === "left" && currentNode.parent) {
+        selectedNodes = [currentNode.parent];
+      } else if (direction === "right") {
+        if (currentNode.children.length > 0) {
+          if (currentNode.collapsed) {
+            currentNode.collapsed = false;
+          } else {
+            selectedNodes = [currentNode.children[0]];
+          }
+        }
+      } else if (direction === "up" || direction === "down") {
+        const siblings = currentNode.parent?.children || [];
+        const idx = siblings.indexOf(currentNode);
+        const newIdx = direction === "up" ? idx - 1 : idx + 1;
+        if (siblings[newIdx]) {
+          selectedNodes = [siblings[newIdx]];
+        }
+      }
+      renderAll(currentData);
+    }
+
+    function selectMultipleSiblings(direction) {
+      if (!selectedNodes.length) return;
+      const currentNode = selectedNodes[selectedNodes.length - 1];
+      const siblings = currentNode.parent?.children || [];
+      const idx = siblings.indexOf(currentNode);
+      if (direction === "up") {
+        const prevIdx = idx - 1;
+        if (prevIdx >= 0 && !selectedNodes.includes(siblings[prevIdx])) {
+          selectedNodes.push(siblings[prevIdx]);
+        }
+      } else if (direction === "down") {
+        const nextIdx = idx + 1;
+        if (nextIdx < siblings.length && !selectedNodes.includes(siblings[nextIdx])) {
+          selectedNodes.push(siblings[nextIdx]);
+        }
+      }
+      const parent = selectedNodes[0].parent;
+      selectedNodes = selectedNodes.filter(n => n.parent === parent);
+      renderAll(currentData);
+    }
+
+    function toggleNodeColor() {
+      if (!selectedNodes.length || selectedNodes.some(n => n.editing)) return;
+      const colors = ["#FF0000", "#008000", "#0000FF", "#D3D3D3", null];
+      const currentColor = selectedNodes[0].color;
+      const currentIndex = colors.indexOf(currentColor);
+      const nextColor = colors[(currentIndex + 1) % colors.length];
+      selectedNodes.forEach(node => {
+        node.color = nextColor;
+      });
+      console.log("Toggled color for nodes:", selectedNodes.map(n => n.text), "New color:", nextColor);
+      renderAll(currentData);
+    }
+
+    document.addEventListener("keydown", (e) => {
+      console.log("Global keydown:", e.key, "Ctrl:", e.ctrlKey, "Shift:", e.shiftKey, "Active element:", document.activeElement.tagName);
+      if (!currentData) return;
+      if (document.activeElement.tagName === "INPUT" || document.activeElement.tagName === "TEXTAREA") {
+        return;
+      }
+      switch (e.key) {
+        case "Enter":
+          e.preventDefault();
+          if (e.ctrlKey) {
+            addChild();
+          } else if (e.shiftKey) {
+            addSibling();
+          } else {
+            if (!selectedNodes.some(n => n.editing)) editNode();
+          }
+          break;
+        case "ArrowLeft":
+          if (e.ctrlKey) moveNodeLeft();
+          else navigate("left");
+          break;
+        case "ArrowRight":
+          if (e.ctrlKey) moveNodeRight();
+          else navigate("right");
+          break;
+        case "ArrowUp":
+          if (e.shiftKey) {
+            e.preventDefault();
+            selectMultipleSiblings("up");
+          } else if (e.ctrlKey) {
+            moveNodeUp();
+          } else {
+            navigate("up");
+          }
+          break;
+        case "ArrowDown":
+          if (e.shiftKey) {
+            e.preventDefault();
+            selectMultipleSiblings("down");
+          } else if (e.ctrlKey) {
+            moveNodeDown();
+          } else {
+            navigate("down");
+          }
+          break;
+        case " ":
+          e.preventDefault();
+          if (selectedNodes.length && selectedNodes[0].children.length > 0) {
+            selectedNodes[0].collapsed = !selectedNodes[0].collapsed;
+            renderAll(currentData);
+          }
+          break;
+        case "Insert":
+          e.preventDefault();
+          if (e.ctrlKey) addChild();
+          else addSibling();
+          break;
+        case "Delete":
+          e.preventDefault();
+          deleteNode();
+          break;
+        case "F3":
+          e.preventDefault();
+          toggleNodeColor();
+          break;
+      }
+    });
+
+    document.getElementById("fileInput").addEventListener("change", (e) => {
+      const file = e.target.files[0];
+      const reader = new FileReader();
+      reader.onload = () => {
+        const data = parseMM(reader.result);
+        if (!data) return;
+        currentData = data;
+        selectFirstNode(data);
+        renderAll(data);
+        const selEl = selectedNodes.length ? document.getElementById(`node-${selectedNodes[0].id}`) : null;
+        if (selEl) selEl.focus();
+      };
+      if (file) reader.readAsText(file);
+    });
+
+    document.getElementById("downloadButton").addEventListener("click", () => {
+      const now = new Date();
+      const timestamp = now.getFullYear() + ("0" + (now.getMonth() + 1)).slice(-2) + ("0" + now.getDate()).slice(-2) + "_" + ("0" + now.getHours()).slice(-2) + ("0" + now.getMinutes()).slice(-2);
+      const safeRootText = currentData.text.replace(/[^a-zA-Z0-9]/g, '_');
+      const filename = `${safeRootText}_${timestamp}.mm`;
+      const xml = generateMM(currentData);
+      const blob = new Blob([xml], { type: "text/xml" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = filename;
+      a.click();
+      URL.revokeObjectURL(url);
+    });
+
+    document.getElementById("infoIcon").addEventListener("click", () => {
+      const modal = document.getElementById("shortcutsModal");
+      modal.style.display = "block";
+    });
+
+    document.querySelector("#shortcutsModal .close").addEventListener("click", () => {
+      const modal = document.getElementById("shortcutsModal");
+      modal.style.display = "none";
+    });
+
+    document.getElementById("container").addEventListener("scroll", () => {
+      requestAnimationFrame(() => drawLines(currentData));
+    });
+
+    window.addEventListener("resize", () => {
+      requestAnimationFrame(() => drawLines(currentData));
+    });
+
+    selectFirstNode(currentData);
+    renderAll(currentData);
+  </script>
+</body>
+</html>
