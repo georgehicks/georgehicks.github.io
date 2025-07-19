@@ -1,0 +1,820 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Focus App</title>
+    <!-- PWA additions -->
+    <link rel="canonical" href="https://georgehicks.github.io/focus-app/" />
+    <link rel="manifest" href="/focus-app/manifest.webmanifest">
+    <meta name="theme-color" content="#a1c4fd" /> <!-- Matches your app's blue theme -->
+    <!-- For iOS support -->
+    <link rel="apple-touch-icon" sizes="192x192" href="/focus-app/icon-192.png">
+    <link rel="apple-touch-icon" sizes="512x512" href="/focus-app/icon-512.png">
+    <meta name="apple-mobile-web-app-status-bar-style" content="#a1c4fd">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <!-- End PWA additions -->
+    <style>
+        body { font-family: Arial, sans-serif; max-width: 100%; margin: 0 auto; padding: 10px; opacity: 0.8; color: #555; background: #f9f9f9; font-size: 0.9em; position: relative; } /* Shrunk for mobile */
+		a { cursor: pointer; }
+        h1 { font-size: 1em; color: #888; margin-bottom: 5px; text-align: center; } /* Smaller title */
+        nav ul { list-style: none; padding: 0; display: flex; flex-wrap: wrap; justify-content: center; }
+        nav li { margin-right: 5px; margin-bottom: 5px; }
+        nav a { text-decoration: none; padding: 3px 6px; background: #eee; color: #777; border-radius: 5px; border: none; font-size: 0.9em; cursor: pointer; }
+        nav a.active { color: #fff; }
+        nav a#tasksLink.active { background: #a1c4fd; }
+        nav a#summaryLink.active { background: #ffd3a1; }
+        nav a#agendaLink.active { background: #d1a1fd; }
+        nav a#focusLink.active { background: #a1c4fd; }
+        nav a#restLink.active { background: #a1fda1; }
+        nav a.pulsate { animation: pulseRed 1s infinite; }
+        @keyframes pulseRed { 0% { background: #fda1a1; } 50% { background: #eee; } 100% { background: #fda1a1; } } /* Softened pulse */
+        section { display: none; }
+        section.active { display: block; }
+        #taskTextarea { width: 100%; height: 500px; font-family: monospace; border: 1px solid #ddd; border-radius: 4px; background: #fff; color: #555; font-size: 0.9em; overflow:auto; }
+        #taskSelect { font-size: 1em; border: 1px solid #ddd; border-radius: 4px; background: transparent; color: #888; } /* Smaller task select */
+        #stepInput { font-size: 1.2em; width: 100%; border: 1px solid #ddd; border-radius: 4px; background: transparent; color: #888; } /* Smaller step */
+        #notesTextarea { width: 100%; height: 500px; border: 1px solid #ddd; border-radius: 4px; font-size: 0.9em; overflow:auto; }
+        #saveTasksBtn,#saveFocusBtn  { display: none; margin-top: 5px; padding: 3px 6px; background: #d4f4d4; color: #555; border: none; cursor: pointer; border-radius: 4px; font-size: 0.9em; } /* Softened button */
+        #timerBar { height: 15px; background: #eee; position: relative; border: 1px solid #ddd; border-radius: 4px; } /* Smaller bar */
+        #timerProgress { height: 100%; width: 100%; transition: width 0.5s; border-radius: 4px; }
+        #timerProgressFocus { background: #a1c4fd !important; } /* Softer blue */
+        #timerProgressRest { background: #a1fda1 !important; } /* Softer green */
+        #timeRemaining { font-size: 0.7em; text-align: center; color: #777; }
+        #extendLinks, #setLinks { font-size: 0.7em; text-align: center; color: #777; }
+        #extendLinks a, #setLinks a { margin: 0 3px; cursor: pointer; color: #777; text-decoration: none; }
+        #timerControls a { margin: 0 5px; cursor: pointer; color: #777; text-decoration: none; font-size: 0.8em; }
+        #agendaTable { width: 100%; border-collapse: collapse; font-size: 0.8em; }
+        #agendaTable th, #agendaTable td { border: 1px solid #eee; padding: 5px; color: #777; position: relative; } /* Softened borders */
+        #agendaTable th:first-child, #agendaTable td:first-child { width: 60px; }
+        #agendaTable td.past { background: #f0f0f0; }
+        #agendaTable td.current { animation: blink 1s infinite; }
+        @keyframes blink { 50% { background: #fff9d6; } } /* Softer blink */
+        .hour-bar { position: relative; height: 20px; background: #f0f0f0; border-radius: 4px; }
+        .task-fill { position: absolute; height: 100%; opacity: 0.5; border-radius: 4px; }
+        #contextLog { height: 150px; overflow: auto; font-size: 0.8em; border: 1px solid #ddd; padding: 5px; margin-top: 10px; }
+        #meetingsTextarea { width: 100%; height: 100px; font-family: monospace; border: 1px solid #ddd; border-radius: 4px; background: #f9f9f9; color: #555; font-size: 0.9em; margin-top: 10px; }
+		#meetingsTextarea:focus { background: #fff; }
+        .meeting-placeholder { position: absolute; top: 5px; left: 5px; color: #888; opacity: 0.7; z-index: 1; font-size: 0.8em; }
+        #nextMeeting { position: absolute; top: 10px; right: 10px; color: #888; font-size: 0.8em; opacity: 0.8; }
+        #timeBox { width: 300px; height: 20px; position: absolute; top: 10px; left: 50%; transform: translateX(-50%); background: #eee; border: 1px solid #ddd; border-radius: 4px; overflow: hidden; }
+        #remainingBar { position: absolute; right: 0; height: 100%; background: rgba(161,253,161,0.3); width: 100%; }
+        #currentTime { position: absolute; top: 0; left: 50%; transform: translateX(-50%); color: #888; font-size: 0.8em; opacity: 0.8; line-height: 20px; z-index: 1; }
+		.noselect {
+		  user-select: none;              /* Standard syntax */
+		  -webkit-user-select: none;     /* Safari */
+		  -moz-user-select: none;        /* Firefox */
+		  -ms-user-select: none;         /* Internet Explorer/Edge */
+		}
+        #noteTrayContainer { display: none; margin-top: 10px; }
+        #noteTrayTextarea { width: 100%; height: 100px; border: 1px solid #ddd; border-radius: 4px; background: #fff; color: #555; font-size: 0.9em; }
+        #openNoteTray { padding: 3px 6px; background: #eee; color: #777; border: none; cursor: pointer; border-radius: 4px; font-size: 0.9em; }
+        #closeNoteTray { padding: 3px 6px; background: #d4f4d4; color: #555; border: none; cursor: pointer; border-radius: 4px; font-size: 0.9em; }
+    </style>
+</head>
+<body>
+    <span>Focus App</span>
+    <div id="timeBox">
+        <div id="remainingBar"></div>
+        <div id="currentTime"></div>
+    </div>
+    <div id="nextMeeting"></div>
+    <nav>
+        <ul>
+            <li><a href="#tasks" id="tasksLink" class="active">Tasks</a></li>
+            <li><a href="#summary" id="summaryLink">Summary</a></li>
+            <li><a href="#agenda" id="agendaLink">Agenda</a></li>
+            <li><a href="#focus" id="focusLink">Focus</a></li>
+            <li><a href="#rest" id="restLink">Rest</a></li>
+        </ul>
+    </nav>
+
+    <section id="tasks" class="active noselect">
+        <textarea id="taskTextarea" placeholder="task:step:hour\n!prioritytask:step:hour\n+completedtask:step:hour"></textarea>
+        <button id="saveTasksBtn">Save</button>
+    </section>
+
+    <section id="summary" class="noselect">
+        <h3>Daily Summary</h3>
+        <ul id="summaryList"></ul>
+        <h3>Weekly Summary (Past 7 Days)</h3>
+        <ul id="weeklySummaryList"></ul>
+    </section>
+
+    <section id="agenda" class="noselect">
+        <table id="agendaTable">
+            <thead><tr><th>Hour</th><th>Task Worked</th></tr></thead>
+            <tbody></tbody>
+        </table>
+        <textarea id="meetingsTextarea" placeholder="09:00: Team Meeting\n10:30: Client Call"></textarea>
+        <div id="contextLog"></div>
+    </section>
+
+    <section id="focus" class="noselect">
+        <select id="taskSelect"></select>
+        <input id="stepInput" placeholder="Step">
+        <textarea id="notesTextarea" placeholder="Notes for task"></textarea>
+        <button id="saveFocusBtn">Save</button>
+        <div id="currentTaskDisplayFocus"></div>
+        <div id="timeRemainingFocus">12:00</div>
+        <div id="timerBarFocus"><div id="timerProgressFocus"> </div></div>
+        <div id="extendLinksFocus">Extend: <a>+1</a> <a>+2</a> <a>+5</a> <a>+10</a></div>
+        <div id="setLinksFocus">Set: <a>10s</a> <a>3m</a> <a>5m</a> <a>10m</a> <a>12m</a> <a>15m</a> <a>20m</a> <a>30m</a></div>
+        <div id="timerControlsFocus"> <a id="startFocus">Start</a> <a id="stopFocus">Stop</a> <a id="resetFocus">Reset</a> </div>
+        <button id="openNoteTray">Open Note Tray</button>
+        <div id="noteTrayContainer">
+            <textarea id="noteTrayTextarea" placeholder="Random notes..."></textarea>
+            <button id="closeNoteTray">Close Note Tray</button>
+        </div>
+    </section>
+
+    <section id="rest" class="noselect">
+        <div id="currentTaskDisplayRest">Resting</div>
+        <div id="timeRemainingRest">03:00</div>
+        <div id="timerBarRest"><div id="timerProgressRest"> </div></div>
+        <div id="extendLinksRest">Extend: <a>+1</a> <a>+2</a> <a>+5</a> <a>+10</a></div>
+        <div id="setLinksRest">Set: <a>10s</a> <a>3m</a> <a>5m</a> <a>10m</a> <a>12m</a> <a>15m</a> <a>20m</a> <a>30m</a></div>
+        <div id="timerControlsRest"> <a id="startRest">Start</a> <a id="stopRest">Stop</a> <a id="resetRest">Reset</a> </div>
+    </section>
+
+    <script>
+// Data structure
+        let data = {
+            rawTasks: '',
+            tasks: [], // [{name, step, hour, priority, completed, notes, durations: {date: {minutes, sessions: [{start, end}]}} }]
+            currentTask: null,
+            timers: {
+                focus: { initial: 720, remaining: 720, accumulated: 0, running: false, interval: null, overtime: false },
+                rest: { initial: 180, remaining: 180, accumulated: 0, running: false, interval: null, overtime: false },
+                plan: { accumulated: 0, running: false, interval: null }
+            },
+            log: {},
+            meetings: '',
+            noteTray: ''
+        };
+        const STORAGE_KEY = 'focusAppData';
+        let TODAY = new Date().toISOString().split('T')[0];
+        const DEFAULT_TASKS = [
+            'rest::0',
+            'plan::0',
+            'misc::0',
+            'meeting::0',
+            'break::0'
+        ];
+
+        // Load data
+        function loadData() {
+            const saved = localStorage.getItem(STORAGE_KEY);
+            if (saved) data = JSON.parse(saved);
+            if (!data.tasks.length) {
+                data.rawTasks = DEFAULT_TASKS.join('\n');
+                parseTasks();
+            }
+            if (!data.log) data.log = {};
+            if (!data.meetings) data.meetings = '';
+            if (!data.noteTray) data.noteTray = '';
+            document.getElementById('taskTextarea').value = data.rawTasks;
+            document.getElementById('meetingsTextarea').value = data.meetings;
+            document.getElementById('noteTrayTextarea').value = data.noteTray;
+            updateTaskSelect();
+            updateSummary();
+            updateAgenda();
+            if (document.getElementById('timerBarFocus')) updateTimerDisplay('focus');
+            if (document.getElementById('timerBarRest')) updateTimerDisplay('rest');
+            startPlanTimerIfNeeded();
+            updateCurrentTime();
+            setInterval(updateCurrentTime, 1000);
+            setInterval(updateNextMeeting, 1000);
+        }
+
+        // Save data
+        function saveData(auto = false) {
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+            if (!auto) {
+                // Update UI after save
+                updateTaskSelect();
+            }
+            updateSummary();
+            updateAgenda();
+        }
+
+        // Parse tasks from raw text
+        function parseTasks() {
+            const newTasks = [];
+            const lines = data.rawTasks.split('\n').filter(line => line.trim());
+            lines.forEach(line => {
+                let cleanLine = line.trim();
+                let priority = false;
+                let completed = false;
+                if (cleanLine.startsWith('!')) {
+                    priority = true;
+                    cleanLine = cleanLine.slice(1);
+                } else if (cleanLine.startsWith('+')) {
+                    completed = true;
+                    cleanLine = cleanLine.slice(1);
+                }
+                const parts = cleanLine.split(':');
+                if (parts.length >= 1) {
+                    const name = parts[0];
+                    const step = parts[1] || '';
+                    const hour = parseInt(parts[2]) || 0;
+                    const existing = data.tasks.find(t => t.name === name);
+                    newTasks.push({
+                        name,
+                        step: existing ? existing.step : step, // Preserve existing step if changed in focus
+                        hour,
+                        priority,
+                        completed,
+                        notes: existing ? existing.notes : '',
+                        durations: existing ? existing.durations : {}
+                    });
+                }
+            });
+            data.tasks = newTasks.sort((a, b) => {
+                if (a.completed && !b.completed) return 1;
+                if (!a.completed && b.completed) return -1;
+                return a.name.localeCompare(b.name);
+            });
+        }
+
+        // Update rawTasks from task step change
+        function updateRawFromTask(task) {
+            const lines = data.rawTasks.split('\n');
+            for (let i = 0; i < lines.length; i++) {
+                let clean = lines[i].trim().replace(/^[!+]/, '');
+                if (clean.startsWith(task.name + ':')) {
+                    const parts = clean.split(':');
+                    parts[1] = task.step;
+                    let prefix = '';
+                    if (task.priority) prefix = '!';
+                    if (task.completed) prefix = '+';
+                    lines[i] = prefix + parts.join(':');
+                    break;
+                } else if (clean === task.name) {
+                    let prefix = '';
+                    if (task.priority) prefix = '!';
+                    if (task.completed) prefix = '+';
+                    lines[i] = prefix + task.name + ':' + task.step;
+                    break;
+                }
+            }
+            data.rawTasks = lines.join('\n');
+        }
+
+        // Tab switching
+        document.querySelectorAll('nav a').forEach(link => {
+            link.addEventListener('click', e => {
+                e.preventDefault();
+                document.querySelectorAll('nav a').forEach(a => a.classList.remove('active', 'pulsate'));
+                link.classList.add('active');
+                document.querySelectorAll('section').forEach(s => s.classList.remove('active'));
+                const tabId = link.href.split('#')[1];
+                document.getElementById(tabId).classList.add('active');
+                stopVisibleTimers();
+                startPlanTimerIfNeeded();
+                checkPulsate();
+                autoStartTimer(tabId);
+                if (tabId === 'focus') {
+                    updateTaskSelect();
+                    loadSelectedTask();
+                }
+            });
+        });
+
+        function autoStartTimer(tabId) {
+            if (tabId === 'focus') {
+                resetTimer('focus');
+                startTimer('focus');
+            } else if (tabId === 'rest') {
+                resetTimer('rest');
+                startTimer('rest');
+            }
+        }
+
+        // Tasks tab
+        const taskTextarea = document.getElementById('taskTextarea');
+        const saveTasksBtn = document.getElementById('saveTasksBtn');
+
+        taskTextarea.addEventListener('input', () => saveTasksBtn.style.display = 'block');
+
+        saveTasksBtn.addEventListener('click', () => {
+            data.rawTasks = taskTextarea.value;
+            parseTasks();
+            saveTasksBtn.style.display = 'none';
+            saveData();
+        });
+
+        // Focus tab elements
+        const taskSelect = document.getElementById('taskSelect');
+        const stepInput = document.getElementById('stepInput');
+        const notesTextarea = document.getElementById('notesTextarea');
+        const saveFocusBtn = document.getElementById('saveFocusBtn');
+
+        stepInput.addEventListener('focus', () => stepInput.select());
+
+        [stepInput, notesTextarea].forEach(el => el.addEventListener('input', () => saveFocusBtn.style.display = 'block'));
+
+        saveFocusBtn.addEventListener('click', () => {
+            if (data.currentTask) {
+                data.currentTask.step = stepInput.value;
+                data.currentTask.notes = notesTextarea.value;
+                updateRawFromTask(data.currentTask);
+            }
+            saveFocusBtn.style.display = 'none';
+            saveData();
+        });
+
+        function updateTaskSelect() {
+            taskSelect.innerHTML = data.tasks.filter(t => !t.completed).map(t => `<option value="${t.name}">${t.name} ${t.priority ? '!' : ''}</option>`).join('');
+            if (data.currentTask) taskSelect.value = data.currentTask.name;
+            else if (data.tasks.length > 0) {
+                taskSelect.value = data.tasks[0].name;
+            }
+            loadSelectedTask();
+        }
+
+        function loadSelectedTask() {
+            const selected = data.tasks.find(t => t.name === taskSelect.value);
+            if (selected) {
+                data.currentTask = selected;
+                stepInput.value = selected.step || '';
+                notesTextarea.value = selected.notes || '';
+                document.getElementById('currentTaskDisplayFocus').textContent = `Focusing on: ${selected.name}`;
+            }
+        }
+
+        taskSelect.addEventListener('change', () => {
+            if (data.timers.focus.running) {
+                endSession('focus');
+                loadSelectedTask();
+                startSession('focus');
+            } else {
+                loadSelectedTask();
+            }
+        });
+
+        // Summary tab
+        function updateSummary() {
+            const dailyList = document.getElementById('summaryList');
+            dailyList.innerHTML = '';
+            data.tasks.forEach(t => {
+                const daily = t.durations[TODAY] || {minutes: 0};
+                const hours = (daily.minutes / 60).toFixed(2);
+                const li = document.createElement('li');
+                li.textContent = `${t.name}: ${Math.floor(daily.minutes)} min (${hours} hrs)`;
+                dailyList.appendChild(li);
+            });
+
+            const weeklyList = document.getElementById('weeklySummaryList');
+            weeklyList.innerHTML = '';
+            const weekAgo = new Date();
+            weekAgo.setDate(weekAgo.getDate() - 6);
+            data.tasks.forEach(t => {
+                let weeklyMinutes = 0;
+                for (let d = new Date(weekAgo); d <= new Date(); d.setDate(d.getDate() + 1)) {
+                    const dateKey = d.toISOString().split('T')[0];
+                    weeklyMinutes += (t.durations[dateKey] || {minutes: 0}).minutes;
+                }
+                const hours = (weeklyMinutes / 60).toFixed(2);
+                const li = document.createElement('li');
+                li.textContent = `${t.name}: ${Math.floor(weeklyMinutes)} min (${hours} hrs)`;
+                weeklyList.appendChild(li);
+            });
+        }
+
+        // Agenda tab
+        function updateAgenda() {
+            const tbody = document.getElementById('agendaTable').querySelector('tbody');
+            tbody.innerHTML = '';
+            const now = new Date();
+            const currentHour = now.getHours();
+            const meetings = parseMeetings();
+            for (let h = 8; h <= 18; h++) {
+                const tr = document.createElement('tr');
+                const hourTd = document.createElement('td');
+                hourTd.textContent = `${h}:00`;
+                const taskTd = document.createElement('td');
+                taskTd.style.position = 'relative';
+                let blocks = [];
+                data.tasks.forEach(t => {
+                    const sessions = (t.durations[TODAY] || {}).sessions || [];
+                    sessions.forEach(s => {
+                        let start = new Date(s.start);
+                        let end = s.end ? new Date(s.end) : new Date();
+                        const hourStart = new Date(`${TODAY}T${h.toString().padStart(2, '0')}:00:00`);
+                        const hourEnd = new Date(hourStart);
+                        hourEnd.setHours(h + 1);
+                        const iStart = new Date(Math.max(start.getTime(), hourStart.getTime()));
+                        const iEnd = new Date(Math.min(end.getTime(), hourEnd.getTime()));
+                        if (iStart < iEnd) {
+                            const offsetMins = (iStart - hourStart) / (1000 * 60);
+                            const durMins = (iEnd - iStart) / (1000 * 60);
+                            blocks.push({offset: offsetMins, dur: durMins, name: t.name, step: t.step || ''});
+                        }
+                    });
+                });
+                blocks.sort((a, b) => a.offset - b.offset);
+                const bar = document.createElement('div');
+                bar.className = 'hour-bar';
+                blocks.forEach(b => {
+                    const fill = document.createElement('div');
+                    fill.className = 'task-fill';
+                    fill.style.left = `${(b.offset / 60) * 100}%`;
+                    fill.style.width = `${Math.min((b.dur / 60) * 100, 100 - (b.offset / 60) * 100)}%`;
+                    let color;
+                    if (b.name === 'rest') color = 'rgba(161,253,161,0.5)';
+                    else if (b.name === 'plan') color = 'rgba(255,211,161,0.5)';
+                    else color = 'rgba(161,196,253,0.5)';
+                    fill.style.background = color;
+                    fill.title = `${b.name}: ${b.step}`;
+                    bar.appendChild(fill);
+                });
+                taskTd.appendChild(bar);
+                // Add meeting placeholder
+                const hourMeetings = meetings.filter(m => m.hour === h);
+                if (hourMeetings.length > 0) {
+                    const placeholder = document.createElement('span');
+                    placeholder.className = 'meeting-placeholder';
+                    placeholder.textContent = hourMeetings.map(m => `${m.subject} at :${m.minute.toString().padStart(2, '0')}`).join(', ');
+                    taskTd.appendChild(placeholder);
+                }
+                tr.appendChild(hourTd);
+                tr.appendChild(taskTd);
+                if (h < currentHour) {
+                    hourTd.classList.add('past');
+                    taskTd.classList.add('past');
+                }
+                if (h === currentHour) {
+                    hourTd.classList.add('current');
+                    taskTd.classList.add('current');
+                }
+                tbody.appendChild(tr);
+            }
+            // Update context log
+            const logDiv = document.getElementById('contextLog');
+            logDiv.innerHTML = '';
+            const ul = document.createElement('ul');
+            const logEntries = (data.log[TODAY] || []).sort((a, b) => new Date(a.time) - new Date(b.time));
+            logEntries.forEach(entry => {
+                const d = new Date(entry.time);
+                const hh = d.getHours().toString().padStart(2, '0');
+                const mm = d.getMinutes().toString().padStart(2, '0');
+                const li = document.createElement('li');
+                li.textContent = `${hh}:${mm} ${entry.task} - ${entry.step}`;
+                ul.appendChild(li);
+            });
+            logDiv.appendChild(ul);
+        }
+
+        function parseMeetings() {
+            const lines = data.meetings.split('\n').filter(line => line.trim());
+            return lines.map(line => {
+                const match = line.match(/^(\d{1,2}):(\d{1,2}):(.*)$/);
+                if (match) {
+                    const hour = parseInt(match[1], 10);
+                    const minute = parseInt(match[2], 10);
+                    const subject = match[3].trim();
+                    return {hour, minute, subject};
+                }
+                return null;
+            }).filter(m => m !== null);
+        }
+
+        function updateNextMeeting() {
+            const now = new Date();
+            const meetings = parseMeetings().sort((a, b) => (a.hour * 60 + a.minute) - (b.hour * 60 + b.minute));
+            const next = meetings.find(m => {
+                const mTime = new Date();
+                mTime.setHours(m.hour, m.minute, 0, 0);
+                return mTime > now;
+            });
+            const div = document.getElementById('nextMeeting');
+            if (next) {
+                const mTime = new Date();
+                mTime.setHours(next.hour, next.minute, 0, 0);
+                const diff = Math.floor((mTime - now) / 1000);
+                const mins = Math.floor(diff / 60);
+                const secs = diff % 60;
+                div.textContent = `${next.subject} in ${mins}:${secs < 10 ? '0' : ''}${secs}`;
+            } else {
+                div.textContent = '';
+            }
+        }
+
+        function updateCurrentTime() {
+            const now = new Date();
+            const hh = now.getHours().toString().padStart(2, '0');
+            const mm = now.getMinutes().toString().padStart(2, '0');
+            const ss = now.getSeconds().toString().padStart(2, '0');
+			const remainingBar = document.getElementById('remainingBar');
+            const currentTime = document.getElementById('currentTime');
+			currentTime.textContent = `${hh}:${mm}:${ss}`;
+            const agendaStart = 8 * 60;
+            const agendaEnd = 18 * 60;
+            const currentMin = now.getHours() * 60 + now.getMinutes();
+            let remainingMin = agendaEnd - currentMin;
+            if (remainingMin < 0) remainingMin = 0;
+            if (currentMin < agendaStart) remainingMin = agendaEnd - agendaStart;
+            const totalMin = agendaEnd - agendaStart;
+            const percentage = (remainingMin / totalMin) * 100;
+            remainingBar.style.width = `${percentage}%`;
+			const timeBox = document.getElementById('timeBox');
+			const remainingHours = Math.floor(remainingMin / 60);
+			const remainingMins = remainingMin % 60;
+			timeBox.setAttribute('data-tooltip', `Time left in work day: ${remainingHours}:${remainingMins < 10 ? '0' : ''}${remainingMins}`);
+			remainingBar.setAttribute('data-tooltip', `Time left in work day: ${remainingHours}:${remainingMins < 10 ? '0' : ''}${remainingMins}`);
+			currentTime.setAttribute('data-tooltip', `Time left in work day: ${remainingHours}:${remainingMins < 10 ? '0' : ''}${remainingMins}`);
+        }
+
+        // Timer functions
+        function updateTimerDisplay(mode) {
+            const suffix = mode.charAt(0).toUpperCase() + mode.slice(1);
+            const timeEl = document.getElementById(`timeRemaining${suffix}`);
+            const progressEl = document.getElementById(`timerProgress${suffix}`);
+            if (!timeEl || !progressEl) return;
+            const timer = data.timers[mode];
+            let remaining = timer.remaining;
+            if (remaining <= 0) remaining = 0; // Visible halt
+            const mins = Math.floor(remaining / 60);
+            const secs = remaining % 60;
+            timeEl.textContent = `${mins}:${secs < 10 ? '0' : ''}${secs}`;
+            const percent = (remaining / timer.initial) * 100;
+            progressEl.style.width = `${percent}%`;
+        }
+
+        function startTimer(mode) {
+            const timer = data.timers[mode];
+            if (timer.running) return;
+            timer.running = true;
+            timer.interval = setInterval(() => {
+                if (timer.remaining > 0 && !timer.overtime) {
+                    timer.remaining--;
+                    if (timer.remaining === 0) {
+                        timer.overtime = true;
+                        // Log autolog entry
+                        let taskName = mode === 'focus' ? (data.currentTask ? data.currentTask.name : 'misc') : mode;
+                        const task = data.tasks.find(t => t.name === taskName);
+                        if (task) {
+                            if (!data.log[TODAY]) data.log[TODAY] = [];
+                            data.log[TODAY].push({time: new Date().toISOString(), task: taskName, step: (task.step || '') + ' (autolog)'});
+                            saveData(true);
+                        }
+                    }
+                } else {
+                    timer.overtime = true;
+                }
+                timer.accumulated++;
+                accumulateTime(mode);
+                updateTimerDisplay(mode);
+                checkPulsate();
+            }, 1000);
+            startSession(mode);
+        }
+
+        function stopTimer(mode) {
+            const timer = data.timers[mode];
+            if (timer.interval) clearInterval(timer.interval);
+            timer.running = false;
+            timer.overtime = false;
+            endSession(mode);
+        }
+
+        function resetTimer(mode) {
+            const timer = data.timers[mode];
+            timer.remaining = timer.initial;
+            timer.accumulated = 0;
+            updateTimerDisplay(mode);
+        }
+
+        function stopVisibleTimers() {
+            stopTimer('focus');
+            stopTimer('rest');
+        }
+
+        function accumulateTime(mode) {
+            let taskName = mode === 'focus' ? (data.currentTask ? data.currentTask.name : 'misc') : mode;
+            const task = data.tasks.find(t => t.name === taskName);
+            if (task) {
+                if (!task.durations[TODAY]) task.durations[TODAY] = {minutes: 0, sessions: []};
+                task.durations[TODAY].minutes += 1 / 60; // Accumulate in fractions
+                saveData(true);
+            }
+        }
+
+        function startSession(mode) {
+            let taskName = mode === 'focus' ? (data.currentTask ? data.currentTask.name : 'misc') : mode;
+            const task = data.tasks.find(t => t.name === taskName);
+            if (task) {
+                if (!task.durations[TODAY]) task.durations[TODAY] = {minutes: 0, sessions: []};
+                task.durations[TODAY].sessions.push({start: Date.now()});
+                // Log context change
+                if (!data.log[TODAY]) data.log[TODAY] = [];
+                data.log[TODAY].push({time: new Date().toISOString(), task: taskName, step: task.step || ''});
+                saveData(true);
+            }
+        }
+
+        function endSession(mode) {
+            let taskName = mode === 'focus' ? (data.currentTask ? data.currentTask.name : 'misc') : mode;
+            const task = data.tasks.find(t => t.name === taskName);
+            if (task && task.durations[TODAY]) {
+                const lastSession = task.durations[TODAY].sessions[task.durations[TODAY].sessions.length - 1];
+                if (lastSession && !lastSession.end) lastSession.end = Date.now();
+                saveData(true);
+            }
+        }
+
+        // Plan timer
+        function startPlanTimerIfNeeded() {
+            const activeTab = document.querySelector('section.active').id;
+            if (activeTab === 'focus' || activeTab === 'rest') {
+                stopTimer('plan');
+                return;
+            }
+            startTimer('plan');
+        }
+
+        // Pulsate opposite
+        function checkPulsate() {
+            const focusTimer = data.timers.focus;
+            const restTimer = data.timers.rest;
+            const focusLink = document.getElementById('focusLink');
+            const restLink = document.getElementById('restLink');
+            if (focusTimer.remaining <= 0 && document.getElementById('focus').classList.contains('active')) {
+                restLink.classList.add('pulsate');
+            } else {
+                restLink.classList.remove('pulsate');
+            }
+            if (restTimer.remaining <= 0 && document.getElementById('rest').classList.contains('active')) {
+                focusLink.classList.add('pulsate');
+            } else {
+                focusLink.classList.remove('pulsate');
+            }
+        }
+
+        // Setup event listeners for controls
+        ['focus', 'rest'].forEach(mode => {
+            const suffix = mode.charAt(0).toUpperCase() + mode.slice(1);
+            document.getElementById(`start${suffix}`).addEventListener('click', () => startTimer(mode));
+            document.getElementById(`stop${suffix}`).addEventListener('click', () => stopTimer(mode));
+            document.getElementById(`reset${suffix}`).addEventListener('click', () => resetTimer(mode));
+
+            // Extend and set links
+            document.getElementById(`extendLinks${suffix}`).querySelectorAll('a').forEach(a => {
+                a.addEventListener('click', () => {
+                    const add = parseInt(a.textContent.slice(1)) * 60;
+                    data.timers[mode].remaining += add;
+                    data.timers[mode].initial += add;
+                    updateTimerDisplay(mode);
+                });
+            });
+            document.getElementById(`setLinks${suffix}`).querySelectorAll('a').forEach(a => {
+                a.addEventListener('click', () => {
+                    const setText = a.textContent;
+                    let setVal = parseInt(setText);
+                    if (setText.endsWith('s')) setVal /= 60;
+                    data.timers[mode].remaining = setVal * 60;
+                    data.timers[mode].initial = data.timers[mode].remaining;
+                    updateTimerDisplay(mode);
+                });
+            });
+        });
+
+        // Meetings textarea
+        const meetingsTextarea = document.getElementById('meetingsTextarea');
+        meetingsTextarea.addEventListener('blur', () => {
+            data.meetings = meetingsTextarea.value;
+            saveData(true);
+        });
+
+        // Note Tray
+        document.getElementById('openNoteTray').addEventListener('click', () => {
+            document.getElementById('noteTrayContainer').style.display = 'block';
+        });
+        document.getElementById('closeNoteTray').addEventListener('click', () => {
+            document.getElementById('noteTrayContainer').style.display = 'none';
+        });
+        const noteTrayTextarea = document.getElementById('noteTrayTextarea');
+        noteTrayTextarea.addEventListener('blur', () => {
+            data.noteTray = noteTrayTextarea.value;
+            saveData(true);
+        });
+
+        // Initial load
+        loadData();
+		
+		// Tooltip functionality (consolidated into one function)
+		function titleToTooltip(el) {
+			if (!el) {
+				// Setup mode: wire up mouseover event on body using delegation
+				document.body.addEventListener('mouseover', function(event) {
+					const target = event.target;
+					if (target.hasAttribute('title') || target.hasAttribute('data-tooltip')) {
+						titleToTooltip(target);
+					}
+				});
+				document.body.addEventListener('mouseout', function(event) {
+					const target = event.target;
+					if (target.hasAttribute('data-tooltip')) {
+						hideTooltip(target);
+					}
+				});
+				return;
+			}
+
+			// Element mode: process and show tooltip for specific el
+			if (el.hasAttribute('title')) {
+				// Move title to data-tooltip and remove title to prevent native tooltip
+				el.setAttribute('data-tooltip', el.getAttribute('title'));
+				el.removeAttribute('title');
+			}
+
+			// Short delay (300ms) before showing
+			if (el.tooltipTimeout) clearTimeout(el.tooltipTimeout);
+			el.tooltipTimeout = setTimeout(function() {
+				showTooltip(el);
+			}, 300);
+
+			// Inner helper: show logic
+			function showTooltip(el) {
+				// Create tooltip element if not exists
+				let tooltip = document.getElementById('custom-tooltip');
+				if (!tooltip) {
+					tooltip = document.createElement('div');
+					tooltip.id = 'custom-tooltip';
+					tooltip.style.position = 'absolute';
+					tooltip.style.background = 'rgba(0, 0, 0, 0.8)';
+					tooltip.style.color = '#fff';
+					tooltip.style.padding = '5px 10px';
+					tooltip.style.borderRadius = '4px';
+					tooltip.style.fontSize = '0.9em';
+					tooltip.style.pointerEvents = 'none';
+					tooltip.style.zIndex = '1000';
+					tooltip.style.transition = 'opacity 0.2s';
+					tooltip.style.opacity = '0';
+					document.body.appendChild(tooltip);
+				}
+
+				// Set text
+				tooltip.textContent = el.getAttribute('data-tooltip');
+
+				// Position it
+				const rect = el.getBoundingClientRect();
+				const tooltipRect = tooltip.getBoundingClientRect(); // Approximate, will adjust after
+				let top = rect.top - tooltipRect.height - 5; // Above by default
+				let left = rect.left + (rect.width / 2) - (tooltipRect.width / 2);
+
+				// Check if above has room
+				if (top < 0) {
+					top = rect.bottom + 5; // Below
+				}
+
+				// Adjust left if overflowing right
+				if (left + tooltipRect.width > window.innerWidth) {
+					left = window.innerWidth - tooltipRect.width - 10;
+				}
+				if (left < 0) left = 10;
+
+				tooltip.style.top = `${top + window.scrollY}px`;
+				tooltip.style.left = `${left + window.scrollX}px`;
+
+				// Fade in
+				setTimeout(() => {
+					tooltip.style.opacity = '1';
+				}, 10);
+
+				// Store on el for hide
+				el._tooltip = tooltip;
+			}
+
+			// Inner helper: hide logic
+			function hideTooltip(el) {
+				if (el.tooltipTimeout) clearTimeout(el.tooltipTimeout);
+				if (el._tooltip) {
+					el._tooltip.style.opacity = '0';
+					setTimeout(() => {
+						if (el._tooltip && el._tooltip.parentNode) {
+							el._tooltip.parentNode.removeChild(el._tooltip);
+						}
+						el._tooltip = null;
+					}, 200);
+				}
+			}
+		}
+
+		// Call setup on load
+		titleToTooltip();
+		
+		
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('/focus-app/sw.js').then(reg => {
+                    console.log('Service Worker registered!', reg);
+                }).catch(err => {
+                    console.log('Service Worker registration failed:', err);
+                });
+            });
+        }
+    </script>
+</body>
+</html>
