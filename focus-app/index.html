@@ -7,7 +7,7 @@
     <!-- PWA additions -->
     <link rel="canonical" href="https://georgehicks.github.io/focus-app/" />
     <link rel="manifest" href="/focus-app/manifest.webmanifest">
-    <meta name="theme-color" content="#a1c4fd" /> <!-- Matches your app's blue theme -->
+    <meta name="theme-color" content="#a1c4fd" />
     <!-- For iOS support -->
     <link rel="apple-touch-icon" sizes="192x192" href="/focus-app/icon-192.png">
     <link rel="apple-touch-icon" sizes="512x512" href="/focus-app/icon-512.png">
@@ -15,9 +15,23 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <!-- End PWA additions -->
     <style>
-        body { font-family: Arial, sans-serif; max-width: 100%; margin: 0 auto; padding: 10px; opacity: 0.8; color: #555; background: #f9f9f9; font-size: 0.9em; position: relative; } /* Shrunk for mobile */
-		a { cursor: pointer; }
-        h1 { font-size: 1em; color: #888; margin-bottom: 5px; text-align: center; } /* Smaller title */
+        body { 
+            font-family: Arial, sans-serif; 
+            max-width: 100%; 
+            margin: 0 auto; 
+            padding: 10px; 
+            opacity: 0.8; 
+            color: #555; 
+            background: #f9f9f9; 
+            font-size: 0.9em; 
+            position: relative; 
+        }
+        body.dark-mode { 
+            background: #222; 
+            color: #ccc; 
+        }
+        a { cursor: pointer; }
+        h1 { font-size: 1em; color: #888; margin-bottom: 5px; text-align: center; }
         nav ul { list-style: none; padding: 0; display: flex; flex-wrap: wrap; justify-content: center; }
         nav li { margin-right: 5px; margin-bottom: 5px; }
         nav a { text-decoration: none; padding: 3px 6px; background: #eee; color: #777; border-radius: 5px; border: none; font-size: 0.9em; cursor: pointer; }
@@ -28,48 +42,136 @@
         nav a#focusLink.active { background: #a1c4fd; }
         nav a#restLink.active { background: #a1fda1; }
         nav a.pulsate { animation: pulseRed 1s infinite; }
-        @keyframes pulseRed { 0% { background: #fda1a1; } 50% { background: #eee; } 100% { background: #fda1a1; } } /* Softened pulse */
+        @keyframes pulseRed { 0% { background: #fda1a1; } 50% { background: #eee; } 100% { background: #fda1a1; } }
         section { display: none; }
         section.active { display: block; }
-        #taskTextarea { width: 100%; height: 500px; font-family: monospace; border: 1px solid #ddd; border-radius: 4px; background: #fff; color: #555; font-size: 0.9em; overflow:auto; }
-        #taskSelect { font-size: 1em; border: 1px solid #ddd; border-radius: 4px; background: transparent; color: #888; } /* Smaller task select */
-        #stepInput { font-size: 1.2em; width: 100%; border: 1px solid #ddd; border-radius: 4px; background: transparent; color: #888; } /* Smaller step */
-        #notesTextarea { width: 100%; height: 500px; border: 1px solid #ddd; border-radius: 4px; font-size: 0.9em; overflow:auto; }
-        #saveTasksBtn,#saveFocusBtn  { display: none; margin-top: 5px; padding: 3px 6px; background: #d4f4d4; color: #555; border: none; cursor: pointer; border-radius: 4px; font-size: 0.9em; } /* Softened button */
-        #timerBar { height: 15px; background: #eee; position: relative; border: 1px solid #ddd; border-radius: 4px; } /* Smaller bar */
+        #taskTextarea { width: 100%; height: 500px; font-family: monospace; border: 1px solid #ddd; border-radius: 4px; background: #fff; color: #555; font-size: 0.9em; overflow: auto; }
+        #taskTextarea.dark-mode { background: #333; color: #ccc; border-color: #555; }
+        #taskSelect { font-size: 1em; border: 1px solid #ddd; border-radius: 4px; background: transparent; color: #888; }
+        #taskSelect.dark-mode { background: #333; color: #ccc; border-color: #555; }
+        #stepInput { font-size: 1.2em; width: 100%; border: 1px solid #ddd; border-radius: 4px; background: transparent; color: #888; }
+        #stepInput.dark-mode { background: #333; color: #ccc; border-color: #555; }
+        #notesTextarea { width: 100%; height: 500px; border: 1px solid #ddd; border-radius: 4px; font-size: 0.9em; overflow: auto; }
+        #notesTextarea.dark-mode { background: #333; color: #ccc; border-color: #555; }
+        #saveTasksBtn, #saveFocusBtn { 
+            display: none; 
+            margin-top: 5px; 
+            padding: 3px 6px; 
+            background: #d4f4d4; 
+            color: #555; 
+            border: none; 
+            cursor: pointer; 
+            border-radius: 4px; 
+            font-size: 0.9em; 
+        }
+        #saveTasksBtn.dark-mode, #saveFocusBtn.dark-mode { background: #2a4d2a; color: #ccc; }
+        #timerBar { height: 15px; background: #eee; position: relative; border: 1px solid #ddd; border-radius: 4px; }
+        #timerBar.dark-mode { background: #444; border-color: #666; }
         #timerProgress { height: 100%; width: 100%; transition: width 0.5s; border-radius: 4px; }
-        #timerProgressFocus { background: #a1c4fd !important; } /* Softer blue */
-        #timerProgressRest { background: #a1fda1 !important; } /* Softer green */
+        #timerProgressFocus { background: #a1c4fd !important; }
+        #timerProgressFocus.dark-mode { background: #5a8bc5 !important; }
+        #timerProgressRest { background: #a1fda1 !important; }
+        #timerProgressRest.dark-mode { background: #6cc269 !important; }
         #timeRemaining { font-size: 0.7em; text-align: center; color: #777; }
         #extendLinks, #setLinks { font-size: 0.7em; text-align: center; color: #777; }
         #extendLinks a, #setLinks a { margin: 0 3px; cursor: pointer; color: #777; text-decoration: none; }
+        #extendLinks.dark-mode a, #setLinks.dark-mode a { color: #ccc; }
         #timerControls a { margin: 0 5px; cursor: pointer; color: #777; text-decoration: none; font-size: 0.8em; }
+        #timerControls.dark-mode a { color: #ccc; }
         #agendaTable { width: 100%; border-collapse: collapse; font-size: 0.8em; }
-        #agendaTable th, #agendaTable td { border: 1px solid #eee; padding: 5px; color: #777; position: relative; } /* Softened borders */
+        #agendaTable th, #agendaTable td { border: 1px solid #eee; padding: 5px; color: #777; position: relative; }
+        #agendaTable.dark-mode th, #agendaTable.dark-mode td { border-color: #555; color: #ccc; }
         #agendaTable th:first-child, #agendaTable td:first-child { width: 60px; }
         #agendaTable td.past { background: #f0f0f0; }
+        #agendaTable td.past.dark-mode { background: #333; }
         #agendaTable td.current { animation: blink 1s infinite; }
-        @keyframes blink { 50% { background: #fff9d6; } } /* Softer blink */
+        @keyframes blink { 50% { background: #fff9d6; } }
+        @keyframes blink.dark-mode { 50% { background: #444; } }
         .hour-bar { position: relative; height: 20px; background: #f0f0f0; border-radius: 4px; }
+        .hour-bar.dark-mode { background: #333; }
         .task-fill { position: absolute; height: 100%; opacity: 0.5; border-radius: 4px; }
+        .task-fill.dark-mode { opacity: 0.7; }
         #contextLog { height: 150px; overflow: auto; font-size: 0.8em; border: 1px solid #ddd; padding: 5px; margin-top: 10px; }
+        #contextLog.dark-mode { border-color: #555; background: #333; color: #ccc; }
         #meetingsTextarea { width: 100%; height: 100px; font-family: monospace; border: 1px solid #ddd; border-radius: 4px; background: #f9f9f9; color: #555; font-size: 0.9em; margin-top: 10px; }
-		#meetingsTextarea:focus { background: #fff; }
+        #meetingsTextarea:focus { background: #fff; }
+        #meetingsTextarea.dark-mode { background: #333; color: #ccc; border-color: #555; }
+        #meetingsTextarea:focus.dark-mode { background: #444; }
         .meeting-placeholder { position: absolute; top: 5px; left: 5px; color: #888; opacity: 0.7; z-index: 1; font-size: 0.8em; }
         #nextMeeting { position: absolute; top: 10px; right: 10px; color: #888; font-size: 0.8em; opacity: 0.8; }
+        #nextMeeting.dark-mode { color: #ccc; }
         #timeBox { width: 300px; height: 20px; position: absolute; top: 10px; left: 50%; transform: translateX(-50%); background: #eee; border: 1px solid #ddd; border-radius: 4px; overflow: hidden; }
+        #timeBox.dark-mode { background: #444; border-color: #666; }
         #remainingBar { position: absolute; right: 0; height: 100%; background: rgba(161,253,161,0.3); width: 100%; }
+        #remainingBar.dark-mode { background: rgba(161,253,161,0.5); }
         #currentTime { position: absolute; top: 0; left: 50%; transform: translateX(-50%); color: #888; font-size: 0.8em; opacity: 0.8; line-height: 20px; z-index: 1; }
-		.noselect {
-		  user-select: none;              /* Standard syntax */
-		  -webkit-user-select: none;     /* Safari */
-		  -moz-user-select: none;        /* Firefox */
-		  -ms-user-select: none;         /* Internet Explorer/Edge */
-		}
+        #currentTime.dark-mode { color: #ccc; }
+        .noselect {
+            user-select: none;
+            -webkit-user-select: none;
+            -moz-user-select: none;
+            -ms-user-select: none;
+        }
         #noteTrayContainer { display: none; margin-top: 10px; }
         #noteTrayTextarea { width: 100%; height: 100px; border: 1px solid #ddd; border-radius: 4px; background: #fff; color: #555; font-size: 0.9em; }
+        #noteTrayTextarea.dark-mode { background: #333; color: #ccc; border-color: #555; }
         #openNoteTray { padding: 3px 6px; background: #eee; color: #777; border: none; cursor: pointer; border-radius: 4px; font-size: 0.9em; }
+        #openNoteTray.dark-mode { background: #444; color: #ccc; }
         #closeNoteTray { padding: 3px 6px; background: #d4f4d4; color: #555; border: none; cursor: pointer; border-radius: 4px; font-size: 0.9em; }
+        #closeNoteTray.dark-mode { background: #2a4d2a; color: #ccc; }
+        #settingsLink, #syncLink { 
+            position: fixed; 
+            font-size: 0.8em; 
+            color: #777; 
+            text-decoration: none; 
+            cursor: pointer; 
+        }
+        #settingsLink { bottom: 10px; left: 10px; }
+        #syncLink { bottom: 10px; right: 10px; }
+        #settingsLink.dark-mode, #syncLink.dark-mode { color: #ccc; }
+        #settingsContainer { 
+            display: none; 
+            position: fixed; 
+            top: 50%; 
+            left: 50%; 
+            transform: translate(-50%, -50%); 
+            background: #f9f9f9; 
+            padding: 20px; 
+            border: 1px solid #ddd; 
+            border-radius: 8px; 
+            z-index: 1000; 
+        }
+        #settingsContainer.dark-mode { background: #333; border-color: #555; }
+        #settingsContainer input, #settingsContainer select { 
+            width: 100%; 
+            margin: 5px 0; 
+            padding: 5px; 
+            border: 1px solid #ddd; 
+            border-radius: 4px; 
+        }
+        #settingsContainer.dark-mode input, #settingsContainer.dark-mode select { 
+            background: #444; 
+            color: #ccc; 
+            border-color: #555; 
+        }
+        #settingsContainer button { 
+            margin-top: 10px; 
+            padding: 5px 10px; 
+            background: #d4f4d4; 
+            color: #555; 
+            border: none; 
+            cursor: pointer; 
+            border-radius: 4px; 
+        }
+        #settingsContainer.dark-mode button { background: #2a4d2a; color: #ccc; }
+        #activeIndicator { 
+            position: fixed; 
+            bottom: 10px; 
+            right: 100px; 
+            font-size: 0.8em; 
+            color: #777; 
+        }
+        #activeIndicator.dark-mode { color: #ccc; }
     </style>
 </head>
 <body>
@@ -117,7 +219,7 @@
         <button id="saveFocusBtn">Save</button>
         <div id="currentTaskDisplayFocus"></div>
         <div id="timeRemainingFocus">12:00</div>
-        <div id="timerBarFocus"><div id="timerProgressFocus"> </div></div>
+        <div id="timerBarFocus"><div id="timerProgressFocus"></div></div>
         <div id="extendLinksFocus">Extend: <a>+1</a> <a>+2</a> <a>+5</a> <a>+10</a></div>
         <div id="setLinksFocus">Set: <a>10s</a> <a>3m</a> <a>5m</a> <a>10m</a> <a>12m</a> <a>15m</a> <a>20m</a> <a>30m</a></div>
         <div id="timerControlsFocus"> <a id="startFocus">Start</a> <a id="stopFocus">Stop</a> <a id="resetFocus">Reset</a> </div>
@@ -131,17 +233,34 @@
     <section id="rest" class="noselect">
         <div id="currentTaskDisplayRest">Resting</div>
         <div id="timeRemainingRest">03:00</div>
-        <div id="timerBarRest"><div id="timerProgressRest"> </div></div>
+        <div id="timerBarRest"><div id="timerProgressRest"></div></div>
         <div id="extendLinksRest">Extend: <a>+1</a> <a>+2</a> <a>+5</a> <a>+10</a></div>
         <div id="setLinksRest">Set: <a>10s</a> <a>3m</a> <a>5m</a> <a>10m</a> <a>12m</a> <a>15m</a> <a>20m</a> <a>30m</a></div>
         <div id="timerControlsRest"> <a id="startRest">Start</a> <a id="stopRest">Stop</a> <a id="resetRest">Reset</a> </div>
     </section>
 
+    <a id="settingsLink" title="Settings">⚙️</a>
+    <a id="syncLink" title="Manual Sync">Sync: Disabled</a>
+    <div id="activeIndicator">Active</div>
+    <div id="settingsContainer">
+        <h3>Settings</h3>
+        <label>Timestamp URL: <input id="timestampUrlInput" placeholder="Enter timestamp API URL"></label>
+        <label>Data URL: <input id="dataUrlInput" placeholder="Enter data API URL"></label>
+        <label>Focus Timer (min): <input id="focusTimerInput" type="number" min="1" value="12"></label>
+        <label>Rest Timer (min): <input id="restTimerInput" type="number" min="1" value="3"></label>
+        <label>Indent Size (spaces): <input id="indentSizeInput" type="number" min="1" max="8" value="4"></label>
+        <label>Theme: <select id="themeSelect"><option value="light">Light</option><option value="dark">Dark</option></select></label>
+        <label>Active Sync Interval (sec): <input id="activeSyncIntervalInput" type="number" min="10" value="30"></label>
+        <label>Inactive Sync Interval (min): <input id="inactiveSyncIntervalInput" type="number" min="1" value="5"></label>
+        <button id="saveSettingsBtn">Save Settings</button>
+        <button id="closeSettingsBtn">Close</button>
+    </div>
+
     <script>
-// Data structure
+        // Data structure
         let data = {
             rawTasks: '',
-            tasks: [], // [{name, step, hour, priority, completed, notes, durations: {date: {minutes, sessions: [{start, end}]}} }]
+            tasks: [],
             currentTask: null,
             timers: {
                 focus: { initial: 720, remaining: 720, accumulated: 0, running: false, interval: null, overtime: false },
@@ -153,6 +272,7 @@
             noteTray: ''
         };
         const STORAGE_KEY = 'focusAppData';
+        const SETTINGS_KEY = 'focusAppSettings';
         let TODAY = new Date().toISOString().split('T')[0];
         const DEFAULT_TASKS = [
             'rest::0',
@@ -161,6 +281,66 @@
             'meeting::0',
             'break::0'
         ];
+        let settings = {
+            timestampUrl: '',
+            dataUrl: '',
+            focusTimer: 12,
+            restTimer: 3,
+            indentSize: 4,
+            theme: 'light',
+            activeSyncInterval: 30,
+            inactiveSyncInterval: 5
+        };
+        let isActiveInstance = true;
+        let lastStored = { timestamp: 0, version: 0 };
+        let lastInteraction = Date.now();
+
+        // Load settings
+        function loadSettings() {
+            const saved = localStorage.getItem(SETTINGS_KEY);
+            if (saved) settings = { ...settings, ...JSON.parse(saved) };
+            data.timers.focus.initial = data.timers.focus.remaining = (settings.focusTimer || 12) * 60;
+            data.timers.rest.initial = data.timers.rest.remaining = (settings.restTimer || 3) * 60;
+            document.body.className = settings.theme === 'dark' ? 'dark-mode' : '';
+            document.getElementById('timestampUrlInput').value = settings.timestampUrl;
+            document.getElementById('dataUrlInput').value = settings.dataUrl;
+            document.getElementById('focusTimerInput').value = settings.focusTimer;
+            document.getElementById('restTimerInput').value = settings.restTimer;
+            document.getElementById('indentSizeInput').value = settings.indentSize;
+            document.getElementById('themeSelect').value = settings.theme;
+            document.getElementById('activeSyncIntervalInput').value = settings.activeSyncInterval;
+            document.getElementById('inactiveSyncIntervalInput').value = settings.inactiveSyncInterval;
+            updateTimerDisplay('focus');
+            updateTimerDisplay('rest');
+            updateSyncStatus(false); // NEW: Initialize sync status
+        }
+
+        // Save settings with validation
+        function saveSettings() {
+            const timestampUrl = document.getElementById('timestampUrlInput').value.trim();
+            const dataUrl = document.getElementById('dataUrlInput').value.trim();
+            // NEW: Validate URLs (both or neither)
+            if ((timestampUrl && !dataUrl) || (!timestampUrl && dataUrl)) {
+                alert('Please provide both Timestamp URL and Data URL, or leave both empty for local-only mode.');
+                return;
+            }
+            settings.timestampUrl = timestampUrl;
+            settings.dataUrl = dataUrl;
+            settings.focusTimer = Math.max(1, parseInt(document.getElementById('focusTimerInput').value) || 12);
+            settings.restTimer = Math.max(1, parseInt(document.getElementById('restTimerInput').value) || 3);
+            settings.indentSize = Math.min(8, Math.max(1, parseInt(document.getElementById('indentSizeInput').value) || 4));
+            settings.theme = document.getElementById('themeSelect').value;
+            settings.activeSyncInterval = Math.max(10, parseInt(document.getElementById('activeSyncIntervalInput').value) || 30);
+            settings.inactiveSyncInterval = Math.max(1, parseInt(document.getElementById('inactiveSyncIntervalInput').value) || 5);
+            localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
+            data.timers.focus.initial = data.timers.focus.remaining = settings.focusTimer * 60;
+            data.timers.rest.initial = data.timers.rest.remaining = settings.restTimer * 60;
+            document.body.className = settings.theme === 'dark' ? 'dark-mode' : '';
+            updateTimerDisplay('focus');
+            updateTimerDisplay('rest');
+            updateSyncStatus(false); // NEW: Update status after settings change
+            setupSync();
+        }
 
         // Load data
         function loadData() {
@@ -185,18 +365,154 @@
             updateCurrentTime();
             setInterval(updateCurrentTime, 1000);
             setInterval(updateNextMeeting, 1000);
+            loadSettings();
+            setupSync();
         }
 
         // Save data
         function saveData(auto = false) {
+            lastStored.version++;
+            lastStored.timestamp = Date.now();
             localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
-            if (!auto) {
-                // Update UI after save
-                updateTaskSelect();
+            if (!auto && settings.dataUrl && settings.timestampUrl) {
+                simpleCloudStore(data);
             }
+            updateTaskSelect();
             updateSummary();
             updateAgenda();
         }
+
+        // Cloud sync with two URLs
+        async function simpleCloudStore(dataToSend) {
+            if (!settings.timestampUrl || !settings.dataUrl) {
+                updateSyncStatus(false); // NEW: Ensure disabled status
+                return;
+            }
+            try {
+                // Check timestamp first
+                const tsResponse = await fetch(settings.timestampUrl);
+                let remoteMeta = { timestamp: 0, version: 0 };
+                try {
+                    const text = await tsResponse.text();
+                    remoteMeta = text ? JSON.parse(text) : { timestamp: 0, version: 0 }; // NEW: Handle empty response
+                } catch (e) {
+                    console.warn('Invalid timestamp response, defaulting to 0:', e);
+                }
+
+                if (dataToSend) {
+                    // POST data
+                    await fetch(settings.dataUrl, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                        body: `v=${encodeURIComponent(JSON.stringify(dataToSend))}`
+                    });
+                    // Update timestamp
+                    await fetch(settings.timestampUrl, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                        body: `v=${encodeURIComponent(JSON.stringify({ timestamp: lastStored.timestamp, version: lastStored.version }))}`
+                    });
+                    updateSyncStatus(true);
+                } else if (remoteMeta.timestamp > lastStored.timestamp) {
+                    // Remote is newer, fetch data
+                    const response = await fetch(settings.dataUrl);
+                    let remoteData = {};
+                    try {
+                        const text = await response.text();
+                        remoteData = text ? JSON.parse(text) : data; // NEW: Handle empty response
+                    } catch (e) {
+                        console.warn('Invalid data response, skipping sync:', e);
+                        updateSyncStatus(false, true);
+                        return;
+                    }
+                    data = mergeData(data, remoteData);
+                    localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+                    lastStored = { ...remoteMeta };
+                    isActiveInstance = false;
+                    stopVisibleTimers();
+                    loadData();
+                    updateSyncStatus(false);
+                } else if (remoteMeta.timestamp < lastStored.timestamp) {
+                    // Local is newer, push
+                    await simpleCloudStore(data);
+                }
+            } catch (e) {
+                console.error('Sync failed:', e);
+                updateSyncStatus(false, true);
+            }
+        }
+
+        // Merge data with timestamp-based deduplication
+        function mergeData(local, remote) {
+            const merged = { ...local, ...remote };
+            // Merge tasks: union, prefer newer by last session
+            const allTasks = [...local.tasks, ...remote.tasks.filter(rt => !local.tasks.find(lt => lt.name === rt.name))];
+            merged.tasks = allTasks.sort((a, b) => {
+                const aTime = (a.durations[TODAY]?.sessions?.slice(-1)[0]?.end || 0);
+                const bTime = (b.durations[TODAY]?.sessions?.slice(-1)[0]?.end || 0);
+                return bTime - aTime;
+            });
+            // Merge logs: deduplicate by timestamp
+            merged.log = {};
+            for (let date in local.log) {
+                merged.log[date] = [...(local.log[date] || [])];
+            }
+            for (let date in remote.log) {
+                const remoteEntries = remote.log[date] || [];
+                merged.log[date] = [...(merged.log[date] || []), ...remoteEntries.filter(re => !merged.log[date]?.find(le => le.time === re.time))]
+                    .sort((a, b) => new Date(a.time) - new Date(b.time));
+            }
+            // Merge sessions: deduplicate by start timestamp
+            merged.tasks.forEach(task => {
+                const localDurations = task.durations || {};
+                const remoteDurations = (remote.tasks.find(rt => rt.name === task.name) || {}).durations || {};
+                task.durations = {};
+                for (let date in localDurations) {
+                    task.durations[date] = { ...localDurations[date], sessions: [...(localDurations[date].sessions || [])] };
+                }
+                for (let date in remoteDurations) {
+                    const remoteSessions = remoteDurations[date]?.sessions || [];
+                    task.durations[date] = task.durations[date] || { minutes: 0, sessions: [] };
+                    task.durations[date].sessions = [
+                        ...(task.durations[date].sessions || []),
+                        ...remoteSessions.filter(rs => !task.durations[date].sessions.find(ls => ls.start === rs.start))
+                    ];
+                    task.durations[date].minutes = task.durations[date].sessions.reduce((sum, s) => sum + ((s.end || Date.now()) - s.start) / 1000 / 60, 0);
+                }
+            });
+            return merged;
+        }
+
+        // Update sync status
+        function updateSyncStatus(success, error = false) {
+            const syncLink = document.getElementById('syncLink');
+            const activeIndicator = document.getElementById('activeIndicator');
+            if (!settings.timestampUrl || !settings.dataUrl) {
+                syncLink.textContent = 'Sync: Disabled'; // NEW: Show disabled if URLs unset
+                activeIndicator.textContent = 'Active';
+                return;
+            }
+            const time = new Date(lastStored.timestamp);
+            const hh = time.getHours().toString().padStart(2, '0');
+            const mm = time.getMinutes().toString().padStart(2, '0');
+            syncLink.textContent = `Sync: ${success ? 'Success' : error ? 'Failed' : 'Idle'} at ${hh}:${mm}`;
+            activeIndicator.textContent = isActiveInstance ? 'Active' : 'Inactive';
+        }
+
+        // Setup periodic sync with idle detection
+        function setupSync() {
+            if (data.syncInterval) clearInterval(data.syncInterval);
+            if (!settings.timestampUrl || !settings.dataUrl) return; // NEW: Skip if URLs unset
+            const interval = isActiveInstance ? settings.activeSyncInterval : settings.inactiveSyncInterval * 60;
+            data.syncInterval = setInterval(() => {
+                if (Date.now() - lastInteraction > 30 * 60 * 1000) return;
+                simpleCloudStore();
+            }, interval * 1000);
+        }
+
+        // Track interactions for idle detection
+        document.addEventListener('click', () => lastInteraction = Date.now());
+        document.addEventListener('keydown', () => lastInteraction = Date.now());
 
         // Parse tasks from raw text
         function parseTasks() {
@@ -221,7 +537,7 @@
                     const existing = data.tasks.find(t => t.name === name);
                     newTasks.push({
                         name,
-                        step: existing ? existing.step : step, // Preserve existing step if changed in focus
+                        step: existing ? existing.step : step,
                         hour,
                         priority,
                         completed,
@@ -233,7 +549,7 @@
             data.tasks = newTasks.sort((a, b) => {
                 if (a.completed && !b.completed) return 1;
                 if (!a.completed && b.completed) return -1;
-                return a.name.localeCompare(b.name);
+                return a.name.localeCompare(b.name, undefined, { sensitivity: 'case' });
             });
         }
 
@@ -242,19 +558,11 @@
             const lines = data.rawTasks.split('\n');
             for (let i = 0; i < lines.length; i++) {
                 let clean = lines[i].trim().replace(/^[!+]/, '');
-                if (clean.startsWith(task.name + ':')) {
+                if (clean.startsWith(task.name + ':') || clean === task.name) {
                     const parts = clean.split(':');
                     parts[1] = task.step;
-                    let prefix = '';
-                    if (task.priority) prefix = '!';
-                    if (task.completed) prefix = '+';
+                    let prefix = task.priority ? '!' : task.completed ? '+' : '';
                     lines[i] = prefix + parts.join(':');
-                    break;
-                } else if (clean === task.name) {
-                    let prefix = '';
-                    if (task.priority) prefix = '!';
-                    if (task.completed) prefix = '+';
-                    lines[i] = prefix + task.name + ':' + task.step;
                     break;
                 }
             }
@@ -291,6 +599,67 @@
             }
         }
 
+        // Ctrl+S shortcut
+        document.addEventListener('keydown', e => {
+            if (e.ctrlKey && e.key.toLowerCase() === 's') {
+                e.preventDefault();
+                const activeTab = document.querySelector('section.active').id;
+                if (activeTab === 'tasks' && document.getElementById('saveTasksBtn').style.display === 'block') {
+                    document.getElementById('saveTasksBtn').click();
+                } else if (activeTab === 'focus' && document.getElementById('saveFocusBtn').style.display === 'block') {
+                    document.getElementById('saveFocusBtn').click();
+                }
+            }
+        });
+
+        // Tab indentation with spaces only
+        [document.getElementById('taskTextarea'), document.getElementById('notesTextarea')].forEach(textarea => {
+            textarea.addEventListener('keydown', e => {
+                if (e.key === 'Tab') {
+                    e.preventDefault();
+                    const selStart = textarea.selectionStart;
+                    const selEnd = textarea.selectionEnd;
+                    let text = textarea.value.replace(/\t/g, ' '.repeat(settings.indentSize));
+                    const lines = text.substring(0, selEnd).split('\n');
+                    const startLine = text.substring(0, selStart).split('\n').length - 1;
+                    const endLine = text.substring(0, selEnd).split('\n').length - 1;
+                    let newText = text;
+                    let newSelStart = selStart;
+                    let newSelEnd = selEnd;
+                    if (startLine !== endLine) {
+                        if (!e.shiftKey) {
+                            const indent = ' '.repeat(settings.indentSize);
+                            newText = text.split('\n').map((line, i) => {
+                                if (i >= startLine && i <= endLine) {
+                                    if (i === startLine) newSelStart += indent.length;
+                                    if (i <= endLine) newSelEnd += indent.length;
+                                    return indent + line;
+                                }
+                                return line;
+                            }).join('\n');
+                        } else {
+                            newText = text.split('\n').map((line, i) => {
+                                if (i >= startLine && i <= endLine) {
+                                    const spaces = line.match(/^ {0,4}/)[0].length;
+                                    if (i === startLine) newSelStart = Math.max(selStart - spaces, text.split('\n')[i].length - spaces);
+                                    if (i <= endLine) newSelEnd = Math.max(selEnd - spaces, text.split('\n')[i].length - spaces);
+                                    return line.replace(/^ {0,4}/, '');
+                                }
+                                return line;
+                            }).join('\n');
+                        }
+                        textarea.value = newText;
+                        textarea.setSelectionRange(newSelStart, newSelEnd);
+                        textarea.dispatchEvent(new Event('input'));
+                    } else {
+                        const indent = ' '.repeat(settings.indentSize);
+                        textarea.setRangeText(indent, selStart, selEnd, 'end');
+                        textarea.dispatchEvent(new Event('input'));
+                    }
+                }
+            });
+        });
+
         // Tasks tab
         const taskTextarea = document.getElementById('taskTextarea');
         const saveTasksBtn = document.getElementById('saveTasksBtn');
@@ -298,7 +667,7 @@
         taskTextarea.addEventListener('input', () => saveTasksBtn.style.display = 'block');
 
         saveTasksBtn.addEventListener('click', () => {
-            data.rawTasks = taskTextarea.value;
+            data.rawTasks = taskTextarea.value.replace(/\t/g, ' '.repeat(settings.indentSize));
             parseTasks();
             saveTasksBtn.style.display = 'none';
             saveData();
@@ -317,7 +686,7 @@
         saveFocusBtn.addEventListener('click', () => {
             if (data.currentTask) {
                 data.currentTask.step = stepInput.value;
-                data.currentTask.notes = notesTextarea.value;
+                data.currentTask.notes = notesTextarea.value.replace(/\t/g, ' '.repeat(settings.indentSize));
                 updateRawFromTask(data.currentTask);
             }
             saveFocusBtn.style.display = 'none';
@@ -325,11 +694,14 @@
         });
 
         function updateTaskSelect() {
-            taskSelect.innerHTML = data.tasks.filter(t => !t.completed).map(t => `<option value="${t.name}">${t.name} ${t.priority ? '!' : ''}</option>`).join('');
+            const priorityTasks = data.tasks.filter(t => !t.completed && t.priority);
+            const otherTasks = data.tasks.filter(t => !t.completed && !t.priority);
+            taskSelect.innerHTML = [
+                ...priorityTasks.map(t => `<option value="${t.name}">${t.priority ? '!' : ''}${t.name}</option>`),
+                ...otherTasks.map(t => `<option value="${t.name}">${t.priority ? '!' : ''}${t.name}</option>`)
+            ].join('');
             if (data.currentTask) taskSelect.value = data.currentTask.name;
-            else if (data.tasks.length > 0) {
-                taskSelect.value = data.tasks[0].name;
-            }
+            else if (data.tasks.length > 0) taskSelect.value = data.tasks[0].name;
             loadSelectedTask();
         }
 
@@ -358,7 +730,7 @@
             const dailyList = document.getElementById('summaryList');
             dailyList.innerHTML = '';
             data.tasks.forEach(t => {
-                const daily = t.durations[TODAY] || {minutes: 0};
+                const daily = t.durations[TODAY] || { minutes: 0 };
                 const hours = (daily.minutes / 60).toFixed(2);
                 const li = document.createElement('li');
                 li.textContent = `${t.name}: ${Math.floor(daily.minutes)} min (${hours} hrs)`;
@@ -373,7 +745,7 @@
                 let weeklyMinutes = 0;
                 for (let d = new Date(weekAgo); d <= new Date(); d.setDate(d.getDate() + 1)) {
                     const dateKey = d.toISOString().split('T')[0];
-                    weeklyMinutes += (t.durations[dateKey] || {minutes: 0}).minutes;
+                    weeklyMinutes += (t.durations[dateKey] || { minutes: 0 }).minutes;
                 }
                 const hours = (weeklyMinutes / 60).toFixed(2);
                 const li = document.createElement('li');
@@ -409,28 +781,29 @@
                         if (iStart < iEnd) {
                             const offsetMins = (iStart - hourStart) / (1000 * 60);
                             const durMins = (iEnd - iStart) / (1000 * 60);
-                            blocks.push({offset: offsetMins, dur: durMins, name: t.name, step: t.step || ''});
+                            blocks.push({ offset: offsetMins, dur: durMins, name: t.name, step: t.step || '' });
                         }
                     });
                 });
                 blocks.sort((a, b) => a.offset - b.offset);
                 const bar = document.createElement('div');
                 bar.className = 'hour-bar';
+                if (document.body.classList.contains('dark-mode')) bar.classList.add('dark-mode');
                 blocks.forEach(b => {
                     const fill = document.createElement('div');
                     fill.className = 'task-fill';
+                    if (document.body.classList.contains('dark-mode')) fill.classList.add('dark-mode');
                     fill.style.left = `${(b.offset / 60) * 100}%`;
                     fill.style.width = `${Math.min((b.dur / 60) * 100, 100 - (b.offset / 60) * 100)}%`;
                     let color;
-                    if (b.name === 'rest') color = 'rgba(161,253,161,0.5)';
-                    else if (b.name === 'plan') color = 'rgba(255,211,161,0.5)';
-                    else color = 'rgba(161,196,253,0.5)';
+                    if (b.name === 'rest') color = document.body.classList.contains('dark-mode') ? 'rgba(161,253,161,0.7)' : 'rgba(161,253,161,0.5)';
+                    else if (b.name === 'plan') color = document.body.classList.contains('dark-mode') ? 'rgba(255,211,161,0.7)' : 'rgba(255,211,161,0.5)';
+                    else color = document.body.classList.contains('dark-mode') ? 'rgba(161,196,253,0.7)' : 'rgba(161,196,253,0.5)';
                     fill.style.background = color;
-                    fill.title = `${b.name}: ${b.step}`;
+                    fill.setAttribute('data-tooltip', `${b.name}: ${b.step}`);
                     bar.appendChild(fill);
                 });
                 taskTd.appendChild(bar);
-                // Add meeting placeholder
                 const hourMeetings = meetings.filter(m => m.hour === h);
                 if (hourMeetings.length > 0) {
                     const placeholder = document.createElement('span');
@@ -443,6 +816,10 @@
                 if (h < currentHour) {
                     hourTd.classList.add('past');
                     taskTd.classList.add('past');
+                    if (document.body.classList.contains('dark-mode')) {
+                        hourTd.classList.add('dark-mode');
+                        taskTd.classList.add('dark-mode');
+                    }
                 }
                 if (h === currentHour) {
                     hourTd.classList.add('current');
@@ -450,7 +827,6 @@
                 }
                 tbody.appendChild(tr);
             }
-            // Update context log
             const logDiv = document.getElementById('contextLog');
             logDiv.innerHTML = '';
             const ul = document.createElement('ul');
@@ -464,6 +840,7 @@
                 ul.appendChild(li);
             });
             logDiv.appendChild(ul);
+            if (document.body.classList.contains('dark-mode')) logDiv.classList.add('dark-mode');
         }
 
         function parseMeetings() {
@@ -474,7 +851,7 @@
                     const hour = parseInt(match[1], 10);
                     const minute = parseInt(match[2], 10);
                     const subject = match[3].trim();
-                    return {hour, minute, subject};
+                    return { hour, minute, subject };
                 }
                 return null;
             }).filter(m => m !== null);
@@ -499,6 +876,7 @@
             } else {
                 div.textContent = '';
             }
+            if (document.body.classList.contains('dark-mode')) div.classList.add('dark-mode');
         }
 
         function updateCurrentTime() {
@@ -506,9 +884,9 @@
             const hh = now.getHours().toString().padStart(2, '0');
             const mm = now.getMinutes().toString().padStart(2, '0');
             const ss = now.getSeconds().toString().padStart(2, '0');
-			const remainingBar = document.getElementById('remainingBar');
+            const remainingBar = document.getElementById('remainingBar');
             const currentTime = document.getElementById('currentTime');
-			currentTime.textContent = `${hh}:${mm}:${ss}`;
+            currentTime.textContent = `${hh}:${mm}:${ss}`;
             const agendaStart = 8 * 60;
             const agendaEnd = 18 * 60;
             const currentMin = now.getHours() * 60 + now.getMinutes();
@@ -518,12 +896,17 @@
             const totalMin = agendaEnd - agendaStart;
             const percentage = (remainingMin / totalMin) * 100;
             remainingBar.style.width = `${percentage}%`;
-			const timeBox = document.getElementById('timeBox');
-			const remainingHours = Math.floor(remainingMin / 60);
-			const remainingMins = remainingMin % 60;
-			timeBox.setAttribute('data-tooltip', `Time left in work day: ${remainingHours}:${remainingMins < 10 ? '0' : ''}${remainingMins}`);
-			remainingBar.setAttribute('data-tooltip', `Time left in work day: ${remainingHours}:${remainingMins < 10 ? '0' : ''}${remainingMins}`);
-			currentTime.setAttribute('data-tooltip', `Time left in work day: ${remainingHours}:${remainingMins < 10 ? '0' : ''}${remainingMins}`);
+            const timeBox = document.getElementById('timeBox');
+            const remainingHours = Math.floor(remainingMin / 60);
+            const remainingMins = remainingMin % 60;
+            timeBox.setAttribute('data-tooltip', `Time left in work day: ${remainingHours}:${remainingMins < 10 ? '0' : ''}${remainingMins}`);
+            remainingBar.setAttribute('data-tooltip', `Time left in work day: ${remainingHours}:${remainingMins < 10 ? '0' : ''}${remainingMins}`);
+            currentTime.setAttribute('data-tooltip', `Time left in work day: ${remainingHours}:${remainingMins < 10 ? '0' : ''}${remainingMins}`);
+            if (document.body.classList.contains('dark-mode')) {
+                timeBox.classList.add('dark-mode');
+                currentTime.classList.add('dark-mode');
+                remainingBar.classList.add('dark-mode');
+            }
         }
 
         // Timer functions
@@ -531,32 +914,36 @@
             const suffix = mode.charAt(0).toUpperCase() + mode.slice(1);
             const timeEl = document.getElementById(`timeRemaining${suffix}`);
             const progressEl = document.getElementById(`timerProgress${suffix}`);
-            if (!timeEl || !progressEl) return;
+            const barEl = document.getElementById(`timerBar${suffix}`);
+            if (!timeEl || !progressEl || !barEl) return;
             const timer = data.timers[mode];
             let remaining = timer.remaining;
-            if (remaining <= 0) remaining = 0; // Visible halt
+            if (remaining <= 0) remaining = 0;
             const mins = Math.floor(remaining / 60);
             const secs = remaining % 60;
             timeEl.textContent = `${mins}:${secs < 10 ? '0' : ''}${secs}`;
             const percent = (remaining / timer.initial) * 100;
             progressEl.style.width = `${percent}%`;
+            if (document.body.classList.contains('dark-mode')) {
+                barEl.classList.add('dark-mode');
+                progressEl.classList.add('dark-mode');
+            }
         }
 
         function startTimer(mode) {
             const timer = data.timers[mode];
-            if (timer.running) return;
+            if (timer.running || !isActiveInstance) return;
             timer.running = true;
             timer.interval = setInterval(() => {
                 if (timer.remaining > 0 && !timer.overtime) {
                     timer.remaining--;
                     if (timer.remaining === 0) {
                         timer.overtime = true;
-                        // Log autolog entry
                         let taskName = mode === 'focus' ? (data.currentTask ? data.currentTask.name : 'misc') : mode;
                         const task = data.tasks.find(t => t.name === taskName);
                         if (task) {
                             if (!data.log[TODAY]) data.log[TODAY] = [];
-                            data.log[TODAY].push({time: new Date().toISOString(), task: taskName, step: (task.step || '') + ' (autolog)'});
+                            data.log[TODAY].push({ time: new Date().toISOString(), task: taskName, step: (task.step || '') + ' (autolog)' });
                             saveData(true);
                         }
                     }
@@ -592,11 +979,12 @@
         }
 
         function accumulateTime(mode) {
+            if (!isActiveInstance) return;
             let taskName = mode === 'focus' ? (data.currentTask ? data.currentTask.name : 'misc') : mode;
             const task = data.tasks.find(t => t.name === taskName);
             if (task) {
-                if (!task.durations[TODAY]) task.durations[TODAY] = {minutes: 0, sessions: []};
-                task.durations[TODAY].minutes += 1 / 60; // Accumulate in fractions
+                if (!task.durations[TODAY]) task.durations[TODAY] = { minutes: 0, sessions: [] };
+                task.durations[TODAY].minutes += 1 / 60;
                 saveData(true);
             }
         }
@@ -605,11 +993,10 @@
             let taskName = mode === 'focus' ? (data.currentTask ? data.currentTask.name : 'misc') : mode;
             const task = data.tasks.find(t => t.name === taskName);
             if (task) {
-                if (!task.durations[TODAY]) task.durations[TODAY] = {minutes: 0, sessions: []};
-                task.durations[TODAY].sessions.push({start: Date.now()});
-                // Log context change
+                if (!task.durations[TODAY]) task.durations[TODAY] = { minutes: 0, sessions: [] };
+                task.durations[TODAY].sessions.push({ start: Date.now() });
                 if (!data.log[TODAY]) data.log[TODAY] = [];
-                data.log[TODAY].push({time: new Date().toISOString(), task: taskName, step: task.step || ''});
+                data.log[TODAY].push({ time: new Date().toISOString(), task: taskName, step: task.step || '' });
                 saveData(true);
             }
         }
@@ -659,7 +1046,6 @@
             document.getElementById(`stop${suffix}`).addEventListener('click', () => stopTimer(mode));
             document.getElementById(`reset${suffix}`).addEventListener('click', () => resetTimer(mode));
 
-            // Extend and set links
             document.getElementById(`extendLinks${suffix}`).querySelectorAll('a').forEach(a => {
                 a.addEventListener('click', () => {
                     const add = parseInt(a.textContent.slice(1)) * 60;
@@ -678,6 +1064,10 @@
                     updateTimerDisplay(mode);
                 });
             });
+            const container = document.getElementById(`extendLinks${suffix}`).parentElement;
+            if (document.body.classList.contains('dark-mode')) {
+                container.querySelectorAll('#extendLinks, #setLinks, #timerControls').forEach(el => el.classList.add('dark-mode'));
+            }
         });
 
         // Meetings textarea
@@ -696,116 +1086,105 @@
         });
         const noteTrayTextarea = document.getElementById('noteTrayTextarea');
         noteTrayTextarea.addEventListener('blur', () => {
-            data.noteTray = noteTrayTextarea.value;
+            data.noteTray = noteTrayTextarea.value.replace(/\t/g, ' '.repeat(settings.indentSize));
             saveData(true);
         });
 
+        // Settings UI
+        document.getElementById('settingsLink').addEventListener('click', () => {
+            document.getElementById('settingsContainer').style.display = 'block';
+        });
+        document.getElementById('saveSettingsBtn').addEventListener('click', () => {
+            saveSettings();
+            document.getElementById('settingsContainer').style.display = 'none';
+        });
+        document.getElementById('closeSettingsBtn').addEventListener('click', () => {
+            document.getElementById('settingsContainer').style.display = 'none';
+        });
+
+        // Manual sync
+        document.getElementById('syncLink').addEventListener('click', () => {
+            if (!settings.timestampUrl || !settings.dataUrl) {
+                alert('Sync disabled: Please set both Timestamp URL and Data URL in settings.');
+                return;
+            }
+            isActiveInstance = true;
+            simpleCloudStore(data);
+            setupSync();
+        });
+
+        // Tooltip functionality with debouncing
+        function titleToTooltip(el) {
+            if (!el) {
+                let debounceTimeout;
+                document.body.addEventListener('mouseover', function(event) {
+                    const target = event.target;
+                    if (target.hasAttribute('title') || target.hasAttribute('data-tooltip')) {
+                        clearTimeout(debounceTimeout);
+                        debounceTimeout = setTimeout(() => titleToTooltip(target), 150);
+                    }
+                });
+                document.body.addEventListener('mouseout', function(event) {
+                    const target = event.target;
+                    if (target.hasAttribute('data-tooltip')) {
+                        hideTooltip(target);
+                    }
+                });
+                return;
+            }
+
+            if (el.hasAttribute('title')) {
+                el.setAttribute('data-tooltip', el.getAttribute('title'));
+                el.removeAttribute('title');
+            }
+
+            let tooltip = document.getElementById('custom-tooltip');
+            if (!tooltip) {
+                tooltip = document.createElement('div');
+                tooltip.id = 'custom-tooltip';
+                tooltip.style.position = 'absolute';
+                tooltip.style.background = document.body.classList.contains('dark-mode') ? 'rgba(255, 255, 255, 0.8)' : 'rgba(0, 0, 0, 0.8)';
+                tooltip.style.color = document.body.classList.contains('dark-mode') ? '#333' : '#fff';
+                tooltip.style.padding = '5px 10px';
+                tooltip.style.borderRadius = '4px';
+                tooltip.style.fontSize = '0.9em';
+                tooltip.style.pointerEvents = 'none';
+                tooltip.style.zIndex = '1000';
+                tooltip.style.transition = 'opacity 0.2s';
+                tooltip.style.opacity = '0';
+                document.body.appendChild(tooltip);
+            }
+
+            tooltip.textContent = el.getAttribute('data-tooltip');
+            const rect = el.getBoundingClientRect();
+            let top = rect.top - 20;
+            let left = rect.left + (rect.width / 2) - (tooltip.getBoundingClientRect().width / 2);
+            if (top < 0) top = rect.bottom + 5;
+            if (left + tooltip.getBoundingClientRect().width > window.innerWidth) {
+                left = window.innerWidth - tooltip.getBoundingClientRect().width - 10;
+            }
+            if (left < 0) left = 10;
+            tooltip.style.top = `${top + window.scrollY}px`;
+            tooltip.style.left = `${left + window.scrollX}px`;
+            setTimeout(() => tooltip.style.opacity = '1', 10);
+            el._tooltip = tooltip;
+
+            function hideTooltip(el) {
+                if (el._tooltip) {
+                    el._tooltip.style.opacity = '0';
+                    setTimeout(() => {
+                        if (el._tooltip && el._tooltip.parentNode) {
+                            el._tooltip.parentNode.removeChild(el._tooltip);
+                        }
+                        el._tooltip = null;
+                    }, 200);
+                }
+            }
+        }
+
         // Initial load
         loadData();
-		
-		// Tooltip functionality (consolidated into one function)
-		function titleToTooltip(el) {
-			if (!el) {
-				// Setup mode: wire up mouseover event on body using delegation
-				document.body.addEventListener('mouseover', function(event) {
-					const target = event.target;
-					if (target.hasAttribute('title') || target.hasAttribute('data-tooltip')) {
-						titleToTooltip(target);
-					}
-				});
-				document.body.addEventListener('mouseout', function(event) {
-					const target = event.target;
-					if (target.hasAttribute('data-tooltip')) {
-						hideTooltip(target);
-					}
-				});
-				return;
-			}
 
-			// Element mode: process and show tooltip for specific el
-			if (el.hasAttribute('title')) {
-				// Move title to data-tooltip and remove title to prevent native tooltip
-				el.setAttribute('data-tooltip', el.getAttribute('title'));
-				el.removeAttribute('title');
-			}
-
-			// Short delay (300ms) before showing
-			if (el.tooltipTimeout) clearTimeout(el.tooltipTimeout);
-			el.tooltipTimeout = setTimeout(function() {
-				showTooltip(el);
-			}, 300);
-
-			// Inner helper: show logic
-			function showTooltip(el) {
-				// Create tooltip element if not exists
-				let tooltip = document.getElementById('custom-tooltip');
-				if (!tooltip) {
-					tooltip = document.createElement('div');
-					tooltip.id = 'custom-tooltip';
-					tooltip.style.position = 'absolute';
-					tooltip.style.background = 'rgba(0, 0, 0, 0.8)';
-					tooltip.style.color = '#fff';
-					tooltip.style.padding = '5px 10px';
-					tooltip.style.borderRadius = '4px';
-					tooltip.style.fontSize = '0.9em';
-					tooltip.style.pointerEvents = 'none';
-					tooltip.style.zIndex = '1000';
-					tooltip.style.transition = 'opacity 0.2s';
-					tooltip.style.opacity = '0';
-					document.body.appendChild(tooltip);
-				}
-
-				// Set text
-				tooltip.textContent = el.getAttribute('data-tooltip');
-
-				// Position it
-				const rect = el.getBoundingClientRect();
-				const tooltipRect = tooltip.getBoundingClientRect(); // Approximate, will adjust after
-				let top = rect.top - tooltipRect.height - 5; // Above by default
-				let left = rect.left + (rect.width / 2) - (tooltipRect.width / 2);
-
-				// Check if above has room
-				if (top < 0) {
-					top = rect.bottom + 5; // Below
-				}
-
-				// Adjust left if overflowing right
-				if (left + tooltipRect.width > window.innerWidth) {
-					left = window.innerWidth - tooltipRect.width - 10;
-				}
-				if (left < 0) left = 10;
-
-				tooltip.style.top = `${top + window.scrollY}px`;
-				tooltip.style.left = `${left + window.scrollX}px`;
-
-				// Fade in
-				setTimeout(() => {
-					tooltip.style.opacity = '1';
-				}, 10);
-
-				// Store on el for hide
-				el._tooltip = tooltip;
-			}
-
-			// Inner helper: hide logic
-			function hideTooltip(el) {
-				if (el.tooltipTimeout) clearTimeout(el.tooltipTimeout);
-				if (el._tooltip) {
-					el._tooltip.style.opacity = '0';
-					setTimeout(() => {
-						if (el._tooltip && el._tooltip.parentNode) {
-							el._tooltip.parentNode.removeChild(el._tooltip);
-						}
-						el._tooltip = null;
-					}, 200);
-				}
-			}
-		}
-
-		// Call setup on load
-		titleToTooltip();
-		
-		
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
                 navigator.serviceWorker.register('/focus-app/sw.js').then(reg => {
