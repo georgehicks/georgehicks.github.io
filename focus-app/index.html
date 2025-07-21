@@ -313,6 +313,9 @@
             updateTimerDisplay('focus');
             updateTimerDisplay('rest');
             updateSyncStatus(false); // NEW: Initialize sync status
+			if (!settings.timestampUrl || !settings.dataUrl) {
+			  isActiveInstance = true;
+			}
         }
 
         // Save settings with validation
@@ -931,7 +934,7 @@
 
         function startTimer(mode) {
             const timer = data.timers[mode];
-            if (timer.running || !isActiveInstance) return;
+            if (timer.running || (!isActiveInstance && settings.timestampUrl && settings.dataUrl)) return;
             timer.running = true;
             timer.interval = setInterval(() => {
                 if (timer.remaining > 0 && !timer.overtime) {
