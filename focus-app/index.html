@@ -715,15 +715,14 @@
             }
         }
 
-        taskSelect.addEventListener('change', () => {
-            if (data.timers.focus.running) {
-                endSession('focus');
-                loadSelectedTask();
-                startSession('focus');
-            } else {
-                loadSelectedTask();
-            }
-        });
+		taskSelect.addEventListener('change', () => {
+			loadSelectedTask();
+			if (data.timers.focus.running) {
+				endSession('focus');
+				startSession('focus');
+			}
+		});
+
 
         // Summary tab
         function updateSummary() {
