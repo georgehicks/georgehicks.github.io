@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Focus App 2025.7.20.21</title>
+    <title>Focus App 2025.7.21.1930</title>
     <!-- PWA additions -->
     <link rel="canonical" href="https://georgehicks.github.io/focus-app/" />
     <link rel="manifest" href="/focus-app/manifest.webmanifest">
@@ -15,217 +15,94 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <!-- End PWA additions -->
     <style>
-        body {
-            font-family: Arial, sans-serif;
-            max-width: 100%;
-            margin: 0 auto;
-            padding: 10px;
-            opacity: 0.8;
-            color: #555;
-            background: #f9f9f9;
-            font-size: 0.9em;
-            position: relative;
-        }
-        body.dark-mode {
-            background: #222;
-            color: #ccc;
-        }
-        a {
-            cursor: pointer;
-        }
-        h1 {
-            font-size: 1em;
-            color: #888;
-            margin-bottom: 5px;
-            text-align: center;
-        }
-        nav ul {
-            list-style: none;
-            padding: 0;
-            display: flex;
-            flex-wrap: wrap;
-            justify-content: center;
-        }
-        nav li {
-            margin-right: 5px;
-            margin-bottom: 5px;
-        }
-        nav a {
-            text-decoration: none;
-            padding: 3px 6px;
-            background: #eee;
-            color: #777;
-            border-radius: 5px;
-            border: none;
-            font-size: 0.9em;
-            cursor: pointer;
-        }
-        nav a.active {
-            color: #fff;
-        }
-        nav a#tasksLink.active {
-            background: #a1c4fd;
-        }
-        nav a#summaryLink.active {
-            background: #ffd3a1;
-        }
-        nav a#agendaLink.active {
-            background: #d1a1fd;
-        }
-        nav a#focusLink.active {
-            background: #a1c4fd;
-        }
-        nav a#restLink.active {
-            background: #a1fda1;
-        }
-        nav a.pulsate {
-            animation: pulseRed 1s infinite;
-        }
-        @keyframes pulseRed {
-            0% {
-                background: #fda1a1;
-            }
-
-            50% {
-                background: #eee;
-            }
-
-            100% {
-                background: #fda1a1;
-            }
-        }
-        section {
-            display: none;
-        }
-
-        section.active {
-            display: block;
-        }
-
-        #taskTextarea {
-            width: 100%;
-            height: 500px;
-            font-family: monospace;
-            border: 1px solid #ddd;
-            border-radius: 4px;
-            background: #fff;
-            color: #555;
-            font-size: 0.9em;
-            overflow: auto;
-        }
-
-        #taskTextarea.dark-mode {
-            background: #333;
-            color: #ccc;
-            border-color: #555;
-        }
-
-        #taskSelect {
-            font-size: 1em;
-            border: 1px solid #ddd;
-            border-radius: 4px;
-            background: transparent;
-            color: #888;
-        }
-
-        #taskSelect.dark-mode {
-            background: #333;
-            color: #ccc;
-            border-color: #555;
-        }
-
-        #stepInput {
-            font-size: 1.2em;
-            width: 100%;
-            border: 1px solid #ddd;
-            border-radius: 4px;
-            background: transparent;
-            color: #888;
-        }
-
-        #stepInput.dark-mode {
-            background: #333;
-            color: #ccc;
-            border-color: #555;
-        }
-
-        #notesTextarea {
-            width: 100%;
-            height: 500px;
-            border: 1px solid #ddd;
-            border-radius: 4px;
-            font-size: 0.9em;
-            overflow: auto;
-        }
-
-        #notesTextarea.dark-mode {
-            background: #333;
-            color: #ccc;
-            border-color: #555;
-        }
-
-        #saveTasksBtn,
-        #saveFocusBtn {
-            display: none;
-            margin-top: 5px;
-            padding: 3px 6px;
-            background: #d4f4d4;
-            color: #555;
-            border: none;
-            cursor: pointer;
-            border-radius: 4px;
-            font-size: 0.9em;
-        }
-
-        #saveTasksBtn.dark-mode,
-        #saveFocusBtn.dark-mode {
-            background: #2a4d2a;
-            color: #ccc;
-        }
-
-        #syncLink {
-            position: fixed;
-            bottom: 10px;
-            right: 10px;
-            font-size: 0.8em;
-            color: #777;
-            text-decoration: none;
-            cursor: pointer;
-        }
-
-        #syncLink.dark-mode {
-            color: #ccc;
-        }
-
-        #settingsContainer {
-            display: none;
-            position: fixed;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            background: #f9f9f9;
-            padding: 20px;
-            border: 1px solid #ddd;
-            border-radius: 8px;
-            z-index: 1000;
-        }
-
-        #settingsContainer.dark-mode {
-            background: #333;
-            border-color: #555;
-        }
-
-        #activeIndicator {
-            position: fixed;
-            bottom: 10px;
-            left: 40px;
-            font-size: 0.8em;
-            color: #777;
-        }
-
-        #activeIndicator.dark-mode {
-            color: #ccc;
-        }
+body { font-family: Arial, sans-serif; max-width: 100%; margin: 0 auto; padding: 10px; opacity: 0.8; color: #555; background: #f9f9f9; font-size: 0.9em; position: relative; }
+body.dark-mode { background: #222; color: #ccc; }
+a { cursor: pointer; }
+h1 { font-size: 1em; color: #888; margin-bottom: 5px; text-align: center; }
+nav ul { list-style: none; padding: 0; display: flex; flex-wrap: wrap; justify-content: center; }
+nav li { margin-right: 5px; margin-bottom: 5px; }
+nav a { text-decoration: none; padding: 3px 6px; background: #eee; color: #777; border-radius: 5px; border: none; font-size: 0.9em; cursor: pointer; }
+nav a.active { color: #fff; }
+nav a#tasksLink.active { background: #a1c4fd; }
+nav a#summaryLink.active { background: #ffd3a1; }
+nav a#agendaLink.active { background: #d1a1fd; }
+nav a#focusLink.active { background: #a1c4fd; }
+nav a#restLink.active { background: #a1fda1; }
+nav a.pulsate { animation: pulseRed 1s infinite; }
+@keyframes pulseRed { 0% { background: #fda1a1; } 50% { background: #eee; } 100% { background: #fda1a1; } }
+section { display: none; }
+section.active { display: block; }
+#taskTextarea { width: 100%; height: 500px; font-family: monospace; border: 1px solid #ddd; border-radius: 4px; background: #fff; color: #555; font-size: 0.9em; overflow: auto; }
+#taskTextarea.dark-mode { background: #333; color: #ccc; border-color: #555; }
+#taskSelect { font-size: 1em; border: 1px solid #ddd; border-radius: 4px; background: transparent; color: #888; }
+#taskSelect.dark-mode { background: #333; color: #ccc; border-color: #555; }
+#stepInput { font-size: 1.2em; width: 100%; border: 1px solid #ddd; border-radius: 4px; background: transparent; color: #888; }
+#stepInput.dark-mode { background: #333; color: #ccc; border-color: #555; }
+#notesTextarea { width: 100%; height: 500px; border: 1px solid #ddd; border-radius: 4px; font-size: 0.9em; overflow: auto; }
+#notesTextarea.dark-mode { background: #333; color: #ccc; border-color: #555; }
+#saveTasksBtn, #saveFocusBtn { display: none; margin-top: 5px; padding: 3px 6px; background: #d4f4d4; color: #555; border: none; cursor: pointer; border-radius: 4px; font-size: 0.9em; }
+#saveTasksBtn.dark-mode, #saveFocusBtn.dark-mode { background: #2a4d2a; color: #ccc; }
+#timerBar { height: 15px; background: #eee; position: relative; border: 1px solid #ddd; border-radius: 4px; }
+#timerBar.dark-mode { background: #444; border-color: #666; }
+#timerProgress { height: 100%; width: 100%; transition: width 0.5s; border-radius: 4px; }
+#timerProgressFocus { background: #a1c4fd !important; }
+#timerProgressFocus.dark-mode { background: #5a8bc5 !important; }
+#timerProgressRest { background: #a1fda1 !important; }
+#timerProgressRest.dark-mode { background: #6cc269 !important; }
+#timeRemaining { font-size: 0.7em; text-align: center; color: #777; }
+#extendLinks, #setLinks { font-size: 0.7em; text-align: center; color: #777; }
+#extendLinks a, #setLinks a { margin: 0 3px; cursor: pointer; color: #777; text-decoration: none; }
+#extendLinks.dark-mode a, #setLinks.dark-mode a { color: #ccc; }
+#timerControls a { margin: 0 5px; cursor: pointer; color: #777; text-decoration: none; font-size: 0.8em; }
+#timerControls.dark-mode a { color: #ccc; }
+#agendaTable { width: 100%; border-collapse: collapse; font-size: 0.8em; }
+#agendaTable th, #agendaTable td { border: 1px solid #eee; padding: 5px; color: #777; position: relative; }
+#agendaTable.dark-mode th, #agendaTable.dark-mode td { border-color: #555; color: #ccc; }
+#agendaTable th:first-child, #agendaTable td:first-child { width: 60px; }
+#agendaTable td.past { background: #f0f0f0; }
+#agendaTable td.past.dark-mode { background: #333; }
+#agendaTable td.current { animation: blink 1s infinite; }
+@keyframes blink { 50% { background: #fff9d6; } }
+@keyframes blink.dark-mode { 50% { background: #444; } }
+.hour-bar { position: relative; height: 20px; background: #f0f0f0; border-radius: 4px; }
+.hour-bar.dark-mode { background: #333; }
+.task-fill { position: absolute; height: 100%; opacity: 0.5; border-radius: 4px; }
+.task-fill.dark-mode { opacity: 0.7; }
+#contextLog { height: 150px; overflow: auto; font-size: 0.8em; border: 1px solid #ddd; padding: 5px; margin-top: 10px; }
+#contextLog.dark-mode { border-color: #555; background: #333; color: #ccc; }
+#meetingsTextarea { width: 100%; height: 100px; font-family: monospace; border: 1px solid #ddd; border-radius: 4px; background: #f9f9f9; color: #555; font-size: 0.9em; margin-top: 10px; }
+#meetingsTextarea:focus { background: #fff; }
+#meetingsTextarea.dark-mode { background: #333; color: #ccc; border-color: #555; }
+#meetingsTextarea:focus.dark-mode { background: #444; }
+.meeting-placeholder { position: absolute; top: 5px; left: 5px; color: #888; opacity: 0.7; z-index: 1; font-size: 0.8em; }
+#nextMeeting { position: absolute; top: 10px; right: 10px; color: #888; font-size: 0.8em; opacity: 0.8; }
+#nextMeeting.dark-mode { color: #ccc; }
+#timeBox { width: 300px; height: 20px; position: absolute; top: 10px; left: 50%; transform: translateX(-50%); background: #eee; border: 1px solid #ddd; border-radius: 4px; overflow: hidden; }
+#timeBox.dark-mode { background: #444; border-color: #666; }
+#remainingBar { position: absolute; right: 0; height: 100%; background: rgba(161,253,161,0.3); width: 100%; }
+#remainingBar.dark-mode { background: rgba(161,253,161,0.5); }
+#currentTime { position: absolute; top: 0; left: 50%; transform: translateX(-50%); color: #888; font-size: 0.8em; opacity: 0.8; line-height: 20px; z-index: 1; }
+#currentTime.dark-mode { color: #ccc; }
+.noselect { user-select: none; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none; }
+#noteTrayContainer { display: none; margin-top: 10px; }
+#noteTrayTextarea { width: 100%; height: 100px; border: 1px solid #ddd; border-radius: 4px; background: #fff; color: #555; font-size: 0.9em; }
+#noteTrayTextarea.dark-mode { background: #333; color: #ccc; border-color: #555; }
+#openNoteTray { padding: 3px 6px; background: #eee; color: #777; border: none; cursor: pointer; border-radius: 4px; font-size: 0.9em; }
+#openNoteTray.dark-mode { background: #444; color: #ccc; }
+#closeNoteTray { padding: 3px 6px; background: #d4f4d4; color: #555; border: none; cursor: pointer; border-radius: 4px; font-size: 0.9em; }
+#closeNoteTray.dark-mode { background: #2a4d2a; color: #ccc; }
+#settingsLink, #syncLink { position: fixed; font-size: 0.8em; color: #777; text-decoration: none; cursor: pointer; }
+#settingsLink { bottom: 10px; left: 10px; }
+#syncLink { bottom: 10px; right: 10px; }
+#settingsLink.dark-mode, #syncLink.dark-mode { color: #ccc; }
+#settingsContainer { display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: #f9f9f9; padding: 20px; border: 1px solid #ddd; border-radius: 8px; z-index: 1000; }
+#settingsContainer.dark-mode { background: #333; border-color: #555; }
+#settingsContainer input, #settingsContainer select { width: 100%; margin: 5px 0; padding: 5px; border: 1px solid #ddd; border-radius: 4px; }
+#settingsContainer.dark-mode input, #settingsContainer.dark-mode select { background: #444; color: #ccc; border-color: #555; }
+#settingsContainer button { margin-top: 10px; padding: 5px 10px; background: #d4f4d4; color: #555; border: none; cursor: pointer; border-radius: 4px; }
+#settingsContainer.dark-mode button { background: #2a4d2a; color: #ccc; }
+#activeIndicator { position: fixed; bottom: 10px; left: 80px; font-size: 0.8em; color: #777; cursor: pointer; }
+#activeIndicator.dark-mode { color: #ccc; }
     </style>
 </head>
 <body>
@@ -273,7 +150,7 @@
         <button id="saveFocusBtn">Save</button>
         <div id="currentTaskDisplayFocus"></div>
         <div id="timeRemainingFocus">12:00</div>
-        <div id="timerBarFocus"><div id="timerProgressFocus">&nbsp;</div></div>
+        <div id="timerBarFocus"><div id="timerProgressFocus"> </div></div>
         <div id="extendLinksFocus">Extend: <a>+1</a> <a>+2</a> <a>+5</a> <a>+10</a></div>
         <div id="setLinksFocus">Set: <a>10s</a> <a>3m</a> <a>5m</a> <a>10m</a> <a>12m</a> <a>15m</a> <a>20m</a> <a>30m</a></div>
         <div id="timerControlsFocus"> <a id="startFocus">Start</a> <a id="stopFocus">Stop</a> <a id="resetFocus">Reset</a> </div>
@@ -287,7 +164,7 @@
     <section id="rest" class="noselect">
         <div id="currentTaskDisplayRest">Resting</div>
         <div id="timeRemainingRest">03:00</div>
-        <div id="timerBarRest"><div id="timerProgressRest">&nbsp;</div></div>
+        <div id="timerBarRest"><div id="timerProgressRest"> </div></div>
         <div id="extendLinksRest">Extend: <a>+1</a> <a>+2</a> <a>+5</a> <a>+10</a></div>
         <div id="setLinksRest">Set: <a>10s</a> <a>3m</a> <a>5m</a> <a>10m</a> <a>12m</a> <a>15m</a> <a>20m</a> <a>30m</a></div>
         <div id="timerControlsRest"> <a id="startRest">Start</a> <a id="stopRest">Stop</a> <a id="resetRest">Reset</a> </div>
@@ -296,8 +173,7 @@
     <a id="settingsLink" title="Settings">⚙️</a>
     <a id="refreshLink" title="Refresh" style="position: fixed; bottom: 10px; left: 40px; font-size: 0.8em; color: #777; text-decoration: none; cursor: pointer;">🔄</a>
     <a id="syncLink" title="Manual Sync">Sync: Disabled</a>
-    <a id="activateLink" title="Activate" style="position: fixed; bottom: 10px; left: 10px; font-size: 0.8em; color: #777; text-decoration: none; cursor: pointer;">Activate</a>
-    <div id="activeIndicator">Inactive</div>
+    <div id="activeIndicator" title="Click to claim active status">Active</div>
     <div id="settingsContainer">
         <h3>Settings</h3>
         <label>Timestamp URL: <input id="timestampUrlInput" placeholder="Enter timestamp API URL"></label>
@@ -321,13 +197,12 @@
             timers: {
                 focus: { initial: 720, remaining: 720, accumulated: 0, running: false, interval: null, overtime: false },
                 rest: { initial: 180, remaining: 180, accumulated: 0, running: false, interval: null, overtime: false },
-                plan: { accumulated: 0, running: false, interval: null }
+                plan: { initial: 0, remaining: 0, accumulated: 0, running: false, interval: null, overtime: false }
             },
             log: {},
             meetings: '',
             noteTray: ''
         };
-
         const STORAGE_KEY = 'focusAppData';
         const SETTINGS_KEY = 'focusAppSettings';
         let TODAY = new Date().toISOString().split('T')[0];
@@ -338,7 +213,6 @@
             'meeting::0',
             'break::0'
         ];
-
         let settings = {
             timestampUrl: '',
             dataUrl: '',
@@ -349,7 +223,6 @@
             activeSyncInterval: 30,
             inactiveSyncInterval: 5
         };
-
         let isActiveInstance = true;
         let lastStored = { timestamp: 0, version: 0 };
         let lastInteraction = Date.now();
@@ -371,55 +244,87 @@
             document.getElementById('inactiveSyncIntervalInput').value = settings.inactiveSyncInterval;
             updateTimerDisplay('focus');
             updateTimerDisplay('rest');
-            updateSyncStatus(false); // NEW: Initialize sync status
+            updateSyncStatus(false);
             if (!settings.timestampUrl || !settings.dataUrl) {
                 isActiveInstance = true;
             }
         }
 
-        // Handle Activate/Deactivate logic
-        function toggleActiveStatus() {
-            if (isActiveInstance) {
-                isActiveInstance = false;
-                updateSyncStatus(false); // Show inactive status immediately
-                stopVisibleTimers(); // Stop any active timers
-            } else {
-                isActiveInstance = true;
-                updateSyncStatus(true); // Show active status immediately
-                loadDataFromDataUrl(); // Fetch latest data before claiming active
-                simpleCloudStore(data); // Proceed with claiming active
+        // Save settings with validation
+        function saveSettings() {
+            const timestampUrl = document.getElementById('timestampUrlInput').value.trim();
+            const dataUrl = document.getElementById('dataUrlInput').value.trim();
+            if ((timestampUrl && !dataUrl) || (!timestampUrl && dataUrl)) {
+                alert('Please provide both Timestamp URL and Data URL, or leave both empty for local-only mode.');
+                return;
             }
+            settings.timestampUrl = timestampUrl;
+            settings.dataUrl = dataUrl;
+            settings.focusTimer = Math.max(1, parseInt(document.getElementById('focusTimerInput').value) || 12);
+            settings.restTimer = Math.max(1, parseInt(document.getElementById('restTimerInput').value) || 3);
+            settings.indentSize = Math.min(8, Math.max(1, parseInt(document.getElementById('indentSizeInput').value) || 4));
+            settings.theme = document.getElementById('themeSelect').value;
+            settings.activeSyncInterval = Math.max(10, parseInt(document.getElementById('activeSyncIntervalInput').value) || 30);
+            settings.inactiveSyncInterval = Math.max(1, parseInt(document.getElementById('inactiveSyncIntervalInput').value) || 5);
+            localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
+            data.timers.focus.initial = data.timers.focus.remaining = settings.focusTimer * 60;
+            data.timers.rest.initial = data.timers.rest.remaining = settings.restTimer * 60;
+            document.body.className = settings.theme === 'dark' ? 'dark-mode' : '';
+            updateTimerDisplay('focus');
+            updateTimerDisplay('rest');
+            updateSyncStatus(false);
+            setupSync();
         }
 
-        async function loadDataFromDataUrl() {
-            if (settings.dataUrl) {
-                const response = await fetch(settings.dataUrl);
-                const freshData = await response.json();
-                data = mergeData(data, freshData); // Merge new data into local data
-                localStorage.setItem(STORAGE_KEY, JSON.stringify(data)); // Save to localStorage
+        // Load data
+        function loadData() {
+            const saved = localStorage.getItem(STORAGE_KEY);
+            if (saved) data = JSON.parse(saved);
+            if (!data.tasks.length) {
+                data.rawTasks = DEFAULT_TASKS.join('\n');
+                parseTasks();
             }
+            if (!data.log) data.log = {};
+            if (!data.meetings) data.meetings = '';
+            if (!data.noteTray) data.noteTray = '';
+            document.getElementById('taskTextarea').value = data.rawTasks;
+            document.getElementById('meetingsTextarea').value = data.meetings;
+            document.getElementById('noteTrayTextarea').value = data.noteTray;
+            updateTaskSelect();
+            updateSummary();
+            updateAgenda();
+            if (document.getElementById('timerBarFocus')) updateTimerDisplay('focus');
+            if (document.getElementById('timerBarRest')) updateTimerDisplay('rest');
+            startPlanTimerIfNeeded();
+            updateCurrentTime();
+            setInterval(updateCurrentTime, 1000);
+            setInterval(updateNextMeeting, 1000);
+            loadSettings();
+            setupSync();
         }
 
-        function updateSyncStatus(isActive, error = false) {
-            const activeIndicator = document.getElementById('activeIndicator');
-            const syncLink = document.getElementById('syncLink');
-            const syncMessage = isActive ? 'Active' : 'Inactive';
-            activeIndicator.textContent = syncMessage;
-            syncLink.textContent = isActive ? 'Sync: Active' : 'Sync: Inactive';
-            if (error) {
-                syncLink.textContent = 'Sync: Failed';
-                activeIndicator.textContent = 'Sync Failed';
+        // Save data
+        function saveData(auto = false) {
+            lastStored.version++;
+            lastStored.timestamp = Date.now();
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+            if (!auto && settings.dataUrl && settings.timestampUrl) {
+                captureFocusState();
+                simpleCloudStore(data);
             }
+            updateTaskSelect();
+            updateSummary();
+            updateAgenda();
         }
 
-        // Sync process logic
+        // Cloud sync with two URLs
         async function simpleCloudStore(dataToSend) {
             if (!settings.timestampUrl || !settings.dataUrl) {
                 updateSyncStatus(false);
                 return;
             }
-
             try {
+                // Check timestamp first
                 const tsResponse = await fetch(settings.timestampUrl);
                 let remoteMeta = { timestamp: 0, version: 0 };
                 try {
@@ -427,15 +332,17 @@
                     remoteMeta = text ? JSON.parse(text) : { timestamp: 0, version: 0 };
                 } catch (e) {
                     console.warn('Invalid timestamp response, defaulting to 0:', e);
+                    alert('Sync warning: Invalid timestamp response from server. Please check the Timestamp URL.');
                 }
 
                 if (dataToSend) {
+                    // POST data
                     await fetch(settings.dataUrl, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
                         body: `v=${encodeURIComponent(JSON.stringify(dataToSend))}`
                     });
-
+                    // Update timestamp
                     await fetch(settings.timestampUrl, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
@@ -443,6 +350,7 @@
                     });
                     updateSyncStatus(true);
                 } else if (remoteMeta.timestamp > lastStored.timestamp) {
+                    // Remote is newer, fetch data
                     const response = await fetch(settings.dataUrl);
                     let remoteData = {};
                     try {
@@ -450,10 +358,10 @@
                         remoteData = text ? JSON.parse(text) : data;
                     } catch (e) {
                         console.warn('Invalid data response, skipping sync:', e);
+                        alert('Sync failed: Invalid data response from server. Please check the Data URL.');
                         updateSyncStatus(false, true);
                         return;
                     }
-
                     data = mergeData(data, remoteData);
                     localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
                     lastStored = { ...remoteMeta };
@@ -462,24 +370,27 @@
                     loadData();
                     updateSyncStatus(false);
                 } else if (remoteMeta.timestamp < lastStored.timestamp) {
+                    // Local is newer, push
                     await simpleCloudStore(data);
                 }
             } catch (e) {
                 console.error('Sync failed:', e);
+                alert('Sync failed: Unable to connect to the server. Please check your network or URLs.');
                 updateSyncStatus(false, true);
             }
         }
 
-        // Merge logic
+        // Merge data with timestamp-based deduplication
         function mergeData(local, remote) {
             const merged = { ...local, ...remote };
+            // Merge tasks: union, prefer newer by last session
             const allTasks = [...local.tasks, ...remote.tasks.filter(rt => !local.tasks.find(lt => lt.name === rt.name))];
             merged.tasks = allTasks.sort((a, b) => {
                 const aTime = (a.durations[TODAY]?.sessions?.slice(-1)[0]?.end || 0);
                 const bTime = (b.durations[TODAY]?.sessions?.slice(-1)[0]?.end || 0);
                 return bTime - aTime;
             });
-
+            // Merge logs: deduplicate by timestamp
             merged.log = {};
             for (let date in local.log) {
                 merged.log[date] = [...(local.log[date] || [])];
@@ -489,7 +400,7 @@
                 merged.log[date] = [...(merged.log[date] || []), ...remoteEntries.filter(re => !merged.log[date]?.find(le => le.time === re.time))]
                     .sort((a, b) => new Date(a.time) - new Date(b.time));
             }
-
+            // Merge sessions: deduplicate by start timestamp
             merged.tasks.forEach(task => {
                 const localDurations = task.durations || {};
                 const remoteDurations = (remote.tasks.find(rt => rt.name === task.name) || {}).durations || {};
@@ -509,7 +420,693 @@
             });
             return merged;
         }
-        
+
+        // Claim active status by pulling remote data and overwriting local
+        async function claimActiveStatus() {
+            if (isActiveInstance || !settings.timestampUrl || !settings.dataUrl) {
+                updateSyncStatus(false);
+                return;
+            }
+            try {
+                // Fetch remote data
+                const response = await fetch(settings.dataUrl);
+                let remoteData = {};
+                try {
+                    const text = await response.text();
+                    remoteData = text ? JSON.parse(text) : data;
+                } catch (e) {
+                    console.warn('Invalid data response, skipping sync:', e);
+                    alert('Claim active failed: Invalid data response from server. Please check the Data URL.');
+                    updateSyncStatus(false, true);
+                    return;
+                }
+                // Overwrite local data
+                data = { ...remoteData };
+                localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+                // Update timestamp and claim active status
+                isActiveInstance = true;
+                lastStored.version++;
+                lastStored.timestamp = Date.now();
+                await fetch(settings.timestampUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                    body: `v=${encodeURIComponent(JSON.stringify({ timestamp: lastStored.timestamp, version: lastStored.version }))}`
+                });
+                // Push updated data
+                await fetch(settings.dataUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                    body: `v=${encodeURIComponent(JSON.stringify(data))}`
+                });
+                // Refresh UI
+                loadData();
+                updateSyncStatus(true);
+            } catch (e) {
+                console.error('Claim active failed:', e);
+                alert('Claim active failed: Unable to connect to the server. Please check your network or URLs.');
+                updateSyncStatus(false, true);
+            }
+        }
+
+        // Update sync status
+        function updateSyncStatus(success, error = false) {
+            const syncLink = document.getElementById('syncLink');
+            const activeIndicator = document.getElementById('activeIndicator');
+            if (!settings.timestampUrl || !settings.dataUrl) {
+                syncLink.textContent = 'Sync: Disabled';
+                activeIndicator.textContent = 'Active';
+                return;
+            }
+            const time = new Date(lastStored.timestamp);
+            const hh = time.getHours().toString().padStart(2, '0');
+            const mm = time.getMinutes().toString().padStart(2, '0');
+            syncLink.textContent = `Sync: ${success ? 'Success' : error ? 'Failed' : 'Idle'} at ${hh}:${mm}`;
+            activeIndicator.textContent = isActiveInstance ? 'Active' : 'Inactive';
+        }
+
+        // Setup periodic sync with idle detection
+        function setupSync() {
+            if (data.syncInterval) clearInterval(data.syncInterval);
+            if (!settings.timestampUrl || !settings.dataUrl) return;
+            const interval = isActiveInstance ? settings.activeSyncInterval : settings.inactiveSyncInterval * 60;
+            data.syncInterval = setInterval(() => {
+                if (Date.now() - lastInteraction > 30 * 60 * 1000) return;
+                simpleCloudStore();
+            }, interval * 1000);
+        }
+
+        // Track interactions for idle detection
+        document.addEventListener('click', () => lastInteraction = Date.now());
+        document.addEventListener('keydown', () => lastInteraction = Date.now());
+
+        // Parse tasks from raw text
+        function parseTasks() {
+            const newTasks = [];
+            const lines = data.rawTasks.split('\n').filter(line => line.trim());
+            lines.forEach(line => {
+                let cleanLine = line.trim();
+                let priority = false;
+                let completed = false;
+                if (cleanLine.startsWith('!')) {
+                    priority = true;
+                    cleanLine = cleanLine.slice(1);
+                } else if (cleanLine.startsWith('+')) {
+                    completed = true;
+                    cleanLine = cleanLine.slice(1);
+                }
+                const parts = cleanLine.split(':');
+                if (parts.length >= 1) {
+                    const name = parts[0];
+                    const step = parts[1] || '';
+                    const hour = parseInt(parts[2]) || 0;
+                    const existing = data.tasks.find(t => t.name === name);
+                    newTasks.push({
+                        name,
+                        step: existing ? existing.step : step,
+                        hour,
+                        priority,
+                        completed,
+                        notes: existing ? existing.notes : '',
+                        durations: existing ? existing.durations : {}
+                    });
+                }
+            });
+            data.tasks = newTasks.sort((a, b) => {
+                if (a.completed && !b.completed) return 1;
+                if (!a.completed && b.completed) return -1;
+                return a.name.localeCompare(b.name, undefined, { sensitivity: 'case' });
+            });
+        }
+
+        // Update rawTasks from task step change
+        function updateRawFromTask(task) {
+            const lines = data.rawTasks.split('\n');
+            for (let i = 0; i < lines.length; i++) {
+                let clean = lines[i].trim().replace(/^[!+]/, '');
+                if (clean.startsWith(task.name + ':') || clean === task.name) {
+                    const parts = clean.split(':');
+                    parts[1] = task.step;
+                    let prefix = task.priority ? '!' : task.completed ? '+' : '';
+                    lines[i] = prefix + parts.join(':');
+                    break;
+                }
+            }
+            data.rawTasks = lines.join('\n');
+        }
+
+        // Tab switching
+        document.querySelectorAll('nav a').forEach(link => {
+            link.addEventListener('click', e => {
+                e.preventDefault();
+                document.querySelectorAll('nav a').forEach(a => a.classList.remove('active', 'pulsate'));
+                link.classList.add('active');
+                document.querySelectorAll('section').forEach(s => s.classList.remove('active'));
+                const tabId = link.href.split('#')[1];
+                document.getElementById(tabId).classList.add('active');
+                stopVisibleTimers();
+                startPlanTimerIfNeeded();
+                checkPulsate();
+                autoStartTimer(tabId);
+                if (tabId === 'focus') {
+                    updateTaskSelect();
+                    loadSelectedTask();
+                }
+            });
+        });
+
+        function autoStartTimer(tabId) {
+            if (tabId === 'focus') {
+                resetTimer('focus');
+                startTimer('focus');
+            } else if (tabId === 'rest') {
+                resetTimer('rest');
+                startTimer('rest');
+            }
+        }
+
+        // Ctrl+S shortcut
+        document.addEventListener('keydown', e => {
+            if (e.ctrlKey && e.key.toLowerCase() === 's') {
+                e.preventDefault();
+                const activeTab = document.querySelector('section.active').id;
+                if (activeTab === 'tasks' && document.getElementById('saveTasksBtn').style.display === 'block') {
+                    document.getElementById('saveTasksBtn').click();
+                } else if (activeTab === 'focus' && document.getElementById('saveFocusBtn').style.display === 'block') {
+                    document.getElementById('saveFocusBtn').click();
+                }
+            }
+        });
+
+        // Tab indentation with spaces only
+        [document.getElementById('taskTextarea'), document.getElementById('notesTextarea')].forEach(textarea => {
+            textarea.addEventListener('keydown', e => {
+                if (e.key === 'Tab') {
+                    e.preventDefault();
+                    const selStart = textarea.selectionStart;
+                    const selEnd = textarea.selectionEnd;
+                    let text = textarea.value.replace(/\t/g, ' '.repeat(settings.indentSize));
+                    const lines = text.substring(0, selEnd).split('\n');
+                    const startLine = text.substring(0, selStart).split('\n').length - 1;
+                    const endLine = text.substring(0, selEnd).split('\n').length - 1;
+                    let newText = text;
+                    let newSelStart = selStart;
+                    let newSelEnd = selEnd;
+                    if (startLine !== endLine) {
+                        if (!e.shiftKey) {
+                            const indent = ' '.repeat(settings.indentSize);
+                            newText = text.split('\n').map((line, i) => {
+                                if (i >= startLine && i <= endLine) {
+                                    if (i === startLine) newSelStart += indent.length;
+                                    if (i <= endLine) newSelEnd += indent.length;
+                                    return indent + line;
+                                }
+                                return line;
+                            }).join('\n');
+                        } else {
+                            newText = text.split('\n').map((line, i) => {
+                                if (i >= startLine && i <= endLine) {
+                                    const spaces = line.match(/^ {0,4}/)[0].length;
+                                    if (i === startLine) newSelStart = Math.max(selStart - spaces, text.split('\n')[i].length - spaces);
+                                    if (i <= endLine) newSelEnd = Math.max(selEnd - spaces, text.split('\n')[i].length - spaces);
+                                    return line.replace(/^ {0,4}/, '');
+                                }
+                                return line;
+                            }).join('\n');
+                        }
+                        textarea.value = newText;
+                        textarea.setSelectionRange(newSelStart, newSelEnd);
+                        textarea.dispatchEvent(new Event('input'));
+                    } else {
+                        const indent = ' '.repeat(settings.indentSize);
+                        textarea.setRangeText(indent, selStart, selEnd, 'end');
+                        textarea.dispatchEvent(new Event('input'));
+                    }
+                }
+            });
+        });
+
+        // Tasks tab
+        const taskTextarea = document.getElementById('taskTextarea');
+        const saveTasksBtn = document.getElementById('saveTasksBtn');
+
+        taskTextarea.addEventListener('input', () => saveTasksBtn.style.display = 'block');
+
+        saveTasksBtn.addEventListener('click', () => {
+            data.rawTasks = taskTextarea.value.replace(/\t/g, ' '.repeat(settings.indentSize));
+            parseTasks();
+            saveTasksBtn.style.display = 'none';
+            saveData();
+        });
+
+        // Focus tab elements
+        const taskSelect = document.getElementById('taskSelect');
+        const stepInput = document.getElementById('stepInput');
+        const notesTextarea = document.getElementById('notesTextarea');
+        const saveFocusBtn = document.getElementById('saveFocusBtn');
+
+        stepInput.addEventListener('focus', () => stepInput.select());
+
+        [stepInput, notesTextarea].forEach(el => el.addEventListener('input', () => saveFocusBtn.style.display = 'block'));
+
+        saveFocusBtn.addEventListener('click', () => {
+            if (data.currentTask) {
+                data.currentTask.step = stepInput.value;
+                data.currentTask.notes = notesTextarea.value.replace(/\t/g, ' '.repeat(settings.indentSize));
+                updateRawFromTask(data.currentTask);
+            }
+            saveFocusBtn.style.display = 'none';
+            saveData();
+        });
+
+        function updateTaskSelect() {
+            const priorityTasks = data.tasks.filter(t => !t.completed && t.priority);
+            const otherTasks = data.tasks.filter(t => !t.completed && !t.priority);
+            taskSelect.innerHTML = [
+                ...priorityTasks.map(t => `<option value="${t.name}">${t.priority ? '!' : ''}${t.name}</option>`),
+                ...otherTasks.map(t => `<option value="${t.name}">${t.priority ? '!' : ''}${t.name}</option>`)
+            ].join('');
+            if (data.currentTask) taskSelect.value = data.currentTask.name;
+            else if (data.tasks.length > 0) taskSelect.value = data.tasks[0].name;
+            loadSelectedTask();
+        }
+
+        function loadSelectedTask() {
+            const index = data.tasks.findIndex(t => t.name === taskSelect.value);
+            if (index >= 0) {
+                data.currentTask = data.tasks[index];
+                stepInput.value = data.currentTask.step || '';
+                notesTextarea.value = data.currentTask.notes || '';
+                document.getElementById('currentTaskDisplayFocus').textContent = `Focusing on: ${data.currentTask.name}`;
+            }
+        }
+
+        taskSelect.addEventListener('change', () => {
+            loadSelectedTask();
+            if (data.timers.focus.running) {
+                endSession('focus');
+                startSession('focus');
+            }
+        });
+
+        // Summary tab
+        function updateSummary() {
+            const dailyList = document.getElementById('summaryList');
+            dailyList.innerHTML = '';
+            data.tasks.forEach(t => {
+                const daily = t.durations[TODAY] || { minutes: 0 };
+                const hours = (daily.minutes / 60).toFixed(2);
+                const li = document.createElement('li');
+                li.textContent = `${t.name}: ${Math.floor(daily.minutes)} min (${hours} hrs)`;
+                dailyList.appendChild(li);
+            });
+
+            const weeklyList = document.getElementById('weeklySummaryList');
+            weeklyList.innerHTML = '';
+            const weekAgo = new Date();
+            weekAgo.setDate(weekAgo.getDate() - 6);
+            data.tasks.forEach(t => {
+                let weeklyMinutes = 0;
+                for (let d = new Date(weekAgo); d <= new Date(); d.setDate(d.getDate() + 1)) {
+                    const dateKey = d.toISOString().split('T')[0];
+                    weeklyMinutes += (t.durations[dateKey] || { minutes: 0 }).minutes;
+                }
+                const hours = (weeklyMinutes / 60).toFixed(2);
+                const li = document.createElement('li');
+                li.textContent = `${t.name}: ${Math.floor(weeklyMinutes)} min (${hours} hrs)`;
+                weeklyList.appendChild(li);
+            });
+        }
+
+        // Agenda tab
+        function updateAgenda() {
+            const tbody = document.getElementById('agendaTable').querySelector('tbody');
+            tbody.innerHTML = '';
+            const now = new Date();
+            const currentHour = now.getHours();
+            const meetings = parseMeetings();
+            for (let h = 8; h <= 18; h++) {
+                const tr = document.createElement('tr');
+                const hourTd = document.createElement('td');
+                hourTd.textContent = `${h}:00`;
+                const taskTd = document.createElement('td');
+                taskTd.style.position = 'relative';
+                let blocks = [];
+                data.tasks.forEach(t => {
+                    const sessions = (t.durations[TODAY] || {}).sessions || [];
+                    sessions.forEach(s => {
+                        let start = new Date(s.start);
+                        let end = s.end ? new Date(s.end) : new Date();
+                        const hourStart = new Date(`${TODAY}T${h.toString().padStart(2, '0')}:00:00`);
+                        const hourEnd = new Date(hourStart);
+                        hourEnd.setHours(h + 1);
+                        const iStart = new Date(Math.max(start.getTime(), hourStart.getTime()));
+                        const iEnd = new Date(Math.min(end.getTime(), hourEnd.getTime()));
+                        if (iStart < iEnd) {
+                            const offsetMins = (iStart - hourStart) / (1000 * 60);
+                            const durMins = (iEnd - iStart) / (1000 * 60);
+                            blocks.push({ offset: offsetMins, dur: durMins, name: t.name, step: t.step || '' });
+                        }
+                    });
+                });
+                blocks.sort((a, b) => a.offset - b.offset);
+                const bar = document.createElement('div');
+                bar.className = 'hour-bar';
+                if (document.body.classList.contains('dark-mode')) bar.classList.add('dark-mode');
+                blocks.forEach(b => {
+                    const fill = document.createElement('div');
+                    fill.className = 'task-fill';
+                    if (document.body.classList.contains('dark-mode')) fill.classList.add('dark-mode');
+                    fill.style.left = `${(b.offset / 60) * 100}%`;
+                    fill.style.width = `${Math.min((b.dur / 60) * 100, 100 - (b.offset / 60) * 100)}%`;
+                    let color;
+                    if (b.name === 'rest') color = document.body.classList.contains('dark-mode') ? 'rgba(161,253,161,0.7)' : 'rgba(161,253,161,0.5)';
+                    else if (b.name === 'plan') color = document.body.classList.contains('dark-mode') ? 'rgba(255,211,161,0.7)' : 'rgba(255,211,161,0.5)';
+                    else color = document.body.classList.contains('dark-mode') ? 'rgba(161,196,253,0.7)' : 'rgba(161,196,253,0.5)';
+                    fill.style.background = color;
+                    fill.setAttribute('data-tooltip', `${b.name}: ${b.step}`);
+                    bar.appendChild(fill);
+                });
+                taskTd.appendChild(bar);
+                const hourMeetings = meetings.filter(m => m.hour === h);
+                if (hourMeetings.length > 0) {
+                    const placeholder = document.createElement('span');
+                    placeholder.className = 'meeting-placeholder';
+                    placeholder.textContent = hourMeetings.map(m => `${m.subject} at :${m.minute.toString().padStart(2, '0')}`).join(', ');
+                    taskTd.appendChild(placeholder);
+                }
+                tr.appendChild(hourTd);
+                tr.appendChild(taskTd);
+                if (h < currentHour) {
+                    hourTd.classList.add('past');
+                    taskTd.classList.add('past');
+                    if (document.body.classList.contains('dark-mode')) {
+                        hourTd.classList.add('dark-mode');
+                        taskTd.classList.add('dark-mode');
+                    }
+                }
+                if (h === currentHour) {
+                    hourTd.classList.add('current');
+                    taskTd.classList.add('current');
+                    if (document.body.classList.contains('dark-mode')) {
+                        hourTd.classList.add('dark-mode');
+                        taskTd.classList.add('dark-mode');
+                    }
+                }
+                tbody.appendChild(tr);
+            }
+            const logDiv = document.getElementById('contextLog');
+            logDiv.innerHTML = '';
+            const ul = document.createElement('ul');
+            const logEntries = (data.log[TODAY] || []).sort((a, b) => new Date(a.time) - new Date(b.time));
+            logEntries.forEach(entry => {
+                const d = new Date(entry.time);
+                const hh = d.getHours().toString().padStart(2, '0');
+                const mm = d.getMinutes().toString().padStart(2, '0');
+                const li = document.createElement('li');
+                li.textContent = `${hh}:${mm} ${entry.task} - ${entry.step}`;
+                ul.appendChild(li);
+            });
+            logDiv.appendChild(ul);
+            if (document.body.classList.contains('dark-mode')) logDiv.classList.add('dark-mode');
+        }
+
+        function parseMeetings() {
+            const lines = data.meetings.split('\n').filter(line => line.trim());
+            return lines.map(line => {
+                const match = line.match(/^(\d{1,2}):(\d{1,2}):(.*)$/);
+                if (match) {
+                    const hour = parseInt(match[1], 10);
+                    const minute = parseInt(match[2], 10);
+                    const subject = match[3].trim();
+                    return { hour, minute, subject };
+                }
+                return null;
+            }).filter(m => m !== null);
+        }
+
+        function updateNextMeeting() {
+            const now = new Date();
+            const meetings = parseMeetings().sort((a, b) => (a.hour * 60 + a.minute) - (b.hour * 60 + b.minute));
+            const next = meetings.find(m => {
+                const mTime = new Date();
+                mTime.setHours(m.hour, m.minute, 0, 0);
+                return mTime > now;
+            });
+            const div = document.getElementById('nextMeeting');
+            if (next) {
+                const mTime = new Date();
+                mTime.setHours(next.hour, next.minute, 0, 0);
+                const diff = Math.floor((mTime - now) / 1000);
+                const mins = Math.floor(diff / 60);
+                const secs = diff % 60;
+                div.textContent = `${next.subject} in ${mins}:${secs < 10 ? '0' : ''}${secs}`;
+            } else {
+                div.textContent = '';
+            }
+            if (document.body.classList.contains('dark-mode')) div.classList.add('dark-mode');
+        }
+
+        function updateCurrentTime() {
+            const now = new Date();
+            const hh = now.getHours().toString().padStart(2, '0');
+            const mm = now.getMinutes().toString().padStart(2, '0');
+            const ss = now.getSeconds().toString().padStart(2, '0');
+            const remainingBar = document.getElementById('remainingBar');
+            const currentTime = document.getElementById('currentTime');
+            currentTime.textContent = `${hh}:${mm}:${ss}`;
+            const agendaStart = 8 * 60;
+            const agendaEnd = 18 * 60;
+            const currentMin = now.getHours() * 60 + now.getMinutes();
+            let remainingMin = agendaEnd - currentMin;
+            if (remainingMin < 0) remainingMin = 0;
+            if (currentMin < agendaStart) remainingMin = agendaEnd - agendaStart;
+            const totalMin = agendaEnd - agendaStart;
+            const percentage = (remainingMin / totalMin) * 100;
+            remainingBar.style.width = `${percentage}%`;
+            const timeBox = document.getElementById('timeBox');
+            const remainingHours = Math.floor(remainingMin / 60);
+            const remainingMins = remainingMin % 60;
+            timeBox.setAttribute('data-tooltip', `Time left in work day: ${remainingHours}:${remainingMins < 10 ? '0' : ''}${remainingMins}`);
+            remainingBar.setAttribute('data-tooltip', `Time left in work day: ${remainingHours}:${remainingMins < 10 ? '0' : ''}${remainingMins}`);
+            currentTime.setAttribute('data-tooltip', `Time left in work day: ${remainingHours}:${remainingMins < 10 ? '0' : ''}${remainingMins}`);
+            if (document.body.classList.contains('dark-mode')) {
+                timeBox.classList.add('dark-mode');
+                currentTime.classList.add('dark-mode');
+                remainingBar.classList.add('dark-mode');
+            }
+        }
+
+        // Timer functions
+        function updateTimerDisplay(mode) {
+            const suffix = mode.charAt(0).toUpperCase() + mode.slice(1);
+            const timeEl = document.getElementById(`timeRemaining${suffix}`);
+            const progressEl = document.getElementById(`timerProgress${suffix}`);
+            const barEl = document.getElementById(`timerBar${suffix}`);
+            if (!timeEl || !progressEl || !barEl) return;
+            const timer = data.timers[mode];
+            let remaining = timer.remaining;
+            if (remaining <= 0) remaining = 0;
+            const mins = Math.floor(remaining / 60);
+            const secs = remaining % 60;
+            timeEl.textContent = `${mins}:${secs < 10 ? '0' : ''}${secs}`;
+            const percent = (remaining / timer.initial) * 100;
+            progressEl.style.width = `${percent}%`;
+            if (document.body.classList.contains('dark-mode')) {
+                barEl.classList.add('dark-mode');
+                progressEl.classList.add('dark-mode');
+            }
+        }
+
+        function startTimer(mode) {
+            const timer = data.timers[mode];
+            if (timer.running || (!isActiveInstance && settings.timestampUrl && settings.dataUrl)) return;
+            timer.running = true;
+            timer.interval = setInterval(() => {
+                if (timer.remaining > 0 && !timer.overtime) {
+                    timer.remaining--;
+                    if (timer.remaining === 0) {
+                        timer.overtime = true;
+                        let taskName = mode === 'focus' ? (data.currentTask ? data.currentTask.name : 'misc') : mode;
+                        const task = data.tasks.find(t => t.name === taskName);
+                        if (task) {
+                            if (!data.log[TODAY]) data.log[TODAY] = [];
+                            data.log[TODAY].push({ time: new Date().toISOString(), task: taskName, step: (task.step || '') + ' (autolog)' });
+                            saveData(true);
+                        }
+                    }
+                } else {
+                    timer.overtime = true;
+                }
+                timer.accumulated++;
+                accumulateTime(mode);
+                updateTimerDisplay(mode);
+                checkPulsate();
+            }, 1000);
+            startSession(mode);
+        }
+
+        function stopTimer(mode) {
+            const timer = data.timers[mode];
+            if (timer.interval) clearInterval(timer.interval);
+            timer.running = false;
+            timer.overtime = false;
+            endSession(mode);
+        }
+
+        function resetTimer(mode) {
+            const timer = data.timers[mode];
+            timer.remaining = timer.initial;
+            timer.accumulated = 0;
+            updateTimerDisplay(mode);
+        }
+
+        function stopVisibleTimers() {
+            stopTimer('focus');
+            stopTimer('rest');
+        }
+
+        function accumulateTime(mode) {
+            if (!isActiveInstance) return;
+            if (mode === 'focus') captureFocusState();
+            let taskName = mode === 'focus' ? (data.currentTask ? data.currentTask.name : 'misc') : mode;
+            const task = data.tasks.find(t => t.name === taskName);
+            if (task) {
+                if (!task.durations[TODAY]) task.durations[TODAY] = { minutes: 0, sessions: [] };
+                task.durations[TODAY].minutes += 1 / 60;
+                saveData(true);
+            }
+        }
+
+        function captureFocusState() {
+            if (data.currentTask && document.getElementById('focus').classList.contains('active')) {
+                data.currentTask.step = stepInput.value;
+                data.currentTask.notes = notesTextarea.value;
+                updateRawFromTask(data.currentTask);
+            }
+        }
+
+        function startSession(mode) {
+            let taskName = mode === 'focus' ? (data.currentTask ? data.currentTask.name : 'misc') : mode;
+            const task = data.tasks.find(t => t.name === taskName);
+            if (task) {
+                if (!task.durations[TODAY]) task.durations[TODAY] = { minutes: 0, sessions: [] };
+                task.durations[TODAY].sessions.push({ start: Date.now() });
+                if (!data.log[TODAY]) data.log[TODAY] = [];
+                data.log[TODAY].push({ time: new Date().toISOString(), task: taskName, step: task.step || '' });
+                captureFocusState();
+                saveData(true);
+            }
+        }
+
+        function endSession(mode) {
+            let taskName = mode === 'focus' ? (data.currentTask ? data.currentTask.name : 'misc') : mode;
+            const task = data.tasks.find(t => t.name === taskName);
+            if (task && task.durations[TODAY]) {
+                const lastSession = task.durations[TODAY].sessions[task.durations[TODAY].sessions.length - 1];
+                if (lastSession && !lastSession.end) lastSession.end = Date.now();
+                captureFocusState();
+                saveData(true);
+            }
+        }
+
+        // Plan timer
+        function startPlanTimerIfNeeded() {
+            const activeTab = document.querySelector('section.active').id;
+            if (activeTab === 'focus' || activeTab === 'rest') {
+                stopTimer('plan');
+                return;
+            }
+            startTimer('plan');
+        }
+
+        // Pulsate opposite
+        function checkPulsate() {
+            const focusTimer = data.timers.focus;
+            const restTimer = data.timers.rest;
+            const focusLink = document.getElementById('focusLink');
+            const restLink = document.getElementById('restLink');
+            if (focusTimer.remaining <= 0 && document.getElementById('focus').classList.contains('active')) {
+                restLink.classList.add('pulsate');
+            } else {
+                restLink.classList.remove('pulsate');
+            }
+            if (restTimer.remaining <= 0 && document.getElementById('rest').classList.contains('active')) {
+                focusLink.classList.add('pulsate');
+            } else {
+                focusLink.classList.remove('pulsate');
+            }
+        }
+
+        // Setup event listeners for controls
+        ['focus', 'rest'].forEach(mode => {
+            const suffix = mode.charAt(0).toUpperCase() + mode.slice(1);
+            document.getElementById(`start${suffix}`).addEventListener('click', () => startTimer(mode));
+            document.getElementById(`stop${suffix}`).addEventListener('click', () => stopTimer(mode));
+            document.getElementById(`reset${suffix}`).addEventListener('click', () => resetTimer(mode));
+
+            document.getElementById(`extendLinks${suffix}`).querySelectorAll('a').forEach(a => {
+                a.addEventListener('click', () => {
+                    const add = parseInt(a.textContent.slice(1)) * 60;
+                    data.timers[mode].remaining += add;
+                    data.timers[mode].initial += add;
+                    data.timers[mode].overtime = false;
+                    updateTimerDisplay(mode);
+                });
+            });
+            document.getElementById(`setLinks${suffix}`).querySelectorAll('a').forEach(a => {
+                a.addEventListener('click', () => {
+                    const setText = a.textContent;
+                    let setVal = parseInt(setText);
+                    if (setText.endsWith('s')) setVal /= 60;
+                    data.timers[mode].remaining = setVal * 60;
+                    data.timers[mode].initial = data.timers[mode].remaining;
+                    data.timers[mode].overtime = false;
+                    updateTimerDisplay(mode);
+                });
+            });
+            const container = document.getElementById(`extendLinks${suffix}`).parentElement;
+            if (document.body.classList.contains('dark-mode')) {
+                container.querySelectorAll('#extendLinks, #setLinks, #timerControls').forEach(el => el.classList.add('dark-mode'));
+            }
+        });
+
+        // Meetings textarea
+        const meetingsTextarea = document.getElementById('meetingsTextarea');
+        meetingsTextarea.addEventListener('blur', () => {
+            data.meetings = meetingsTextarea.value;
+            saveData(true);
+        });
+
+        // Note Tray
+        document.getElementById('openNoteTray').addEventListener('click', () => {
+            document.getElementById('noteTrayContainer').style.display = 'block';
+        });
+        document.getElementById('closeNoteTray').addEventListener('click', () => {
+            document.getElementById('noteTrayContainer').style.display = 'none';
+        });
+        const noteTrayTextarea = document.getElementById('noteTrayTextarea');
+        noteTrayTextarea.addEventListener('blur', () => {
+            data.noteTray = noteTrayTextarea.value.replace(/\t/g, ' '.repeat(settings.indentSize));
+            saveData(true);
+        });
+
+        // Settings UI
+        document.getElementById('settingsLink').addEventListener('click', () => {
+            document.getElementById('settingsContainer').style.display = 'block';
+        });
+        document.getElementById('saveSettingsBtn').addEventListener('click', () => {
+            saveSettings();
+            document.getElementById('settingsContainer').style.display = 'none';
+        });
+        document.getElementById('closeSettingsBtn').addEventListener('click', () => {
+            document.getElementById('settingsContainer').style.display = 'none';
+        });
+
+        // Active Indicator click to claim active
+        document.getElementById('activeIndicator').addEventListener('click', () => {
+            claimActiveStatus();
+        });
+
         // Manual sync
         document.getElementById('syncLink').addEventListener('click', () => {
             if (!settings.timestampUrl || !settings.dataUrl) {
@@ -517,15 +1114,112 @@
                 return;
             }
             isActiveInstance = true;
+            captureFocusState();
             simpleCloudStore(data);
+            setupSync();
         });
 
-        // Activate button logic
-        document.getElementById('activateLink').addEventListener('click', toggleActiveStatus);
+        // Refresh functionality
+        document.getElementById('refreshLink').addEventListener('click', refreshApp);
+
+        function refreshApp() {
+            const savedData = localStorage.getItem(STORAGE_KEY);
+            const savedSettings = localStorage.getItem(SETTINGS_KEY);
+            if ('caches' in window) {
+                caches.keys().then(cacheNames => {
+                    cacheNames.forEach(cacheName => {
+                        caches.delete(cacheName);
+                    });
+                });
+            }
+            window.location.reload();
+            window.onload = () => {
+                if (savedData) localStorage.setItem(STORAGE_KEY, savedData);
+                if (savedSettings) localStorage.setItem(SETTINGS_KEY, savedSettings);
+            };
+        }
+
+        // Tooltip functionality with debouncing
+        function titleToTooltip(el) {
+            if (!el) {
+                let debounceTimeout;
+                document.body.addEventListener('mouseover', function(event) {
+                    const target = event.target;
+                    if (target.hasAttribute('title') || target.hasAttribute('data-tooltip')) {
+                        clearTimeout(debounceTimeout);
+                        debounceTimeout = setTimeout(() => titleToTooltip(target), 150);
+                    }
+                });
+                document.body.addEventListener('mouseout', function(event) {
+                    const target = event.target;
+                    if (target.hasAttribute('data-tooltip')) {
+                        hideTooltip(target);
+                    }
+                });
+                return;
+            }
+
+            if (el.hasAttribute('title')) {
+                el.setAttribute('data-tooltip', el.getAttribute('title'));
+                el.removeAttribute('title');
+            }
+
+            let tooltip = document.getElementById('custom-tooltip');
+            if (!tooltip) {
+                tooltip = document.createElement('div');
+                tooltip.id = 'custom-tooltip';
+                tooltip.style.position = 'absolute';
+                tooltip.style.background = document.body.classList.contains('dark-mode') ? 'rgba(255, 255, 255, 0.8)' : 'rgba(0, 0, 0, 0.8)';
+                tooltip.style.color = document.body.classList.contains('dark-mode') ? '#333' : '#fff';
+                tooltip.style.padding = '5px 10px';
+                tooltip.style.borderRadius = '4px';
+                tooltip.style.fontSize = '0.9em';
+                tooltip.style.pointerEvents = 'none';
+                tooltip.style.zIndex = '1000';
+                tooltip.style.transition = 'opacity 0.2s';
+                tooltip.style.opacity = '0';
+                document.body.appendChild(tooltip);
+            }
+
+            tooltip.textContent = el.getAttribute('data-tooltip');
+            const rect = el.getBoundingClientRect();
+            let top = rect.top - 20;
+            let left = rect.left + (rect.width / 2) - (tooltip.getBoundingClientRect().width / 2);
+            if (top < 0) top = rect.bottom + 5;
+            if (left + tooltip.getBoundingClientRect().width > window.innerWidth) {
+                left = window.innerWidth - tooltip.getBoundingClientRect().width - 10;
+            }
+            if (left < 0) left = 10;
+            tooltip.style.top = `${top + window.scrollY}px`;
+            tooltip.style.left = `${left + window.scrollX}px`;
+            setTimeout(() => tooltip.style.opacity = '1', 10);
+            el._tooltip = tooltip;
+
+            function hideTooltip(el) {
+                if (el._tooltip) {
+                    el._tooltip.style.opacity = '0';
+                    setTimeout(() => {
+                        if (el._tooltip && el._tooltip.parentNode) {
+                            el._tooltip.parentNode.removeChild(el._tooltip);
+                        }
+                        el._tooltip = null;
+                    }, 200);
+                }
+            }
+        }
 
         // Initial load
-        loadSettings();
+        loadData();
 
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('/focus-app/sw.js').then(reg => {
+                    console.log('Service Worker registered!', reg);
+                }).catch(err => {
+                    console.log('Service Worker registration failed:', err);
+                });
+            });
+        }
     </script>
 </body>
 </html>
