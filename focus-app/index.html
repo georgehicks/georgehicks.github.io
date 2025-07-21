@@ -240,6 +240,7 @@
     </section>
 
     <a id="settingsLink" title="Settings">⚙️</a>
+	<a id="refreshLink" title="Refresh" style="position: fixed; bottom: 10px; left: 40px; font-size: 0.8em; color: #777; text-decoration: none; cursor: pointer;">🔄</a>
     <a id="syncLink" title="Manual Sync">Sync: Disabled</a>
     <div id="activeIndicator">Active</div>
     <div id="settingsContainer">
@@ -1199,6 +1200,35 @@
                 }
             }
         }
+		
+		
+		document.getElementById('refreshLink').addEventListener('click', refreshApp);
+
+		function refreshApp() {
+			// Preserve localStorage data before refreshing
+			const savedData = localStorage.getItem(STORAGE_KEY);
+			const savedSettings = localStorage.getItem(SETTINGS_KEY);
+
+			// Clear caches (Service Worker caches, IndexedDB, etc.)
+			if ('caches' in window) {
+				caches.keys().then(cacheNames => {
+					cacheNames.forEach(cacheName => {
+						caches.delete(cacheName);
+					});
+				});
+			}
+
+			// Reload the page and preserve localStorage data
+			window.location.reload();
+			
+			// Re-restore the localStorage data after page reload
+			window.onload = () => {
+				if (savedData) localStorage.setItem(STORAGE_KEY, savedData);
+				if (savedSettings) localStorage.setItem(SETTINGS_KEY, savedSettings);
+			};
+		}
+
+		
 
         // Initial load
         loadData();
