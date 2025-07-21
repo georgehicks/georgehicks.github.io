@@ -1053,6 +1053,7 @@
                     const add = parseInt(a.textContent.slice(1)) * 60;
                     data.timers[mode].remaining += add;
                     data.timers[mode].initial += add;
+					data.timers[mode].overtime = false;
                     updateTimerDisplay(mode);
                 });
             });
@@ -1062,7 +1063,8 @@
                     let setVal = parseInt(setText);
                     if (setText.endsWith('s')) setVal /= 60;
                     data.timers[mode].remaining = setVal * 60;
-                    data.timers[mode].initial = data.timers[mode].remaining;
+                    data.timers[mode].initial = data.timers[mode].remaining;					
+					data.timers[mode].overtime = false;
                     updateTimerDisplay(mode);
                 });
             });
