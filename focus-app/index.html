@@ -378,6 +378,7 @@
             lastStored.timestamp = Date.now();
             localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
             if (!auto && settings.dataUrl && settings.timestampUrl) {
+				captureFocusState();
                 simpleCloudStore(data);
             }
             updateTaskSelect();
@@ -709,13 +710,14 @@
         }
 
         function loadSelectedTask() {
-            const selected = data.tasks.find(t => t.name === taskSelect.value);
-            if (selected) {
-                data.currentTask = selected;
-                stepInput.value = selected.step || '';
-                notesTextarea.value = selected.notes || '';
-                document.getElementById('currentTaskDisplayFocus').textContent = `Focusing on: ${selected.name}`;
-            }
+			const index = data.tasks.findIndex(t => t.name === taskSelect.value);
+			if (index >= 0) {
+				data.currentTask = data.tasks[index]; // direct reference
+				stepInput.value = data.currentTask.step || '';
+				notesTextarea.value = data.currentTask.notes || '';
+				document.getElementById('currentTaskDisplayFocus').textContent = `Focusing on: ${data.currentTask.name}`;
+			}
+
         }
 
 		taskSelect.addEventListener('change', () => {
@@ -982,6 +984,7 @@
 
         function accumulateTime(mode) {
             if (!isActiveInstance) return;
+			if (mode === 'focus') captureFocusState();
             let taskName = mode === 'focus' ? (data.currentTask ? data.currentTask.name : 'misc') : mode;
             const task = data.tasks.find(t => t.name === taskName);
             if (task) {
@@ -990,6 +993,14 @@
                 saveData(true);
             }
         }
+		
+		function captureFocusState() {
+			if (data.currentTask && document.getElementById('focus').classList.contains('active')) {
+				data.currentTask.step = stepInput.value;
+				data.currentTask.notes = notesTextarea.value;
+				updateRawFromTask(data.currentTask);
+			}
+		}
 
         function startSession(mode) {
             let taskName = mode === 'focus' ? (data.currentTask ? data.currentTask.name : 'misc') : mode;
@@ -999,6 +1010,7 @@
                 task.durations[TODAY].sessions.push({ start: Date.now() });
                 if (!data.log[TODAY]) data.log[TODAY] = [];
                 data.log[TODAY].push({ time: new Date().toISOString(), task: taskName, step: task.step || '' });
+				captureFocusState();
                 saveData(true);
             }
         }
@@ -1009,6 +1021,7 @@
             if (task && task.durations[TODAY]) {
                 const lastSession = task.durations[TODAY].sessions[task.durations[TODAY].sessions.length - 1];
                 if (lastSession && !lastSession.end) lastSession.end = Date.now();
+				captureFocusState();
                 saveData(true);
             }
         }
@@ -1113,6 +1126,7 @@
                 return;
             }
             isActiveInstance = true;
+			captureFocusState();
             simpleCloudStore(data);
             setupSync();
         });
