@@ -346,77 +346,75 @@ section.active { display: block; }
         }
 
         // Cloud sync with two URLs
-        async function simpleCloudStore(dataToSend) {
-            if (!settings.timestampUrl || !settings.dataUrl) {
-                updateSyncStatus(false);
-                return;
-            }
-            try {
-                // Check timestamp first
-                const tsResponse = await fetch(settings.timestampUrl);
-                let remoteMeta = { timestamp: 0, version: 0 };
-                try {
-                    const text = await tsResponse.text();
-                    remoteMeta = text ? JSON.parse(text) : { timestamp: 0, version: 0 };
-                } catch (e) {
-                    console.warn('Invalid timestamp response, defaulting to 0:', e);
-                    alert('Sync warning: Invalid timestamp response from server. Please check the Timestamp URL.');
-                }
+		async function simpleCloudStore(dataToSend) {
+			if (!settings.timestampUrl || !settings.dataUrl) {
+				updateSyncStatus(false);
+				return;
+			}
+			try {
+				// Check timestamp first
+				const tsResponse = await fetch(settings.timestampUrl);
+				let remoteMeta = { timestamp: 0, version: 0 };
+				try {
+					const text = await tsResponse.text();
+					remoteMeta = text ? JSON.parse(text) : { timestamp: 0, version: 0 };
+				} catch (e) {
+					console.warn('Invalid timestamp response, defaulting to 0:', e);
+					alert('Sync warning: Invalid timestamp response from server. Please check the Timestamp URL.');
+				}
 
-                if (dataToSend) {
-                    // POST data
-                    await fetch(settings.dataUrl, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-                        body: `v=${encodeURIComponent(JSON.stringify(dataToSend))}`
-                    });
-                    // Update timestamp
-                    await fetch(settings.timestampUrl, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-                        body: `v=${encodeURIComponent(JSON.stringify({ timestamp: lastStored.timestamp, version: lastStored.version }))}`
-                    });
-                    updateSyncStatus(true);
-                } else if (remoteMeta.timestamp > lastStored.timestamp) {
-                    // Check for unsynced changes before overwriting
-                    if (isActiveInstance && hasUnsyncedChanges()) {
-                        if (!confirm('Unsynced changes detected. Save and sync changes before switching to inactive?')) {
-                            updateSyncStatus(false);
-                            return;
-                        }
-                        captureFocusState();
-                        await simpleCloudStore(data); // Push local changes first
-                        return;
-                    }
-                    // Remote is newer, fetch data
-                    const response = await fetch(settings.dataUrl);
-                    let remoteData = {};
-                    try {
-                        const text = await response.text();
-                        remoteData = text ? JSON.parse(text) : data;
-                    } catch (e) {
-                        console.warn('Invalid data response, skipping sync:', e);
-                        alert('Sync failed: Invalid data response from server. Please check the Data URL.');
-                        updateSyncStatus(false, true);
-                        return;
-                    }
-                    data = mergeData(data, remoteData);
-                    localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
-                    lastStored = { ...remoteMeta };
-                    isActiveInstance = false;
-                    stopVisibleTimers();
-                    loadData();
-                    updateSyncStatus(false);
-                } else if (remoteMeta.timestamp < lastStored.timestamp) {
-                    // Local is newer, push
-                    await simpleCloudStore(data);
-                }
-            } catch (e) {
-                console.error('Sync failed:', e);
-                alert('Sync failed: Unable to connect to the server. Please check your network or URLs.');
-                updateSyncStatus(false, true);
-            }
-        }
+				if (dataToSend) {
+					// POST data
+					await fetch(settings.dataUrl, {
+						method: 'POST',
+						headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+						body: `v=${encodeURIComponent(JSON.stringify(dataToSend))}`
+					});
+					// Update timestamp
+					await fetch(settings.timestampUrl, {
+						method: 'POST',
+						headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+						body: `v=${encodeURIComponent(JSON.stringify({ timestamp: lastStored.timestamp, version: lastStored.version }))}`
+					});
+					updateSyncStatus(true);
+				} else if (remoteMeta.timestamp > lastStored.timestamp) {
+					// Check for unsynced changes before overwriting
+					if (isActiveInstance && hasUnsyncedChanges()) {
+						if (confirm('Unsynced changes detected. Save and sync changes before switching to inactive?')) {
+							captureFocusState();
+							await simpleCloudStore(data); // Push local changes first
+							return;
+						} // FIX: Remove return on Cancel so it proceeds to fetch and merge below
+					}
+					// Remote is newer, fetch data
+					const response = await fetch(settings.dataUrl);
+					let remoteData = {};
+					try {
+						const text = await response.text();
+						remoteData = text ? JSON.parse(text) : data;
+					} catch (e) {
+						console.warn('Invalid data response, skipping sync:', e);
+						alert('Sync failed: Invalid data response from server. Please check the Data URL.');
+						updateSyncStatus(false, true);
+						return;
+					}
+					data = mergeData(data, remoteData);
+					localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+					lastStored = { ...remoteMeta };
+					isActiveInstance = false;
+					stopVisibleTimers();
+					loadData();
+					updateSyncStatus(false);
+				} else if (remoteMeta.timestamp < lastStored.timestamp) {
+					// Local is newer, push
+					await simpleCloudStore(data);
+				}
+			} catch (e) {
+				console.error('Sync failed:', e);
+				alert('Sync failed: Unable to connect to the server. Please check your network or URLs.');
+				updateSyncStatus(false, true);
+			}
+		}
 
         // Merge data with timestamp-based deduplication
         function mergeData(local, remote) {
