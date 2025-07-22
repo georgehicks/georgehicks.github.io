@@ -101,11 +101,16 @@ section.active { display: block; }
 #settingsContainer.dark-mode input, #settingsContainer.dark-mode select { background: #444; color: #ccc; border-color: #555; }
 #settingsContainer button { margin-top: 10px; padding: 5px 10px; background: #d4f4d4; color: #555; border: none; cursor: pointer; border-radius: 4px; }
 #settingsContainer.dark-mode button { background: #2a4d2a; color: #ccc; }
-#activeIndicator { position: fixed; bottom: 10px; left: 80px; font-size: 0.8em; color: #777; cursor: pointer; }
+#activeIndicator { position: fixed; bottom: 10px; left: 80px; font-size: 0.8em; color: #777; cursor: pointer; z-index: 1000; }
 #activeIndicator.dark-mode { color: #ccc; }
+#inactiveOverlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(255,255,255,0.5); z-index: 999; display: none; text-align: center; font-size: 1em; color: #555; }
+#inactiveOverlay.dark-mode { background: rgba(0,0,0,0.5); color: #ccc; }
+#inactiveOverlay span { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: #fff; padding: 10px; border-radius: 4px; border: 1px solid #ddd; }
+#inactiveOverlay.dark-mode span { background: #333; border-color: #555; }
     </style>
 </head>
 <body>
+    <div id="inactiveOverlay"><span>Device Inactive: Changes not syncing. Click Active to sync.</span></div>
     <span>Focus App</span>
     <div id="timeBox">
         <div id="remainingBar"></div>
@@ -245,7 +250,10 @@ section.active { display: block; }
             updateTimerDisplay('focus');
             updateTimerDisplay('rest');
             updateSyncStatus(false);
-            if (!settings.timestampUrl || !settings.dataUrl) {
+            // Only check remote status if sync is set up
+            if (settings.timestampUrl && settings.dataUrl) {
+                simpleCloudStore();
+            } else {
                 isActiveInstance = true;
             }
         }
@@ -273,6 +281,13 @@ section.active { display: block; }
             updateTimerDisplay('focus');
             updateTimerDisplay('rest');
             updateSyncStatus(false);
+            // Trigger sync check if URLs are set
+            if (settings.timestampUrl && settings.dataUrl) {
+                simpleCloudStore();
+            } else {
+                isActiveInstance = true;
+                updateSyncStatus(false);
+            }
             setupSync();
         }
 
@@ -300,7 +315,6 @@ section.active { display: block; }
             setInterval(updateCurrentTime, 1000);
             setInterval(updateNextMeeting, 1000);
             loadSettings();
-            setupSync();
         }
 
         // Save data
@@ -315,6 +329,20 @@ section.active { display: block; }
             updateTaskSelect();
             updateSummary();
             updateAgenda();
+        }
+
+        // Check for unsynced changes
+        function hasUnsyncedChanges() {
+            const taskTextarea = document.getElementById('taskTextarea');
+            const notesTextarea = document.getElementById('notesTextarea');
+            const meetingsTextarea = document.getElementById('meetingsTextarea');
+            const noteTrayTextarea = document.getElementById('noteTrayTextarea');
+            const isTaskChanged = taskTextarea.value !== data.rawTasks && document.getElementById('saveTasksBtn').style.display === 'block';
+            const isFocusChanged = data.currentTask && (notesTextarea.value !== data.currentTask.notes || stepInput.value !== data.currentTask.step) && document.getElementById('saveFocusBtn').style.display === 'block';
+            const isMeetingsChanged = meetingsTextarea.value !== data.meetings;
+            const isNoteTrayChanged = noteTrayTextarea.value !== data.noteTray;
+            const isTimerRunning = data.timers.focus.running || data.timers.rest.running || data.timers.plan.running;
+            return isTaskChanged || isFocusChanged || isMeetingsChanged || isNoteTrayChanged || isTimerRunning;
         }
 
         // Cloud sync with two URLs
@@ -350,6 +378,16 @@ section.active { display: block; }
                     });
                     updateSyncStatus(true);
                 } else if (remoteMeta.timestamp > lastStored.timestamp) {
+                    // Check for unsynced changes before overwriting
+                    if (isActiveInstance && hasUnsyncedChanges()) {
+                        if (!confirm('Unsynced changes detected. Save and sync changes before switching to inactive?')) {
+                            updateSyncStatus(false);
+                            return;
+                        }
+                        captureFocusState();
+                        await simpleCloudStore(data); // Push local changes first
+                        return;
+                    }
                     // Remote is newer, fetch data
                     const response = await fetch(settings.dataUrl);
                     let remoteData = {};
@@ -383,14 +421,12 @@ section.active { display: block; }
         // Merge data with timestamp-based deduplication
         function mergeData(local, remote) {
             const merged = { ...local, ...remote };
-            // Merge tasks: union, prefer newer by last session
             const allTasks = [...local.tasks, ...remote.tasks.filter(rt => !local.tasks.find(lt => lt.name === rt.name))];
             merged.tasks = allTasks.sort((a, b) => {
                 const aTime = (a.durations[TODAY]?.sessions?.slice(-1)[0]?.end || 0);
                 const bTime = (b.durations[TODAY]?.sessions?.slice(-1)[0]?.end || 0);
                 return bTime - aTime;
             });
-            // Merge logs: deduplicate by timestamp
             merged.log = {};
             for (let date in local.log) {
                 merged.log[date] = [...(local.log[date] || [])];
@@ -400,7 +436,6 @@ section.active { display: block; }
                 merged.log[date] = [...(merged.log[date] || []), ...remoteEntries.filter(re => !merged.log[date]?.find(le => le.time === re.time))]
                     .sort((a, b) => new Date(a.time) - new Date(b.time));
             }
-            // Merge sessions: deduplicate by start timestamp
             merged.tasks.forEach(task => {
                 const localDurations = task.durations || {};
                 const remoteDurations = (remote.tasks.find(rt => rt.name === task.name) || {}).durations || {};
@@ -428,7 +463,6 @@ section.active { display: block; }
                 return;
             }
             try {
-                // Fetch remote data
                 const response = await fetch(settings.dataUrl);
                 let remoteData = {};
                 try {
@@ -440,10 +474,8 @@ section.active { display: block; }
                     updateSyncStatus(false, true);
                     return;
                 }
-                // Overwrite local data
                 data = { ...remoteData };
                 localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
-                // Update timestamp and claim active status
                 isActiveInstance = true;
                 lastStored.version++;
                 lastStored.timestamp = Date.now();
@@ -452,13 +484,11 @@ section.active { display: block; }
                     headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
                     body: `v=${encodeURIComponent(JSON.stringify({ timestamp: lastStored.timestamp, version: lastStored.version }))}`
                 });
-                // Push updated data
                 await fetch(settings.dataUrl, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
                     body: `v=${encodeURIComponent(JSON.stringify(data))}`
                 });
-                // Refresh UI
                 loadData();
                 updateSyncStatus(true);
             } catch (e) {
@@ -468,20 +498,24 @@ section.active { display: block; }
             }
         }
 
-        // Update sync status
+        // Update sync status and toggle overlay
         function updateSyncStatus(success, error = false) {
             const syncLink = document.getElementById('syncLink');
             const activeIndicator = document.getElementById('activeIndicator');
+            const overlay = document.getElementById('inactiveOverlay');
             if (!settings.timestampUrl || !settings.dataUrl) {
                 syncLink.textContent = 'Sync: Disabled';
                 activeIndicator.textContent = 'Active';
+                overlay.style.display = 'none';
+                isActiveInstance = true;
                 return;
             }
-            const time = new Date(lastStored.timestamp);
+            const time = new Date(lastStored.timestamp || Date.now());
             const hh = time.getHours().toString().padStart(2, '0');
             const mm = time.getMinutes().toString().padStart(2, '0');
             syncLink.textContent = `Sync: ${success ? 'Success' : error ? 'Failed' : 'Idle'} at ${hh}:${mm}`;
             activeIndicator.textContent = isActiveInstance ? 'Active' : 'Inactive';
+            overlay.style.display = isActiveInstance ? 'none' : 'block';
         }
 
         // Setup periodic sync with idle detection
