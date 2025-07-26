@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Focus App 2025.7.21.1930</title>
+    <title>Focus App 2025.7.24</title>
     <!-- PWA additions -->
     <link rel="canonical" href="https://georgehicks.github.io/focus-app/" />
     <link rel="manifest" href="/focus-app/manifest.webmanifest">
@@ -28,6 +28,7 @@ nav a#summaryLink.active { background: #ffd3a1; }
 nav a#agendaLink.active { background: #d1a1fd; }
 nav a#focusLink.active { background: #a1c4fd; }
 nav a#restLink.active { background: #a1fda1; }
+nav a#datesLink.active { background: #fda1d3; }
 nav a.pulsate { animation: pulseRed 1s infinite; }
 @keyframes pulseRed { 0% { background: #fda1a1; } 50% { background: #eee; } 100% { background: #fda1a1; } }
 section { display: none; }
@@ -40,8 +41,8 @@ section.active { display: block; }
 #stepInput.dark-mode { background: #333; color: #ccc; border-color: #555; }
 #notesTextarea { width: 100%; height: 500px; border: 1px solid #ddd; border-radius: 4px; font-size: 0.9em; overflow: auto; }
 #notesTextarea.dark-mode { background: #333; color: #ccc; border-color: #555; }
-#saveTasksBtn, #saveFocusBtn { display: none; margin-top: 5px; padding: 3px 6px; background: #d4f4d4; color: #555; border: none; cursor: pointer; border-radius: 4px; font-size: 0.9em; }
-#saveTasksBtn.dark-mode, #saveFocusBtn.dark-mode { background: #2a4d2a; color: #ccc; }
+#saveTasksBtn, #saveFocusBtn, #toggleDatesModeBtn { display: none; margin-top: 5px; padding: 3px 6px; background: #d4f4d4; color: #555; border: none; cursor: pointer; border-radius: 4px; font-size: 0.9em; }
+#saveTasksBtn.dark-mode, #saveFocusBtn.dark-mode, #toggleDatesModeBtn.dark-mode { background: #2a4d2a; color: #ccc; }
 #timerBar { height: 15px; background: #eee; position: relative; border: 1px solid #ddd; border-radius: 4px; }
 #timerBar.dark-mode { background: #444; border-color: #666; }
 #timerProgress { height: 100%; width: 100%; transition: width 0.5s; border-radius: 4px; }
@@ -70,11 +71,11 @@ section.active { display: block; }
 .task-fill.dark-mode { opacity: 0.7; }
 #contextLog { height: 150px; overflow: auto; font-size: 0.8em; border: 1px solid #ddd; padding: 5px; margin-top: 10px; }
 #contextLog.dark-mode { border-color: #555; background: #333; color: #ccc; }
-#meetingsTextarea { width: 100%; height: 100px; font-family: monospace; border: 1px solid #ddd; border-radius: 4px; background: #f9f9f9; color: #555; font-size: 0.9em; margin-top: 10px; }
-#meetingsTextarea:focus { background: #fff; }
-#meetingsTextarea.dark-mode { background: #333; color: #ccc; border-color: #555; }
-#meetingsTextarea:focus.dark-mode { background: #444; }
-.meeting-placeholder { position: absolute; top: 5px; left: 5px; color: #888; opacity: 0.7; z-index: 1; font-size: 0.8em; }
+#meetingsTextarea, #datesTextarea { width: 100%; height: 100px; font-family: monospace; border: 1px solid #ddd; border-radius: 4px; background: #f9f9f9; color: #555; font-size: 0.9em; margin-top: 10px; }
+#meetingsTextarea:focus, #datesTextarea:focus { background: #fff; }
+#meetingsTextarea.dark-mode, #datesTextarea.dark-mode { background: #333; color: #ccc; border-color: #555; }
+#meetingsTextarea:focus.dark-mode, #datesTextarea:focus.dark-mode { background: #444; }
+.meeting-placeholder, .date-placeholder { position: absolute; top: 5px; left: 5px; color: #888; opacity: 0.7; z-index: 1; font-size: 0.8em; }
 #nextMeeting { position: absolute; top: 10px; right: 10px; color: #888; font-size: 0.8em; opacity: 0.8; }
 #nextMeeting.dark-mode { color: #ccc; }
 #timeBox { width: 300px; height: 20px; position: absolute; top: 10px; left: 50%; transform: translateX(-50%); background: #eee; border: 1px solid #ddd; border-radius: 4px; overflow: hidden; }
@@ -107,6 +108,10 @@ section.active { display: block; }
 #inactiveOverlay.dark-mode { background: rgba(0,0,0,0.5); color: #ccc; }
 #inactiveOverlay span { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: #fff; padding: 10px; border-radius: 4px; border: 1px solid #ddd; }
 #inactiveOverlay.dark-mode span { background: #333; border-color: #555; }
+#datesList { font-size: 0.9em; margin-top: 10px; }
+#datesList li { margin-bottom: 5px; }
+#datesList.dark-mode { color: #ccc; }
+#datesError { color: #f00; font-size: 0.8em; display: none; }
     </style>
 </head>
 <body>
@@ -124,6 +129,7 @@ section.active { display: block; }
             <li><a href="#agenda" id="agendaLink">Agenda</a></li>
             <li><a href="#focus" id="focusLink">Focus</a></li>
             <li><a href="#rest" id="restLink">Rest</a></li>
+            <li><a href="#dates" id="datesLink">Dates</a></li>
         </ul>
     </nav>
 
@@ -155,7 +161,7 @@ section.active { display: block; }
         <button id="saveFocusBtn">Save</button>
         <div id="currentTaskDisplayFocus"></div>
         <div id="timeRemainingFocus">12:00</div>
-        <div id="timerBarFocus"><div id="timerProgressFocus"> </div></div>
+        <div id="timerBarFocus"><div id="timerProgressFocus"></div></div>
         <div id="extendLinksFocus">Extend: <a>+1</a> <a>+2</a> <a>+5</a> <a>+10</a></div>
         <div id="setLinksFocus">Set: <a>10s</a> <a>3m</a> <a>5m</a> <a>10m</a> <a>12m</a> <a>15m</a> <a>20m</a> <a>30m</a></div>
         <div id="timerControlsFocus"> <a id="startFocus">Start</a> <a id="stopFocus">Stop</a> <a id="resetFocus">Reset</a> </div>
@@ -169,10 +175,17 @@ section.active { display: block; }
     <section id="rest" class="noselect">
         <div id="currentTaskDisplayRest">Resting</div>
         <div id="timeRemainingRest">03:00</div>
-        <div id="timerBarRest"><div id="timerProgressRest"> </div></div>
+        <div id="timerBarRest"><div id="timerProgressRest"></div></div>
         <div id="extendLinksRest">Extend: <a>+1</a> <a>+2</a> <a>+5</a> <a>+10</a></div>
         <div id="setLinksRest">Set: <a>10s</a> <a>3m</a> <a>5m</a> <a>10m</a> <a>12m</a> <a>15m</a> <a>20m</a> <a>30m</a></div>
         <div id="timerControlsRest"> <a id="startRest">Start</a> <a id="stopRest">Stop</a> <a id="resetRest">Reset</a> </div>
+    </section>
+
+    <section id="dates" class="noselect">
+        <button id="toggleDatesModeBtn">Edit</button>
+        <div id="datesError"></div>
+        <textarea id="datesTextarea" placeholder="MM/DD/YYYY Event Description"></textarea>
+        <ul id="datesList"></ul>
     </section>
 
     <a id="settingsLink" title="Settings">⚙️</a>
@@ -206,6 +219,7 @@ section.active { display: block; }
             },
             log: {},
             meetings: '',
+            dates: '',
             noteTray: ''
         };
         const STORAGE_KEY = 'focusAppData';
@@ -301,19 +315,23 @@ section.active { display: block; }
             }
             if (!data.log) data.log = {};
             if (!data.meetings) data.meetings = '';
+            if (!data.dates) data.dates = '';
             if (!data.noteTray) data.noteTray = '';
             document.getElementById('taskTextarea').value = data.rawTasks;
             document.getElementById('meetingsTextarea').value = data.meetings;
+            document.getElementById('datesTextarea').value = data.dates;
             document.getElementById('noteTrayTextarea').value = data.noteTray;
             updateTaskSelect();
             updateSummary();
             updateAgenda();
+            updateDates();
             if (document.getElementById('timerBarFocus')) updateTimerDisplay('focus');
             if (document.getElementById('timerBarRest')) updateTimerDisplay('rest');
             startPlanTimerIfNeeded();
             updateCurrentTime();
             setInterval(updateCurrentTime, 1000);
             setInterval(updateNextMeeting, 1000);
+            setInterval(updateDates, 1000);
             loadSettings();
         }
 
@@ -329,6 +347,7 @@ section.active { display: block; }
             updateTaskSelect();
             updateSummary();
             updateAgenda();
+            updateDates();
         }
 
         // Check for unsynced changes
@@ -336,85 +355,87 @@ section.active { display: block; }
             const taskTextarea = document.getElementById('taskTextarea');
             const notesTextarea = document.getElementById('notesTextarea');
             const meetingsTextarea = document.getElementById('meetingsTextarea');
+            const datesTextarea = document.getElementById('datesTextarea');
             const noteTrayTextarea = document.getElementById('noteTrayTextarea');
             const isTaskChanged = taskTextarea.value !== data.rawTasks && document.getElementById('saveTasksBtn').style.display === 'block';
             const isFocusChanged = data.currentTask && (notesTextarea.value !== data.currentTask.notes || stepInput.value !== data.currentTask.step) && document.getElementById('saveFocusBtn').style.display === 'block';
             const isMeetingsChanged = meetingsTextarea.value !== data.meetings;
+            const isDatesChanged = datesTextarea.value !== data.dates;
             const isNoteTrayChanged = noteTrayTextarea.value !== data.noteTray;
             const isTimerRunning = data.timers.focus.running || data.timers.rest.running || data.timers.plan.running;
-            return isTaskChanged || isFocusChanged || isMeetingsChanged || isNoteTrayChanged || isTimerRunning;
+            return isTaskChanged || isFocusChanged || isMeetingsChanged || isDatesChanged || isNoteTrayChanged || isTimerRunning;
         }
 
         // Cloud sync with two URLs
-		async function simpleCloudStore(dataToSend) {
-			if (!settings.timestampUrl || !settings.dataUrl) {
-				updateSyncStatus(false);
-				return;
-			}
-			try {
-				// Check timestamp first
-				const tsResponse = await fetch(settings.timestampUrl);
-				let remoteMeta = { timestamp: 0, version: 0 };
-				try {
-					const text = await tsResponse.text();
-					remoteMeta = text ? JSON.parse(text) : { timestamp: 0, version: 0 };
-				} catch (e) {
-					console.warn('Invalid timestamp response, defaulting to 0:', e);
-					alert('Sync warning: Invalid timestamp response from server. Please check the Timestamp URL.');
-				}
+        async function simpleCloudStore(dataToSend) {
+            if (!settings.timestampUrl || !settings.dataUrl) {
+                updateSyncStatus(false);
+                return;
+            }
+            try {
+                // Check timestamp first
+                const tsResponse = await fetch(settings.timestampUrl);
+                let remoteMeta = { timestamp: 0, version: 0 };
+                try {
+                    const text = await tsResponse.text();
+                    remoteMeta = text ? JSON.parse(text) : { timestamp: 0, version: 0 };
+                } catch (e) {
+                    console.warn('Invalid timestamp response, defaulting to 0:', e);
+                    alert('Sync warning: Invalid timestamp response from server. Please check the Timestamp URL.');
+                }
 
-				if (dataToSend) {
-					// POST data
-					await fetch(settings.dataUrl, {
-						method: 'POST',
-						headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-						body: `v=${encodeURIComponent(JSON.stringify(dataToSend))}`
-					});
-					// Update timestamp
-					await fetch(settings.timestampUrl, {
-						method: 'POST',
-						headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-						body: `v=${encodeURIComponent(JSON.stringify({ timestamp: lastStored.timestamp, version: lastStored.version }))}`
-					});
-					updateSyncStatus(true);
-				} else if (remoteMeta.timestamp > lastStored.timestamp) {
-					// Check for unsynced changes before overwriting
-					if (isActiveInstance && hasUnsyncedChanges()) {
-						if (confirm('Unsynced changes detected. Save and sync changes before switching to inactive?')) {
-							captureFocusState();
-							await simpleCloudStore(data); // Push local changes first
-							return;
-						} // FIX: Remove return on Cancel so it proceeds to fetch and merge below
-					}
-					// Remote is newer, fetch data
-					const response = await fetch(settings.dataUrl);
-					let remoteData = {};
-					try {
-						const text = await response.text();
-						remoteData = text ? JSON.parse(text) : data;
-					} catch (e) {
-						console.warn('Invalid data response, skipping sync:', e);
-						alert('Sync failed: Invalid data response from server. Please check the Data URL.');
-						updateSyncStatus(false, true);
-						return;
-					}
-					data = mergeData(data, remoteData);
-					localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
-					lastStored = { ...remoteMeta };
-					isActiveInstance = false;
-					stopVisibleTimers();
-					loadData();
-					updateSyncStatus(false);
-				} else if (remoteMeta.timestamp < lastStored.timestamp) {
-					// Local is newer, push
-					await simpleCloudStore(data);
-				}
-			} catch (e) {
-				console.error('Sync failed:', e);
-				alert('Sync failed: Unable to connect to the server. Please check your network or URLs.');
-				updateSyncStatus(false, true);
-			}
-		}
+                if (dataToSend) {
+                    // POST data
+                    await fetch(settings.dataUrl, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                        body: `v=${encodeURIComponent(JSON.stringify(dataToSend))}`
+                    });
+                    // Update timestamp
+                    await fetch(settings.timestampUrl, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                        body: `v=${encodeURIComponent(JSON.stringify({ timestamp: lastStored.timestamp, version: lastStored.version }))}`
+                    });
+                    updateSyncStatus(true);
+                } else if (remoteMeta.timestamp > lastStored.timestamp) {
+                    // Check for unsynced changes before overwriting
+                    if (isActiveInstance && hasUnsyncedChanges()) {
+                        if (confirm('Unsynced changes detected. Save and sync changes before switching to inactive?')) {
+                            captureFocusState();
+                            await simpleCloudStore(data); // Push local changes first
+                            return;
+                        } // FIX: Remove return on Cancel so it proceeds to fetch and merge below
+                    }
+                    // Remote is newer, fetch data
+                    const response = await fetch(settings.dataUrl);
+                    let remoteData = {};
+                    try {
+                        const text = await response.text();
+                        remoteData = text ? JSON.parse(text) : data;
+                    } catch (e) {
+                        console.warn('Invalid data response, skipping sync:', e);
+                        alert('Sync failed: Invalid data response from server. Please check the Data URL.');
+                        updateSyncStatus(false, true);
+                        return;
+                    }
+                    data = mergeData(data, remoteData);
+                    localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+                    lastStored = { ...remoteMeta };
+                    isActiveInstance = false;
+                    stopVisibleTimers();
+                    loadData();
+                    updateSyncStatus(false);
+                } else if (remoteMeta.timestamp < lastStored.timestamp) {
+                    // Local is newer, push
+                    await simpleCloudStore(data);
+                }
+            } catch (e) {
+                console.error('Sync failed:', e);
+                alert('Sync failed: Unable to connect to the server. Please check your network or URLs.');
+                updateSyncStatus(false, true);
+            }
+        }
 
         // Merge data with timestamp-based deduplication
         function mergeData(local, remote) {
@@ -451,6 +472,11 @@ section.active { display: block; }
                     task.durations[date].minutes = task.durations[date].sessions.reduce((sum, s) => sum + ((s.end || Date.now()) - s.start) / 1000 / 60, 0);
                 }
             });
+            // Merge dates (line-based to avoid overwrites)
+            const localDatesLines = local.dates ? local.dates.split('\n').filter(line => line.trim()) : [];
+            const remoteDatesLines = remote.dates ? remote.dates.split('\n').filter(line => line.trim()) : [];
+            const mergedDatesLines = [...new Set([...localDatesLines, ...remoteDatesLines])];
+            merged.dates = mergedDatesLines.join('\n');
             return merged;
         }
 
@@ -602,6 +628,9 @@ section.active { display: block; }
                 if (tabId === 'focus') {
                     updateTaskSelect();
                     loadSelectedTask();
+                } else if (tabId === 'dates') {
+                    document.getElementById('toggleDatesModeBtn').style.display = 'block';
+                    updateDates();
                 }
             });
         });
@@ -630,7 +659,7 @@ section.active { display: block; }
         });
 
         // Tab indentation with spaces only
-        [document.getElementById('taskTextarea'), document.getElementById('notesTextarea')].forEach(textarea => {
+        [document.getElementById('taskTextarea'), document.getElementById('notesTextarea'), document.getElementById('datesTextarea')].forEach(textarea => {
             textarea.addEventListener('keydown', e => {
                 if (e.key === 'Tab') {
                     e.preventDefault();
@@ -1109,6 +1138,25 @@ section.active { display: block; }
             saveData(true);
         });
 
+        // Dates textarea and toggle
+        const datesTextarea = document.getElementById('datesTextarea');
+        const toggleDatesModeBtn = document.getElementById('toggleDatesModeBtn');
+        let datesEditMode = false;
+
+        toggleDatesModeBtn.addEventListener('click', () => {
+            datesEditMode = !datesEditMode;
+            toggleDatesModeBtn.textContent = datesEditMode ? 'View' : 'Edit';
+            data.dates = datesTextarea.value;
+            saveData(true);
+            updateDates();
+        });
+
+        datesTextarea.addEventListener('blur', () => {
+            data.dates = datesTextarea.value;
+            saveData(true);
+            updateDates();
+        });
+
         // Note Tray
         document.getElementById('openNoteTray').addEventListener('click', () => {
             document.getElementById('noteTrayContainer').style.display = 'block';
@@ -1236,6 +1284,85 @@ section.active { display: block; }
                         }
                         el._tooltip = null;
                     }, 200);
+                }
+            }
+        }
+
+        // Parse dates from raw text with validation
+        function parseDates() {
+            const lines = data.dates.split('\n').filter(line => line.trim());
+            const parsed = [];
+            const errors = [];
+            lines.forEach(line => {
+                const match = line.match(/^(\d{2})\/(\d{2})\/(\d{4})\s*(.*)$/);
+                if (match) {
+                    const month = parseInt(match[1], 10);
+                    const day = parseInt(match[2], 10);
+                    const year = parseInt(match[3], 10);
+                    const event = match[4].trim();
+                    const date = new Date(year, month - 1, day);
+                    if (!isNaN(date.getTime()) && date.getFullYear() === year && date.getMonth() + 1 === month && date.getDate() === day) {
+                        parsed.push({ month, day, year, event, date });
+                    } else {
+                        errors.push(line);
+                    }
+                } else {
+                    errors.push(line);
+                }
+            });
+            if (errors.length > 0) {
+                const errorDiv = document.getElementById('datesError');
+                errorDiv.textContent = `Invalid dates: ${errors.join(', ')}`;
+                errorDiv.style.display = 'block';
+            } else {
+                document.getElementById('datesError').style.display = 'none';
+            }
+            return parsed;
+        }
+
+        // Calculate days and work days until a date
+        function calculateDaysUntil(eventDate) {
+            const now = new Date();
+            now.setHours(0, 0, 0, 0);
+            eventDate.setHours(0, 0, 0, 0);
+            const diffMs = eventDate - now;
+            const days = Math.ceil(diffMs / (1000 * 3600 * 24));
+            let workDays = 0;
+            for (let d = new Date(now); d < eventDate; d.setDate(d.getDate() + 1)) {
+                const dayOfWeek = d.getDay();
+                if (dayOfWeek !== 0 && dayOfWeek !== 6) workDays++;
+            }
+            return { days, workDays };
+        }
+
+        // Update dates display
+        function updateDates() {
+            const datesSection = document.getElementById('dates');
+            const datesTextarea = document.getElementById('datesTextarea');
+            const datesList = document.getElementById('datesList');
+            const toggleBtn = document.getElementById('toggleDatesModeBtn');
+            const isEditMode = toggleBtn.textContent === 'View';
+            datesTextarea.style.display = isEditMode ? 'block' : 'none';
+            datesList.style.display = isEditMode ? 'none' : 'block';
+            if (!isEditMode) {
+                const dates = parseDates();
+                dates.sort((a, b) => a.date - b.date);
+                datesList.innerHTML = '';
+                const now = new Date();
+                now.setHours(0, 0, 0, 0);
+                dates.forEach(d => {
+                    if (d.date >= now) {
+                        const li = document.createElement('li');
+                        const { days, workDays } = calculateDaysUntil(d.date);
+                        const dayName = d.date.toLocaleString('en-US', { weekday: 'short' });
+                        li.textContent = `${d.month.toString().padStart(2, '0')}/${d.day.toString().padStart(2, '0')}/${d.year} ${dayName} ${d.event} (wd: ${workDays}, d: ${days})`;
+                        datesList.appendChild(li);
+                    }
+                });
+                if (document.body.classList.contains('dark-mode')) {
+                    datesList.classList.add('dark-mode');
+                } else {
+                    datesList.classList.remove('dark-mode');
                 }
             }
         }
