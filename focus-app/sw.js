@@ -1,23 +1,15 @@
-const CACHE_NAME = 'focus-app-cache-v1';
-const urlsToCache = [
-  '/focus-app/',
-  '/focus-app/index.html'  // Cache the HTML explicitly
-];
-
+// Empty service worker that does nothing but is required for PWA compatibility
 self.addEventListener('install', event => {
-  event.waitUntil(
-    caches.open(CACHE_NAME)
-      .then(cache => {
-        return cache.addAll(urlsToCache);
-      })
-  );
+  // Skip waiting to activate immediately
+  self.skipWaiting();
+});
+
+self.addEventListener('activate', event => {
+  // Claim clients immediately
+  self.clients.claim();
 });
 
 self.addEventListener('fetch', event => {
-  event.respondWith(
-    caches.match(event.request)
-      .then(response => {
-        return response || fetch(event.request);
-      })
-  );
+  // Pass through all requests without caching
+  event.respondWith(fetch(event.request));
 });
