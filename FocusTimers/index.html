@@ -1,0 +1,452 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Focus Timers</title>
+    <link rel="manifest" href="/FocusTimers/manifest.webmanifest">
+    <meta name="theme-color" content="#a1c4fd">
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background-color: #f9f9f9;
+            color: #333;
+            margin: 0;
+            padding: 0 20px 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+        }
+        .notes-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            background-color: #fff;
+            border-bottom: 1px solid #ddd;
+            padding: 10px 20px;
+            box-sizing: border-box;
+            z-index: 10;
+        }
+        .notes-title {
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 5px;
+        }
+        .notes {
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            padding: 8px;
+            min-height: 200px;
+            max-height: 200px;
+            overflow-y: auto;
+            background-color: #fafafa;
+            font-size: 14px;
+        }
+        .timers-container {
+            display: flex;
+            flex-direction: column;
+            max-width: 400px;
+            width: 100%;
+        }
+        .timer-panel {
+            background-color: #fff;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            padding: 10px;
+            margin-bottom: 10px;
+            transition: opacity 0.3s;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        .timer-panel.inactive {
+            opacity: 0.3;
+        }
+        .timer-right {
+            display: flex;
+            flex-direction: column;
+            flex: 1;
+        }
+        .timer-title {
+            font-size: 16px;
+            font-weight: 600;
+            margin-bottom: 5px;
+        }
+        .goals {
+            display: flex;
+            align-items: center;
+            margin-bottom: 5px;
+        }
+        .goals input {
+            width: 60px;
+            padding: 4px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            margin-right: 5px;
+            text-align: right;
+            font-size: 12px;
+        }
+        .play-btn {
+            padding: 8px;
+            background-color: #a1c4fd;
+            color: #fff;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            width: 100%;
+        }
+        .play-btn:hover {
+            background-color: #81a9e0;
+        }
+        .radial-progress {
+            width: 100px;
+            height: 100px;
+            position: relative;
+            display: none;
+            flex-shrink: 0;
+        }
+        .radial-progress .circle {
+            width: 100%;
+            height: 100%;
+            background: conic-gradient(#eee 0%, #eee 100%);
+            border-radius: 50%;
+        }
+        .radial-progress .mask {
+            position: absolute;
+            top: 10%;
+            left: 10%;
+            width: 80%;
+            height: 80%;
+            background-color: #fff;
+            border-radius: 50%;
+        }
+        .radial-progress .time {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 12px;
+            text-align: center;
+        }
+        @media (max-width: 400px) {
+            .notes {
+                min-height: 200px;
+                max-height: 200px;
+            }
+            .radial-progress {
+                width: 80px;
+                height: 80px;
+            }
+            .radial-progress .time {
+                font-size: 10px;
+            }
+            .timer-title {
+                font-size: 14px;
+            }
+            .goals input {
+                width: 50px;
+                font-size: 10px;
+            }
+            .play-btn {
+                font-size: 12px;
+                padding: 6px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="notes-container">
+        <div class="notes-title">Notes</div>
+        <div class="notes" contenteditable="true"></div>
+    </div>
+    <div class="timers-container">
+        <div class="timer-panel" data-type="DeepWork">
+            <div class="radial-progress">
+                <div class="circle"></div>
+                <div class="mask"></div>
+                <div class="time">00:00:00</div>
+            </div>
+            <div class="timer-right">
+                <div class="timer-title">DeepWork</div>
+                <div class="goals">
+                    <input type="number" min="0" placeholder="Min" class="min-goal">
+                    <input type="number" min="0" placeholder="Max" class="max-goal">
+                </div>
+                <button class="play-btn">Play</button>
+            </div>
+        </div>
+        <div class="timer-panel" data-type="Work">
+            <div class="radial-progress">
+                <div class="circle"></div>
+                <div class="mask"></div>
+                <div class="time">00:00:00</div>
+            </div>
+            <div class="timer-right">
+                <div class="timer-title">Work</div>
+                <div class="goals">
+                    <input type="number" min="0" placeholder="Min" class="min-goal">
+                    <input type="number" min="0" placeholder="Max" class="max-goal">
+                </div>
+                <button class="play-btn">Play</button>
+            </div>
+        </div>
+        <div class="timer-panel" data-type="Meeting">
+            <div class="radial-progress">
+                <div class="circle"></div>
+                <div class="mask"></div>
+                <div class="time">00:00:00</div>
+            </div>
+            <div class="timer-right">
+                <div class="timer-title">Meeting</div>
+                <div class="goals">
+                    <input type="number" min="0" placeholder="Min" class="min-goal">
+                    <input type="number" min="0" placeholder="Max" class="max-goal">
+                </div>
+                <button class="play-btn">Play</button>
+            </div>
+        </div>
+        <div class="timer-panel" data-type="Admin">
+            <div class="radial-progress">
+                <div class="circle"></div>
+                <div class="mask"></div>
+                <div class="time">00:00:00</div>
+            </div>
+            <div class="timer-right">
+                <div class="timer-title">Admin</div>
+                <div class="goals">
+                    <input type="number" min="0" placeholder="Min" class="min-goal">
+                    <input type="number" min="0" placeholder="Max" class="max-goal">
+                </div>
+                <button class="play-btn">Play</button>
+            </div>
+        </div>
+        <div class="timer-panel" data-type="Errands">
+            <div class="radial-progress">
+                <div class="circle"></div>
+                <div class="mask"></div>
+                <div class="time">00:00:00</div>
+            </div>
+            <div class="timer-right">
+                <div class="timer-title">Errands</div>
+                <div class="goals">
+                    <input type="number" min="0" placeholder="Min" class="min-goal">
+                    <input type="number" min="0" placeholder="Max" class="max-goal">
+                </div>
+                <button class="play-btn">Play</button>
+            </div>
+        </div>
+        <div class="timer-panel" data-type="Break">
+            <div class="radial-progress">
+                <div class="circle"></div>
+                <div class="mask"></div>
+                <div class="time">00:00:00</div>
+            </div>
+            <div class="timer-right">
+                <div class="timer-title">Break</div>
+                <div class="goals">
+                    <input type="number" min="0" placeholder="Min" class="min-goal">
+                    <input type="number" min="0" placeholder="Max" class="max-goal">
+                </div>
+                <button class="play-btn">Play</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('/FocusTimers/sw.js');
+        }
+
+        const timers = ['DeepWork', 'Work', 'Meeting', 'Admin', 'Errands', 'Break'];
+        let currentTimes = {};
+        let history = [];
+        let currentDate = '';
+        let runningType = null;
+        let interval = null;
+        let notes = {};
+
+        function initTimes() {
+            timers.forEach(type => {
+                currentTimes[type] = 0;
+            });
+        }
+
+        function formatTime(seconds) {
+            const h = Math.floor(seconds / 3600).toString().padStart(2, '0');
+            const m = Math.floor((seconds % 3600) / 60).toString().padStart(2, '0');
+            const s = (seconds % 60).toString().padStart(2, '0');
+            return `${h}:${m}:${s}`;
+        }
+
+        function updateDisplay(type) {
+            const panel = document.querySelector(`.timer-panel[data-type="${type}"]`);
+            const timeDisplay = panel.querySelector('.time');
+            timeDisplay.textContent = formatTime(currentTimes[type]);
+
+            const minGoal = parseInt(panel.querySelector('.min-goal').value) || 0;
+            const maxGoal = parseInt(panel.querySelector('.max-goal').value) || 0;
+            const radial = panel.querySelector('.radial-progress');
+            const circle = panel.querySelector('.circle');
+
+            const currentMin = currentTimes[type] / 60;
+            let target = maxGoal || minGoal || currentMin || 1;
+            let progress = Math.min(currentMin / target, 1);
+            let angle = progress * 360;
+
+            let gradient = '';
+            if (minGoal || maxGoal) {
+                radial.style.display = 'block';
+                let minAngle = (minGoal / target) * 360;
+                let maxAngle = (maxGoal / target) * 360;
+
+                if (minGoal && maxGoal) {
+                    gradient = `conic-gradient(orange 0deg ${minAngle}deg, green ${minAngle}deg ${maxAngle}deg, orange ${maxAngle}deg 360deg)`;
+                } else if (minGoal) {
+                    gradient = `conic-gradient(orange 0deg ${minAngle}deg, green ${minAngle}deg 360deg)`;
+                } else if (maxGoal) {
+                    gradient = `conic-gradient(green 0deg ${maxAngle}deg, orange ${maxAngle}deg 360deg)`;
+                }
+                circle.style.background = `${gradient}, conic-gradient(#eee ${angle}deg, transparent ${angle}deg 360deg)`;
+            } else {
+                radial.style.display = 'none';
+            }
+        }
+
+        function updateAllDisplays() {
+            timers.forEach(updateDisplay);
+        }
+
+        function updateNotesTitle() {
+            const notesTitle = document.querySelector('.notes-title');
+            notesTitle.textContent = runningType ? `Notes - ${runningType}` : 'Notes';
+        }
+
+        function saveNotes() {
+            if (runningType) {
+                const notesElem = document.querySelector('.notes');
+                notes[runningType] = notesElem.innerHTML;
+                localStorage.setItem(`notes-${runningType}`, notes[runningType]);
+            }
+        }
+
+        function loadNotes(type) {
+            const notesElem = document.querySelector('.notes');
+            notesElem.innerHTML = notes[type] || localStorage.getItem(`notes-${type}`) || '';
+        }
+
+        function stopTimer() {
+            if (interval) {
+                clearInterval(interval);
+                interval = null;
+            }
+            saveNotes();
+            runningType = null;
+            updateNotesTitle();
+            document.querySelectorAll('.timer-panel').forEach(panel => {
+                panel.classList.remove('inactive');
+            });
+            document.querySelectorAll('.play-btn').forEach(btn => {
+                btn.textContent = 'Play';
+            });
+        }
+
+        function startTimer(type) {
+            stopTimer();
+            runningType = type;
+            loadNotes(type);
+            updateNotesTitle();
+            interval = setInterval(() => {
+                currentTimes[type]++;
+                updateDisplay(type);
+                saveData();
+            }, 1000);
+
+            document.querySelectorAll('.timer-panel').forEach(panel => {
+                panel.classList.add('inactive');
+            });
+            const activePanel = document.querySelector(`.timer-panel[data-type="${type}"]`);
+            activePanel.classList.remove('inactive');
+            const btn = activePanel.querySelector('.play-btn');
+            btn.textContent = 'Pause';
+        }
+
+        function handlePlayClick(e) {
+            const panel = e.target.closest('.timer-panel');
+            const type = panel.dataset.type;
+            if (runningType === type) {
+                stopTimer();
+            } else {
+                startTimer(type);
+            }
+        }
+
+        function saveData() {
+            localStorage.setItem('currentDate', currentDate);
+            localStorage.setItem('currentTimes', JSON.stringify(currentTimes));
+            localStorage.setItem('history', JSON.stringify(history));
+        }
+
+        function updateMargin() {
+            const notesContainer = document.querySelector('.notes-container');
+            const timersContainer = document.querySelector('.timers-container');
+            timersContainer.style.marginTop = `${notesContainer.offsetHeight}px`;
+        }
+
+        function loadData() {
+            const today = new Date().toISOString().slice(0, 10);
+            currentDate = localStorage.getItem('currentDate') || today;
+            currentTimes = JSON.parse(localStorage.getItem('currentTimes')) || {};
+            history = JSON.parse(localStorage.getItem('history')) || [];
+
+            if (Object.keys(currentTimes).length === 0) {
+                initTimes();
+            }
+
+            if (currentDate !== today) {
+                history.push({ date: currentDate, times: { ...currentTimes } });
+                if (history.length > 10) {
+                    history.shift();
+                }
+                initTimes();
+                currentDate = today;
+                saveData();
+            }
+
+            timers.forEach(type => {
+                const panel = document.querySelector(`.timer-panel[data-type="${type}"]`);
+                const minGoal = panel.querySelector('.min-goal');
+                const maxGoal = panel.querySelector('.max-goal');
+
+                minGoal.value = localStorage.getItem(`goal-min-${type}`) || '';
+                maxGoal.value = localStorage.getItem(`goal-max-${type}`) || '';
+                notes[type] = localStorage.getItem(`notes-${type}`) || '';
+
+                minGoal.addEventListener('change', () => {
+                    localStorage.setItem(`goal-min-${type}`, minGoal.value);
+                    updateDisplay(type);
+                });
+                maxGoal.addEventListener('change', () => {
+                    localStorage.setItem(`goal-max-${type}`, maxGoal.value);
+                    updateDisplay(type);
+                });
+
+                panel.querySelector('.play-btn').addEventListener('click', handlePlayClick);
+            });
+
+            const notesElem = document.querySelector('.notes');
+            notesElem.addEventListener('input', saveNotes);
+            notesElem.addEventListener('paste', saveNotes);
+
+            updateAllDisplays();
+            updateNotesTitle();
+            updateMargin();
+            window.addEventListener('resize', updateMargin);
+        }
+
+        loadData();
+    </script>
+</body>
+</html>

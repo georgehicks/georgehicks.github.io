@@ -1,0 +1,21 @@
+{
+  "name": "Focus Timers",
+  "short_name": "Timers",
+  "description": "A focus timers productivity app",
+  "start_url": "/FocusTimers/",
+  "display": "standalone",
+  "background_color": "#f9f9f9",
+  "theme_color": "#a1c4fd",
+  "icons": [
+    {
+      "src": "/FocusTimers/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/FocusTimers/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
