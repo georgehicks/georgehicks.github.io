@@ -228,6 +228,8 @@
       font-size: 12px;
       text-align: center;
       font-weight: 700;
+      color: black;
+      text-shadow: -1px -1px 0 #fff, 1px -1px 0 #fff, -1px 1px 0 #fff, 1px 1px 0 #fff;
     }
     @media (max-width: 400px) {
       body {
@@ -293,6 +295,7 @@
     let inactivityPopupShown = false;
     let inactivityModal = null;
     let autoStopInterval = null;
+    let sessionStartTime = null;
     function saveTimers() {
       localStorage.setItem('focusTimersList', JSON.stringify(timers));
     }
@@ -439,7 +442,16 @@
     }
     function updateNotesTitle() {
       const notesTitle = document.querySelector('.notes-title');
-      notesTitle.textContent = runningType ? `Notes - ${runningType}` : 'Notes';
+      if (!runningType) {
+        notesTitle.textContent = 'Notes';
+        return;
+      }
+      let sessionText = '';
+      if (sessionStartTime) {
+        const elapsed = Math.floor((Date.now() - sessionStartTime) / 1000);
+        sessionText = ` (${formatTime(elapsed)})`;
+      }
+      notesTitle.textContent = `Notes - ${runningType}${sessionText}`;
     }
     function saveNotes() {
       if (runningType) {
@@ -541,6 +553,7 @@
         clearInterval(interval);
         interval = null;
       }
+      sessionStartTime = null;
       saveNotes();
       runningType = null;
       updateNotesTitle();
@@ -554,6 +567,7 @@
     function startTimer(type) {
       stopTimer();
       runningType = type;
+      sessionStartTime = Date.now();
       loadNotes(type);
       updateNotesTitle();
       inactivityPopupShown = false;
@@ -564,6 +578,7 @@
       interval = setInterval(() => {
         currentTimes[type]++;
         updateDisplay(type);
+        updateNotesTitle();
         saveData();
         if (!inactivityPopupShown && Date.now() - lastActivityTime > 900000) {
           showInactivityModal();
@@ -696,6 +711,22 @@
         mainContent.style.marginTop = `${notesContainer.offsetHeight + 20}px`;
       }
     }
+    window.inactivityTimerRemaining = function() {
+      return (Date.now() - lastActivityTime) / 1000;
+    };
+    window.inactivityTestModeStart = function(thresholdMs = 900000, countdownMs = 300000) {
+      if (!runningType) {
+        console.log('Start a timer first.');
+        return;
+      }
+      const nearThreshold = thresholdMs - countdownMs;
+      lastActivityTime = Date.now() - nearThreshold;
+      console.log(`Inactivity test mode started. Remaining to popup: ${countdownMs / 1000}s`);
+    };
+    window.inactivityTestModeEnd = function() {
+      lastActivityTime = Date.now();
+      console.log('Inactivity test mode ended. Activity reset.');
+    };
     function init() {
       loadTimers();
       const today = new Date().toISOString().slice(0, 10);
