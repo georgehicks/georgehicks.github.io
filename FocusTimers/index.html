@@ -18,7 +18,6 @@
       align-items: center;
       min-height: 100vh;
     }
-
     .notes-container {
       position: fixed;
       top: 0;
@@ -30,13 +29,11 @@
       box-sizing: border-box;
       z-index: 10;
     }
-
     .notes-title {
       font-size: 18px;
       font-weight: 600;
       margin-bottom: 5px;
     }
-
     .notes {
       border: 1px solid #ddd;
       border-radius: 4px;
@@ -47,7 +44,6 @@
       background-color: #fafafa;
       font-size: 14px;
     }
-
     .add-timer-form {
       max-width: 400px;
       width: 100%;
@@ -55,7 +51,6 @@
       margin-bottom: 15px;
       gap: 10px;
     }
-
     .add-timer-form input {
       flex: 1;
       padding: 8px;
@@ -63,7 +58,6 @@
       border-radius: 4px;
       font-size: 14px;
     }
-
     .add-timer-form button {
       padding: 8px 12px;
       background-color: #28a745;
@@ -73,18 +67,15 @@
       cursor: pointer;
       font-weight: 600;
     }
-
     .add-timer-form button:hover {
       background-color: #218838;
     }
-
     .timers-container {
       display: flex;
       flex-direction: column;
       max-width: 400px;
       width: 100%;
     }
-
     .timer-panel {
       background-color: #fff;
       border: 1px solid #ddd;
@@ -98,16 +89,13 @@
       position: relative;
       cursor: grab;
     }
-
     .timer-panel.inactive {
       opacity: 0.3;
     }
-
     .timer-panel.dragging {
       opacity: 0.4;
       cursor: grabbing;
     }
-
     .drag-over-top::before {
       content: '';
       position: absolute;
@@ -118,7 +106,6 @@
       background-color: #007bff;
       border-radius: 2px;
     }
-
     .drag-over-bottom::after {
       content: '';
       position: absolute;
@@ -129,25 +116,21 @@
       background-color: #007bff;
       border-radius: 2px;
     }
-
     .timer-right {
       display: flex;
       flex-direction: column;
       flex: 1;
     }
-
     .timer-title {
       font-size: 16px;
       font-weight: 600;
       margin-bottom: 5px;
     }
-
     .goals {
       display: flex;
       align-items: center;
       margin-bottom: 5px;
     }
-
     .goals input {
       width: 60px;
       padding: 4px;
@@ -157,11 +140,9 @@
       text-align: right;
       font-size: 12px;
     }
-
     .play-btn, .remove-btn {
       cursor: pointer;
     }
-
     .play-btn {
       padding: 8px;
       background-color: #a1c4fd;
@@ -171,11 +152,9 @@
       font-size: 14px;
       width: 100%;
     }
-
     .play-btn:hover {
       background-color: #81a9e0;
     }
-
     .remove-btn {
       position: absolute;
       top: 5px;
@@ -192,17 +171,14 @@
       font-weight: bold;
       z-index: 5;
     }
-
     .remove-btn:hover {
       background: #e04a4a;
     }
-
     .thumbs {
       display: flex;
       gap: 10px;
       margin-top: 5px;
     }
-
     .thumbs button {
       background: none;
       border: none;
@@ -214,17 +190,14 @@
       padding: 4px;
       border-radius: 4px;
     }
-
     .thumbs button:hover {
       background-color: #f0f0f0;
     }
-
     .thumbs .count {
       font-size: 12px;
       font-weight: bold;
       color: #666;
     }
-
     .radial-progress {
       width: 100px;
       height: 100px;
@@ -232,14 +205,12 @@
       display: none;
       flex-shrink: 0;
     }
-
     .radial-progress .circle {
       width: 100%;
       height: 100%;
       background: conic-gradient(#eee 0%, #eee 100%);
       border-radius: 50%;
     }
-
     .radial-progress .mask {
       position: absolute;
       top: 10%;
@@ -249,7 +220,6 @@
       background-color: #fff;
       border-radius: 50%;
     }
-
     .radial-progress .time {
       position: absolute;
       top: 50%;
@@ -259,44 +229,35 @@
       text-align: center;
       font-weight: 700;
     }
-
     @media (max-width: 400px) {
       body {
         padding: 10px;
       }
-
       .notes {
         min-height: 100px;
         max-height: 100px;
       }
-
       .radial-progress {
         width: 80px;
         height: 80px;
       }
-
       .radial-progress .time {
         font-size: 10px;
       }
-
       .timer-title {
         font-size: 14px;
       }
-
       .goals input {
         width: 50px;
         font-size: 10px;
       }
-
       .play-btn {
         font-size: 12px;
         padding: 6px;
       }
-
       .thumbs {
         gap: 5px;
       }
-
       .thumbs button {
         font-size: 18px;
         padding: 2px;
@@ -309,19 +270,15 @@
     <div class="notes-title">Notes</div>
     <div class="notes" contenteditable="true"></div>
   </div>
-
   <div class="add-timer-form">
     <input type="text" id="new-timer-name" placeholder="New Timer Name">
     <button id="add-timer-btn">Add Timer</button>
   </div>
-
   <div class="timers-container"></div>
-
   <script>
     if ('serviceWorker' in navigator) {
       navigator.serviceWorker.register('/FocusTimers/sw.js');
     }
-
     let timers = [];
     let currentTimes = {};
     let thumbsUp = {};
@@ -332,11 +289,13 @@
     let interval = null;
     let notes = {};
     let draggedElement = null;
-
+    let lastActivityTime = Date.now();
+    let inactivityPopupShown = false;
+    let inactivityModal = null;
+    let autoStopInterval = null;
     function saveTimers() {
       localStorage.setItem('focusTimersList', JSON.stringify(timers));
     }
-
     function loadTimers() {
       const savedTimers = localStorage.getItem('focusTimersList');
       if (savedTimers && JSON.parse(savedTimers).length > 0) {
@@ -346,7 +305,6 @@
         saveTimers();
       }
     }
-
     function createTimerPanelHTML(type) {
       const safeType = type.replace(/"/g, '&quot;');
       return `
@@ -372,7 +330,6 @@
         </div>
       `;
     }
-
     function renderTimers() {
       const container = document.querySelector('.timers-container');
       container.innerHTML = '';
@@ -385,7 +342,6 @@
       updateAllThumbs();
       updateMargin();
     }
-
     function attachPanelListeners() {
       document.querySelectorAll('.timer-panel').forEach(panel => {
         const type = panel.dataset.type;
@@ -397,21 +353,18 @@
         panel.addEventListener('drop', handleDrop);
         panel.querySelector('.play-btn').addEventListener('click', handlePlayClick);
         panel.querySelector('.remove-btn').addEventListener('click', handleRemoveClick);
-
         const minGoal = panel.querySelector('.min-goal');
         minGoal.value = localStorage.getItem(`goal-min-${type}`) || '';
         minGoal.addEventListener('change', () => {
           localStorage.setItem(`goal-min-${type}`, minGoal.value);
           updateDisplay(type);
         });
-
         const maxGoal = panel.querySelector('.max-goal');
         maxGoal.value = localStorage.getItem(`goal-max-${type}`) || '';
         maxGoal.addEventListener('change', () => {
           localStorage.setItem(`goal-max-${type}`, maxGoal.value);
           updateDisplay(type);
         });
-
         const thumbsUpBtn = panel.querySelector('.thumbs-up');
         thumbsUpBtn.addEventListener('click', () => {
           thumbsUp[type] = (thumbsUp[type] || 0) + 1;
@@ -419,7 +372,6 @@
           countUp.textContent = thumbsUp[type];
           saveData();
         });
-
         const thumbsDownBtn = panel.querySelector('.thumbs-down');
         thumbsDownBtn.addEventListener('click', () => {
           thumbsDown[type] = (thumbsDown[type] || 0) + 1;
@@ -427,11 +379,9 @@
           countDown.textContent = thumbsDown[type];
           saveData();
         });
-
         notes[type] = localStorage.getItem(`notes-${type}`) || '';
       });
     }
-
     function updateThumbsDisplay(type) {
       const panel = document.querySelector(`.timer-panel[data-type="${type}"]`);
       if (!panel) return;
@@ -440,44 +390,34 @@
       const countDown = panel.querySelector('.thumbs-down .count');
       countDown.textContent = thumbsDown[type] || 0;
     }
-
     function updateAllThumbs() {
       timers.forEach(updateThumbsDisplay);
     }
-
     function formatTime(seconds) {
       const h = Math.floor(seconds / 3600).toString().padStart(2, '0');
       const m = Math.floor((seconds % 3600) / 60).toString().padStart(2, '0');
       const s = (seconds % 60).toString().padStart(2, '0');
       return `${h}:${m}:${s}`;
     }
-
     function updateDisplay(type) {
       const panel = document.querySelector(`.timer-panel[data-type="${type}"]`);
       if (!panel) return;
-
       const timeDisplay = panel.querySelector('.time');
       timeDisplay.textContent = formatTime(currentTimes[type] || 0);
-
       const minGoal = parseInt(panel.querySelector('.min-goal').value) || 0;
       const maxGoal = parseInt(panel.querySelector('.max-goal').value) || 0;
       const radial = panel.querySelector('.radial-progress');
       const circle = panel.querySelector('.circle');
       const mask = panel.querySelector('.mask');
-
       const currentSeconds = currentTimes[type] || 0;
       const currentMin = currentSeconds / 60;
-
       let target = maxGoal || minGoal || currentMin || 1;
       let progress = Math.min(currentMin / target, 1);
       let angle = progress * 360;
-
       let statusColor = '#eee';
       let maskColor = '#fff';
-
       if (minGoal || maxGoal) {
         radial.style.display = 'block';
-
         if (currentMin < minGoal) {
           statusColor = 'orange';
           maskColor = 'orange';
@@ -488,24 +428,19 @@
           statusColor = 'green';
           maskColor = 'green';
         }
-
         circle.style.background = `conic-gradient(#007bff 0deg ${angle}deg, ${statusColor} ${angle}deg 360deg)`;
       } else {
         radial.style.display = 'none';
       }
-
       mask.style.backgroundColor = maskColor;
     }
-
     function updateAllDisplays() {
       timers.forEach(updateDisplay);
     }
-
     function updateNotesTitle() {
       const notesTitle = document.querySelector('.notes-title');
       notesTitle.textContent = runningType ? `Notes - ${runningType}` : 'Notes';
     }
-
     function saveNotes() {
       if (runningType) {
         const notesElem = document.querySelector('.notes');
@@ -513,13 +448,95 @@
         localStorage.setItem(`notes-${runningType}`, notes[runningType]);
       }
     }
-
     function loadNotes(type) {
       const notesElem = document.querySelector('.notes');
       notesElem.innerHTML = notes[type] || localStorage.getItem(`notes-${type}`) || '';
     }
-
+    function dismissInactivityModal() {
+      if (inactivityModal) {
+        inactivityModal.remove();
+        inactivityModal = null;
+      }
+      if (autoStopInterval) {
+        clearInterval(autoStopInterval);
+        autoStopInterval = null;
+      }
+      inactivityPopupShown = false;
+    }
+    function showInactivityModal() {
+      if (inactivityPopupShown || !runningType) return;
+      const modalHTML = `
+        <div id="inactivity-modal" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; z-index: 1000;">
+          <div style="background: white; padding: 20px; border-radius: 8px; text-align: center; max-width: 300px;">
+            <h3 style="margin-top: 0;">Inactive for 15 minutes</h3>
+            <p>Do you want to continue the ${runningType} timer?</p>
+            <div id="countdown" style="font-size: 18px; font-weight: bold; margin: 10px 0;">05:00</div>
+            <button id="continue-btn" style="margin: 5px; padding: 10px 20px; background: #28a745; color: white; border: none; border-radius: 4px; cursor: pointer;">Continue</button>
+            <button id="stop-btn" style="margin: 5px; padding: 10px 20px; background: #dc3545; color: white; border: none; border-radius: 4px; cursor: pointer;">Stop</button>
+          </div>
+        </div>
+      `;
+      document.body.insertAdjacentHTML('beforeend', modalHTML);
+      inactivityModal = document.getElementById('inactivity-modal');
+      inactivityPopupShown = true;
+      let timeLeft = 300;
+      const updateCountdown = () => {
+        const mins = Math.floor(timeLeft / 60).toString().padStart(2, '0');
+        const secs = (timeLeft % 60).toString().padStart(2, '0');
+        document.getElementById('countdown').textContent = `${mins}:${secs}`;
+        timeLeft--;
+        if (timeLeft < 0) {
+          clearInterval(autoStopInterval);
+          autoStop();
+        }
+      };
+      autoStopInterval = setInterval(updateCountdown, 1000);
+      updateCountdown();
+      document.getElementById('continue-btn').addEventListener('click', handleContinue);
+      document.getElementById('stop-btn').addEventListener('click', handleStop);
+    }
+    function handleContinue() {
+      dismissInactivityModal();
+      lastActivityTime = Date.now();
+    }
+    function handleStop() {
+      const currentRunningType = runningType;
+      dismissInactivityModal();
+      stopTimer();
+      showMessageModal(`Timer "${currentRunningType}" stopped due to inactivity.`);
+    }
+    function autoStop() {
+      const currentRunningType = runningType;
+      dismissInactivityModal();
+      stopTimer();
+      showMessageModal(`Timer "${currentRunningType}" automatically stopped due to prolonged inactivity.`);
+    }
+    function showMessageModal(message) {
+      const msgHTML = `
+        <div id="message-modal" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; z-index: 1000;">
+          <div style="background: white; padding: 20px; border-radius: 8px; text-align: center; max-width: 300px;">
+            <p style="margin-top: 0;">${message}</p>
+            <button id="ok-btn" style="padding: 10px 20px; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer;">OK</button>
+          </div>
+        </div>
+      `;
+      document.body.insertAdjacentHTML('beforeend', msgHTML);
+      const msgModal = document.getElementById('message-modal');
+      document.getElementById('ok-btn').addEventListener('click', () => {
+        msgModal.remove();
+      });
+      setTimeout(() => {
+        if (msgModal && msgModal.parentNode) {
+          msgModal.remove();
+        }
+      }, 5000);
+    }
     function stopTimer() {
+      if (autoStopInterval) {
+        clearInterval(autoStopInterval);
+        autoStopInterval = null;
+      }
+      dismissInactivityModal();
       if (interval) {
         clearInterval(interval);
         interval = null;
@@ -534,16 +551,23 @@
         btn.textContent = 'Play';
       });
     }
-
     function startTimer(type) {
       stopTimer();
       runningType = type;
       loadNotes(type);
       updateNotesTitle();
+      inactivityPopupShown = false;
+      if (inactivityModal) {
+        dismissInactivityModal();
+      }
+      lastActivityTime = Date.now();
       interval = setInterval(() => {
         currentTimes[type]++;
         updateDisplay(type);
         saveData();
+        if (!inactivityPopupShown && Date.now() - lastActivityTime > 900000) {
+          showInactivityModal();
+        }
       }, 1000);
       document.querySelectorAll('.timer-panel').forEach(panel => {
         panel.classList.add('inactive');
@@ -553,7 +577,6 @@
       const btn = activePanel.querySelector('.play-btn');
       btn.textContent = 'Pause';
     }
-
     function handlePlayClick(e) {
       const panel = e.target.closest('.timer-panel');
       const type = panel.dataset.type;
@@ -563,7 +586,6 @@
         startTimer(type);
       }
     }
-
     function handleAddTimer() {
       const input = document.getElementById('new-timer-name');
       const newName = input.value.trim();
@@ -583,7 +605,6 @@
         alert('Please enter a valid name for the timer.');
       }
     }
-
     function handleRemoveClick(e) {
       const panel = e.target.closest('.timer-panel');
       const typeToRemove = panel.dataset.type;
@@ -604,7 +625,6 @@
         renderTimers();
       }
     }
-
     function handleDragStart(e) {
       if (!e.target.classList.contains('timer-panel')) return;
       draggedElement = e.target;
@@ -614,7 +634,6 @@
         e.target.classList.add('dragging');
       }, 0);
     }
-
     function handleDragEnd(e) {
       if (!draggedElement) return;
       draggedElement.classList.remove('dragging');
@@ -623,7 +642,6 @@
       });
       draggedElement = null;
     }
-
     function handleDragOver(e) {
       e.preventDefault();
       const targetElement = e.target.closest('.timer-panel');
@@ -641,14 +659,12 @@
         targetElement.classList.remove('drag-over-top');
       }
     }
-
     function handleDragLeave(e) {
       const targetElement = e.target.closest('.timer-panel');
       if (targetElement) {
         targetElement.classList.remove('drag-over-top', 'drag-over-bottom');
       }
     }
-
     function handleDrop(e) {
       e.preventDefault();
       const targetElement = e.target.closest('.timer-panel');
@@ -666,7 +682,6 @@
       saveTimers();
       renderTimers();
     }
-
     function saveData() {
       localStorage.setItem('currentDate', currentDate);
       localStorage.setItem('currentTimes', JSON.stringify(currentTimes));
@@ -674,7 +689,6 @@
       localStorage.setItem('thumbsDown', JSON.stringify(thumbsDown));
       localStorage.setItem('history', JSON.stringify(history));
     }
-
     function updateMargin() {
       const notesContainer = document.querySelector('.notes-container');
       const mainContent = document.querySelector('.add-timer-form');
@@ -682,7 +696,6 @@
         mainContent.style.marginTop = `${notesContainer.offsetHeight + 20}px`;
       }
     }
-
     function init() {
       loadTimers();
       const today = new Date().toISOString().slice(0, 10);
@@ -728,8 +741,13 @@
       updateNotesTitle();
       updateMargin();
       window.addEventListener('resize', updateMargin);
+      const activityEvents = ['mousemove', 'mousedown', 'keydown', 'scroll', 'touchstart'];
+      activityEvents.forEach(event => {
+        document.addEventListener(event, () => {
+          lastActivityTime = Date.now();
+        }, true);
+      });
     }
-
     init();
   </script>
 </body>
