@@ -228,8 +228,7 @@
       font-size: 12px;
       text-align: center;
       font-weight: 700;
-      color: black;
-      text-shadow: -1px -1px 0 #fff, 1px -1px 0 #fff, -1px 1px 0 #fff, 1px 1px 0 #fff;
+      color: white;
     }
     @media (max-width: 400px) {
       body {
@@ -296,6 +295,8 @@
     let inactivityModal = null;
     let autoStopInterval = null;
     let sessionStartTime = null;
+    let inactivityThresholdMs = 900000;
+    let inactivityCountdownMs = 300000;
     function saveTimers() {
       localStorage.setItem('focusTimersList', JSON.stringify(timers));
     }
@@ -475,14 +476,19 @@
       }
       inactivityPopupShown = false;
     }
+    function formatInactivityMessage(thresholdMs) {
+      const mins = Math.floor(thresholdMs / 60000);
+      return `Inactive for ${mins} minutes`;
+    }
     function showInactivityModal() {
       if (inactivityPopupShown || !runningType) return;
+      const message = formatInactivityMessage(inactivityThresholdMs);
       const modalHTML = `
         <div id="inactivity-modal" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; z-index: 1000;">
           <div style="background: white; padding: 20px; border-radius: 8px; text-align: center; max-width: 300px;">
-            <h3 style="margin-top: 0;">Inactive for 15 minutes</h3>
+            <h3 style="margin-top: 0;">${message}</h3>
             <p>Do you want to continue the ${runningType} timer?</p>
-            <div id="countdown" style="font-size: 18px; font-weight: bold; margin: 10px 0;">05:00</div>
+            <div id="countdown" style="font-size: 18px; font-weight: bold; margin: 10px 0;">${formatTime(inactivityCountdownMs / 1000)}</div>
             <button id="continue-btn" style="margin: 5px; padding: 10px 20px; background: #28a745; color: white; border: none; border-radius: 4px; cursor: pointer;">Continue</button>
             <button id="stop-btn" style="margin: 5px; padding: 10px 20px; background: #dc3545; color: white; border: none; border-radius: 4px; cursor: pointer;">Stop</button>
           </div>
@@ -491,7 +497,7 @@
       document.body.insertAdjacentHTML('beforeend', modalHTML);
       inactivityModal = document.getElementById('inactivity-modal');
       inactivityPopupShown = true;
-      let timeLeft = 300;
+      let timeLeft = inactivityCountdownMs / 1000;
       const updateCountdown = () => {
         const mins = Math.floor(timeLeft / 60).toString().padStart(2, '0');
         const secs = (timeLeft % 60).toString().padStart(2, '0');
@@ -568,6 +574,8 @@
       stopTimer();
       runningType = type;
       sessionStartTime = Date.now();
+      inactivityThresholdMs = 900000;
+      inactivityCountdownMs = 300000;
       loadNotes(type);
       updateNotesTitle();
       inactivityPopupShown = false;
@@ -580,7 +588,7 @@
         updateDisplay(type);
         updateNotesTitle();
         saveData();
-        if (!inactivityPopupShown && Date.now() - lastActivityTime > 900000) {
+        if (!inactivityPopupShown && Date.now() - lastActivityTime > inactivityThresholdMs) {
           showInactivityModal();
         }
       }, 1000);
@@ -712,15 +720,21 @@
       }
     }
     window.inactivityTimerRemaining = function() {
-      return (Date.now() - lastActivityTime) / 1000;
+      const elapsedMs = Date.now() - lastActivityTime;
+      return Math.max(0, (inactivityThresholdMs - elapsedMs) / 1000);
+    };
+    window.sessionElapsed = function() {
+      return sessionStartTime ? Math.floor((Date.now() - sessionStartTime) / 1000) : 0;
     };
     window.inactivityTestModeStart = function(thresholdMs = 900000, countdownMs = 300000) {
       if (!runningType) {
         console.log('Start a timer first.');
         return;
       }
-      const nearThreshold = thresholdMs - countdownMs;
-      lastActivityTime = Date.now() - nearThreshold;
+      inactivityThresholdMs = thresholdMs;
+      inactivityCountdownMs = countdownMs;
+      const elapsedToTrigger = thresholdMs - countdownMs;
+      lastActivityTime = Date.now() - elapsedToTrigger;
       console.log(`Inactivity test mode started. Remaining to popup: ${countdownMs / 1000}s`);
     };
     window.inactivityTestModeEnd = function() {
