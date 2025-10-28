@@ -1,0 +1,846 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#667eea">
+    <meta name="description" content="Micro-Sprint Timer - Focus with 12-minute sprints">
+    <link rel="manifest" href="manifest.json">
+    <title>Micro-Sprint Timer</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .install-prompt {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: white;
+            padding: 16px 24px;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+            display: none;
+            align-items: center;
+            gap: 12px;
+            z-index: 2000;
+        }
+
+        .install-prompt.show {
+            display: flex;
+        }
+
+        .install-prompt button {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 6px;
+            font-size: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            background: #667eea;
+            color: white;
+        }
+
+        .install-prompt button.dismiss {
+            background: #6c757d;
+        }
+
+        .container {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            display: flex;
+            max-width: 930px;
+            width: 100%;
+            height: 380px;
+            overflow: hidden;
+        }
+
+        .timer-section {
+            flex: 0 0 280px;
+            background: linear-gradient(180deg, #f8f9fa 0%, #e9ecef 100%);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            border-right: 1px solid #dee2e6;
+        }
+
+        .datetime-display {
+            text-align: center;
+            margin-bottom: 16px;
+        }
+
+        .date-line {
+            font-size: 11px;
+            font-weight: 600;
+            color: #6c757d;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 2px;
+        }
+
+        .time-line {
+            font-size: 18px;
+            font-weight: 700;
+            color: #495057;
+            letter-spacing: 0.5px;
+        }
+
+        .timer-display {
+            position: relative;
+            width: 160px;
+            height: 160px;
+            margin-bottom: 12px;
+        }
+
+        .timer-svg {
+            transform: rotate(-90deg);
+            width: 100%;
+            height: 100%;
+        }
+
+        .timer-circle-bg {
+            fill: none;
+            stroke: #dee2e6;
+            stroke-width: 8;
+        }
+
+        .timer-circle-progress {
+            fill: none;
+            stroke: #667eea;
+            stroke-width: 8;
+            stroke-linecap: round;
+            transition: stroke-dashoffset 1s linear;
+        }
+
+        .timer-text {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 32px;
+            font-weight: 600;
+            color: #495057;
+        }
+
+        .timer-controls {
+            display: flex;
+            gap: 6px;
+            margin-bottom: 10px;
+        }
+
+        .btn {
+            padding: 6px 12px;
+            border: none;
+            border-radius: 6px;
+            font-size: 11px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-transform: uppercase;
+            letter-spacing: 0.3px;
+        }
+
+        .btn:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+        }
+
+        .btn:active {
+            transform: translateY(0);
+        }
+
+        .btn-primary {
+            background: #667eea;
+            color: white;
+        }
+
+        .btn-secondary {
+            background: #6c757d;
+            color: white;
+        }
+
+        .btn-danger {
+            background: #dc3545;
+            color: white;
+        }
+
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none !important;
+        }
+
+        .details-section {
+            flex: 1;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            overflow-y: auto;
+        }
+
+        .field-group {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        label {
+            font-size: 10px;
+            font-weight: 600;
+            color: #495057;
+            text-transform: uppercase;
+            letter-spacing: 0.3px;
+        }
+
+        select, input, textarea {
+            padding: 6px 8px;
+            border: 2px solid #dee2e6;
+            border-radius: 6px;
+            font-size: 13px;
+            font-family: inherit;
+            transition: border-color 0.2s;
+        }
+
+        select:focus, input:focus, textarea:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        select:disabled, input:disabled, textarea:disabled {
+            background: #f8f9fa;
+            cursor: not-allowed;
+        }
+
+        textarea {
+            resize: vertical;
+            min-height: 80px;
+            max-height: 120px;
+        }
+
+        .remove-btn {
+            align-self: flex-start;
+            background: transparent;
+            color: #6c757d;
+            border: 1px solid #dee2e6;
+            padding: 4px 10px;
+            font-size: 10px;
+        }
+
+        .remove-btn:hover {
+            background: #f8f9fa;
+            color: #dc3545;
+            border-color: #dc3545;
+        }
+
+        .download-link {
+            align-self: flex-start;
+            color: #667eea;
+            text-decoration: none;
+            font-size: 11px;
+            font-weight: 600;
+            padding: 4px 0;
+            border-bottom: 2px solid transparent;
+            transition: border-color 0.2s;
+        }
+
+        .download-link:hover {
+            border-bottom-color: #667eea;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
+
+        .modal.active {
+            display: flex;
+        }
+
+        .modal-content {
+            background: white;
+            padding: 24px;
+            border-radius: 12px;
+            text-align: center;
+            max-width: 350px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+        }
+
+        .modal-content h2 {
+            margin-bottom: 16px;
+            color: #495057;
+            font-size: 18px;
+        }
+
+        .modal-buttons {
+            display: flex;
+            gap: 8px;
+            justify-content: center;
+        }
+
+        .status-indicator {
+            font-size: 10px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.8px;
+            color: #6c757d;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                flex-direction: column;
+                height: auto;
+            }
+
+            .timer-section {
+                flex: none;
+                border-right: none;
+                border-bottom: 1px solid #dee2e6;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="install-prompt" id="installPrompt">
+        <span>Install Micro-Sprint Timer for quick access</span>
+        <button id="installBtn">Install</button>
+        <button class="dismiss" id="dismissBtn">Later</button>
+    </div>
+
+    <div class="container">
+        <div class="timer-section">
+            <div class="datetime-display">
+                <div class="date-line" id="dateLine"></div>
+                <div class="time-line" id="timeLine"></div>
+            </div>
+            <div class="timer-display">
+                <svg class="timer-svg" viewBox="0 0 160 160">
+                    <circle class="timer-circle-bg" cx="80" cy="80" r="72"></circle>
+                    <circle class="timer-circle-progress" cx="80" cy="80" r="72"></circle>
+                </svg>
+                <div class="timer-text" id="timerText">12:00</div>
+            </div>
+            <div class="status-indicator" id="statusIndicator">Ready</div>
+            <div class="timer-controls">
+                <button class="btn btn-primary" id="startBtn">Start</button>
+                <button class="btn btn-secondary" id="pauseBtn" disabled>Pause</button>
+                <button class="btn btn-danger" id="resetBtn">Reset</button>
+            </div>
+        </div>
+
+        <div class="details-section">
+            <div class="field-group">
+                <label for="targetSelect">Target</label>
+                <select id="targetSelect">
+                    <option value="">Select or type new target...</option>
+                </select>
+            </div>
+
+            <div class="field-group">
+                <label for="stepInput">Current Step</label>
+                <input type="text" id="stepInput" placeholder="What are you focusing on right now?">
+            </div>
+
+            <div class="field-group">
+                <label for="notesTextarea">Notes</label>
+                <textarea id="notesTextarea" placeholder="Track your progress and thoughts..."></textarea>
+            </div>
+
+            <button class="btn remove-btn" id="removeBtn">Target Complete - Remove</button>
+            
+            <a href="#" class="download-link" id="downloadLink">📥 Download Last 7 Days Summary</a>
+        </div>
+    </div>
+
+    <div class="modal" id="completionModal">
+        <div class="modal-content">
+            <h2 id="modalTitle">Focus Complete!</h2>
+            <div class="modal-buttons" id="modalButtons"></div>
+        </div>
+    </div>
+
+    <script>
+        // PWA Installation
+        let deferredPrompt;
+        const installPrompt = document.getElementById('installPrompt');
+        const installBtn = document.getElementById('installBtn');
+        const dismissBtn = document.getElementById('dismissBtn');
+
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            deferredPrompt = e;
+            installPrompt.classList.add('show');
+        });
+
+        installBtn.addEventListener('click', async () => {
+            if (deferredPrompt) {
+                deferredPrompt.prompt();
+                const { outcome } = await deferredPrompt.userChoice;
+                deferredPrompt = null;
+                installPrompt.classList.remove('show');
+            }
+        });
+
+        dismissBtn.addEventListener('click', () => {
+            installPrompt.classList.remove('show');
+        });
+
+        // Register Service Worker
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('sw.js').then(() => {
+                console.log('Service Worker registered');
+            });
+        }
+
+        // Data structure
+        const STORAGE_KEYS = {
+            TARGETS: 'microSprint_targets',
+            TIME_LOG: 'microSprint_timeLog',
+            CURRENT_TARGET: 'microSprint_currentTarget'
+        };
+
+        // Timer state
+        let timerState = {
+            mode: 'focus',
+            duration: 12 * 60,
+            remaining: 12 * 60,
+            isRunning: false,
+            interval: null,
+            currentSessionStart: null
+        };
+
+        // DOM elements
+        const targetSelect = document.getElementById('targetSelect');
+        const stepInput = document.getElementById('stepInput');
+        const notesTextarea = document.getElementById('notesTextarea');
+        const timerText = document.getElementById('timerText');
+        const statusIndicator = document.getElementById('statusIndicator');
+        const startBtn = document.getElementById('startBtn');
+        const pauseBtn = document.getElementById('pauseBtn');
+        const resetBtn = document.getElementById('resetBtn');
+        const removeBtn = document.getElementById('removeBtn');
+        const downloadLink = document.getElementById('downloadLink');
+        const modal = document.getElementById('completionModal');
+        const modalTitle = document.getElementById('modalTitle');
+        const modalButtons = document.getElementById('modalButtons');
+        const timerCircle = document.querySelector('.timer-circle-progress');
+        const dateLine = document.getElementById('dateLine');
+        const timeLine = document.getElementById('timeLine');
+
+        const circumference = 2 * Math.PI * 72;
+        timerCircle.style.strokeDasharray = circumference;
+
+        // Update date and time display
+        function updateDateTime() {
+            const now = new Date();
+            
+            const dayName = now.toLocaleDateString('en-US', { weekday: 'short' });
+            const month = now.toLocaleDateString('en-US', { month: 'short' });
+            const day = now.getDate();
+            
+            dateLine.textContent = `${dayName}, ${month} ${day}`;
+            
+            const hours = now.getHours();
+            const minutes = now.getMinutes();
+            const seconds = now.getSeconds();
+            const ampm = hours >= 12 ? 'PM' : 'AM';
+            const displayHours = hours % 12 || 12;
+            
+            timeLine.textContent = `${displayHours}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')} ${ampm}`;
+        }
+
+        updateDateTime();
+        setInterval(updateDateTime, 1000);
+
+        function loadTargets() {
+            const stored = localStorage.getItem(STORAGE_KEYS.TARGETS);
+            return stored ? JSON.parse(stored) : {};
+        }
+
+        function saveTargets(targets) {
+            localStorage.setItem(STORAGE_KEYS.TARGETS, JSON.stringify(targets));
+        }
+
+        function loadTimeLog() {
+            const stored = localStorage.getItem(STORAGE_KEYS.TIME_LOG);
+            return stored ? JSON.parse(stored) : {};
+        }
+
+        function saveTimeLog(log) {
+            localStorage.setItem(STORAGE_KEYS.TIME_LOG, JSON.stringify(log));
+        }
+
+        function getCurrentTarget() {
+            return localStorage.getItem(STORAGE_KEYS.CURRENT_TARGET) || '';
+        }
+
+        function setCurrentTarget(target) {
+            localStorage.setItem(STORAGE_KEYS.CURRENT_TARGET, target);
+        }
+
+        function initializeTargetDropdown() {
+            const targets = loadTargets();
+            const currentTarget = getCurrentTarget();
+            
+            targetSelect.innerHTML = '<option value="">Select or type new target...</option>';
+            
+            Object.keys(targets).sort().forEach(target => {
+                const option = document.createElement('option');
+                option.value = target;
+                option.textContent = target;
+                targetSelect.appendChild(option);
+            });
+
+            if (currentTarget && targets[currentTarget]) {
+                targetSelect.value = currentTarget;
+                loadTargetData(currentTarget);
+            }
+        }
+
+        targetSelect.addEventListener('change', function() {
+            const value = this.value;
+            if (value) {
+                handleTargetChange(value);
+            }
+        });
+
+        targetSelect.addEventListener('keydown', function(e) {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                const newTarget = prompt('Enter new target name:');
+                if (newTarget && newTarget.trim()) {
+                    const targets = loadTargets();
+                    if (!targets[newTarget]) {
+                        targets[newTarget] = { step: '', notes: '' };
+                        saveTargets(targets);
+                    }
+                    initializeTargetDropdown();
+                    targetSelect.value = newTarget;
+                    handleTargetChange(newTarget);
+                }
+            }
+        });
+
+        function handleTargetChange(target) {
+            if (timerState.isRunning) {
+                alert('Please stop the timer before changing targets.');
+                targetSelect.value = getCurrentTarget();
+                return;
+            }
+
+            const currentTarget = getCurrentTarget();
+            if (currentTarget) {
+                saveCurrentTargetData(currentTarget);
+            }
+
+            setCurrentTarget(target);
+            loadTargetData(target);
+        }
+
+        function saveCurrentTargetData(target) {
+            const targets = loadTargets();
+            if (targets[target]) {
+                targets[target].step = stepInput.value;
+                targets[target].notes = notesTextarea.value;
+                saveTargets(targets);
+            }
+        }
+
+        function loadTargetData(target) {
+            const targets = loadTargets();
+            if (targets[target]) {
+                stepInput.value = targets[target].step || '';
+                notesTextarea.value = targets[target].notes || '';
+            } else {
+                stepInput.value = '';
+                notesTextarea.value = '';
+            }
+        }
+
+        stepInput.addEventListener('blur', function() {
+            const currentTarget = getCurrentTarget();
+            if (currentTarget) {
+                saveCurrentTargetData(currentTarget);
+            }
+        });
+
+        notesTextarea.addEventListener('blur', function() {
+            const currentTarget = getCurrentTarget();
+            if (currentTarget) {
+                saveCurrentTargetData(currentTarget);
+            }
+        });
+
+        function updateTimerDisplay() {
+            const minutes = Math.floor(timerState.remaining / 60);
+            const seconds = timerState.remaining % 60;
+            timerText.textContent = `${minutes}:${seconds.toString().padStart(2, '0')}`;
+
+            const progress = timerState.remaining / timerState.duration;
+            const offset = circumference * (1 - progress);
+            timerCircle.style.strokeDashoffset = offset;
+        }
+
+        function startTimer() {
+            if (!getCurrentTarget()) {
+                alert('Please select or create a target first.');
+                return;
+            }
+
+            timerState.isRunning = true;
+            timerState.currentSessionStart = Date.now();
+            startBtn.disabled = true;
+            pauseBtn.disabled = false;
+            targetSelect.disabled = true;
+            statusIndicator.textContent = timerState.mode === 'focus' ? 'Focusing...' : 'Break Time';
+
+            timerState.interval = setInterval(() => {
+                timerState.remaining--;
+                updateTimerDisplay();
+
+                if (timerState.remaining <= 0) {
+                    completeTimer();
+                }
+            }, 1000);
+        }
+
+        function pauseTimer() {
+            if (timerState.currentSessionStart) {
+                logTime();
+            }
+
+            clearInterval(timerState.interval);
+            timerState.isRunning = false;
+            startBtn.disabled = false;
+            pauseBtn.disabled = true;
+            targetSelect.disabled = false;
+            statusIndicator.textContent = 'Paused';
+        }
+
+        function resetTimer() {
+            clearInterval(timerState.interval);
+            
+            if (timerState.currentSessionStart && timerState.isRunning) {
+                logTime();
+            }
+
+            timerState.remaining = timerState.duration;
+            timerState.isRunning = false;
+            timerState.currentSessionStart = null;
+            startBtn.disabled = false;
+            pauseBtn.disabled = true;
+            targetSelect.disabled = false;
+            statusIndicator.textContent = 'Ready';
+            updateTimerDisplay();
+        }
+
+        function completeTimer() {
+            logTime();
+            clearInterval(timerState.interval);
+            timerState.isRunning = false;
+            startBtn.disabled = false;
+            pauseBtn.disabled = true;
+            targetSelect.disabled = false;
+
+            if (timerState.mode === 'focus') {
+                showCompletionModal('focus');
+            } else {
+                showCompletionModal('break');
+            }
+        }
+
+        function logTime() {
+            const target = getCurrentTarget();
+            if (!target || !timerState.currentSessionStart) return;
+
+            const elapsed = Math.floor((Date.now() - timerState.currentSessionStart) / 1000);
+            const minutes = Math.round((elapsed / 60) * 10) / 10; // Round to 1 decimal place
+            
+            const timeLog = loadTimeLog();
+            const today = new Date().toISOString().split('T')[0];
+            
+            if (!timeLog[today]) {
+                timeLog[today] = {};
+            }
+            
+            if (!timeLog[today][target]) {
+                timeLog[today][target] = 0;
+            }
+            
+            timeLog[today][target] = Math.round((timeLog[today][target] + minutes) * 10) / 10;
+            saveTimeLog(timeLog);
+
+            timerState.currentSessionStart = null;
+        }
+
+        function showCompletionModal(type) {
+            if (type === 'focus') {
+                modalTitle.textContent = 'Focus Complete!';
+                modalButtons.innerHTML = `
+                    <button class="btn btn-secondary" onclick="startBreak()">2-Min Break</button>
+                    <button class="btn btn-primary" onclick="focusAgain()">Focus Again (12 min)</button>
+                `;
+            } else {
+                modalTitle.textContent = 'Break Complete!';
+                modalButtons.innerHTML = `
+                    <button class="btn btn-primary" onclick="continueCurrent()">Continue Current</button>
+                    <button class="btn btn-secondary" onclick="selectNew()">Select New Target</button>
+                `;
+            }
+            modal.classList.add('active');
+        }
+
+        function hideModal() {
+            modal.classList.remove('active');
+        }
+
+        window.startBreak = function() {
+            timerState.mode = 'break';
+            timerState.duration = 2 * 60;
+            timerState.remaining = 2 * 60;
+            timerCircle.style.stroke = '#6c757d';
+            updateTimerDisplay();
+            hideModal();
+            startTimer();
+        };
+
+        window.focusAgain = function() {
+            timerState.mode = 'focus';
+            timerState.duration = 12 * 60;
+            timerState.remaining = 12 * 60;
+            timerCircle.style.stroke = '#667eea';
+            updateTimerDisplay();
+            hideModal();
+            startTimer();
+        };
+
+        window.continueCurrent = function() {
+            timerState.mode = 'focus';
+            timerState.duration = 12 * 60;
+            timerState.remaining = 12 * 60;
+            timerCircle.style.stroke = '#667eea';
+            updateTimerDisplay();
+            hideModal();
+            statusIndicator.textContent = 'Ready';
+        };
+
+        window.selectNew = function() {
+            timerState.mode = 'focus';
+            timerState.duration = 12 * 60;
+            timerState.remaining = 12 * 60;
+            timerCircle.style.stroke = '#667eea';
+            updateTimerDisplay();
+            hideModal();
+            targetSelect.disabled = false;
+            targetSelect.focus();
+            statusIndicator.textContent = 'Ready';
+        };
+
+        removeBtn.addEventListener('click', function() {
+            const target = getCurrentTarget();
+            if (!target) {
+                alert('Please select a target first.');
+                return;
+            }
+
+            if (timerState.isRunning) {
+                alert('Please stop the timer before removing a target.');
+                return;
+            }
+
+            if (confirm(`Are you sure you want to remove "${target}"?`)) {
+                const targets = loadTargets();
+                delete targets[target];
+                saveTargets(targets);
+                setCurrentTarget('');
+                initializeTargetDropdown();
+                stepInput.value = '';
+                notesTextarea.value = '';
+            }
+        });
+
+        downloadLink.addEventListener('click', function(e) {
+            e.preventDefault();
+            generateReport();
+        });
+
+        function generateReport() {
+            const timeLog = loadTimeLog();
+            const dates = Object.keys(timeLog).sort().reverse().slice(0, 7);
+            
+            let report = 'MICRO-SPRINT SUMMARY - LAST 7 DAYS\n';
+            report += '='.repeat(50) + '\n\n';
+
+            dates.forEach(date => {
+                const dateObj = new Date(date);
+                report += `${dateObj.toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}\n`;
+                report += '-'.repeat(50) + '\n';
+
+                const targets = timeLog[date];
+                const sortedTargets = Object.keys(targets).sort();
+
+                sortedTargets.forEach(target => {
+                    report += `  • ${target}: ${targets[target].toFixed(1)} mins\n`;
+                });
+
+                report += '\n';
+            });
+
+            const blob = new Blob([report], { type: 'text/plain' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `micro-sprint-summary-${new Date().toISOString().split('T')[0]}.txt`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
+
+        startBtn.addEventListener('click', startTimer);
+        pauseBtn.addEventListener('click', pauseTimer);
+        resetBtn.addEventListener('click', resetTimer);
+
+        targetSelect.addEventListener('dblclick', function() {
+            const newTarget = prompt('Enter new target name:');
+            if (newTarget && newTarget.trim()) {
+                const targets = loadTargets();
+                if (!targets[newTarget]) {
+                    targets[newTarget] = { step: '', notes: '' };
+                    saveTargets(targets);
+                }
+                initializeTargetDropdown();
+                targetSelect.value = newTarget;
+                handleTargetChange(newTarget);
+            }
+        });
+
+        initializeTargetDropdown();
+        updateTimerDisplay();
+    </script>
+</body>
+</html>
