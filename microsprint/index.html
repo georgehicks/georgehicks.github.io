@@ -1,10 +1,11 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="theme-color" content="#667eea">
-    <meta name="description" content="Micro-Sprint Timer - Focus with 12-minute sprints">
+    <meta name="description" content="Micro-Sprint Timer - Focus with customizable sprints">
     <link rel="manifest" href="manifest.json">
     <title>Micro-Sprint Timer</title>
     <style>
@@ -65,7 +66,7 @@
             display: flex;
             max-width: 930px;
             width: 100%;
-            height: 380px;
+            height: 420px;
             overflow: hidden;
         }
 
@@ -138,10 +139,44 @@
             color: #495057;
         }
 
+        .time-adjust {
+            display: flex;
+            gap: 4px;
+            margin-bottom: 8px;
+            align-items: center;
+        }
+
+        .time-adjust-btn {
+            padding: 4px 10px;
+            border: none;
+            border-radius: 4px;
+            font-size: 14px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.2s;
+            background: #667eea;
+            color: white;
+            min-width: 32px;
+        }
+
+        .time-adjust-btn:hover {
+            background: #5568d3;
+        }
+
+        .time-adjust-btn:active {
+            transform: scale(0.95);
+        }
+
         .timer-controls {
             display: flex;
             gap: 6px;
             margin-bottom: 10px;
+        }
+
+        .mode-controls {
+            display: flex;
+            gap: 6px;
+            margin-bottom: 6px;
         }
 
         .btn {
@@ -172,6 +207,16 @@
 
         .btn-secondary {
             background: #6c757d;
+            color: white;
+        }
+
+        .btn-success {
+            background: #28a745;
+            color: white;
+        }
+
+        .btn-info {
+            background: #17a2b8;
             color: white;
         }
 
@@ -255,13 +300,21 @@
             text-decoration: none;
             font-size: 11px;
             font-weight: 600;
-            padding: 4px 0;
-            border-bottom: 2px solid transparent;
-            transition: border-color 0.2s;
+            padding: 4px 8px;
+            border-radius: 4px;
+            transition: all 0.2s;
         }
 
         .download-link:hover {
-            border-bottom-color: #667eea;
+            background: #f8f9fa;
+        }
+
+        .status-indicator {
+            font-size: 11px;
+            font-weight: 600;
+            color: #6c757d;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
         }
 
         .modal {
@@ -272,9 +325,9 @@
             width: 100%;
             height: 100%;
             background: rgba(0, 0, 0, 0.5);
+            z-index: 1000;
             align-items: center;
             justify-content: center;
-            z-index: 1000;
         }
 
         .modal.active {
@@ -283,41 +336,33 @@
 
         .modal-content {
             background: white;
-            padding: 24px;
             border-radius: 12px;
-            text-align: center;
-            max-width: 350px;
+            padding: 24px;
+            max-width: 400px;
             box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
         }
 
-        .modal-content h2 {
+        .modal-title {
+            font-size: 20px;
+            font-weight: 700;
             margin-bottom: 16px;
             color: #495057;
-            font-size: 18px;
         }
 
         .modal-buttons {
             display: flex;
             gap: 8px;
-            justify-content: center;
-        }
-
-        .status-indicator {
-            font-size: 10px;
-            font-weight: 600;
-            text-transform: uppercase;
-            letter-spacing: 0.8px;
-            color: #6c757d;
+            justify-content: flex-end;
         }
 
         @media (max-width: 768px) {
             .container {
                 flex-direction: column;
                 height: auto;
+                max-width: 400px;
             }
 
             .timer-section {
-                flex: none;
                 border-right: none;
                 border-bottom: 1px solid #dee2e6;
             }
@@ -327,68 +372,78 @@
 <body>
     <div class="install-prompt" id="installPrompt">
         <span>Install Micro-Sprint Timer for quick access</span>
-        <button id="installBtn">Install</button>
-        <button class="dismiss" id="dismissBtn">Later</button>
+        <button onclick="installApp()">Install</button>
+        <button class="dismiss" onclick="dismissInstall()">Dismiss</button>
     </div>
 
     <div class="container">
         <div class="timer-section">
             <div class="datetime-display">
-                <div class="date-line" id="dateLine"></div>
-                <div class="time-line" id="timeLine"></div>
+                <div class="date-line" id="currentDate"></div>
+                <div class="time-line" id="currentTime"></div>
             </div>
+
             <div class="timer-display">
                 <svg class="timer-svg" viewBox="0 0 160 160">
                     <circle class="timer-circle-bg" cx="80" cy="80" r="72"></circle>
-                    <circle class="timer-circle-progress" cx="80" cy="80" r="72"></circle>
+                    <circle class="timer-circle-progress" cx="80" cy="80" r="72" id="timerCircle"></circle>
                 </svg>
                 <div class="timer-text" id="timerText">12:00</div>
             </div>
-            <div class="status-indicator" id="statusIndicator">Ready</div>
+
+            <div class="time-adjust">
+                <button class="time-adjust-btn" id="minusBtn">-</button>
+                <span style="font-size: 11px; font-weight: 600; color: #6c757d;">ADJUST</span>
+                <button class="time-adjust-btn" id="plusBtn">+</button>
+            </div>
+
+            <div class="mode-controls">
+                <button class="btn btn-success" id="startFocusBtn">Start Focus</button>
+                <button class="btn btn-info" id="startBreakBtn">Start Break</button>
+            </div>
+
             <div class="timer-controls">
                 <button class="btn btn-primary" id="startBtn">Start</button>
                 <button class="btn btn-secondary" id="pauseBtn" disabled>Pause</button>
                 <button class="btn btn-danger" id="resetBtn">Reset</button>
             </div>
+
+            <div class="status-indicator" id="statusIndicator">Ready</div>
         </div>
 
         <div class="details-section">
             <div class="field-group">
-                <label for="targetSelect">Target</label>
+                <label for="targetSelect">Target (Double-click to add new)</label>
                 <select id="targetSelect">
-                    <option value="">Select or type new target...</option>
+                    <option value="">Select or create target...</option>
                 </select>
             </div>
 
             <div class="field-group">
-                <label for="stepInput">Current Step</label>
-                <input type="text" id="stepInput" placeholder="What are you focusing on right now?">
+                <label for="stepInput">Next Step</label>
+                <input type="text" id="stepInput" placeholder="What's the next action?" disabled>
             </div>
 
             <div class="field-group">
                 <label for="notesTextarea">Notes</label>
-                <textarea id="notesTextarea" placeholder="Track your progress and thoughts..."></textarea>
+                <textarea id="notesTextarea" placeholder="Add notes, ideas, or context..." disabled></textarea>
             </div>
 
-            <button class="btn remove-btn" id="removeBtn">Target Complete - Remove</button>
-            
-            <a href="#" class="download-link" id="downloadLink">📥 Download Last 7 Days Summary</a>
+            <button class="btn remove-btn" id="removeBtn">Remove Target</button>
+            <a href="#" class="download-link" id="downloadLink">📊 Download 7-Day Summary</a>
         </div>
     </div>
 
     <div class="modal" id="completionModal">
         <div class="modal-content">
-            <h2 id="modalTitle">Focus Complete!</h2>
+            <div class="modal-title" id="modalTitle"></div>
             <div class="modal-buttons" id="modalButtons"></div>
         </div>
     </div>
 
     <script>
-        // PWA Installation
         let deferredPrompt;
         const installPrompt = document.getElementById('installPrompt');
-        const installBtn = document.getElementById('installBtn');
-        const dismissBtn = document.getElementById('dismissBtn');
 
         window.addEventListener('beforeinstallprompt', (e) => {
             e.preventDefault();
@@ -396,117 +451,104 @@
             installPrompt.classList.add('show');
         });
 
-        installBtn.addEventListener('click', async () => {
+        function installApp() {
             if (deferredPrompt) {
                 deferredPrompt.prompt();
-                const { outcome } = await deferredPrompt.userChoice;
-                deferredPrompt = null;
-                installPrompt.classList.remove('show');
+                deferredPrompt.userChoice.then((choiceResult) => {
+                    deferredPrompt = null;
+                    installPrompt.classList.remove('show');
+                });
             }
-        });
-
-        dismissBtn.addEventListener('click', () => {
-            installPrompt.classList.remove('show');
-        });
-
-        // Register Service Worker
-        if ('serviceWorker' in navigator) {
-            navigator.serviceWorker.register('sw.js').then(() => {
-                console.log('Service Worker registered');
-            });
         }
 
-        // Data structure
-        const STORAGE_KEYS = {
-            TARGETS: 'microSprint_targets',
-            TIME_LOG: 'microSprint_timeLog',
-            CURRENT_TARGET: 'microSprint_currentTarget'
-        };
+        function dismissInstall() {
+            installPrompt.classList.remove('show');
+        }
 
-        // Timer state
-        let timerState = {
-            mode: 'focus',
-            duration: 12 * 60,
-            remaining: 12 * 60,
-            isRunning: false,
-            interval: null,
-            currentSessionStart: null
-        };
-
-        // DOM elements
-        const targetSelect = document.getElementById('targetSelect');
-        const stepInput = document.getElementById('stepInput');
-        const notesTextarea = document.getElementById('notesTextarea');
-        const timerText = document.getElementById('timerText');
-        const statusIndicator = document.getElementById('statusIndicator');
-        const startBtn = document.getElementById('startBtn');
-        const pauseBtn = document.getElementById('pauseBtn');
-        const resetBtn = document.getElementById('resetBtn');
-        const removeBtn = document.getElementById('removeBtn');
-        const downloadLink = document.getElementById('downloadLink');
-        const modal = document.getElementById('completionModal');
-        const modalTitle = document.getElementById('modalTitle');
-        const modalButtons = document.getElementById('modalButtons');
-        const timerCircle = document.querySelector('.timer-circle-progress');
-        const dateLine = document.getElementById('dateLine');
-        const timeLine = document.getElementById('timeLine');
-
-        const circumference = 2 * Math.PI * 72;
-        timerCircle.style.strokeDasharray = circumference;
-
-        // Update date and time display
         function updateDateTime() {
             const now = new Date();
+            const dateStr = now.toLocaleDateString('en-US', { 
+                weekday: 'short', 
+                month: 'short', 
+                day: 'numeric' 
+            });
+            const timeStr = now.toLocaleTimeString('en-US', { 
+                hour: 'numeric', 
+                minute: '2-digit',
+                hour12: true 
+            });
             
-            const dayName = now.toLocaleDateString('en-US', { weekday: 'short' });
-            const month = now.toLocaleDateString('en-US', { month: 'short' });
-            const day = now.getDate();
-            
-            dateLine.textContent = `${dayName}, ${month} ${day}`;
-            
-            const hours = now.getHours();
-            const minutes = now.getMinutes();
-            const seconds = now.getSeconds();
-            const ampm = hours >= 12 ? 'PM' : 'AM';
-            const displayHours = hours % 12 || 12;
-            
-            timeLine.textContent = `${displayHours}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')} ${ampm}`;
+            document.getElementById('currentDate').textContent = dateStr;
+            document.getElementById('currentTime').textContent = timeStr;
         }
 
         updateDateTime();
         setInterval(updateDateTime, 1000);
 
+        const targetSelect = document.getElementById('targetSelect');
+        const stepInput = document.getElementById('stepInput');
+        const notesTextarea = document.getElementById('notesTextarea');
+        const startBtn = document.getElementById('startBtn');
+        const pauseBtn = document.getElementById('pauseBtn');
+        const resetBtn = document.getElementById('resetBtn');
+        const startFocusBtn = document.getElementById('startFocusBtn');
+        const startBreakBtn = document.getElementById('startBreakBtn');
+        const plusBtn = document.getElementById('plusBtn');
+        const minusBtn = document.getElementById('minusBtn');
+        const removeBtn = document.getElementById('removeBtn');
+        const downloadLink = document.getElementById('downloadLink');
+        const timerText = document.getElementById('timerText');
+        const timerCircle = document.getElementById('timerCircle');
+        const statusIndicator = document.getElementById('statusIndicator');
+        const modal = document.getElementById('completionModal');
+        const modalTitle = document.getElementById('modalTitle');
+        const modalButtons = document.getElementById('modalButtons');
+
+        const radius = 72;
+        const circumference = 2 * Math.PI * radius;
+        timerCircle.style.strokeDasharray = circumference;
+        timerCircle.style.strokeDashoffset = 0;
+
+        const timerState = {
+            duration: 12 * 60,
+            remaining: 12 * 60,
+            isRunning: false,
+            interval: null,
+            mode: 'focus',
+            currentSessionStart: null
+        };
+
         function loadTargets() {
-            const stored = localStorage.getItem(STORAGE_KEYS.TARGETS);
+            const stored = localStorage.getItem('targets');
             return stored ? JSON.parse(stored) : {};
         }
 
         function saveTargets(targets) {
-            localStorage.setItem(STORAGE_KEYS.TARGETS, JSON.stringify(targets));
-        }
-
-        function loadTimeLog() {
-            const stored = localStorage.getItem(STORAGE_KEYS.TIME_LOG);
-            return stored ? JSON.parse(stored) : {};
-        }
-
-        function saveTimeLog(log) {
-            localStorage.setItem(STORAGE_KEYS.TIME_LOG, JSON.stringify(log));
+            localStorage.setItem('targets', JSON.stringify(targets));
         }
 
         function getCurrentTarget() {
-            return localStorage.getItem(STORAGE_KEYS.CURRENT_TARGET) || '';
+            return localStorage.getItem('currentTarget') || '';
         }
 
         function setCurrentTarget(target) {
-            localStorage.setItem(STORAGE_KEYS.CURRENT_TARGET, target);
+            localStorage.setItem('currentTarget', target);
+        }
+
+        function loadTimeLog() {
+            const stored = localStorage.getItem('timeLog');
+            return stored ? JSON.parse(stored) : {};
+        }
+
+        function saveTimeLog(timeLog) {
+            localStorage.setItem('timeLog', JSON.stringify(timeLog));
         }
 
         function initializeTargetDropdown() {
             const targets = loadTargets();
             const currentTarget = getCurrentTarget();
             
-            targetSelect.innerHTML = '<option value="">Select or type new target...</option>';
+            targetSelect.innerHTML = '<option value="">Select or create target...</option>';
             
             Object.keys(targets).sort().forEach(target => {
                 const option = document.createElement('option');
@@ -517,48 +559,30 @@
 
             if (currentTarget && targets[currentTarget]) {
                 targetSelect.value = currentTarget;
-                loadTargetData(currentTarget);
+                handleTargetChange(currentTarget);
             }
         }
 
-        targetSelect.addEventListener('change', function() {
-            const value = this.value;
-            if (value) {
-                handleTargetChange(value);
-            }
-        });
-
-        targetSelect.addEventListener('keydown', function(e) {
-            if (e.key === 'Enter') {
-                e.preventDefault();
-                const newTarget = prompt('Enter new target name:');
-                if (newTarget && newTarget.trim()) {
-                    const targets = loadTargets();
-                    if (!targets[newTarget]) {
-                        targets[newTarget] = { step: '', notes: '' };
-                        saveTargets(targets);
-                    }
-                    initializeTargetDropdown();
-                    targetSelect.value = newTarget;
-                    handleTargetChange(newTarget);
-                }
-            }
-        });
-
         function handleTargetChange(target) {
-            if (timerState.isRunning) {
-                alert('Please stop the timer before changing targets.');
-                targetSelect.value = getCurrentTarget();
+            if (!target) {
+                stepInput.disabled = true;
+                notesTextarea.disabled = true;
+                stepInput.value = '';
+                notesTextarea.value = '';
                 return;
             }
 
-            const currentTarget = getCurrentTarget();
-            if (currentTarget) {
-                saveCurrentTargetData(currentTarget);
+            const targets = loadTargets();
+            const targetData = targets[target];
+
+            if (targetData) {
+                stepInput.value = targetData.step || '';
+                notesTextarea.value = targetData.notes || '';
+                stepInput.disabled = false;
+                notesTextarea.disabled = false;
             }
 
             setCurrentTarget(target);
-            loadTargetData(target);
         }
 
         function saveCurrentTargetData(target) {
@@ -570,16 +594,10 @@
             }
         }
 
-        function loadTargetData(target) {
-            const targets = loadTargets();
-            if (targets[target]) {
-                stepInput.value = targets[target].step || '';
-                notesTextarea.value = targets[target].notes || '';
-            } else {
-                stepInput.value = '';
-                notesTextarea.value = '';
-            }
-        }
+        targetSelect.addEventListener('change', function() {
+            const target = this.value;
+            handleTargetChange(target);
+        });
 
         stepInput.addEventListener('blur', function() {
             const currentTarget = getCurrentTarget();
@@ -678,7 +696,7 @@
             if (!target || !timerState.currentSessionStart) return;
 
             const elapsed = Math.floor((Date.now() - timerState.currentSessionStart) / 1000);
-            const minutes = Math.round((elapsed / 60) * 10) / 10; // Round to 1 decimal place
+            const minutes = Math.round((elapsed / 60) * 10) / 10;
             
             const timeLog = loadTimeLog();
             const today = new Date().toISOString().split('T')[0];
@@ -759,6 +777,75 @@
             targetSelect.focus();
             statusIndicator.textContent = 'Ready';
         };
+
+        function switchToFocus() {
+            if (timerState.isRunning && timerState.currentSessionStart) {
+                logTime();
+            }
+            
+            clearInterval(timerState.interval);
+            
+            timerState.mode = 'focus';
+            timerState.duration = 12 * 60;
+            timerState.remaining = 12 * 60;
+            timerCircle.style.stroke = '#667eea';
+            timerState.isRunning = false;
+            timerState.currentSessionStart = null;
+            
+            startBtn.disabled = false;
+            pauseBtn.disabled = true;
+            targetSelect.disabled = false;
+            statusIndicator.textContent = 'Ready - Focus Mode';
+            
+            updateTimerDisplay();
+            startTimer();
+        }
+
+        function switchToBreak() {
+            if (timerState.isRunning && timerState.currentSessionStart) {
+                logTime();
+            }
+            
+            clearInterval(timerState.interval);
+            
+            timerState.mode = 'break';
+            timerState.duration = 2 * 60;
+            timerState.remaining = 2 * 60;
+            timerCircle.style.stroke = '#6c757d';
+            timerState.isRunning = false;
+            timerState.currentSessionStart = null;
+            
+            startBtn.disabled = false;
+            pauseBtn.disabled = true;
+            targetSelect.disabled = false;
+            statusIndicator.textContent = 'Ready - Break Mode';
+            
+            updateTimerDisplay();
+            startTimer();
+        }
+
+        function adjustTime(minutes) {
+            const newRemaining = timerState.remaining + (minutes * 60);
+            
+            if (newRemaining < 60) {
+                alert('Timer must be at least 1 minute');
+                return;
+            }
+            
+            if (newRemaining > 60 * 60) {
+                alert('Timer cannot exceed 60 minutes');
+                return;
+            }
+            
+            timerState.remaining = newRemaining;
+            timerState.duration = newRemaining;
+            updateTimerDisplay();
+        }
+
+        startFocusBtn.addEventListener('click', switchToFocus);
+        startBreakBtn.addEventListener('click', switchToBreak);
+        plusBtn.addEventListener('click', () => adjustTime(1));
+        minusBtn.addEventListener('click', () => adjustTime(-1));
 
         removeBtn.addEventListener('click', function() {
             const target = getCurrentTarget();
