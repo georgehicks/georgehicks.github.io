@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -14,7 +13,6 @@
             padding: 0;
             box-sizing: border-box;
         }
-
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
@@ -24,7 +22,6 @@
             justify-content: center;
             padding: 20px;
         }
-
         .install-prompt {
             position: fixed;
             bottom: 20px;
@@ -39,11 +36,9 @@
             gap: 12px;
             z-index: 2000;
         }
-
         .install-prompt.show {
             display: flex;
         }
-
         .install-prompt button {
             padding: 8px 16px;
             border: none;
@@ -54,11 +49,9 @@
             background: #667eea;
             color: white;
         }
-
         .install-prompt button.dismiss {
             background: #6c757d;
         }
-
         .container {
             background: white;
             border-radius: 12px;
@@ -69,7 +62,6 @@
             height: 420px;
             overflow: hidden;
         }
-
         .timer-section {
             flex: 0 0 280px;
             background: linear-gradient(180deg, #f8f9fa 0%, #e9ecef 100%);
@@ -80,12 +72,10 @@
             padding: 20px;
             border-right: 1px solid #dee2e6;
         }
-
         .datetime-display {
             text-align: center;
             margin-bottom: 16px;
         }
-
         .date-line {
             font-size: 11px;
             font-weight: 600;
@@ -94,33 +84,28 @@
             letter-spacing: 0.5px;
             margin-bottom: 2px;
         }
-
         .time-line {
             font-size: 18px;
             font-weight: 700;
             color: #495057;
             letter-spacing: 0.5px;
         }
-
         .timer-display {
             position: relative;
             width: 160px;
             height: 160px;
             margin-bottom: 12px;
         }
-
         .timer-svg {
             transform: rotate(-90deg);
             width: 100%;
             height: 100%;
         }
-
         .timer-circle-bg {
             fill: none;
             stroke: #dee2e6;
             stroke-width: 8;
         }
-
         .timer-circle-progress {
             fill: none;
             stroke: #667eea;
@@ -128,7 +113,6 @@
             stroke-linecap: round;
             transition: stroke-dashoffset 1s linear;
         }
-
         .timer-text {
             position: absolute;
             top: 50%;
@@ -138,14 +122,12 @@
             font-weight: 600;
             color: #495057;
         }
-
         .time-adjust {
             display: flex;
             gap: 4px;
             margin-bottom: 8px;
             align-items: center;
         }
-
         .time-adjust-btn {
             padding: 4px 10px;
             border: none;
@@ -158,27 +140,22 @@
             color: white;
             min-width: 32px;
         }
-
         .time-adjust-btn:hover {
             background: #5568d3;
         }
-
         .time-adjust-btn:active {
             transform: scale(0.95);
         }
-
         .timer-controls {
             display: flex;
             gap: 6px;
             margin-bottom: 10px;
         }
-
         .mode-controls {
             display: flex;
             gap: 6px;
             margin-bottom: 6px;
         }
-
         .btn {
             padding: 6px 12px;
             border: none;
@@ -190,47 +167,38 @@
             text-transform: uppercase;
             letter-spacing: 0.3px;
         }
-
         .btn:hover {
             transform: translateY(-1px);
             box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
         }
-
         .btn:active {
             transform: translateY(0);
         }
-
         .btn-primary {
             background: #667eea;
             color: white;
         }
-
         .btn-secondary {
             background: #6c757d;
             color: white;
         }
-
         .btn-success {
             background: #28a745;
             color: white;
         }
-
         .btn-info {
             background: #17a2b8;
             color: white;
         }
-
         .btn-danger {
             background: #dc3545;
             color: white;
         }
-
         .btn:disabled {
             opacity: 0.5;
             cursor: not-allowed;
             transform: none !important;
         }
-
         .details-section {
             flex: 1;
             padding: 20px;
@@ -239,13 +207,11 @@
             gap: 12px;
             overflow-y: auto;
         }
-
         .field-group {
             display: flex;
             flex-direction: column;
             gap: 4px;
         }
-
         label {
             font-size: 10px;
             font-weight: 600;
@@ -253,7 +219,6 @@
             text-transform: uppercase;
             letter-spacing: 0.3px;
         }
-
         select, input, textarea {
             padding: 6px 8px;
             border: 2px solid #dee2e6;
@@ -262,23 +227,19 @@
             font-family: inherit;
             transition: border-color 0.2s;
         }
-
         select:focus, input:focus, textarea:focus {
             outline: none;
             border-color: #667eea;
         }
-
         select:disabled, input:disabled, textarea:disabled {
             background: #f8f9fa;
             cursor: not-allowed;
         }
-
         textarea {
             resize: vertical;
             min-height: 80px;
             max-height: 120px;
         }
-
         .remove-btn {
             align-self: flex-start;
             background: transparent;
@@ -287,13 +248,11 @@
             padding: 4px 10px;
             font-size: 10px;
         }
-
         .remove-btn:hover {
             background: #f8f9fa;
             color: #dc3545;
             border-color: #dc3545;
         }
-
         .download-link {
             align-self: flex-start;
             color: #667eea;
@@ -304,11 +263,9 @@
             border-radius: 4px;
             transition: all 0.2s;
         }
-
         .download-link:hover {
             background: #f8f9fa;
         }
-
         .status-indicator {
             font-size: 11px;
             font-weight: 600;
@@ -316,7 +273,6 @@
             text-transform: uppercase;
             letter-spacing: 0.5px;
         }
-
         .modal {
             display: none;
             position: fixed;
@@ -329,11 +285,9 @@
             align-items: center;
             justify-content: center;
         }
-
         .modal.active {
             display: flex;
         }
-
         .modal-content {
             background: white;
             border-radius: 12px;
@@ -341,27 +295,23 @@
             max-width: 400px;
             box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
         }
-
         .modal-title {
             font-size: 20px;
             font-weight: 700;
             margin-bottom: 16px;
             color: #495057;
         }
-
         .modal-buttons {
             display: flex;
             gap: 8px;
             justify-content: flex-end;
         }
-
         @media (max-width: 768px) {
             .container {
                 flex-direction: column;
                 height: auto;
                 max-width: 400px;
             }
-
             .timer-section {
                 border-right: none;
                 border-bottom: 1px solid #dee2e6;
@@ -375,14 +325,12 @@
         <button onclick="installApp()">Install</button>
         <button class="dismiss" onclick="dismissInstall()">Dismiss</button>
     </div>
-
     <div class="container">
         <div class="timer-section">
             <div class="datetime-display">
                 <div class="date-line" id="currentDate"></div>
                 <div class="time-line" id="currentTime"></div>
             </div>
-
             <div class="timer-display">
                 <svg class="timer-svg" viewBox="0 0 160 160">
                     <circle class="timer-circle-bg" cx="80" cy="80" r="72"></circle>
@@ -390,27 +338,22 @@
                 </svg>
                 <div class="timer-text" id="timerText">12:00</div>
             </div>
-
             <div class="time-adjust">
                 <button class="time-adjust-btn" id="minusBtn">-</button>
                 <span style="font-size: 11px; font-weight: 600; color: #6c757d;">ADJUST</span>
                 <button class="time-adjust-btn" id="plusBtn">+</button>
             </div>
-
             <div class="mode-controls">
                 <button class="btn btn-success" id="startFocusBtn">Start Focus</button>
                 <button class="btn btn-info" id="startBreakBtn">Start Break</button>
             </div>
-
             <div class="timer-controls">
                 <button class="btn btn-primary" id="startBtn">Start</button>
                 <button class="btn btn-secondary" id="pauseBtn" disabled>Pause</button>
                 <button class="btn btn-danger" id="resetBtn">Reset</button>
             </div>
-
             <div class="status-indicator" id="statusIndicator">Ready</div>
         </div>
-
         <div class="details-section">
             <div class="field-group">
                 <label for="targetSelect">Target (Double-click to add new)</label>
@@ -418,39 +361,33 @@
                     <option value="">Select or create target...</option>
                 </select>
             </div>
-
             <div class="field-group">
                 <label for="stepInput">Next Step</label>
                 <input type="text" id="stepInput" placeholder="What's the next action?" disabled>
             </div>
-
             <div class="field-group">
                 <label for="notesTextarea">Notes</label>
                 <textarea id="notesTextarea" placeholder="Add notes, ideas, or context..." disabled></textarea>
             </div>
-
             <button class="btn remove-btn" id="removeBtn">Remove Target</button>
             <a href="#" class="download-link" id="downloadLink">📊 Download 7-Day Summary</a>
         </div>
     </div>
-
     <div class="modal" id="completionModal">
         <div class="modal-content">
             <div class="modal-title" id="modalTitle"></div>
             <div class="modal-buttons" id="modalButtons"></div>
         </div>
     </div>
-
+    <audio id="timerAlert" src="data:audio/mpeg;base64,/+MYxAAEaAIEeUAQAgAAAAHgAAgAAAAAQAAAEgAAABAAAAAQAAAAFAAAAAIAAAAsAAANgAAAAAAA/+MYxDsAAANIAAAAAEAAgAAAAAAEAAQAAAAAAAAAAAAEAAAAAAAAAAAAAAA/+MYxAAAAANIAAAAAExBTUUzLjk4LjIA/+MYxDsAAANIAAAAAFVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVV/+MYxGEAAAbgAAAAA" preload="auto"></audio>
     <script>
         let deferredPrompt;
         const installPrompt = document.getElementById('installPrompt');
-
         window.addEventListener('beforeinstallprompt', (e) => {
             e.preventDefault();
             deferredPrompt = e;
             installPrompt.classList.add('show');
         });
-
         function installApp() {
             if (deferredPrompt) {
                 deferredPrompt.prompt();
@@ -460,31 +397,27 @@
                 });
             }
         }
-
         function dismissInstall() {
             installPrompt.classList.remove('show');
         }
-
         function updateDateTime() {
             const now = new Date();
-            const dateStr = now.toLocaleDateString('en-US', { 
-                weekday: 'short', 
-                month: 'short', 
-                day: 'numeric' 
+            const dateStr = now.toLocaleDateString('en-US', {
+                weekday: 'short',
+                month: 'short',
+                day: 'numeric'
             });
-            const timeStr = now.toLocaleTimeString('en-US', { 
-                hour: 'numeric', 
+            const timeStr = now.toLocaleTimeString('en-US', {
+                hour: 'numeric',
                 minute: '2-digit',
-                hour12: true 
+                hour12: true
             });
-            
+           
             document.getElementById('currentDate').textContent = dateStr;
             document.getElementById('currentTime').textContent = timeStr;
         }
-
         updateDateTime();
         setInterval(updateDateTime, 1000);
-
         const targetSelect = document.getElementById('targetSelect');
         const stepInput = document.getElementById('stepInput');
         const notesTextarea = document.getElementById('notesTextarea');
@@ -503,12 +436,11 @@
         const modal = document.getElementById('completionModal');
         const modalTitle = document.getElementById('modalTitle');
         const modalButtons = document.getElementById('modalButtons');
-
+        const timerAlert = document.getElementById('timerAlert');
         const radius = 72;
         const circumference = 2 * Math.PI * radius;
         timerCircle.style.strokeDasharray = circumference;
         timerCircle.style.strokeDashoffset = 0;
-
         const timerState = {
             duration: 12 * 60,
             remaining: 12 * 60,
@@ -517,52 +449,44 @@
             mode: 'focus',
             currentSessionStart: null
         };
-
+        const originalTitle = document.title;
         function loadTargets() {
             const stored = localStorage.getItem('targets');
             return stored ? JSON.parse(stored) : {};
         }
-
         function saveTargets(targets) {
             localStorage.setItem('targets', JSON.stringify(targets));
         }
-
         function getCurrentTarget() {
             return localStorage.getItem('currentTarget') || '';
         }
-
         function setCurrentTarget(target) {
             localStorage.setItem('currentTarget', target);
         }
-
         function loadTimeLog() {
             const stored = localStorage.getItem('timeLog');
             return stored ? JSON.parse(stored) : {};
         }
-
         function saveTimeLog(timeLog) {
             localStorage.setItem('timeLog', JSON.stringify(timeLog));
         }
-
         function initializeTargetDropdown() {
             const targets = loadTargets();
             const currentTarget = getCurrentTarget();
-            
+           
             targetSelect.innerHTML = '<option value="">Select or create target...</option>';
-            
+           
             Object.keys(targets).sort().forEach(target => {
                 const option = document.createElement('option');
                 option.value = target;
                 option.textContent = target;
                 targetSelect.appendChild(option);
             });
-
             if (currentTarget && targets[currentTarget]) {
                 targetSelect.value = currentTarget;
                 handleTargetChange(currentTarget);
             }
         }
-
         function handleTargetChange(target) {
             if (!target) {
                 stepInput.disabled = true;
@@ -571,20 +495,16 @@
                 notesTextarea.value = '';
                 return;
             }
-
             const targets = loadTargets();
             const targetData = targets[target];
-
             if (targetData) {
                 stepInput.value = targetData.step || '';
                 notesTextarea.value = targetData.notes || '';
                 stepInput.disabled = false;
                 notesTextarea.disabled = false;
             }
-
             setCurrentTarget(target);
         }
-
         function saveCurrentTargetData(target) {
             const targets = loadTargets();
             if (targets[target]) {
@@ -593,64 +513,68 @@
                 saveTargets(targets);
             }
         }
-
         targetSelect.addEventListener('change', function() {
             const target = this.value;
             handleTargetChange(target);
         });
-
         stepInput.addEventListener('blur', function() {
             const currentTarget = getCurrentTarget();
             if (currentTarget) {
                 saveCurrentTargetData(currentTarget);
             }
         });
-
         notesTextarea.addEventListener('blur', function() {
             const currentTarget = getCurrentTarget();
             if (currentTarget) {
                 saveCurrentTargetData(currentTarget);
             }
         });
-
         function updateTimerDisplay() {
             const minutes = Math.floor(timerState.remaining / 60);
             const seconds = timerState.remaining % 60;
             timerText.textContent = `${minutes}:${seconds.toString().padStart(2, '0')}`;
-
             const progress = timerState.remaining / timerState.duration;
             const offset = circumference * (1 - progress);
             timerCircle.style.strokeDashoffset = offset;
         }
-
-        function startTimer() {
+        async function requestNotificationPermission() {
+            if (!("Notification" in window)) {
+                return false;
+            }
+            if (Notification.permission === "granted") {
+                return true;
+            }
+            if (Notification.permission !== "denied") {
+                const permission = await Notification.requestPermission();
+                return permission === "granted";
+            }
+            return false;
+        }
+        async function startTimer() {
             if (!getCurrentTarget()) {
                 alert('Please select or create a target first.');
                 return;
             }
-
+            const hasPermission = await requestNotificationPermission();
+            // Proceed regardless, but use hasPermission later
             timerState.isRunning = true;
             timerState.currentSessionStart = Date.now();
             startBtn.disabled = true;
             pauseBtn.disabled = false;
             targetSelect.disabled = true;
             statusIndicator.textContent = timerState.mode === 'focus' ? 'Focusing...' : 'Break Time';
-
             timerState.interval = setInterval(() => {
                 timerState.remaining--;
                 updateTimerDisplay();
-
                 if (timerState.remaining <= 0) {
-                    completeTimer();
+                    completeTimer(hasPermission);
                 }
             }, 1000);
         }
-
         function pauseTimer() {
             if (timerState.currentSessionStart) {
                 logTime();
             }
-
             clearInterval(timerState.interval);
             timerState.isRunning = false;
             startBtn.disabled = false;
@@ -658,14 +582,12 @@
             targetSelect.disabled = false;
             statusIndicator.textContent = 'Paused';
         }
-
         function resetTimer() {
             clearInterval(timerState.interval);
-            
+           
             if (timerState.currentSessionStart && timerState.isRunning) {
                 logTime();
             }
-
             timerState.remaining = timerState.duration;
             timerState.isRunning = false;
             timerState.currentSessionStart = null;
@@ -675,46 +597,57 @@
             statusIndicator.textContent = 'Ready';
             updateTimerDisplay();
         }
-
-        function completeTimer() {
+        function completeTimer(hasNotificationPermission) {
             logTime();
             clearInterval(timerState.interval);
             timerState.isRunning = false;
             startBtn.disabled = false;
             pauseBtn.disabled = true;
             targetSelect.disabled = false;
-
+            timerAlert.play();
+            if (hasNotificationPermission) {
+                new Notification(`${timerState.mode.charAt(0).toUpperCase() + timerState.mode.slice(1)} Complete!`, {
+                    body: 'Your timer has ended.',
+                    icon: '/path/to/icon.png' // Optional: Add if you have an icon
+                });
+            }
+            // Blink title
+            let blinkCount = 0;
+            const blinkInterval = setInterval(() => {
+                document.title = blinkCount % 2 === 0 ? 'Timer Complete!' : originalTitle;
+                blinkCount++;
+                if (blinkCount >= 10) {
+                    clearInterval(blinkInterval);
+                    document.title = originalTitle;
+                }
+            }, 500);
             if (timerState.mode === 'focus') {
                 showCompletionModal('focus');
             } else {
                 showCompletionModal('break');
             }
         }
-
         function logTime() {
             const target = getCurrentTarget();
             if (!target || !timerState.currentSessionStart) return;
-
             const elapsed = Math.floor((Date.now() - timerState.currentSessionStart) / 1000);
             const minutes = Math.round((elapsed / 60) * 10) / 10;
-            
+           
             const timeLog = loadTimeLog();
             const today = new Date().toISOString().split('T')[0];
-            
+           
             if (!timeLog[today]) {
                 timeLog[today] = {};
             }
-            
+           
             if (!timeLog[today][target]) {
                 timeLog[today][target] = 0;
             }
-            
+           
             timeLog[today][target] = Math.round((timeLog[today][target] + minutes) * 10) / 10;
             saveTimeLog(timeLog);
-
             timerState.currentSessionStart = null;
         }
-
         function showCompletionModal(type) {
             if (type === 'focus') {
                 modalTitle.textContent = 'Focus Complete!';
@@ -731,11 +664,9 @@
             }
             modal.classList.add('active');
         }
-
         function hideModal() {
             modal.classList.remove('active');
         }
-
         window.startBreak = function() {
             timerState.mode = 'break';
             timerState.duration = 2 * 60;
@@ -745,7 +676,6 @@
             hideModal();
             startTimer();
         };
-
         window.focusAgain = function() {
             timerState.mode = 'focus';
             timerState.duration = 12 * 60;
@@ -755,7 +685,6 @@
             hideModal();
             startTimer();
         };
-
         window.continueCurrent = function() {
             timerState.mode = 'focus';
             timerState.duration = 12 * 60;
@@ -765,7 +694,6 @@
             hideModal();
             statusIndicator.textContent = 'Ready';
         };
-
         window.selectNew = function() {
             timerState.mode = 'focus';
             timerState.duration = 12 * 60;
@@ -777,88 +705,81 @@
             targetSelect.focus();
             statusIndicator.textContent = 'Ready';
         };
-
         function switchToFocus() {
             if (timerState.isRunning && timerState.currentSessionStart) {
                 logTime();
             }
-            
+           
             clearInterval(timerState.interval);
-            
+           
             timerState.mode = 'focus';
             timerState.duration = 12 * 60;
             timerState.remaining = 12 * 60;
             timerCircle.style.stroke = '#667eea';
             timerState.isRunning = false;
             timerState.currentSessionStart = null;
-            
+           
             startBtn.disabled = false;
             pauseBtn.disabled = true;
             targetSelect.disabled = false;
             statusIndicator.textContent = 'Ready - Focus Mode';
-            
+           
             updateTimerDisplay();
             startTimer();
         }
-
         function switchToBreak() {
             if (timerState.isRunning && timerState.currentSessionStart) {
                 logTime();
             }
-            
+           
             clearInterval(timerState.interval);
-            
+           
             timerState.mode = 'break';
             timerState.duration = 2 * 60;
             timerState.remaining = 2 * 60;
             timerCircle.style.stroke = '#6c757d';
             timerState.isRunning = false;
             timerState.currentSessionStart = null;
-            
+           
             startBtn.disabled = false;
             pauseBtn.disabled = true;
             targetSelect.disabled = false;
             statusIndicator.textContent = 'Ready - Break Mode';
-            
+           
             updateTimerDisplay();
             startTimer();
         }
-
         function adjustTime(minutes) {
             const newRemaining = timerState.remaining + (minutes * 60);
-            
+           
             if (newRemaining < 60) {
                 alert('Timer must be at least 1 minute');
                 return;
             }
-            
+           
             if (newRemaining > 60 * 60) {
                 alert('Timer cannot exceed 60 minutes');
                 return;
             }
-            
+           
             timerState.remaining = newRemaining;
             timerState.duration = newRemaining;
             updateTimerDisplay();
         }
-
         startFocusBtn.addEventListener('click', switchToFocus);
         startBreakBtn.addEventListener('click', switchToBreak);
         plusBtn.addEventListener('click', () => adjustTime(1));
         minusBtn.addEventListener('click', () => adjustTime(-1));
-
         removeBtn.addEventListener('click', function() {
             const target = getCurrentTarget();
             if (!target) {
                 alert('Please select a target first.');
                 return;
             }
-
             if (timerState.isRunning) {
                 alert('Please stop the timer before removing a target.');
                 return;
             }
-
             if (confirm(`Are you sure you want to remove "${target}"?`)) {
                 const targets = loadTargets();
                 delete targets[target];
@@ -869,34 +790,27 @@
                 notesTextarea.value = '';
             }
         });
-
         downloadLink.addEventListener('click', function(e) {
             e.preventDefault();
             generateReport();
         });
-
         function generateReport() {
             const timeLog = loadTimeLog();
             const dates = Object.keys(timeLog).sort().reverse().slice(0, 7);
-            
+           
             let report = 'MICRO-SPRINT SUMMARY - LAST 7 DAYS\n';
             report += '='.repeat(50) + '\n\n';
-
             dates.forEach(date => {
                 const dateObj = new Date(date);
                 report += `${dateObj.toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}\n`;
                 report += '-'.repeat(50) + '\n';
-
                 const targets = timeLog[date];
                 const sortedTargets = Object.keys(targets).sort();
-
                 sortedTargets.forEach(target => {
-                    report += `  • ${target}: ${targets[target].toFixed(1)} mins\n`;
+                    report += ` • ${target}: ${targets[target].toFixed(1)} mins\n`;
                 });
-
                 report += '\n';
             });
-
             const blob = new Blob([report], { type: 'text/plain' });
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
@@ -907,11 +821,9 @@
             document.body.removeChild(a);
             URL.revokeObjectURL(url);
         }
-
         startBtn.addEventListener('click', startTimer);
         pauseBtn.addEventListener('click', pauseTimer);
         resetBtn.addEventListener('click', resetTimer);
-
         targetSelect.addEventListener('dblclick', function() {
             const newTarget = prompt('Enter new target name:');
             if (newTarget && newTarget.trim()) {
@@ -925,7 +837,6 @@
                 handleTargetChange(newTarget);
             }
         });
-
         initializeTargetDropdown();
         updateTimerDisplay();
     </script>
