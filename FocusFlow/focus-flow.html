@@ -43,6 +43,8 @@
     .time-block.current { border-left: 4px solid var(--primary); }
     .time-block.magnified { background: #252b3d !important; border: 2px solid var(--primary); }
     .time-block.magnified.past { background: #191e2c !important; opacity: 0.45; border-color: #252b3d !important; }
+    .time-block.magnified.hour-target { border-color: #ffcc00 !important; }
+    .time-block.magnified.hour-target .time-label { color: #ffcc00; }
 
     .appointment-tag { background: #00ffcc; color: #000; font-size: 0.75rem; padding: 2px 6px; border-radius: 4px; margin-left: 8px; }
 
@@ -123,6 +125,14 @@
       </select>
       <button onclick="testTenMin()" style="width:100%; margin-top:4px; padding:8px;">Test 10-Minute</button>
     </div>
+    <div style="margin-bottom:16px;">
+      <strong>Day Range</strong><br>
+      <div style="display:flex; gap:8px; align-items:center; margin-top:6px;">
+        <select id="setting-start-hour" style="flex:1; padding:8px; background:#252b3d; color:#ddd; border:1px solid #333; border-radius:6px;"></select>
+        <span style="color:#888;">to</span>
+        <select id="setting-end-hour" style="flex:1; padding:8px; background:#252b3d; color:#ddd; border:1px solid #333; border-radius:6px;"></select>
+      </div>
+    </div>
     <label><input type="checkbox" id="auto-mute" checked> Auto-mute during appointments</label><br><br>
     <button onclick="toggleMute()" id="mute-btn" style="width:100%; padding:10px; background:#333; color:#ddd; border:none; border-radius:8px;">🔇 Mute All</button>
   </div>
@@ -145,9 +155,12 @@
       return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
     }
 
+    let startHour = storage.get('startHour') ?? 7;
+    let endHour   = storage.get('endHour')   ?? 21;
+
     function getCurrentWindowStart() {
       const h = new Date().getHours();
-      return Math.max(7, Math.min(20, h)) * 60;
+      return Math.max(startHour, Math.min(endHour - 1, h)) * 60;
     }
 
     let progressBarInterval = null;
@@ -216,8 +229,6 @@
 
       const now = new Date();
       const nowMinutes = now.getHours() * 60 + now.getMinutes();
-      const startHour = 7;
-      const endHour = 21;
 
       const winStart = minutesToDate(windowStartMinutes);
       const winEnd = minutesToDate(windowStartMinutes + 60);
@@ -255,8 +266,9 @@
 
           const block = document.createElement('div');
           block.className = 'time-block magnified';
-          if (isCurrent) block.classList.add('current');
-          if (isPast)    block.classList.add('past');
+          if (isCurrent)          block.classList.add('current');
+          if (isPast)             block.classList.add('past');
+          if (m === 50 && !isPast) block.classList.add('hour-target');
 
           // Time label
           const timeEl = document.createElement('div');
@@ -473,6 +485,27 @@
       document.getElementById('mute-btn').textContent = muted ? '🔊 Unmute' : '🔇 Mute All';
     }
 
+    function initHourSettings() {
+      const startSel = document.getElementById('setting-start-hour');
+      const endSel   = document.getElementById('setting-end-hour');
+      for (let h = 0; h <= 23; h++) {
+        const label = formatAMPM(h * 60);
+        startSel.innerHTML += `<option value="${h}"${h === startHour ? ' selected' : ''}>${label}</option>`;
+        endSel.innerHTML   += `<option value="${h}"${h === endHour   ? ' selected' : ''}>${label}</option>`;
+      }
+      startSel.addEventListener('change', () => {
+        startHour = parseInt(startSel.value);
+        storage.set('startHour', startHour);
+        windowStartMinutes = getCurrentWindowStart();
+        if (document.getElementById('panel-focus').style.display !== 'none') buildFocusTimeline();
+      });
+      endSel.addEventListener('change', () => {
+        endHour = parseInt(endSel.value);
+        storage.set('endHour', endHour);
+        if (document.getElementById('panel-focus').style.display !== 'none') buildFocusTimeline();
+      });
+    }
+
     let muted = false;
 
     // Service Worker (PWA)
@@ -480,10 +513,16 @@
       navigator.serviceWorker.register('./sw.js').catch(() => {});
     }
 
+    // Auto-select text on focus
+    document.addEventListener('focusin', e => {
+      if (e.target.tagName === 'INPUT' && e.target.type === 'text') e.target.select();
+    });
+
     // Init
     renderPlanList();
     buildMiniCalendar();
     initClockMarks();
+    initHourSettings();
     setInterval(updateAnalogClock, 1000);
     updateAnalogClock();
     addWheelListener();
