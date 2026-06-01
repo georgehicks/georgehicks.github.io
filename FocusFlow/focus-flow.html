@@ -45,6 +45,9 @@
     .time-block.magnified.past { background: #191e2c !important; opacity: 0.45; border-color: #252b3d !important; }
     .time-block.magnified.hour-target { border-color: #ffcc00 !important; }
     .time-block.magnified.hour-target .time-label { color: #ffcc00; }
+    .hour-goal-input { flex:1; background:transparent; border:none; color:#aaa; font-size:0.82rem; font-style:italic; margin-left:6px; min-width:0; }
+    .hour-goal-input::placeholder { color:#3a4060; }
+    .hour-goal-star { color:#ffcc00; font-size:0.8rem; margin-left:4px; flex-shrink:0; opacity:0.7; }
 
     .appointment-tag { background: #00ffcc; color: #000; font-size: 0.75rem; padding: 2px 6px; border-radius: 4px; margin-left: 8px; }
 
@@ -240,19 +243,53 @@
         const hourMinutes = h * 60;
         const hourIsPast = nowMinutes >= hourMinutes + 60;
 
+        const hourGoalKey = `hourGoal_${today}_${hourMinutes}`;
+        const hourGoalVal = storage.get(hourGoalKey) || '';
+
         const hourBlock = document.createElement('div');
         hourBlock.className = 'time-block' + (hourIsPast ? ' past' : '');
-        hourBlock.innerHTML = `<div class="time-label"><strong>${formatAMPM(hourMinutes)}</strong></div>`;
+
+        const hourTimeEl = document.createElement('div');
+        hourTimeEl.className = 'time-label';
+        hourTimeEl.innerHTML = `<strong>${formatAMPM(hourMinutes)}</strong>`;
+        hourBlock.appendChild(hourTimeEl);
 
         const hourAppts = appointments.filter(a =>
           (a.startMinutes >= hourMinutes && a.startMinutes < hourMinutes + 60) ||
           (a.endMinutes > hourMinutes && a.endMinutes <= hourMinutes + 60)
         );
         if (hourAppts.length > 0) {
-          hourBlock.innerHTML += `<div style="margin-left:8px;flex:1;">${hourAppts.map(a =>
-            `<span class="appointment-tag">${formatAMPM(a.startMinutes)}–${formatAMPM(a.endMinutes)} ${a.text}</span>`
-          ).join('')}</div>`;
+          const apptDiv = document.createElement('div');
+          apptDiv.style.cssText = 'margin-left:8px;flex:1;display:flex;flex-wrap:wrap;gap:4px;';
+          hourAppts.forEach(a => {
+            const tag = document.createElement('span');
+            tag.className = 'appointment-tag';
+            tag.textContent = `${formatAMPM(a.startMinutes)}–${formatAMPM(a.endMinutes)} ${a.text}`;
+            apptDiv.appendChild(tag);
+          });
+          hourBlock.appendChild(apptDiv);
         }
+
+        // Hour-level goal input — flows into the :50 block as its target
+        const goalInput = document.createElement('input');
+        goalInput.type = 'text';
+        goalInput.className = 'hour-goal-input';
+        goalInput.placeholder = 'hour goal…';
+        goalInput.value = hourGoalVal;
+        goalInput.readOnly = hourIsPast;
+        goalInput.addEventListener('input', () => {
+          storage.set(hourGoalKey, goalInput.value);
+          // Live-update the :50 block placeholder
+          const targetInput = document.getElementById(`block-input-${hourMinutes + 50}`);
+          if (targetInput) targetInput.placeholder = goalInput.value || 'did you hit it?';
+        });
+        hourBlock.appendChild(goalInput);
+
+        const star = document.createElement('span');
+        star.className = 'hour-goal-star';
+        star.textContent = '★';
+        hourBlock.appendChild(star);
+
         container.appendChild(hourBlock);
 
         for (let m = 0; m < 60; m += 10) {
@@ -294,7 +331,10 @@
           const input = document.createElement('input');
           input.type = 'text';
           input.className = 'block-input';
-          input.placeholder = 'What are you doing?';
+          input.id = `block-input-${blockMinutes}`;
+          // :50 block uses the hour goal as its placeholder
+          const hourGoal = m === 50 ? (storage.get(`hourGoal_${today}_${hourMinutes}`) || '') : '';
+          input.placeholder = m === 50 ? (hourGoal || 'did you hit it?') : 'what are you doing?';
           input.value = storage.get(storageKey) || '';
           input.addEventListener('input', () => storage.set(storageKey, input.value));
           block.appendChild(input);
@@ -426,7 +466,10 @@
     function exportData() {
       const today = todayKey();
       const blockLogs = {};
-      for (let h = 7; h < 21; h++) {
+      const hourGoals = {};
+      for (let h = startHour; h < endHour; h++) {
+        const goal = storage.get(`hourGoal_${today}_${h * 60}`);
+        if (goal) hourGoals[formatAMPM(h * 60)] = goal;
         for (let m = 0; m < 60; m += 10) {
           const mins = h * 60 + m;
           const val = storage.get(`block_${today}_${mins}`);
@@ -436,6 +479,7 @@
       const data = {
         date: today,
         appointments,
+        hourGoals,
         blockLogs,
         notes: document.getElementById('daily-notes').value
       };
