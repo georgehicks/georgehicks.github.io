@@ -1,0 +1,19 @@
+{
+  "name": "Focus Flow",
+  "short_name": "FocusFlow",
+  "description": "ADHD focus aid — analog clock, appointments, 10-minute block timeline, audio cues",
+  "start_url": "./focus-flow.html",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#0f1117",
+  "theme_color": "#00ffcc",
+  "categories": ["productivity", "utilities"],
+  "icons": [
+    {
+      "src": "icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

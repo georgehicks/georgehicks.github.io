@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" id="metaThemeColor" content="#4361ee">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="FocusA">
+  <title>FocusA</title>
+  <link rel="manifest" href="manifest.json">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="app">
+
+    <header class="header">
+      <h1 class="logo">FocusA</h1>
+      <button class="theme-toggle" id="themeToggle" aria-label="Toggle theme">
+        <span class="theme-icon"></span>
+      </button>
+    </header>
+
+    <!-- Radial Timer -->
+    <section class="timer-section hidden" id="timerSection">
+      <div class="timer-wrap">
+        <svg class="timer-svg" viewBox="0 0 220 220" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+          <!-- Track rings -->
+          <circle class="ring-track" cx="110" cy="110" r="95"/>
+          <circle class="ring-track ring-track-inner" cx="110" cy="110" r="70"/>
+          <!-- Progress arcs -->
+          <circle class="ring-outer" id="ringOuter" cx="110" cy="110" r="95"/>
+          <circle class="ring-inner" id="ringInner" cx="110" cy="110" r="70"/>
+          <!-- Center text -->
+          <text class="timer-time" id="timerTime" x="110" y="104" text-anchor="middle" dominant-baseline="middle"></text>
+          <text class="timer-label" id="timerLabel" x="110" y="132" text-anchor="middle" dominant-baseline="middle"></text>
+        </svg>
+      </div>
+      <p class="timer-outcome" id="timerOutcome"></p>
+    </section>
+
+    <!-- Outcome Target -->
+    <section class="target-section">
+      <label class="section-label">Outcome target</label>
+      <div class="target-input-row">
+        <input
+          type="text"
+          id="targetText"
+          class="target-text-input"
+          placeholder="What are you trying to finish?"
+          maxlength="140"
+          autocomplete="off"
+          spellcheck="true"
+        >
+      </div>
+      <div class="target-time-row">
+        <span class="target-time-label">By</span>
+        <input type="time" id="targetTime" class="target-time-input">
+        <button id="startTarget" class="btn-primary">Start</button>
+        <button id="clearTarget" class="btn-ghost hidden">Clear</button>
+      </div>
+    </section>
+
+    <!-- Timeline -->
+    <section class="timeline-section">
+      <div class="section-header">
+        <span class="section-label">Timeline</span>
+        <span class="timeline-hint" id="timelineHint"></span>
+      </div>
+      <div class="timeline-blocks" id="timelineBlocks">
+        <p class="timeline-empty">Set an outcome target above to see your timeline.</p>
+      </div>
+    </section>
+
+    <!-- Daily Notes -->
+    <section class="notes-section">
+      <label class="section-label" for="dailyNotes">Daily notes</label>
+      <textarea
+        id="dailyNotes"
+        class="notes-textarea"
+        placeholder="Brain dump, ideas, loose thoughts…"
+        rows="5"
+        spellcheck="true"
+      ></textarea>
+    </section>
+
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>

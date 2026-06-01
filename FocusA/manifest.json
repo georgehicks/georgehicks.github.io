@@ -1,0 +1,19 @@
+{
+  "name": "FocusA",
+  "short_name": "FocusA",
+  "description": "ADHD time and focus aid — outcome targets, 10-minute blocks, radial timer",
+  "start_url": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#f4f4ef",
+  "theme_color": "#4361ee",
+  "categories": ["productivity", "utilities"],
+  "icons": [
+    {
+      "src": "icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

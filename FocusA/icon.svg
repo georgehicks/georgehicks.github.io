@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <rect width="512" height="512" rx="96" fill="#4361ee"/>
+  <!-- Outer ring track -->
+  <circle cx="256" cy="256" r="170" fill="none" stroke="rgba(255,255,255,0.2)" stroke-width="20"/>
+  <!-- Outer ring progress (~75%) -->
+  <circle cx="256" cy="256" r="170" fill="none" stroke="white" stroke-width="20"
+    stroke-linecap="round"
+    stroke-dasharray="1068"
+    stroke-dashoffset="267"
+    transform="rotate(-90 256 256)"/>
+  <!-- Inner ring track -->
+  <circle cx="256" cy="256" r="128" fill="none" stroke="rgba(255,255,255,0.2)" stroke-width="14"/>
+  <!-- Inner ring progress (~40%) -->
+  <circle cx="256" cy="256" r="128" fill="none" stroke="#06d6a0" stroke-width="14"
+    stroke-linecap="round"
+    stroke-dasharray="804"
+    stroke-dashoffset="482"
+    transform="rotate(-90 256 256)"/>
+  <!-- Center F -->
+  <text x="256" y="280" text-anchor="middle" font-family="system-ui, -apple-system, sans-serif"
+    font-size="120" font-weight="700" fill="white">F</text>
+</svg>
