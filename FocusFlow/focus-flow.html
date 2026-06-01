@@ -48,6 +48,10 @@
     .hour-goal-input { flex:1; background:transparent; border:none; color:#aaa; font-size:0.82rem; font-style:italic; margin-left:6px; min-width:0; }
     .hour-goal-input::placeholder { color:#3a4060; }
     .hour-goal-star { color:#ffcc00; font-size:0.8rem; margin-left:4px; flex-shrink:0; opacity:0.7; }
+    .time-block.has-logs { flex-wrap: wrap; }
+    .hour-logs { width:100%; padding: 2px 0 3px 78px; display:flex; gap:10px; }
+    .hour-log-entry { font-size:0.75rem; color:#555; font-style:italic; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:140px; }
+    .hour-log-time { color:#444; margin-right:3px; }
 
     .appointment-tag { background: #00ffcc; color: #000; font-size: 0.75rem; padding: 2px 6px; border-radius: 4px; margin-left: 8px; }
 
@@ -289,6 +293,26 @@
         star.className = 'hour-goal-star';
         star.textContent = '★';
         hourBlock.appendChild(star);
+
+        // Show last 1–2 block log entries for this hour as a preview
+        const snippets = [];
+        for (let sm = 50; sm >= 0 && snippets.length < 2; sm -= 10) {
+          const val = storage.get(`block_${today}_${hourMinutes + sm}`);
+          if (val && val.trim()) snippets.unshift({ time: formatAMPM(hourMinutes + sm), text: val.trim() });
+        }
+        if (snippets.length > 0) {
+          hourBlock.classList.add('has-logs');
+          const logsDiv = document.createElement('div');
+          logsDiv.className = 'hour-logs';
+          snippets.forEach(s => {
+            const entry = document.createElement('span');
+            entry.className = 'hour-log-entry';
+            entry.title = s.text; // full text on hover
+            entry.innerHTML = `<span class="hour-log-time">${s.time}</span>${s.text.length > 36 ? s.text.slice(0, 36) + '…' : s.text}`;
+            logsDiv.appendChild(entry);
+          });
+          hourBlock.appendChild(logsDiv);
+        }
 
         container.appendChild(hourBlock);
 
