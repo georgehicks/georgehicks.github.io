@@ -270,7 +270,7 @@
       const winStart = minutesToDate(windowStartMinutes);
       const winEnd = minutesToDate(windowStartMinutes + 60);
 
-      const currentBlockMinutes = Math.floor(nowMinutes / 10) * 10;
+      const curBlock = Math.floor(nowMinutes / 10) * 10;
       const today = todayKey();
 
       for (let h = startHour; h < endHour; h++) {
@@ -351,7 +351,7 @@
           const blockTime = minutesToDate(blockMinutes);
           if (blockTime < winStart || blockTime >= winEnd) continue;
 
-          const isCurrent = blockMinutes === currentBlockMinutes;
+          const isCurrent = blockMinutes === curBlock;
           const isPast = blockMinutes + 10 <= nowMinutes;
           const overlapping = appointments.filter(a => a.startMinutes < blockMinutes + 10 && a.endMinutes > blockMinutes);
 
@@ -429,11 +429,23 @@
       }, 1000);
     }
 
+    function currentBlockMinutes() {
+      const now = new Date();
+      return Math.floor((now.getHours() * 60 + now.getMinutes()) / 10) * 10;
+    }
+
+    let lastTrackedBlock = currentBlockMinutes();
+
     function autoTrack() {
-      const wanted = getCurrentWindowStart();
-      if (wanted !== windowStartMinutes) {
-        windowStartMinutes = wanted;
-        if (document.getElementById('panel-focus').style.display !== 'none') buildFocusTimeline();
+      const block   = currentBlockMinutes();
+      const wanted  = getCurrentWindowStart();
+      const blockChanged  = block !== lastTrackedBlock;
+      const windowChanged = wanted !== windowStartMinutes;
+      lastTrackedBlock = block;
+      if (windowChanged) windowStartMinutes = wanted;
+      if ((blockChanged || windowChanged) &&
+          document.getElementById('panel-focus').style.display !== 'none') {
+        buildFocusTimeline();
       }
     }
 
@@ -639,9 +651,7 @@
     updateAnalogClock();
     addWheelListener();
 
-    setInterval(() => {
-      if (document.getElementById('panel-focus').style.display !== 'none') autoTrack();
-    }, 30000);
+    setInterval(autoTrack, 10000);
 
     const notesEl = document.getElementById('daily-notes');
     notesEl.value = storage.get('dailyNotes') || '';
