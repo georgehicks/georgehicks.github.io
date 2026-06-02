@@ -14,15 +14,16 @@
     body {
       font-family: system-ui, -apple-system, sans-serif;
       background: var(--bg); color: #ddd;
-      margin: 0; padding: 15px; width: 380px; margin: 0 auto;
+      margin: 0 auto; padding: 10px; width: 380px;
     }
 
-    .top-header { display: flex; gap: 12px; margin-bottom: 16px; align-items: flex-start; }
-    .calendar { flex: 1; background: var(--card); border-radius: 12px; padding: 6px; font-size: 0.82rem; }
-    .calendar-header { text-align: center; font-weight: 600; margin-bottom: 4px; color: var(--primary); font-size: 0.95rem; }
+    .top-header { display: flex; gap: 10px; margin-bottom: 10px; align-items: flex-start; }
+    .calendar { flex: 1; background: var(--card); border-radius: 10px; padding: 4px 5px;
+                font-size: 0.76rem; height: 140px; overflow: hidden; box-sizing: border-box; }
+    .calendar-header { text-align: center; font-weight: 600; margin-bottom: 2px; color: var(--primary); font-size: 0.8rem; }
     .calendar-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 1px; text-align: center; }
-    .calendar-grid div { padding: 3px; border-radius: 3px; }
-    .calendar-grid .header { color: #666; font-size: 0.7rem; }
+    .calendar-grid div { padding: 2px 1px; border-radius: 3px; }
+    .calendar-grid .header { color: #555; font-size: 0.62rem; }
     .calendar-grid .today { background: var(--primary); color: #000; font-weight: bold; }
 
     .clock-container { width: 140px; height: 140px; flex-shrink: 0; }
@@ -42,6 +43,9 @@
     .time-block.past { opacity: 0.35; background: #181d2b; cursor: default; }
     .time-block.current { border-left: 4px solid var(--primary); }
     .time-block.magnified { background: #252b3d !important; border: 2px solid var(--primary); }
+    .time-block.magnified.current { padding: 10px 12px 18px; }
+    .time-block.magnified.current .time-label { font-size: 1rem; color: var(--primary); font-weight: 600; }
+    .time-block.magnified.current .block-input { font-size: 1rem; }
     .time-block.magnified.past { background: #191e2c !important; opacity: 0.45; border-color: #252b3d !important; }
     .time-block.magnified.hour-target { border-color: #ffcc00 !important; }
     .time-block.magnified.hour-target .time-label { color: #ffcc00; }
@@ -61,9 +65,11 @@
     .time-label { width: 78px; color: #888; font-size: 0.88rem; flex-shrink: 0; }
     .block-input { flex: 1; background: transparent; border: none; color: #ddd; font-size: 0.92rem; }
 
-    .notes { min-height: 110px; resize: vertical; width: 100%; }
-
-    .bottom-bar { display: flex; justify-content: flex-end; margin-top: 12px; font-size: 1.6rem; cursor: pointer; }
+    .notes { min-height: 65px; resize: vertical; width: 100%; }
+    .notes-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
+    .notes-header strong { font-size: 0.9rem; }
+    .export-btn { background: none; border: none; color: #555; font-size: 1.3rem; cursor: pointer; padding: 0; line-height: 1; }
+    .export-btn:hover { color: #aaa; }
   </style>
 </head>
 <body>
@@ -150,12 +156,11 @@
 
   <!-- Daily Notes -->
   <div class="section">
-    <textarea id="daily-notes" class="notes" placeholder="Daily notes..."></textarea>
-  </div>
-
-  <!-- Export -->
-  <div class="bottom-bar">
-    <span onclick="exportData()" style="font-size:1.6rem;">📤</span>
+    <div class="notes-header">
+      <strong>Daily notes</strong>
+      <button class="export-btn" onclick="exportData()" title="Export today's data">📤</button>
+    </div>
+    <textarea id="daily-notes" class="notes" placeholder="Brain dump, loose thoughts..."></textarea>
   </div>
 
   <script>
