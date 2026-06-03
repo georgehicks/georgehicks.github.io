@@ -405,7 +405,7 @@
             overlapping.forEach(a => {
               const tag = document.createElement('span');
               tag.className = 'appointment-tag';
-              tag.textContent = `${formatAMPM(a.startMinutes)} ${shortText(a.text, 3, 20)}`;
+              tag.textContent = shortText(a.text, 3, 20);
               tag.title = `${formatAMPM(a.startMinutes)}–${formatAMPM(a.endMinutes)}: ${a.text}`;
               tag.style.marginLeft = '8px';
               block.appendChild(tag);
