@@ -164,6 +164,16 @@
   <!-- FOCUS TAB -->
   <div id="panel-focus" class="section" style="display:none;">
     <div id="focus-timeline" class="timeline"></div>
+    <div style="margin-top:10px;">
+      <div class="notes-header">
+        <div class="notes-tabs">
+          <span class="notes-tab active" data-focus-tab="dailyNotes">Daily</span>
+          <span class="notes-tab" data-focus-tab="deliverables">Deliverables</span>
+        </div>
+      </div>
+      <textarea id="focus-daily-notes" class="notes sync-notes" data-key="dailyNotes" placeholder="Brain dump, loose thoughts…" style="min-height:60px;"></textarea>
+      <textarea id="focus-deliverables" class="notes sync-notes" data-key="deliverables" placeholder="Your deliverables…" style="display:none; min-height:60px;"></textarea>
+    </div>
   </div>
 
   <!-- SETTINGS TAB -->
@@ -719,14 +729,17 @@
       });
     }
 
-    // Main notes tab switching
+    // Notes tab switching — each tab group is scoped to its parent container
     document.querySelectorAll('.notes-tab').forEach(tab => {
       tab.addEventListener('click', () => {
-        document.querySelectorAll('.notes-tab').forEach(t => t.classList.remove('active'));
+        const group = tab.closest('div').querySelectorAll('.notes-tab');
+        group.forEach(t => t.classList.remove('active'));
         tab.classList.add('active');
-        const key = tab.dataset.mainTab;
-        document.getElementById('daily-notes').style.display          = key === 'dailyNotes'    ? '' : 'none';
-        document.getElementById('deliverables-notes').style.display   = key === 'deliverables'  ? '' : 'none';
+        const key = tab.dataset.mainTab || tab.dataset.focusTab;
+        // Toggle textareas within the same parent container
+        tab.closest('div').parentElement.querySelectorAll('textarea.sync-notes').forEach(el => {
+          el.style.display = el.dataset.key === key ? '' : 'none';
+        });
       });
     });
 
