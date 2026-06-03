@@ -78,7 +78,7 @@
     .hour-log-time { color:#506080; margin-right:3px; }
 
     .appointment-tag { background: #00ffcc; color: #000; font-size: 0.75rem; padding: 2px 6px; border-radius: 4px; margin-left: 4px; white-space: nowrap; }
-    .appt-chip { background: rgba(0,255,204,0.12); color: #00ffcc; font-size: 0.68rem; padding: 1px 5px; border-radius: 3px; margin-left: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 70px; min-width: 0; flex-shrink: 0; cursor: default; }
+    .appt-chip { background: rgba(0,255,204,0.12); color: #00ffcc; font-size: 0.68rem; padding: 1px 5px; border-radius: 3px; margin-left: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 90px; min-width: 0; flex-shrink: 0; cursor: default; }
 
     .progress-container { position: absolute; bottom: 3px; left: 12px; right: 12px; height: 4px; background: #252b3d; border-radius: 2px; overflow: hidden; }
     .progress-bar { height: 100%; background: linear-gradient(90deg, #00ffcc, #ffcc00); width: 100%; transition: width 1s linear; }
@@ -433,12 +433,11 @@
           // Appointment badges
           if (overlapping.length > 0) {
             overlapping.forEach(a => {
-              const tag = document.createElement('span');
-              tag.className = 'appointment-tag';
-              tag.textContent = shortText(a.text, 3, 20);
-              tag.title = `${formatAMPM(a.startMinutes)}–${formatAMPM(a.endMinutes)}: ${a.text}`;
-              tag.style.marginLeft = '8px';
-              block.appendChild(tag);
+              const chip = document.createElement('span');
+              chip.className = 'appt-chip';
+              chip.textContent = shortText(a.text, 3, 20);
+              chip.title = `${formatAMPM(a.startMinutes)}–${formatAMPM(a.endMinutes)}: ${a.text}`;
+              block.appendChild(chip);
             });
           }
 
