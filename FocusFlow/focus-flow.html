@@ -87,11 +87,27 @@
     .block-input { flex: 1; background: transparent; border: none; color: #8090b0; font-size: 0.9rem; outline: none; }
     .magnified-window { border: 2px solid rgba(0,255,204,0.5); border-radius: 10px; padding: 3px; margin-bottom: 6px; background: rgba(0,255,204,0.04); }
 
-    .notes { min-height: 65px; resize: vertical; width: 100%; }
-    .notes-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
-    .notes-header strong { font-size: 0.9rem; }
-    .export-btn { background: none; border: none; color: #555; font-size: 1.3rem; cursor: pointer; padding: 0; line-height: 1; }
+    /* Main notes section */
+    .notes { min-height: 80px; resize: vertical; width: 100%; background: #151a28; border: 1px solid #252b40; border-radius: 0 6px 6px 6px; color: #ccd; font-family: inherit; font-size: 0.88rem; padding: 8px 10px; outline: none; }
+    .notes-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 0; }
+    .notes-tabs { display: flex; gap: 2px; }
+    .notes-tab { padding: 3px 12px; border-radius: 5px 5px 0 0; cursor: pointer; font-size: 0.8rem; color: #557; background: #111620; border: 1px solid #252b40; border-bottom: none; }
+    .notes-tab.active { background: #151a28; color: var(--primary); }
+    .export-btn { background: none; border: none; color: #445; font-size: 1.2rem; cursor: pointer; padding: 0 2px; line-height: 1; }
     .export-btn:hover { color: #aaa; }
+
+    /* Compact plan form */
+    .plan-form { display: flex; flex-direction: column; gap: 5px; margin-bottom: 10px; }
+    .plan-form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 5px; }
+    .plan-input { background: #151a28; border: 1px solid #252b40; border-radius: 5px; color: #aab; font-size: 0.78rem; padding: 4px 7px; width: 100%; outline: none; font-family: inherit; }
+    .plan-input::placeholder { color: #445; }
+    .plan-btn { background: var(--primary); color: #000; border: none; border-radius: 5px; padding: 4px 10px; font-size: 0.78rem; font-weight: 700; cursor: pointer; white-space: nowrap; }
+
+    /* Mini notes in plan tab */
+    .mini-tabs { display: flex; gap: 3px; margin-top: 10px; margin-bottom: 0; }
+    .mini-tab { padding: 2px 8px; border-radius: 4px 4px 0 0; cursor: pointer; font-size: 0.68rem; color: #446; background: #111620; border: 1px solid #252b40; border-bottom: none; }
+    .mini-tab.active { background: #151a28; color: var(--primary); }
+    .mini-notes { width: 100%; height: 58px; resize: none; background: #151a28; border: 1px solid #252b40; border-radius: 0 4px 4px 4px; color: #889; font-size: 0.78rem; padding: 5px 8px; font-family: inherit; outline: none; display: block; }
   </style>
 </head>
 <body>
@@ -124,15 +140,25 @@
 
   <!-- PLAN TAB -->
   <div id="panel-plan" class="section">
-    <div class="header"><strong>Add Appointment</strong></div>
-    <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:12px;">
-      <input id="plan-start" type="text" placeholder="Start (e.g. 11:00 AM)" style="padding:8px;">
-      <input id="plan-end" type="text" placeholder="End (e.g. 11:45 AM)" style="padding:8px;">
+    <div class="plan-form">
+      <div class="plan-form-row">
+        <input id="plan-start" type="text" class="plan-input" placeholder="Start (11:00 AM)">
+        <input id="plan-end" type="text" class="plan-input" placeholder="End (11:45 AM)">
+      </div>
+      <div style="display:flex; gap:5px;">
+        <input id="plan-text" type="text" class="plan-input" placeholder="Appointment title" style="flex:1;">
+        <button onclick="addAppointment()" class="plan-btn">+ Add</button>
+      </div>
     </div>
-    <input id="plan-text" type="text" placeholder="Appointment title" style="width:100%; padding:8px; margin-bottom:8px;">
-    <button onclick="addAppointment()" style="width:100%; padding:10px; background:#00ffcc; color:#000; border:none; border-radius:8px; font-weight:bold;">Add to Plan</button>
+    <div id="appointment-list"></div>
 
-    <div style="margin-top:16px;"><strong>Your Appointments</strong><div id="appointment-list"></div></div>
+    <!-- Mini notes -->
+    <div class="mini-tabs">
+      <span class="mini-tab active" data-mini-tab="dailyNotes">Daily</span>
+      <span class="mini-tab" data-mini-tab="deliverables">Deliverables</span>
+    </div>
+    <textarea id="plan-daily-notes" class="mini-notes sync-notes" data-key="dailyNotes" placeholder="Daily notes…"></textarea>
+    <textarea id="plan-deliverables" class="mini-notes sync-notes" data-key="deliverables" placeholder="Deliverables…" style="display:none;"></textarea>
   </div>
 
   <!-- FOCUS TAB -->
@@ -176,13 +202,17 @@
     </div>
   </div>
 
-  <!-- Daily Notes -->
+  <!-- Notes -->
   <div class="section">
     <div class="notes-header">
-      <strong>Daily notes</strong>
+      <div class="notes-tabs">
+        <span class="notes-tab active" data-main-tab="dailyNotes">Daily</span>
+        <span class="notes-tab" data-main-tab="deliverables">Deliverables</span>
+      </div>
       <button class="export-btn" onclick="exportData()" title="Export today's data">📤</button>
     </div>
-    <textarea id="daily-notes" class="notes" placeholder="Brain dump, loose thoughts..."></textarea>
+    <textarea id="daily-notes" class="notes sync-notes" data-key="dailyNotes" placeholder="Brain dump, loose thoughts…"></textarea>
+    <textarea id="deliverables-notes" class="notes sync-notes" data-key="deliverables" placeholder="Your deliverables, free-form…" style="display:none; min-height:120px;"></textarea>
   </div>
 
   <script>
@@ -582,7 +612,8 @@
         appointments,
         hourGoals,
         blockLogs,
-        notes: document.getElementById('daily-notes').value
+        notes: document.getElementById('daily-notes').value,
+        deliverables: storage.get('deliverables') || ''
       };
       const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
       const url = URL.createObjectURL(blob);
@@ -640,7 +671,7 @@
         }
       }
       storage.set('dailyNotes', '');
-      document.getElementById('daily-notes').value = '';
+      document.querySelectorAll('textarea.sync-notes[data-key="dailyNotes"]').forEach(el => el.value = '');
       if (document.getElementById('panel-focus').style.display !== 'none') buildFocusTimeline();
     }
 
@@ -688,9 +719,42 @@
 
     setInterval(autoTrack, 10000);
 
-    const notesEl = document.getElementById('daily-notes');
-    notesEl.value = storage.get('dailyNotes') || '';
-    notesEl.addEventListener('input', () => storage.set('dailyNotes', notesEl.value));
+    // Synced notes — all textareas sharing a data-key stay in sync
+    function initSyncedNotes() {
+      document.querySelectorAll('textarea.sync-notes').forEach(el => {
+        el.value = storage.get(el.dataset.key) || '';
+        el.addEventListener('input', () => {
+          storage.set(el.dataset.key, el.value);
+          document.querySelectorAll(`textarea.sync-notes[data-key="${el.dataset.key}"]`).forEach(other => {
+            if (other !== el) other.value = el.value;
+          });
+        });
+      });
+    }
+
+    // Main notes tab switching
+    document.querySelectorAll('.notes-tab').forEach(tab => {
+      tab.addEventListener('click', () => {
+        document.querySelectorAll('.notes-tab').forEach(t => t.classList.remove('active'));
+        tab.classList.add('active');
+        const key = tab.dataset.mainTab;
+        document.getElementById('daily-notes').style.display          = key === 'dailyNotes'    ? '' : 'none';
+        document.getElementById('deliverables-notes').style.display   = key === 'deliverables'  ? '' : 'none';
+      });
+    });
+
+    // Mini notes tab switching
+    document.querySelectorAll('.mini-tab').forEach(tab => {
+      tab.addEventListener('click', () => {
+        document.querySelectorAll('.mini-tab').forEach(t => t.classList.remove('active'));
+        tab.classList.add('active');
+        const key = tab.dataset.miniTab;
+        document.getElementById('plan-daily-notes').style.display  = key === 'dailyNotes'   ? '' : 'none';
+        document.getElementById('plan-deliverables').style.display  = key === 'deliverables' ? '' : 'none';
+      });
+    });
+
+    initSyncedNotes();
   </script>
 </body>
 </html>
