@@ -34,58 +34,56 @@
 
     .section { background: var(--card); border-radius: 12px; padding: 12px; margin-bottom: 12px; }
 
+    /* Hour rows — readable scaffold */
     .time-block {
       display: flex; align-items: center; padding: 5px 12px; margin-bottom: 2px;
-      background: #141928; border-radius: 6px; font-size: 0.88rem; cursor: pointer;
+      background: #1a1f30; border-radius: 6px; font-size: 0.88rem; cursor: pointer;
       transition: all 0.2s; line-height: 1.1; position: relative;
-      opacity: 0.55;
     }
-    .time-block:hover { background: #1a2035; opacity: 0.85; }
-    .time-block.past { opacity: 0.2; background: #0f1320; cursor: default; }
+    .time-block:hover { background: #222840; }
+    .time-block.past { opacity: 0.45; cursor: default; }
 
-    /* Future magnified 10m blocks — very subdued */
+    /* Future magnified 10m blocks — noticeably quieter but legible */
     .time-block.magnified {
-      background: #171c2c !important;
-      border: 1px solid #242a40;
-      opacity: 1;
+      background: #1e2438 !important;
+      border: 1px solid #2e3654;
     }
-    .time-block.magnified .time-label { color: #384058; }
-    .time-block.magnified .block-input { color: #3a4460; }
-    .time-block.magnified .block-input::placeholder { color: #272e44; }
+    .time-block.magnified .time-label { color: #506080; }
+    .time-block.magnified .block-input { color: #506080; }
+    .time-block.magnified .block-input::placeholder { color: #364050; }
 
     /* Current 10m block — the hero */
     .time-block.magnified.current {
-      background: #252b3d !important;
+      background: #252e44 !important;
       border: 2px solid var(--primary);
       padding: 10px 12px 18px;
     }
     .time-block.magnified.current .time-label { font-size: 1rem; color: var(--primary); font-weight: 600; }
     .time-block.magnified.current .block-input { font-size: 1rem; color: #ddd; }
-    .time-block.magnified.current .block-input::placeholder { color: #44556a; }
+    .time-block.magnified.current .block-input::placeholder { color: #4a6070; }
 
-    /* Past magnified blocks — most faded */
-    .time-block.magnified.past { background: #11151f !important; opacity: 0.28; border-color: transparent !important; }
+    /* Past magnified blocks — faded but still readable */
+    .time-block.magnified.past { background: #171b28 !important; opacity: 0.4; border-color: transparent !important; }
 
-    /* Hour-target (:50) — hint of gold, subtle */
-    .time-block.magnified.hour-target { border-color: #3a3000 !important; }
-    .time-block.magnified.hour-target .time-label { color: #5a4a00; }
-    /* If :50 happens to be the current block, restore full gold */
+    /* Hour-target (:50) — dim gold */
+    .time-block.magnified.hour-target { border-color: #4a3c00 !important; }
+    .time-block.magnified.hour-target .time-label { color: #7a6200; }
     .time-block.magnified.current.hour-target { border-color: var(--primary) !important; }
-    .hour-goal-input { flex:1; background:transparent; border:none; color:#aaa; font-size:0.82rem; font-style:italic; margin-left:6px; min-width:0; }
-    .hour-goal-input::placeholder { color:#3a4060; }
-    .hour-goal-star { color:#ffcc00; font-size:0.8rem; margin-left:4px; flex-shrink:0; opacity:0.7; }
+    .hour-goal-input { flex:1; background:transparent; border:none; color:#8898b8; font-size:0.82rem; font-style:italic; margin-left:6px; min-width:0; }
+    .hour-goal-input::placeholder { color:#404860; }
+    .hour-goal-star { color:#ffcc00; font-size:0.8rem; margin-left:4px; flex-shrink:0; opacity:0.6; }
     .time-block.has-logs { flex-wrap: wrap; }
     .hour-logs { width:100%; padding: 2px 0 3px 78px; display:flex; gap:10px; }
-    .hour-log-entry { font-size:0.75rem; color:#555; font-style:italic; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:140px; }
-    .hour-log-time { color:#444; margin-right:3px; }
+    .hour-log-entry { font-size:0.75rem; color:#6070a0; font-style:italic; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:140px; }
+    .hour-log-time { color:#506080; margin-right:3px; }
 
     .appointment-tag { background: #00ffcc; color: #000; font-size: 0.75rem; padding: 2px 6px; border-radius: 4px; margin-left: 8px; }
 
     .progress-container { position: absolute; bottom: 3px; left: 12px; right: 12px; height: 4px; background: #252b3d; border-radius: 2px; overflow: hidden; }
     .progress-bar { height: 100%; background: linear-gradient(90deg, #00ffcc, #ffcc00); width: 100%; transition: width 1s linear; }
 
-    .time-label { width: 78px; color: #444; font-size: 0.85rem; flex-shrink: 0; }
-    .block-input { flex: 1; background: transparent; border: none; color: #55607a; font-size: 0.9rem; outline: none; }
+    .time-label { width: 78px; color: #7080a0; font-size: 0.85rem; flex-shrink: 0; }
+    .block-input { flex: 1; background: transparent; border: none; color: #8090b0; font-size: 0.9rem; outline: none; }
 
     .notes { min-height: 65px; resize: vertical; width: 100%; }
     .notes-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
