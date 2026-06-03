@@ -490,7 +490,7 @@
       timeline.addEventListener('wheel', (e) => {
         e.preventDefault();
         const delta = e.deltaY > 0 ? 60 : -60;
-        windowStartMinutes = Math.max(7*60, Math.min(20*60, windowStartMinutes + delta));
+        windowStartMinutes = Math.max(startHour * 60, Math.min((endHour - 1) * 60, windowStartMinutes + delta));
         buildFocusTimeline();
       });
     }
