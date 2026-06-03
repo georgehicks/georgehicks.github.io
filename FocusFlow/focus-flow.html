@@ -103,11 +103,6 @@
     .plan-input::placeholder { color: #445; }
     .plan-btn { background: var(--primary); color: #000; border: none; border-radius: 5px; padding: 4px 10px; font-size: 0.78rem; font-weight: 700; cursor: pointer; white-space: nowrap; }
 
-    /* Mini notes in plan tab */
-    .mini-tabs { display: flex; gap: 3px; margin-top: 10px; margin-bottom: 0; }
-    .mini-tab { padding: 2px 8px; border-radius: 4px 4px 0 0; cursor: pointer; font-size: 0.68rem; color: #446; background: #111620; border: 1px solid #252b40; border-bottom: none; }
-    .mini-tab.active { background: #151a28; color: var(--primary); }
-    .mini-notes { width: 100%; height: 58px; resize: none; background: #151a28; border: 1px solid #252b40; border-radius: 0 4px 4px 4px; color: #889; font-size: 0.78rem; padding: 5px 8px; font-family: inherit; outline: none; display: block; }
   </style>
 </head>
 <body>
@@ -151,14 +146,6 @@
       </div>
     </div>
     <div id="appointment-list"></div>
-
-    <!-- Mini notes -->
-    <div class="mini-tabs">
-      <span class="mini-tab active" data-mini-tab="dailyNotes">Daily</span>
-      <span class="mini-tab" data-mini-tab="deliverables">Deliverables</span>
-    </div>
-    <textarea id="plan-daily-notes" class="mini-notes sync-notes" data-key="dailyNotes" placeholder="Daily notes…"></textarea>
-    <textarea id="plan-deliverables" class="mini-notes sync-notes" data-key="deliverables" placeholder="Deliverables…" style="display:none;"></textarea>
   </div>
 
   <!-- FOCUS TAB -->
@@ -742,18 +729,7 @@
       });
     });
 
-    // Mini notes tab switching
-    document.querySelectorAll('.mini-tab').forEach(tab => {
-      tab.addEventListener('click', () => {
-        document.querySelectorAll('.mini-tab').forEach(t => t.classList.remove('active'));
-        tab.classList.add('active');
-        const key = tab.dataset.miniTab;
-        document.getElementById('plan-daily-notes').style.display  = key === 'dailyNotes'   ? '' : 'none';
-        document.getElementById('plan-deliverables').style.display  = key === 'deliverables' ? '' : 'none';
-      });
-    });
-
-    initSyncedNotes();
+initSyncedNotes();
   </script>
 </body>
 </html>
