@@ -146,6 +146,19 @@
       </div>
     </div>
     <div id="appointment-list"></div>
+
+    <!-- Full notes -->
+    <div style="margin-top:12px;">
+      <div class="notes-header">
+        <div class="notes-tabs">
+          <span class="notes-tab active" data-main-tab="dailyNotes">Daily</span>
+          <span class="notes-tab" data-main-tab="deliverables">Deliverables</span>
+        </div>
+        <button class="export-btn" onclick="exportData()" title="Export today's data">📤</button>
+      </div>
+      <textarea id="daily-notes" class="notes sync-notes" data-key="dailyNotes" placeholder="Brain dump, loose thoughts…"></textarea>
+      <textarea id="deliverables-notes" class="notes sync-notes" data-key="deliverables" placeholder="Your deliverables, free-form…" style="display:none; min-height:160px;"></textarea>
+    </div>
   </div>
 
   <!-- FOCUS TAB -->
@@ -189,18 +202,6 @@
     </div>
   </div>
 
-  <!-- Notes -->
-  <div class="section">
-    <div class="notes-header">
-      <div class="notes-tabs">
-        <span class="notes-tab active" data-main-tab="dailyNotes">Daily</span>
-        <span class="notes-tab" data-main-tab="deliverables">Deliverables</span>
-      </div>
-      <button class="export-btn" onclick="exportData()" title="Export today's data">📤</button>
-    </div>
-    <textarea id="daily-notes" class="notes sync-notes" data-key="dailyNotes" placeholder="Brain dump, loose thoughts…"></textarea>
-    <textarea id="deliverables-notes" class="notes sync-notes" data-key="deliverables" placeholder="Your deliverables, free-form…" style="display:none; min-height:120px;"></textarea>
-  </div>
 
   <script>
     const storage = { data: {}, get(k){try{return JSON.parse(localStorage.getItem(k));}catch(e){return this.data[k]||null;}}, set(k,v){try{localStorage.setItem(k,JSON.stringify(v));}catch(e){this.data[k]=v;}} };
