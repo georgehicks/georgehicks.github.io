@@ -157,7 +157,7 @@
         </div>
         <button class="export-btn" onclick="exportData()" title="Export today's data">📤</button>
       </div>
-      <textarea id="daily-notes" class="notes sync-notes" data-key="dailyNotes" placeholder="Brain dump, loose thoughts…"></textarea>
+      <textarea id="daily-notes" class="notes sync-notes" data-key="dailyNotes" placeholder="Brain dump, loose thoughts…" style="min-height:160px;"></textarea>
       <textarea id="deliverables-notes" class="notes sync-notes" data-key="deliverables" placeholder="Your deliverables, free-form…" style="display:none; min-height:160px;"></textarea>
     </div>
   </div>
@@ -738,7 +738,7 @@
         tab.classList.add('active');
         const key = tab.dataset.mainTab || tab.dataset.focusTab;
         // Toggle textareas within the same parent container
-        tab.closest('div').parentElement.querySelectorAll('textarea.sync-notes').forEach(el => {
+        tab.closest('div').parentElement.parentElement.querySelectorAll('textarea.sync-notes').forEach(el => {
           el.style.display = el.dataset.key === key ? '' : 'none';
         });
       });
