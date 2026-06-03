@@ -77,7 +77,8 @@
     .hour-log-entry { font-size:0.75rem; color:#6070a0; font-style:italic; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:140px; }
     .hour-log-time { color:#506080; margin-right:3px; }
 
-    .appointment-tag { background: #00ffcc; color: #000; font-size: 0.75rem; padding: 2px 6px; border-radius: 4px; margin-left: 8px; }
+    .appointment-tag { background: #00ffcc; color: #000; font-size: 0.75rem; padding: 2px 6px; border-radius: 4px; margin-left: 4px; white-space: nowrap; }
+    .appt-chip { display:inline-block; background: rgba(0,255,204,0.12); color: #00ffcc; font-size: 0.68rem; padding: 1px 5px; border-radius: 3px; margin-left: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 64px; flex-shrink: 0; cursor: default; vertical-align: middle; }
 
     .progress-container { position: absolute; bottom: 3px; left: 12px; right: 12px; height: 4px; background: #252b3d; border-radius: 2px; overflow: hidden; }
     .progress-bar { height: 100%; background: linear-gradient(90deg, #00ffcc, #ffcc00); width: 100%; transition: width 1s linear; }
@@ -218,6 +219,13 @@
       return new Date(now.getFullYear(), now.getMonth(), now.getDate(), Math.floor(minutes / 60), minutes % 60);
     }
 
+    function shortText(text, maxWords = 2, maxChars = 12) {
+      const words = text.trim().split(/\s+/);
+      let s = words.slice(0, maxWords).join(' ');
+      if (s.length > maxChars) s = s.slice(0, maxChars - 1) + '…';
+      return s;
+    }
+
     function parseTime(str) {
       const match = str.match(/(\d{1,2}):(\d{2})\s*(AM|PM)/i);
       if (!match) return null;
@@ -318,17 +326,13 @@
           (a.startMinutes >= hourMinutes && a.startMinutes < hourMinutes + 60) ||
           (a.endMinutes > hourMinutes && a.endMinutes <= hourMinutes + 60)
         );
-        if (hourAppts.length > 0) {
-          const apptDiv = document.createElement('div');
-          apptDiv.style.cssText = 'margin-left:8px;flex:1;display:flex;flex-wrap:wrap;gap:4px;';
-          hourAppts.forEach(a => {
-            const tag = document.createElement('span');
-            tag.className = 'appointment-tag';
-            tag.textContent = `${formatAMPM(a.startMinutes)}–${formatAMPM(a.endMinutes)} ${a.text}`;
-            apptDiv.appendChild(tag);
-          });
-          hourBlock.appendChild(apptDiv);
-        }
+        hourAppts.forEach(a => {
+          const chip = document.createElement('span');
+          chip.className = 'appt-chip';
+          chip.textContent = shortText(a.text);
+          chip.title = `${formatAMPM(a.startMinutes)}–${formatAMPM(a.endMinutes)}: ${a.text}`;
+          hourBlock.appendChild(chip);
+        });
 
         // Hour-level goal input — flows into the :50 block as its target
         const goalInput = document.createElement('input');
@@ -398,15 +402,14 @@
 
           // Appointment badges
           if (overlapping.length > 0) {
-            const apptDiv = document.createElement('div');
-            apptDiv.style.cssText = 'margin-left:8px;flex:1;display:flex;flex-wrap:wrap;gap:4px;';
             overlapping.forEach(a => {
               const tag = document.createElement('span');
               tag.className = 'appointment-tag';
-              tag.textContent = a.text;
-              apptDiv.appendChild(tag);
+              tag.textContent = `${formatAMPM(a.startMinutes)} ${shortText(a.text, 3, 20)}`;
+              tag.title = `${formatAMPM(a.startMinutes)}–${formatAMPM(a.endMinutes)}: ${a.text}`;
+              tag.style.marginLeft = '8px';
+              block.appendChild(tag);
             });
-            block.appendChild(apptDiv);
           }
 
           // Note input — persisted per block per day
