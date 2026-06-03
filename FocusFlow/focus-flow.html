@@ -464,14 +464,16 @@
     let lastTrackedBlock = currentBlockMinutes();
 
     function autoTrack() {
-      const block   = currentBlockMinutes();
-      const wanted  = getCurrentWindowStart();
-      const blockChanged  = block !== lastTrackedBlock;
-      const windowChanged = wanted !== windowStartMinutes;
+      const block = currentBlockMinutes();
+      const blockChanged = block !== lastTrackedBlock;
       lastTrackedBlock = block;
-      if (windowChanged) windowStartMinutes = wanted;
-      if ((blockChanged || windowChanged) &&
-          document.getElementById('panel-focus').style.display !== 'none') {
+
+      if (document.getElementById('panel-focus').style.display === 'none') return;
+
+      if (blockChanged) {
+        // Only snap the window if the new current block has moved outside what's visible
+        const visible = block >= windowStartMinutes && block < windowStartMinutes + 60;
+        if (!visible) windowStartMinutes = getCurrentWindowStart();
         buildFocusTimeline();
       }
     }
