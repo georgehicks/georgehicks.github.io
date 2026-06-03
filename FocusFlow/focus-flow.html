@@ -36,19 +36,41 @@
 
     .time-block {
       display: flex; align-items: center; padding: 5px 12px; margin-bottom: 2px;
-      background: #1f2537; border-radius: 6px; font-size: 0.92rem; cursor: pointer;
+      background: #141928; border-radius: 6px; font-size: 0.88rem; cursor: pointer;
       transition: all 0.2s; line-height: 1.1; position: relative;
+      opacity: 0.55;
     }
-    .time-block:hover { background: #2a3347; }
-    .time-block.past { opacity: 0.35; background: #181d2b; cursor: default; }
-    .time-block.current { border-left: 4px solid var(--primary); }
-    .time-block.magnified { background: #252b3d !important; border: 2px solid var(--primary); }
-    .time-block.magnified.current { padding: 10px 12px 18px; }
+    .time-block:hover { background: #1a2035; opacity: 0.85; }
+    .time-block.past { opacity: 0.2; background: #0f1320; cursor: default; }
+
+    /* Future magnified 10m blocks — very subdued */
+    .time-block.magnified {
+      background: #171c2c !important;
+      border: 1px solid #242a40;
+      opacity: 1;
+    }
+    .time-block.magnified .time-label { color: #384058; }
+    .time-block.magnified .block-input { color: #3a4460; }
+    .time-block.magnified .block-input::placeholder { color: #272e44; }
+
+    /* Current 10m block — the hero */
+    .time-block.magnified.current {
+      background: #252b3d !important;
+      border: 2px solid var(--primary);
+      padding: 10px 12px 18px;
+    }
     .time-block.magnified.current .time-label { font-size: 1rem; color: var(--primary); font-weight: 600; }
-    .time-block.magnified.current .block-input { font-size: 1rem; }
-    .time-block.magnified.past { background: #191e2c !important; opacity: 0.45; border-color: #252b3d !important; }
-    .time-block.magnified.hour-target { border-color: #ffcc00 !important; }
-    .time-block.magnified.hour-target .time-label { color: #ffcc00; }
+    .time-block.magnified.current .block-input { font-size: 1rem; color: #ddd; }
+    .time-block.magnified.current .block-input::placeholder { color: #44556a; }
+
+    /* Past magnified blocks — most faded */
+    .time-block.magnified.past { background: #11151f !important; opacity: 0.28; border-color: transparent !important; }
+
+    /* Hour-target (:50) — hint of gold, subtle */
+    .time-block.magnified.hour-target { border-color: #3a3000 !important; }
+    .time-block.magnified.hour-target .time-label { color: #5a4a00; }
+    /* If :50 happens to be the current block, restore full gold */
+    .time-block.magnified.current.hour-target { border-color: var(--primary) !important; }
     .hour-goal-input { flex:1; background:transparent; border:none; color:#aaa; font-size:0.82rem; font-style:italic; margin-left:6px; min-width:0; }
     .hour-goal-input::placeholder { color:#3a4060; }
     .hour-goal-star { color:#ffcc00; font-size:0.8rem; margin-left:4px; flex-shrink:0; opacity:0.7; }
@@ -62,8 +84,8 @@
     .progress-container { position: absolute; bottom: 3px; left: 12px; right: 12px; height: 4px; background: #252b3d; border-radius: 2px; overflow: hidden; }
     .progress-bar { height: 100%; background: linear-gradient(90deg, #00ffcc, #ffcc00); width: 100%; transition: width 1s linear; }
 
-    .time-label { width: 78px; color: #888; font-size: 0.88rem; flex-shrink: 0; }
-    .block-input { flex: 1; background: transparent; border: none; color: #ddd; font-size: 0.92rem; }
+    .time-label { width: 78px; color: #444; font-size: 0.85rem; flex-shrink: 0; }
+    .block-input { flex: 1; background: transparent; border: none; color: #55607a; font-size: 0.9rem; outline: none; }
 
     .notes { min-height: 65px; resize: vertical; width: 100%; }
     .notes-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
