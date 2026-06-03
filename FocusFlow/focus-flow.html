@@ -72,7 +72,8 @@
     .time-block.magnified.current.hour-target { border-color: var(--primary) !important; }
     .hour-goal-input { flex:1; background:transparent; border:none; color:#8898b8; font-size:0.82rem; font-style:italic; margin-left:6px; min-width:0; }
     .hour-goal-input::placeholder { color:#404860; }
-    .hour-goal-star { color:#ffcc00; font-size:0.8rem; margin-left:4px; flex-shrink:0; opacity:0.6; }
+    .hour-check { font-size:1rem; margin-left:4px; flex-shrink:0; cursor:pointer; color:#2a3050; user-select:none; transition:color 0.15s; }
+    .hour-check.checked { color:#4caf50; }
     .time-block.has-logs { flex-wrap: wrap; }
     .hour-logs { width:100%; padding: 2px 0 3px 78px; display:flex; gap:10px; }
     .hour-log-entry { font-size:0.75rem; color:#6070a0; font-style:italic; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:140px; }
@@ -378,10 +379,17 @@
         });
         hourBlock.appendChild(goalInput);
 
-        const star = document.createElement('span');
-        star.className = 'hour-goal-star';
-        star.textContent = '★';
-        hourBlock.appendChild(star);
+        const checkKey = `hourCheck_${today}_${hourMinutes}`;
+        const check = document.createElement('span');
+        check.className = 'hour-check' + (storage.get(checkKey) ? ' checked' : '');
+        check.textContent = '✓';
+        check.title = 'Mark hour as well spent';
+        check.addEventListener('click', () => {
+          const now = !storage.get(checkKey);
+          storage.set(checkKey, now ? '1' : '');
+          check.classList.toggle('checked', now);
+        });
+        hourBlock.appendChild(check);
 
         // Show last 1–2 block log entries for this hour as a preview
         const snippets = [];
@@ -664,6 +672,7 @@
       const today = todayKey();
       for (let h = 0; h < 24; h++) {
         localStorage.removeItem(`hourGoal_${today}_${h * 60}`);
+        localStorage.removeItem(`hourCheck_${today}_${h * 60}`);
         for (let m = 0; m < 60; m += 10) {
           localStorage.removeItem(`block_${today}_${h * 60 + m}`);
         }
