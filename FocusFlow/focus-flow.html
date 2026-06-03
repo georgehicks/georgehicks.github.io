@@ -84,6 +84,7 @@
 
     .time-label { width: 78px; color: #7080a0; font-size: 0.85rem; flex-shrink: 0; }
     .block-input { flex: 1; background: transparent; border: none; color: #8090b0; font-size: 0.9rem; outline: none; }
+    .magnified-window { border: 1px solid rgba(0,255,204,0.18); border-radius: 10px; padding: 2px; margin-bottom: 4px; }
 
     .notes { min-height: 65px; resize: vertical; width: 100%; }
     .notes-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
@@ -371,6 +372,9 @@
 
         container.appendChild(hourBlock);
 
+        const winWrapper = document.createElement('div');
+        winWrapper.className = 'magnified-window';
+
         for (let m = 0; m < 60; m += 10) {
           const blockMinutes = hourMinutes + m;
           const blockTime = minutesToDate(blockMinutes);
@@ -382,8 +386,8 @@
 
           const block = document.createElement('div');
           block.className = 'time-block magnified';
-          if (isCurrent)          block.classList.add('current');
-          if (isPast)             block.classList.add('past');
+          if (isCurrent)           block.classList.add('current');
+          if (isPast)              block.classList.add('past');
           if (m === 50 && !isPast) block.classList.add('hour-target');
 
           // Time label
@@ -411,7 +415,6 @@
           input.type = 'text';
           input.className = 'block-input';
           input.id = `block-input-${blockMinutes}`;
-          // :50 block uses the hour goal as its placeholder
           const hourGoal = m === 50 ? (storage.get(`hourGoal_${today}_${hourMinutes}`) || '') : '';
           input.placeholder = m === 50 ? (hourGoal || 'did you hit it?') : 'what are you doing?';
           input.value = storage.get(storageKey) || '';
@@ -428,8 +431,10 @@
             block.appendChild(prog);
           }
 
-          container.appendChild(block);
+          winWrapper.appendChild(block);
         }
+
+        if (winWrapper.children.length > 0) container.appendChild(winWrapper);
       }
       start10MinProgressBar();
     }
