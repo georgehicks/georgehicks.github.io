@@ -190,13 +190,18 @@
       <button onclick="testHourly()" style="width:100%; margin-top:4px; padding:8px;">Test Hourly</button>
     </div>
     <div style="margin-bottom:16px;">
-      <strong>10-Minute Feedback</strong><br>
+      <strong>Interval Feedback</strong><br>
+      <select id="tenmin-interval" style="width:100%; padding:8px; margin-top:4px;">
+        <option value="10" selected>Every 10 minutes</option>
+        <option value="15">Every 15 minutes</option>
+        <option value="20">Every 20 minutes</option>
+      </select>
       <select id="tenmin-mode" style="width:100%; padding:8px; margin-top:4px;">
         <option value="speech">Speech</option>
         <option value="tone" selected>Pleasant Tone</option>
         <option value="none">None</option>
       </select>
-      <button onclick="testTenMin()" style="width:100%; margin-top:4px; padding:8px;">Test 10-Minute</button>
+      <button onclick="testTenMin()" style="width:100%; margin-top:4px; padding:8px;">Test Interval</button>
     </div>
     <div style="margin-bottom:16px;">
       <strong>Day Range</strong><br>
@@ -697,13 +702,15 @@
         } else if (mode === 'tone') {
           playTone();
         }
-      } else if (m % 10 === 0) {
-        // Every 10 minutes
-        const mode = document.getElementById('tenmin-mode').value;
-        if (mode === 'speech') {
-          speak(`${m} minutes past the hour`);
-        } else if (mode === 'tone') {
-          playTone();
+      } else {
+        const interval = parseInt(document.getElementById('tenmin-interval')?.value ?? 10);
+        if (m % interval === 0) {
+          const mode = document.getElementById('tenmin-mode').value;
+          if (mode === 'speech') {
+            speak(`${m} minutes past the hour`);
+          } else if (mode === 'tone') {
+            playTone();
+          }
         }
       }
     }
@@ -750,6 +757,14 @@
     }
 
     let muted = false;
+
+    // Interval selector persist
+    (function() {
+      const sel = document.getElementById('tenmin-interval');
+      const saved = storage.get('tenminInterval');
+      if (saved) sel.value = saved;
+      sel.addEventListener('change', () => storage.set('tenminInterval', sel.value));
+    })();
 
     // Volume slider init
     (function() {
