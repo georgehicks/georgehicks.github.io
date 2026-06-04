@@ -405,7 +405,8 @@
 
         // Show last 1–2 block log entries for this hour as a preview
         const snippets = [];
-        for (let sm = 50; sm >= 0 && snippets.length < 2; sm -= 10) {
+        const snipInterval = getInterval();
+        for (let sm = 60 - snipInterval; sm >= 0 && snippets.length < 2; sm -= snipInterval) {
           const val = storage.get(`block_${today}_${hourMinutes + sm}`);
           if (val && val.trim()) snippets.unshift({ time: formatAMPM(hourMinutes + sm), text: val.trim() });
         }
@@ -428,20 +429,21 @@
         const winWrapper = document.createElement('div');
         winWrapper.className = 'magnified-window';
 
-        for (let m = 0; m < 60; m += 10) {
+        const interval = getInterval();
+        for (let m = 0; m < 60; m += interval) {
           const blockMinutes = hourMinutes + m;
           const blockTime = minutesToDate(blockMinutes);
           if (blockTime < winStart || blockTime >= winEnd) continue;
 
           const isCurrent = blockMinutes === curBlock;
-          const isPast = blockMinutes + 10 <= nowMinutes;
-          const overlapping = appointments.filter(a => a.startMinutes < blockMinutes + 10 && a.endMinutes > blockMinutes);
+          const isPast = blockMinutes + interval <= nowMinutes;
+          const overlapping = appointments.filter(a => a.startMinutes < blockMinutes + interval && a.endMinutes > blockMinutes);
 
           const block = document.createElement('div');
           block.className = 'time-block magnified';
-          if (isCurrent)           block.classList.add('current');
-          if (isPast)              block.classList.add('past');
-          if (m === 50 && !isPast) block.classList.add('hour-target');
+          if (isCurrent)                        block.classList.add('current');
+          if (isPast)                           block.classList.add('past');
+          if (m === 60 - interval && !isPast)   block.classList.add('hour-target');
 
           // Time label
           const timeEl = document.createElement('div');
@@ -466,7 +468,7 @@
           input.type = 'text';
           input.className = 'block-input';
           input.id = `block-input-${blockMinutes}`;
-          const hourGoal = m === 50 ? (storage.get(`hourGoal_${today}_${hourMinutes}`) || '') : '';
+          const hourGoal = m === 60 - interval ? (storage.get(`hourGoal_${today}_${hourMinutes}`) || '') : '';
           input.placeholder = m === 50 ? (hourGoal || 'did you hit it?') : 'what are you doing?';
           input.value = storage.get(storageKey) || '';
           input.addEventListener('input', () => storage.set(storageKey, input.value));
@@ -474,8 +476,8 @@
 
           // Progress bar on current block only
           if (isCurrent) {
-            const secsIntoBlock = (now.getMinutes() % 10) * 60 + now.getSeconds();
-            const pct = Math.max(0, (1 - secsIntoBlock / 600)) * 100;
+            const secsIntoBlock = (now.getMinutes() % interval) * 60 + now.getSeconds();
+            const pct = Math.max(0, (1 - secsIntoBlock / (interval * 60))) * 100;
             const prog = document.createElement('div');
             prog.className = 'progress-container';
             prog.innerHTML = `<div id="progress-bar" class="progress-bar" style="width:${pct}%"></div>`;
@@ -495,8 +497,10 @@
       const bar = document.getElementById('progress-bar');
       if (!bar) return;
       const now = new Date();
-      const secsIntoBlock = (now.getMinutes() % 10) * 60 + now.getSeconds();
-      let remaining = 600 - secsIntoBlock;
+      const interval = getInterval();
+      const blockSecs = interval * 60;
+      const secsIntoBlock = (now.getMinutes() % interval) * 60 + now.getSeconds();
+      let remaining = blockSecs - secsIntoBlock;
       progressBarInterval = setInterval(() => {
         remaining--;
         if (remaining <= 0) {
@@ -505,14 +509,19 @@
           return;
         }
         const b = document.getElementById('progress-bar');
-        if (b) b.style.width = (remaining / 600 * 100) + '%';
+        if (b) b.style.width = (remaining / blockSecs * 100) + '%';
         else clearInterval(progressBarInterval);
       }, 1000);
     }
 
+    function getInterval() {
+      return parseInt(document.getElementById('tenmin-interval')?.value ?? 10);
+    }
+
     function currentBlockMinutes() {
       const now = new Date();
-      return Math.floor((now.getHours() * 60 + now.getMinutes()) / 10) * 10;
+      const interval = getInterval();
+      return Math.floor((now.getHours() * 60 + now.getMinutes()) / interval) * interval;
     }
 
     let lastTrackedBlock = currentBlockMinutes();
@@ -619,7 +628,7 @@
       for (let h = startHour; h < endHour; h++) {
         const goal = storage.get(`hourGoal_${today}_${h * 60}`);
         if (goal) hourGoals[formatAMPM(h * 60)] = goal;
-        for (let m = 0; m < 60; m += 10) {
+        for (let m = 0; m < 60; m += getInterval()) {
           const mins = h * 60 + m;
           const val = storage.get(`block_${today}_${mins}`);
           if (val) blockLogs[formatAMPM(mins)] = val;
@@ -763,7 +772,10 @@
       const sel = document.getElementById('tenmin-interval');
       const saved = storage.get('tenminInterval');
       if (saved) sel.value = saved;
-      sel.addEventListener('change', () => storage.set('tenminInterval', sel.value));
+      sel.addEventListener('change', () => {
+        storage.set('tenminInterval', sel.value);
+        if (document.getElementById('panel-focus').style.display !== 'none') buildFocusTimeline();
+      });
     })();
 
     // Volume slider init
