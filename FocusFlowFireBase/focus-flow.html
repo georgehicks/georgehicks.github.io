@@ -923,9 +923,16 @@
       speechSynthesis.speak(u);
     }
 
+    // True when the current time is inside any planned appointment window
+    function inAppointment() {
+      const mins = new Date().getHours() * 60 + new Date().getMinutes();
+      return appointments.some(a => mins >= a.startMinutes && mins < a.endMinutes);
+    }
+
     let lastNotifiedMinute = -1;
     function checkNotifications() {
       if (muted) return;
+      if (document.getElementById('auto-mute')?.checked && inAppointment()) return;
       const now = new Date();
       const mins = now.getHours() * 60 + now.getMinutes();
       if (mins === lastNotifiedMinute) return;
@@ -1018,6 +1025,14 @@
         label.textContent = slider.value + '%';
         storage.set('volume', slider.value);
       });
+    })();
+
+    // Auto-mute checkbox — persist its state
+    (function() {
+      const cb = document.getElementById('auto-mute');
+      const saved = storage.get('autoMute');
+      if (saved !== null) cb.checked = saved;
+      cb.addEventListener('change', () => storage.set('autoMute', cb.checked));
     })();
 
     // Service Worker (PWA)
