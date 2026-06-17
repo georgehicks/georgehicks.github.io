@@ -1,0 +1,1169 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#00ffcc">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="FocusFlow">
+  <link rel="manifest" href="manifest.json">
+  <title>Focus Flow</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; }
+    :root { --primary: #00ffcc; --bg: #0f1117; --card: #1a1f2e; }
+    body {
+      font-family: system-ui, -apple-system, sans-serif;
+      background: var(--bg); color: #ddd;
+      margin: 0 auto; padding: 10px; width: 380px;
+    }
+
+    .top-header { display: flex; gap: 10px; margin-bottom: 10px; align-items: flex-start; }
+    .calendar { flex: 1; background: var(--card); border-radius: 10px; padding: 4px 5px;
+                font-size: 0.76rem; height: 140px; overflow: hidden; box-sizing: border-box; }
+    .calendar-header { text-align: center; font-weight: 600; margin-bottom: 2px; color: var(--primary); font-size: 0.8rem; }
+    .calendar-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 1px; text-align: center; }
+    .calendar-grid div { padding: 2px 1px; border-radius: 3px; }
+    .calendar-grid .header { color: #555; font-size: 0.62rem; }
+    .calendar-grid .today { background: var(--primary); color: #000; font-weight: bold; }
+
+    .clock-container { width: 140px; height: 140px; flex-shrink: 0; }
+
+    .tabs { display: flex; background: #252b3d; border-radius: 6px; padding: 3px; margin-bottom: 8px; }
+    .tab { flex: 1; padding: 4px; text-align: center; border-radius: 4px; cursor: pointer; font-size: 0.82rem; font-weight: 500; }
+    .tab.active { background: var(--card); color: var(--primary); }
+
+    .section { background: var(--card); border-radius: 12px; padding: 12px; margin-bottom: 12px; }
+
+    /* Hour rows — readable scaffold */
+    .time-block {
+      display: flex; align-items: center; padding: 5px 12px; margin-bottom: 2px;
+      background: #1a1f30; border-radius: 6px; font-size: 0.88rem; cursor: pointer;
+      transition: all 0.2s; line-height: 1.1; position: relative;
+    }
+    .time-block:hover { background: #222840; }
+    .time-block.past { opacity: 0.45; cursor: default; }
+
+    /* Future magnified 10m blocks */
+    .time-block.magnified {
+      background: #212840 !important;
+      border: none;
+    }
+    .time-block.magnified .time-label { color: #6878a8; }
+    .time-block.magnified .block-input { color: #7888b0; }
+    .time-block.magnified .block-input::placeholder { color: #485070; }
+
+    /* Current 10m block — the hero */
+    .time-block.magnified.current {
+      background: #252e44 !important;
+      border: 2px solid var(--primary);
+      padding: 10px 12px 18px;
+    }
+    .time-block.magnified.current .time-label { font-size: 1rem; color: var(--primary); font-weight: 600; }
+    .time-block.magnified.current .block-input { font-size: 1rem; color: #ddd; }
+    .time-block.magnified.current .block-input::placeholder { color: #4a6070; }
+
+    /* Past magnified blocks — faded but still readable */
+    .time-block.magnified.past { background: #171b28 !important; opacity: 0.4; border-color: transparent !important; }
+
+    /* Hour-target (:50) — dim gold */
+    .time-block.magnified.hour-target { border-color: #4a3c00 !important; }
+    .time-block.magnified.hour-target .time-label { color: #7a6200; }
+    .time-block.magnified.current.hour-target { border-color: var(--primary) !important; }
+    .hour-goal-input { flex:1; background:transparent; border:none; color:#8898b8; font-size:0.82rem; font-style:italic; margin-left:6px; min-width:0; }
+    .hour-goal-input::placeholder { color:#404860; }
+    .hour-check { font-size:1rem; margin-left:4px; flex-shrink:0; cursor:pointer; color:#2a3050; user-select:none; transition:color 0.15s; }
+    .hour-check.checked { color:#4caf50; }
+    .time-block.has-logs { flex-wrap: wrap; }
+    .hour-logs { width:100%; padding: 2px 0 3px 78px; display:flex; gap:10px; }
+    .hour-log-entry { font-size:0.75rem; color:#6070a0; font-style:italic; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:140px; }
+    .hour-log-time { color:#506080; margin-right:3px; }
+
+    .appointment-tag { background: #00ffcc; color: #000; font-size: 0.75rem; padding: 2px 6px; border-radius: 4px; margin-left: 4px; white-space: nowrap; }
+    .appt-chip { background: rgba(0,255,204,0.12); color: #00ffcc; font-size: 0.68rem; padding: 1px 5px; border-radius: 3px; margin-left: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 90px; min-width: 0; flex-shrink: 0; cursor: default; }
+
+    .progress-container { position: absolute; bottom: 3px; left: 12px; right: 12px; height: 4px; background: #252b3d; border-radius: 2px; overflow: hidden; }
+    .progress-bar { height: 100%; background: linear-gradient(90deg, #00ffcc, #ffcc00); width: 100%; transition: width 1s linear; }
+
+    .time-label { width: 78px; color: #7080a0; font-size: 0.85rem; flex-shrink: 0; }
+    .block-input { flex: 1; background: transparent; border: none; color: #8090b0; font-size: 0.9rem; outline: none; }
+    .magnified-window { border: 2px solid rgba(0,255,204,0.5); border-radius: 10px; padding: 3px; margin-bottom: 6px; background: rgba(0,255,204,0.04); }
+
+    /* Main notes section */
+    .notes { min-height: 80px; resize: vertical; width: 100%; background: #151a28; border: 1px solid #252b40; border-radius: 0 6px 6px 6px; color: #ccd; font-family: inherit; font-size: 0.88rem; padding: 8px 10px; outline: none; }
+    .notes-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 0; }
+    .notes-tabs { display: flex; gap: 2px; }
+    .notes-tab { padding: 3px 12px; border-radius: 5px 5px 0 0; cursor: pointer; font-size: 0.8rem; color: #557; background: #111620; border: 1px solid #252b40; border-bottom: none; }
+    .notes-tab.active { background: #151a28; color: var(--primary); }
+    .export-btn { background: none; border: none; color: #445; font-size: 1.2rem; cursor: pointer; padding: 0 2px; line-height: 1; }
+    .export-btn:hover { color: #aaa; }
+
+    /* Compact plan form */
+    .plan-form { display: flex; flex-direction: column; gap: 5px; margin-bottom: 10px; }
+    .plan-form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 5px; }
+    .plan-input { background: #151a28; border: 1px solid #252b40; border-radius: 5px; color: #aab; font-size: 0.78rem; padding: 4px 7px; width: 100%; outline: none; font-family: inherit; }
+    .plan-input::placeholder { color: #445; }
+    .plan-btn { background: var(--primary); color: #000; border: none; border-radius: 5px; padding: 4px 10px; font-size: 0.78rem; font-weight: 700; cursor: pointer; white-space: nowrap; }
+
+    /* Pick tab */
+    .pick-list { background:#151a28; border:1px solid #252b40; border-radius:0 6px 6px 6px; padding:8px 10px; min-height:320px; }
+    .pick-item { display:flex; align-items:center; gap:8px; padding:4px 0; font-size:0.9rem; }
+    .pick-item.step { padding-left:18px; font-size:0.84rem; color:#9aabbd; }
+    .pick-item .ptext { flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+    .prio-badge { width:24px; height:24px; flex-shrink:0; border-radius:50%; border:1.5px solid #38415c; color:#566; display:flex; align-items:center; justify-content:center; font-size:0.8rem; font-weight:700; cursor:pointer; user-select:none; background:transparent; }
+    .prio-badge.p1 { border-color:#00ffcc; color:#00ffcc; background:rgba(0,255,204,0.12); }
+    .prio-badge.p2 { border-color:#ffcc00; color:#ffcc00; background:rgba(255,204,0,0.12); }
+    .prio-badge.p3 { border-color:#ff8866; color:#ff8866; background:rgba(255,136,102,0.12); }
+    .pick-empty, .today-empty { color:#556; font-size:0.85rem; padding:8px 2px; }
+
+    /* Today summary (read-only) */
+    .today-summary { background:#151a28; border:1px solid #252b40; border-radius:0 6px 6px 6px; padding:10px 12px; min-height:60px; }
+    .today-summary.compact { min-height:0; padding:8px 10px; }
+    .today-row { display:flex; align-items:center; gap:8px; padding:3px 0; font-size:0.9rem; }
+    .today-row.step { padding-left:16px; font-size:0.82rem; color:#9aabbd; }
+    .today-dot { width:9px; height:9px; border-radius:50%; flex-shrink:0; }
+    .today-dot.p1 { background:#00ffcc; } .today-dot.p2 { background:#ffcc00; } .today-dot.p3 { background:#ff8866; }
+    .today-row .tparent { color:#566; }
+
+    /* Focus block tray */
+    .time-block.magnified { flex-wrap: wrap; }
+    .tray { width:100%; display:flex; flex-wrap:wrap; gap:5px; padding:6px 0 2px; }
+    .tray-chip { background:#222a40; border:1px solid #313a58; color:#aeb8d8; font-size:0.78rem; padding:3px 9px; border-radius:12px; cursor:pointer; white-space:nowrap; max-width:100%; overflow:hidden; text-overflow:ellipsis; }
+    .tray-chip:hover { background:#2c3656; color:#dde; }
+    .tray-chip .tc-dot { display:inline-block; width:7px; height:7px; border-radius:50%; margin-right:5px; vertical-align:middle; }
+    .tray-chip .tc-dot.p1{background:#00ffcc;} .tray-chip .tc-dot.p2{background:#ffcc00;} .tray-chip .tc-dot.p3{background:#ff8866;}
+
+  </style>
+</head>
+<body>
+
+  <!-- Compact header: smaller calendar + bigger clock -->
+  <div class="top-header">
+    <div class="calendar">
+      <div id="calendar-header" class="calendar-header"></div>
+      <div id="calendar-grid" class="calendar-grid"></div>
+    </div>
+
+    <div class="clock-container">
+      <svg id="analog-clock" viewBox="0 0 140 140" xmlns="http://www.w3.org/2000/svg">
+        <circle cx="70" cy="70" r="62" fill="none" stroke="#333" stroke-width="10"/>
+        <g id="clock-marks"></g>
+        <line id="hour-hand" x1="70" y1="70" x2="70" y2="42" stroke="#ddd" stroke-width="6" stroke-linecap="round"/>
+        <line id="minute-hand" x1="70" y1="70" x2="70" y2="28" stroke="#00ffcc" stroke-width="4" stroke-linecap="round"/>
+        <line id="second-hand" x1="70" y1="70" x2="70" y2="22" stroke="#ff4444" stroke-width="2" stroke-linecap="round"/>
+        <circle cx="70" cy="70" r="5" fill="#ddd"/>
+      </svg>
+    </div>
+  </div>
+
+  <!-- TABS -->
+  <div class="tabs">
+    <div id="tab-plan" class="tab active" onclick="switchTab(0)">Plan</div>
+    <div id="tab-focus" class="tab" onclick="switchTab(1)">Focus</div>
+    <div id="tab-settings" class="tab" onclick="switchTab(2)">Settings</div>
+  </div>
+
+  <!-- PLAN TAB -->
+  <div id="panel-plan" class="section">
+    <div class="plan-form">
+      <div class="plan-form-row">
+        <input id="plan-start" type="text" class="plan-input" placeholder="Start (11:00 AM)">
+        <input id="plan-end" type="text" class="plan-input" placeholder="End (11:45 AM)">
+      </div>
+      <div style="display:flex; gap:5px;">
+        <input id="plan-text" type="text" class="plan-input" placeholder="Appointment title" style="flex:1;">
+        <button onclick="addAppointment()" class="plan-btn">+ Add</button>
+      </div>
+    </div>
+    <div id="appointment-list"></div>
+
+    <!-- Plan sub-tabs: Deliverables / Pick / Today / Notes -->
+    <div style="margin-top:12px;">
+      <div class="notes-header">
+        <div class="notes-tabs">
+          <span class="notes-tab active" data-target="plan-deliverables">Deliverables</span>
+          <span class="notes-tab" data-target="plan-pick">Pick</span>
+          <span class="notes-tab" data-target="plan-today">Today</span>
+          <span class="notes-tab" data-target="plan-notes">Notes</span>
+        </div>
+        <button class="export-btn" onclick="exportData()" title="Export today's data">📤</button>
+      </div>
+      <div id="plan-deliverables" class="subpanel">
+        <textarea id="deliverables-notes" class="notes sync-notes" data-key="deliverables" placeholder="One deliverable per line.&#10;Indent its steps with a leading - dash:&#10;Ship the report&#10;- draft outline&#10;- pull numbers" style="min-height:320px;"></textarea>
+      </div>
+      <div id="plan-pick" class="subpanel" style="display:none;">
+        <div id="pick-list" class="pick-list"></div>
+      </div>
+      <div id="plan-today" class="subpanel" style="display:none;">
+        <div id="today-summary" class="today-summary"></div>
+      </div>
+      <div id="plan-notes" class="subpanel" style="display:none;">
+        <textarea id="daily-notes" class="notes sync-notes" data-key="dailyNotes" placeholder="Quick notes, brain dump, loose thoughts…" style="min-height:320px;"></textarea>
+      </div>
+    </div>
+  </div>
+
+  <!-- FOCUS TAB -->
+  <div id="panel-focus" class="section" style="display:none;">
+    <div id="focus-timeline" class="timeline"></div>
+    <div style="margin-top:10px;">
+      <div class="notes-header">
+        <div class="notes-tabs">
+          <span class="notes-tab active" data-target="focus-today">Today</span>
+          <span class="notes-tab" data-target="focus-notes">Notes</span>
+        </div>
+      </div>
+      <div id="focus-today" class="subpanel">
+        <div id="focus-today-summary" class="today-summary compact"></div>
+      </div>
+      <div id="focus-notes" class="subpanel" style="display:none;">
+        <textarea id="focus-daily-notes" class="notes sync-notes" data-key="dailyNotes" placeholder="Quick notes, brain dump…" style="min-height:120px;"></textarea>
+      </div>
+    </div>
+  </div>
+
+  <!-- SETTINGS TAB -->
+  <div id="panel-settings" class="section" style="display:none;">
+    <div style="margin-bottom:16px;">
+      <strong>Hourly Feedback</strong><br>
+      <select id="hourly-mode" style="width:100%; padding:8px; margin-top:4px;">
+        <option value="speech">Speech</option>
+        <option value="tone">Pleasant Tone</option>
+        <option value="none">None</option>
+      </select>
+      <button onclick="testHourly()" style="width:100%; margin-top:4px; padding:8px;">Test Hourly</button>
+    </div>
+    <div style="margin-bottom:16px;">
+      <strong>Interval Feedback</strong><br>
+      <select id="tenmin-interval" style="width:100%; padding:8px; margin-top:4px;">
+        <option value="5">Every 5 minutes</option>
+        <option value="6">Every 6 minutes</option>
+        <option value="10" selected>Every 10 minutes</option>
+        <option value="12">Every 12 minutes</option>
+        <option value="15">Every 15 minutes</option>
+        <option value="20">Every 20 minutes</option>
+      </select>
+      <select id="tenmin-mode" style="width:100%; padding:8px; margin-top:4px;">
+        <option value="speech">Speech</option>
+        <option value="tone" selected>Pleasant Tone</option>
+        <option value="none">None</option>
+      </select>
+      <button onclick="testTenMin()" style="width:100%; margin-top:4px; padding:8px;">Test Interval</button>
+    </div>
+    <div style="margin-bottom:16px;">
+      <strong>Day Range</strong><br>
+      <div style="display:flex; gap:8px; align-items:center; margin-top:6px;">
+        <select id="setting-start-hour" style="flex:1; padding:8px; background:#252b3d; color:#ddd; border:1px solid #333; border-radius:6px;"></select>
+        <span style="color:#888;">to</span>
+        <select id="setting-end-hour" style="flex:1; padding:8px; background:#252b3d; color:#ddd; border:1px solid #333; border-radius:6px;"></select>
+      </div>
+    </div>
+    <div style="margin-bottom:16px;">
+      <strong>Volume</strong>
+      <div style="display:flex; align-items:center; gap:10px; margin-top:6px;">
+        <input type="range" id="volume-slider" min="0" max="100" value="50" style="flex:1; accent-color:var(--primary);">
+        <span id="volume-label" style="color:#888; font-size:0.85rem; width:32px; text-align:right;">50%</span>
+      </div>
+    </div>
+    <label><input type="checkbox" id="auto-mute" checked> Auto-mute during appointments</label><br><br>
+    <button onclick="toggleMute()" id="mute-btn" style="width:100%; padding:10px; background:#333; color:#ddd; border:none; border-radius:8px;">🔇 Mute All</button>
+    <div style="margin-top:20px; padding-top:16px; border-top:1px solid #252b3d;">
+      <strong>Cloud Sync</strong><br>
+      <div id="sync-status" style="color:#888; font-size:0.82rem; margin:6px 0;">Sync not configured</div>
+      <button id="sync-signin" onclick="syncSignIn()" style="width:100%; padding:10px; background:#1a2030; color:#8ab4f8; border:1px solid #2a3555; border-radius:8px; cursor:pointer;">Sign in with Google</button>
+      <button id="sync-signout" onclick="syncSignOut()" style="display:none; width:100%; padding:10px; background:#2a1a1a; color:#ff9b9b; border:1px solid #5a2020; border-radius:8px; cursor:pointer;">Sign out</button>
+    </div>
+    <div style="margin-top:20px; padding-top:16px; border-top:1px solid #252b3d;">
+      <strong>Reset</strong><br>
+      <button onclick="resetDay()" style="width:100%; margin-top:8px; padding:10px; background:#2a1a1a; color:#ff6b6b; border:1px solid #5a2020; border-radius:8px; cursor:pointer;">🗑 Reset Today's Notes &amp; Goals</button>
+    </div>
+    <div style="margin-top:20px; padding-top:16px; border-top:1px solid #252b3d;">
+      <button onclick="navigator.serviceWorker.getRegistration().then(r => r ? r.update().then(() => location.reload()) : location.reload())" style="width:100%; padding:10px; background:#1a2030; color:#8899cc; border:1px solid #2a3555; border-radius:8px; cursor:pointer;">↺ Refresh App</button>
+    </div>
+  </div>
+
+
+  <!-- Firebase compat SDK (cloud sync) -->
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+
+  <script>
+    // ===== Cloud Sync config =====
+    // Paste your Firebase web config here:
+    //   Firebase Console → Project settings → General → "Your apps" → SDK setup & config → Config
+    // These values are safe to commit; access is protected by Auth + Firestore security rules.
+    const FIREBASE_CONFIG = {
+      apiKey: "AIzaSyCE28NOfXara7ARw9RIUvVHdWJoebxU-i8",
+      authDomain: "focusflowgeorge.firebaseapp.com",
+      projectId: "focusflowgeorge",
+      storageBucket: "focusflowgeorge.firebasestorage.app",
+      messagingSenderId: "735380295401",
+      appId: "1:735380295401:web:08bd07e9ce19a74c8b2a78"
+    };
+
+    const storage = { data: {}, get(k){try{return JSON.parse(localStorage.getItem(k));}catch(e){return this.data[k]||null;}}, set(k,v){try{localStorage.setItem(k,JSON.stringify(v));}catch(e){this.data[k]=v;}} };
+
+    function todayKey() {
+      const d = new Date();
+      return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+    }
+
+    let startHour = storage.get('startHour') ?? 7;
+    let endHour   = storage.get('endHour')   ?? 21;
+
+    function getCurrentWindowStart() {
+      const h = new Date().getHours();
+      return Math.max(startHour, Math.min(endHour - 1, h)) * 60;
+    }
+
+    let progressBarInterval = null;
+
+    let appointments = storage.get('appointments') || [];
+    function saveAppointments() { storage.set('appointments', appointments); }
+
+    function formatAMPM(minutes) {
+      let h = Math.floor(minutes / 60);
+      const m = minutes % 60;
+      const ampm = h >= 12 ? 'PM' : 'AM';
+      h = h % 12 || 12;
+      return `${h}:${m.toString().padStart(2, '0')} ${ampm}`;
+    }
+
+    function minutesToDate(minutes) {
+      const now = new Date();
+      return new Date(now.getFullYear(), now.getMonth(), now.getDate(), Math.floor(minutes / 60), minutes % 60);
+    }
+
+    function shortText(text, maxWords = 2, maxChars = 12) {
+      const words = text.trim().split(/\s+/);
+      let s = words.slice(0, maxWords).join(' ');
+      if (s.length > maxChars) s = s.slice(0, maxChars - 1) + '…';
+      return s;
+    }
+
+    function parseTime(str) {
+      const match = str.match(/(\d{1,2}):(\d{2})\s*(AM|PM)/i);
+      if (!match) return null;
+      let h = parseInt(match[1]);
+      const m = parseInt(match[2]);
+      const ampm = match[3].toUpperCase();
+      if (ampm === 'PM' && h !== 12) h += 12;
+      if (ampm === 'AM' && h === 12) h = 0;
+      return h * 60 + m;
+    }
+
+    function addAppointment() {
+      const startStr = document.getElementById('plan-start').value.trim();
+      const endStr = document.getElementById('plan-end').value.trim();
+      const text = document.getElementById('plan-text').value.trim();
+      if (!startStr || !endStr || !text) return alert("Fill all fields");
+      const startMin = parseTime(startStr);
+      const endMin = parseTime(endStr);
+      if (startMin === null || endMin === null) return alert("Use format like 11:00 AM");
+      appointments.push({ id: Date.now(), startMinutes: startMin, endMinutes: endMin, text: text });
+      saveAppointments();
+      renderPlanList();
+      document.getElementById('plan-start').value = '';
+      document.getElementById('plan-end').value = '';
+      document.getElementById('plan-text').value = '';
+    }
+
+    function deleteAppointment(id) {
+      appointments = appointments.filter(a => a.id !== id);
+      saveAppointments();
+      renderPlanList();
+    }
+
+    function renderPlanList() {
+      const container = document.getElementById('appointment-list');
+      container.innerHTML = '';
+      if (appointments.length === 0) {
+        container.innerHTML = '<div style="color:#555;font-size:0.85rem;margin-top:8px;">No appointments.</div>';
+        return;
+      }
+      appointments.sort((a,b) => a.startMinutes - b.startMinutes);
+      appointments.forEach(appt => {
+        const div = document.createElement('div');
+        div.style.cssText = 'display:flex;align-items:center;gap:8px;margin-bottom:6px;';
+        div.innerHTML = `<span style="color:#888;font-size:0.88rem;">${formatAMPM(appt.startMinutes)} – ${formatAMPM(appt.endMinutes)}</span><span class="appointment-tag">${appt.text}</span>`;
+        const del = document.createElement('button');
+        del.textContent = '✕';
+        del.style.cssText = 'margin-left:auto;background:none;border:none;color:#555;cursor:pointer;font-size:1rem;padding:0 4px;flex-shrink:0;';
+        del.addEventListener('click', () => deleteAppointment(appt.id));
+        div.appendChild(del);
+        container.appendChild(div);
+      });
+      const clearAll = document.createElement('button');
+      clearAll.textContent = 'Clear all appointments';
+      clearAll.style.cssText = 'margin-top:8px;background:none;border:none;color:#555;font-size:0.8rem;cursor:pointer;padding:0;text-decoration:underline;';
+      clearAll.addEventListener('click', () => {
+        if (confirm('Remove all appointments?')) {
+          appointments = [];
+          saveAppointments();
+          renderPlanList();
+        }
+      });
+      container.appendChild(clearAll);
+    }
+
+    // FOCUS TAB
+    let windowStartMinutes = getCurrentWindowStart();
+
+    function buildFocusTimeline() {
+      const container = document.getElementById('focus-timeline');
+      container.innerHTML = '';
+
+      const now = new Date();
+      const nowMinutes = now.getHours() * 60 + now.getMinutes();
+
+      const winStart = minutesToDate(windowStartMinutes);
+      const winEnd = minutesToDate(windowStartMinutes + 60);
+
+      const curBlock = currentBlockMinutes();
+      const today = todayKey();
+
+      for (let h = startHour; h < endHour; h++) {
+        const hourMinutes = h * 60;
+        const hourIsPast = nowMinutes >= hourMinutes + 60;
+
+        const hourGoalKey = `hourGoal_${today}_${hourMinutes}`;
+        const hourGoalVal = storage.get(hourGoalKey) || '';
+
+        const hourBlock = document.createElement('div');
+        hourBlock.className = 'time-block' + (hourIsPast ? ' past' : '');
+
+        const hourTimeEl = document.createElement('div');
+        hourTimeEl.className = 'time-label';
+        hourTimeEl.innerHTML = `<strong>${formatAMPM(hourMinutes)}</strong>`;
+        hourBlock.appendChild(hourTimeEl);
+
+        const hourAppts = appointments.filter(a =>
+          (a.startMinutes >= hourMinutes && a.startMinutes < hourMinutes + 60) ||
+          (a.endMinutes > hourMinutes && a.endMinutes <= hourMinutes + 60)
+        );
+        hourAppts.forEach(a => {
+          const chip = document.createElement('span');
+          chip.className = 'appt-chip';
+          chip.textContent = shortText(a.text);
+          chip.title = `${formatAMPM(a.startMinutes)}–${formatAMPM(a.endMinutes)}: ${a.text}`;
+          hourBlock.appendChild(chip);
+        });
+
+        // Hour-level goal input — flows into the :50 block as its target
+        const goalInput = document.createElement('input');
+        goalInput.type = 'text';
+        goalInput.className = 'hour-goal-input';
+        goalInput.placeholder = 'hour goal…';
+        goalInput.value = hourGoalVal;
+        goalInput.readOnly = hourIsPast;
+        goalInput.addEventListener('input', () => {
+          storage.set(hourGoalKey, goalInput.value);
+          // Live-update the :50 block placeholder
+          const targetInput = document.getElementById(`block-input-${hourMinutes + 50}`);
+          if (targetInput) targetInput.placeholder = goalInput.value || 'did you hit it?';
+        });
+        hourBlock.appendChild(goalInput);
+
+        const checkKey = `hourCheck_${today}_${hourMinutes}`;
+        const check = document.createElement('span');
+        check.className = 'hour-check' + (storage.get(checkKey) ? ' checked' : '');
+        check.textContent = '✓';
+        check.title = 'Mark hour as well spent';
+        check.addEventListener('click', () => {
+          const now = !storage.get(checkKey);
+          storage.set(checkKey, now ? '1' : '');
+          check.classList.toggle('checked', now);
+        });
+        hourBlock.appendChild(check);
+
+        // Show last 1–2 block log entries for this hour as a preview
+        const snippets = [];
+        const snipInterval = getInterval();
+        for (let sm = 60 - snipInterval; sm >= 0 && snippets.length < 2; sm -= snipInterval) {
+          const val = storage.get(`block_${today}_${hourMinutes + sm}`);
+          if (val && val.trim()) snippets.unshift({ time: formatAMPM(hourMinutes + sm), text: val.trim() });
+        }
+        if (snippets.length > 0) {
+          hourBlock.classList.add('has-logs');
+          const logsDiv = document.createElement('div');
+          logsDiv.className = 'hour-logs';
+          snippets.forEach(s => {
+            const entry = document.createElement('span');
+            entry.className = 'hour-log-entry';
+            entry.title = s.text; // full text on hover
+            entry.innerHTML = `<span class="hour-log-time">${s.time}</span>${s.text.length > 36 ? s.text.slice(0, 36) + '…' : s.text}`;
+            logsDiv.appendChild(entry);
+          });
+          hourBlock.appendChild(logsDiv);
+        }
+
+        container.appendChild(hourBlock);
+
+        const winWrapper = document.createElement('div');
+        winWrapper.className = 'magnified-window';
+
+        const interval = getInterval();
+        for (let m = 0; m < 60; m += interval) {
+          const blockMinutes = hourMinutes + m;
+          const blockTime = minutesToDate(blockMinutes);
+          if (blockTime < winStart || blockTime >= winEnd) continue;
+
+          const isCurrent = blockMinutes === curBlock;
+          const isPast = blockMinutes + interval <= nowMinutes;
+          const overlapping = appointments.filter(a => a.startMinutes < blockMinutes + interval && a.endMinutes > blockMinutes);
+
+          const block = document.createElement('div');
+          block.className = 'time-block magnified';
+          if (isCurrent)                        block.classList.add('current');
+          if (isPast)                           block.classList.add('past');
+          if (m === 60 - interval && !isPast)   block.classList.add('hour-target');
+
+          // Time label
+          const timeEl = document.createElement('div');
+          timeEl.className = 'time-label';
+          timeEl.textContent = formatAMPM(blockMinutes);
+          block.appendChild(timeEl);
+
+          // Appointment badges
+          if (overlapping.length > 0) {
+            overlapping.forEach(a => {
+              const chip = document.createElement('span');
+              chip.className = 'appt-chip';
+              chip.textContent = shortText(a.text, 3, 20);
+              chip.title = `${formatAMPM(a.startMinutes)}–${formatAMPM(a.endMinutes)}: ${a.text}`;
+              block.appendChild(chip);
+            });
+          }
+
+          // Note input — persisted per block per day
+          const storageKey = `block_${today}_${blockMinutes}`;
+          const input = document.createElement('input');
+          input.type = 'text';
+          input.className = 'block-input';
+          input.id = `block-input-${blockMinutes}`;
+          const hourGoal = m === 60 - interval ? (storage.get(`hourGoal_${today}_${hourMinutes}`) || '') : '';
+          input.placeholder = m === 50 ? (hourGoal || 'did you hit it?') : 'what are you doing?';
+          input.value = storage.get(storageKey) || '';
+          input.addEventListener('input', () => storage.set(storageKey, input.value));
+          input.addEventListener('focus', () => showTray(input));
+          input.addEventListener('blur', () => setTimeout(() => {
+            block.querySelectorAll('.tray').forEach(t => t.remove());
+          }, 200));
+          block.appendChild(input);
+
+          // Progress bar on current block only
+          if (isCurrent) {
+            const secsIntoBlock = (now.getMinutes() % interval) * 60 + now.getSeconds();
+            const pct = Math.max(0, (1 - secsIntoBlock / (interval * 60))) * 100;
+            const prog = document.createElement('div');
+            prog.className = 'progress-container';
+            prog.innerHTML = `<div id="progress-bar" class="progress-bar" style="width:${pct}%"></div>`;
+            block.appendChild(prog);
+          }
+
+          winWrapper.appendChild(block);
+        }
+
+        if (winWrapper.children.length > 0) container.appendChild(winWrapper);
+      }
+      start10MinProgressBar();
+    }
+
+    function start10MinProgressBar() {
+      if (progressBarInterval) clearInterval(progressBarInterval);
+      const bar = document.getElementById('progress-bar');
+      if (!bar) return;
+      const now = new Date();
+      const interval = getInterval();
+      const blockSecs = interval * 60;
+      const secsIntoBlock = (now.getMinutes() % interval) * 60 + now.getSeconds();
+      let remaining = blockSecs - secsIntoBlock;
+      progressBarInterval = setInterval(() => {
+        remaining--;
+        if (remaining <= 0) {
+          clearInterval(progressBarInterval);
+          buildFocusTimeline(); // advance to next block
+          return;
+        }
+        const b = document.getElementById('progress-bar');
+        if (b) b.style.width = (remaining / blockSecs * 100) + '%';
+        else clearInterval(progressBarInterval);
+      }, 1000);
+    }
+
+    function getInterval() {
+      return parseInt(document.getElementById('tenmin-interval')?.value ?? 10);
+    }
+
+    // ---- Deliverables parsing, today picks, and focus tray ----
+    function escapeHtml(s){return String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));}
+
+    function getDeliverablesText() {
+      const el = document.getElementById('deliverables-notes');
+      return (el && el.value) || storage.get('deliverables') || '';
+    }
+
+    // Each non-dash line is a deliverable; following lines starting with "-" are its steps.
+    function parseDeliverables(text) {
+      const items = [];
+      (text || '').split('\n').forEach(line => {
+        const raw = line.trim();
+        if (!raw) return;
+        if (raw[0] === '-') {
+          const stepText = raw.replace(/^-+\s*/, '').trim();
+          if (!stepText) return;
+          const parent = [...items].reverse().find(i => !i.isStep);
+          items.push({ text: stepText, isStep: true, parent: parent ? parent.text : null,
+                       key: (parent ? parent.text + ' ▸ ' : '') + stepText });
+        } else {
+          items.push({ text: raw, isStep: false, parent: null, key: raw });
+        }
+      });
+      return items;
+    }
+
+    function getPicks() { return storage.get('todayPicks') || {}; }
+    function savePicks(p) { storage.set('todayPicks', p); }
+    function getMRU() { return storage.get('trayMRU') || []; }
+    function saveMRU(m) { storage.set('trayMRU', m); }
+
+    // Tap a badge to cycle off → 1 → 2 → 3 → off
+    function cyclePriority(key) {
+      const picks = getPicks();
+      const cur = picks[key] || 0;
+      if (cur >= 3) delete picks[key]; else picks[key] = cur + 1;
+      savePicks(picks);
+      renderPick(); renderToday();
+    }
+
+    function renderPick() {
+      const host = document.getElementById('pick-list');
+      if (!host) return;
+      const items = parseDeliverables(getDeliverablesText());
+      const picks = getPicks();
+      host.innerHTML = '';
+      if (items.length === 0) {
+        host.innerHTML = '<div class="pick-empty">Add deliverables first — one per line, steps indented with a leading dash.</div>';
+        return;
+      }
+      items.forEach(it => {
+        const row = document.createElement('div');
+        row.className = 'pick-item' + (it.isStep ? ' step' : '');
+        const pr = picks[it.key] || 0;
+        const badge = document.createElement('div');
+        badge.className = 'prio-badge' + (pr ? ' p' + pr : '');
+        badge.textContent = pr || '';
+        badge.title = 'Tap to set priority (1, 2, 3, off)';
+        badge.addEventListener('click', () => cyclePriority(it.key));
+        const txt = document.createElement('div');
+        txt.className = 'ptext';
+        txt.textContent = (it.isStep ? '↳ ' : '') + it.text;
+        row.appendChild(badge); row.appendChild(txt);
+        host.appendChild(row);
+      });
+    }
+
+    function pickedItems() {
+      const items = parseDeliverables(getDeliverablesText());
+      const picks = getPicks();
+      return items
+        .map((it, i) => ({ ...it, prio: picks[it.key], order: i }))
+        .filter(it => it.prio);
+    }
+
+    function renderToday() {
+      const picked = pickedItems().sort((a, b) => (a.prio - b.prio) || (a.order - b.order));
+      const html = picked.length === 0
+        ? '<div class="today-empty">No items picked yet — use the Pick tab to set priorities.</div>'
+        : picked.map(it => {
+            const parent = it.isStep && it.parent ? `<span class="tparent">${escapeHtml(it.parent)} ▸ </span>` : '';
+            return `<div class="today-row${it.isStep ? ' step' : ''}"><span class="today-dot p${it.prio}"></span><span>${parent}${escapeHtml(it.text)}</span></div>`;
+          }).join('');
+      ['today-summary', 'focus-today-summary'].forEach(id => {
+        const el = document.getElementById(id); if (el) el.innerHTML = html;
+      });
+    }
+
+    // Tray order: most-recently-used first, then remaining picks by priority.
+    function trayItems() {
+      const picked = pickedItems();
+      const mru = getMRU();
+      return picked.sort((a, b) => {
+        const ia = mru.indexOf(a.key), ib = mru.indexOf(b.key);
+        if (ia !== -1 || ib !== -1) {
+          if (ia === -1) return 1;
+          if (ib === -1) return -1;
+          return ia - ib;
+        }
+        return (a.prio - b.prio) || (a.order - b.order);
+      });
+    }
+
+    function showTray(input) {
+      const block = input.closest('.time-block');
+      if (!block) return;
+      block.querySelectorAll('.tray').forEach(t => t.remove());
+      const items = trayItems();
+      if (items.length === 0) return;
+      const tray = document.createElement('div');
+      tray.className = 'tray';
+      items.forEach(it => {
+        const chip = document.createElement('span');
+        chip.className = 'tray-chip';
+        chip.title = it.text;
+        const label = it.text.length > 22 ? it.text.slice(0, 21) + '…' : it.text;
+        chip.innerHTML = `<span class="tc-dot p${it.prio}"></span>${escapeHtml(label)}`;
+        chip.addEventListener('mousedown', e => e.preventDefault()); // keep input focused
+        chip.addEventListener('click', () => {
+          const cur = input.value.trim();
+          input.value = cur ? cur + ', ' + it.text : it.text;
+          input.dispatchEvent(new Event('input'));
+          const mru = getMRU().filter(k => k !== it.key);
+          mru.unshift(it.key);
+          saveMRU(mru);
+          input.focus();
+          showTray(input); // rebuild so most-recent floats to front
+        });
+        tray.appendChild(chip);
+      });
+      block.appendChild(tray);
+    }
+
+    function currentBlockMinutes() {
+      const now = new Date();
+      const interval = getInterval();
+      return Math.floor((now.getHours() * 60 + now.getMinutes()) / interval) * interval;
+    }
+
+    let lastTrackedBlock = currentBlockMinutes();
+
+    function autoTrack() {
+      const block = currentBlockMinutes();
+      const blockChanged = block !== lastTrackedBlock;
+      lastTrackedBlock = block;
+
+      if (document.getElementById('panel-focus').style.display === 'none') return;
+
+      if (blockChanged) {
+        // Only snap the window if the new current block has moved outside what's visible
+        const visible = block >= windowStartMinutes && block < windowStartMinutes + 60;
+        if (!visible) windowStartMinutes = getCurrentWindowStart();
+        buildFocusTimeline();
+      }
+    }
+
+    function switchTab(n) {
+      document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+      document.querySelectorAll('.tab')[n].classList.add('active');
+      document.getElementById('panel-plan').style.display = n === 0 ? 'block' : 'none';
+      document.getElementById('panel-focus').style.display = n === 1 ? 'block' : 'none';
+      document.getElementById('panel-settings').style.display = n === 2 ? 'block' : 'none';
+      if (n === 1) { windowStartMinutes = getCurrentWindowStart(); buildFocusTimeline(); renderToday(); }
+    }
+
+    function addWheelListener() {
+      const timeline = document.getElementById('focus-timeline');
+      timeline.addEventListener('wheel', (e) => {
+        e.preventDefault();
+        const delta = e.deltaY > 0 ? 60 : -60;
+        windowStartMinutes = Math.max(startHour * 60, Math.min((endHour - 1) * 60, windowStartMinutes + delta));
+        buildFocusTimeline();
+      });
+    }
+
+    function buildMiniCalendar() {
+      const now = new Date();
+      const year = now.getFullYear();
+      const month = now.getMonth();
+      const firstDay = new Date(year, month, 1).getDay();
+      const daysInMonth = new Date(year, month + 1, 0).getDate();
+
+      document.getElementById('calendar-header').textContent = now.toLocaleString('default', { month: 'long', year: 'numeric' });
+
+      const grid = document.getElementById('calendar-grid');
+      grid.innerHTML = '';
+
+      const days = ['S','M','T','W','T','F','S'];
+      days.forEach(d => {
+        const el = document.createElement('div');
+        el.className = 'header';
+        el.textContent = d;
+        grid.appendChild(el);
+      });
+
+      for (let i = 0; i < firstDay; i++) grid.appendChild(document.createElement('div'));
+
+      for (let day = 1; day <= daysInMonth; day++) {
+        const el = document.createElement('div');
+        el.textContent = day;
+        if (day === now.getDate()) el.classList.add('today');
+        grid.appendChild(el);
+      }
+    }
+
+    function updateAnalogClock() {
+      const now = new Date();
+      const seconds = now.getSeconds();
+      const minutes = now.getMinutes();
+      const hours = now.getHours();
+
+      const secondDeg = seconds * 6;
+      const minuteDeg = minutes * 6 + seconds * 0.1;
+      const hourDeg = (hours % 12) * 30 + minutes * 0.5;
+
+      document.getElementById('second-hand').setAttribute('transform', `rotate(${secondDeg} 70 70)`);
+      document.getElementById('minute-hand').setAttribute('transform', `rotate(${minuteDeg} 70 70)`);
+      document.getElementById('hour-hand').setAttribute('transform', `rotate(${hourDeg} 70 70)`);
+    }
+
+    function initClockMarks() {
+      const marksGroup = document.getElementById('clock-marks');
+      for (let i = 0; i < 12; i++) {
+        const angle = i * 30;
+        const x1 = 70 + 52 * Math.cos((angle - 90) * Math.PI / 180);
+        const y1 = 70 + 52 * Math.sin((angle - 90) * Math.PI / 180);
+        const x2 = 70 + 58 * Math.cos((angle - 90) * Math.PI / 180);
+        const y2 = 70 + 58 * Math.sin((angle - 90) * Math.PI / 180);
+        const line = document.createElementNS("http://www.w3.org/2000/svg", "line");
+        line.setAttribute("x1", x1); line.setAttribute("y1", y1);
+        line.setAttribute("x2", x2); line.setAttribute("y2", y2);
+        line.setAttribute("stroke", "#555"); line.setAttribute("stroke-width", "3");
+        marksGroup.appendChild(line);
+      }
+    }
+
+    function exportData() {
+      const today = todayKey();
+      const blockLogs = {};
+      const hourGoals = {};
+      for (let h = startHour; h < endHour; h++) {
+        const goal = storage.get(`hourGoal_${today}_${h * 60}`);
+        if (goal) hourGoals[formatAMPM(h * 60)] = goal;
+        for (let m = 0; m < 60; m += getInterval()) {
+          const mins = h * 60 + m;
+          const val = storage.get(`block_${today}_${mins}`);
+          if (val) blockLogs[formatAMPM(mins)] = val;
+        }
+      }
+      const data = {
+        date: today,
+        appointments,
+        hourGoals,
+        blockLogs,
+        notes: document.getElementById('daily-notes').value,
+        deliverables: storage.get('deliverables') || '',
+        todayPicks: getPicks()
+      };
+      const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `focus-flow-${today}.json`;
+      a.click();
+      URL.revokeObjectURL(url);
+    }
+
+    function testHourly() {
+      const mode = document.getElementById('hourly-mode').value;
+      if (mode === "speech") speak("The time is eleven o'clock");
+      else if (mode === "tone") playTone();
+    }
+
+    function testTenMin() {
+      const mode = document.getElementById('tenmin-mode').value;
+      if (mode === "speech") speak("Ten minutes have passed");
+      else if (mode === "tone") playTone();
+    }
+
+    function getVolume() {
+      return (parseInt(document.getElementById('volume-slider')?.value ?? 50) / 100);
+    }
+
+    function playTone() {
+      if (muted) return;
+      const vol = getVolume();
+      if (vol === 0) return;
+      const ctx = new (window.AudioContext || window.webkitAudioContext)();
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.frequency.value = 680;
+      gain.gain.value = vol * 0.6;
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.6);
+      osc.start();
+      osc.stop(ctx.currentTime + 0.8);
+    }
+
+    function speak(text) {
+      if (muted) return;
+      const vol = getVolume();
+      if (vol === 0) return;
+      const u = new SpeechSynthesisUtterance(text);
+      u.pitch = 1.1;
+      u.rate = 0.95;
+      u.volume = vol;
+      speechSynthesis.speak(u);
+    }
+
+    let lastNotifiedMinute = -1;
+    function checkNotifications() {
+      if (muted) return;
+      const now = new Date();
+      const mins = now.getHours() * 60 + now.getMinutes();
+      if (mins === lastNotifiedMinute) return;
+      lastNotifiedMinute = mins;
+
+      const m = now.getMinutes();
+      if (m === 0) {
+        // Top of hour
+        const mode = document.getElementById('hourly-mode').value;
+        if (mode === 'speech') {
+          speak(`The time is ${formatAMPM(mins)}`);
+        } else if (mode === 'tone') {
+          playTone();
+        }
+      } else {
+        const interval = parseInt(document.getElementById('tenmin-interval')?.value ?? 10);
+        if (m % interval === 0) {
+          const mode = document.getElementById('tenmin-mode').value;
+          if (mode === 'speech') {
+            speak(`${m} minutes past the hour`);
+          } else if (mode === 'tone') {
+            playTone();
+          }
+        }
+      }
+    }
+
+    function toggleMute() {
+      muted = !muted;
+      document.getElementById('mute-btn').textContent = muted ? '🔊 Unmute' : '🔇 Mute All';
+    }
+
+    function resetDay() {
+      if (!confirm('Clear all block notes, hour goals, and daily notes for today? Appointments are kept.')) return;
+      const today = todayKey();
+      for (let h = 0; h < 24; h++) {
+        localStorage.removeItem(`hourGoal_${today}_${h * 60}`);
+        localStorage.removeItem(`hourCheck_${today}_${h * 60}`);
+        for (let m = 0; m < 60; m += 10) {
+          localStorage.removeItem(`block_${today}_${h * 60 + m}`);
+        }
+      }
+      storage.set('dailyNotes', '');
+      document.querySelectorAll('textarea.sync-notes[data-key="dailyNotes"]').forEach(el => el.value = '');
+      if (document.getElementById('panel-focus').style.display !== 'none') buildFocusTimeline();
+    }
+
+    function initHourSettings() {
+      const startSel = document.getElementById('setting-start-hour');
+      const endSel   = document.getElementById('setting-end-hour');
+      for (let h = 0; h <= 23; h++) {
+        const label = formatAMPM(h * 60);
+        startSel.innerHTML += `<option value="${h}"${h === startHour ? ' selected' : ''}>${label}</option>`;
+        endSel.innerHTML   += `<option value="${h}"${h === endHour   ? ' selected' : ''}>${label}</option>`;
+      }
+      startSel.addEventListener('change', () => {
+        startHour = parseInt(startSel.value);
+        storage.set('startHour', startHour);
+        windowStartMinutes = getCurrentWindowStart();
+        if (document.getElementById('panel-focus').style.display !== 'none') buildFocusTimeline();
+      });
+      endSel.addEventListener('change', () => {
+        endHour = parseInt(endSel.value);
+        storage.set('endHour', endHour);
+        if (document.getElementById('panel-focus').style.display !== 'none') buildFocusTimeline();
+      });
+    }
+
+    let muted = false;
+
+    // Interval selector persist
+    (function() {
+      const sel = document.getElementById('tenmin-interval');
+      const saved = storage.get('tenminInterval');
+      if (saved) sel.value = saved;
+      sel.addEventListener('change', () => {
+        storage.set('tenminInterval', sel.value);
+        if (document.getElementById('panel-focus').style.display !== 'none') buildFocusTimeline();
+      });
+    })();
+
+    // Volume slider init
+    (function() {
+      const slider = document.getElementById('volume-slider');
+      const label  = document.getElementById('volume-label');
+      const saved  = storage.get('volume');
+      if (saved !== null) slider.value = saved;
+      label.textContent = slider.value + '%';
+      slider.addEventListener('input', () => {
+        label.textContent = slider.value + '%';
+        storage.set('volume', slider.value);
+      });
+    })();
+
+    // Service Worker (PWA)
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('./sw.js').catch(() => {});
+    }
+
+    // Auto-select text on focus
+    document.addEventListener('focusin', e => {
+      if (e.target.tagName === 'INPUT' && e.target.type === 'text') e.target.select();
+    });
+
+    // Init
+    renderPlanList();
+    buildMiniCalendar();
+    initClockMarks();
+    initHourSettings();
+    setInterval(updateAnalogClock, 1000);
+    updateAnalogClock();
+    addWheelListener();
+
+    setInterval(autoTrack, 10000);
+    setInterval(checkNotifications, 15000);
+    checkNotifications();
+
+    // Synced notes — all textareas sharing a data-key stay in sync
+    function initSyncedNotes() {
+      document.querySelectorAll('textarea.sync-notes').forEach(el => {
+        el.value = storage.get(el.dataset.key) || '';
+        el.addEventListener('input', () => {
+          storage.set(el.dataset.key, el.value);
+          document.querySelectorAll(`textarea.sync-notes[data-key="${el.dataset.key}"]`).forEach(other => {
+            if (other !== el) other.value = el.value;
+          });
+        });
+      });
+    }
+
+    // Sub-tab switching — each .notes-tabs group toggles its own data-target panels
+    document.querySelectorAll('.notes-tabs').forEach(group => {
+      const tabs = [...group.querySelectorAll('.notes-tab')];
+      const targets = tabs.map(t => t.dataset.target);
+      tabs.forEach(tab => {
+        tab.addEventListener('click', () => {
+          tabs.forEach(t => t.classList.remove('active'));
+          tab.classList.add('active');
+          targets.forEach(id => {
+            const p = document.getElementById(id);
+            if (p) p.style.display = id === tab.dataset.target ? '' : 'none';
+          });
+          if (tab.dataset.target === 'plan-pick') renderPick();
+          if (tab.dataset.target === 'plan-today' || tab.dataset.target === 'focus-today') renderToday();
+        });
+      });
+    });
+
+    // Re-render pick/today views live as deliverables text changes
+    document.querySelectorAll('textarea.sync-notes[data-key="deliverables"]').forEach(el => {
+      el.addEventListener('input', () => { renderPick(); renderToday(); });
+    });
+
+initSyncedNotes();
+renderPick();
+renderToday();
+
+    // ===== Cloud Sync engine =====
+    // Mirrors all localStorage keys into one Firestore doc at /users/{uid}.
+    // Per-account isolation is enforced by security rules; data is last-write-wins per push.
+    let _fbDocRef = null;
+    let _fbApplyingRemote = false;
+    let _fbPushTimer = null;
+
+    // Wrap storage.set so every local change queues a debounced cloud push
+    (function() {
+      const origSet = storage.set.bind(storage);
+      storage.set = function(k, v) { origSet(k, v); if (!_fbApplyingRemote) queuePush(); };
+    })();
+
+    function syncStatus(msg) { const el = document.getElementById('sync-status'); if (el) el.textContent = msg; }
+
+    function allLocalData() {
+      const out = {};
+      for (let i = 0; i < localStorage.length; i++) { const k = localStorage.key(i); out[k] = localStorage.getItem(k); }
+      return out;
+    }
+
+    function queuePush() {
+      if (!_fbDocRef) return;
+      clearTimeout(_fbPushTimer);
+      _fbPushTimer = setTimeout(() => {
+        _fbDocRef.set({ data: allLocalData(), updatedAt: Date.now() })
+          .then(() => syncStatus('Synced ✓ ' + new Date().toLocaleTimeString()))
+          .catch(e => syncStatus('Sync error: ' + e.message));
+      }, 800);
+    }
+
+    function applyRemote(data) {
+      if (!data) return;
+      const active = document.activeElement;
+      const isTextarea = active && active.tagName === 'TEXTAREA' && active.dataset && active.dataset.key;
+      const isBlockInput = active && active.classList && active.classList.contains('block-input');
+      const activeBlockKey = isBlockInput ? `block_${todayKey()}_${active.id.replace('block-input-','')}` : null;
+      _fbApplyingRemote = true;
+      Object.keys(data).forEach(k => {
+        if (isTextarea && active.dataset.key === k) return; // don't clobber active edit
+        if (k === activeBlockKey) return;
+        localStorage.setItem(k, data[k]);
+      });
+      _fbApplyingRemote = false;
+      refreshFromStorage(isBlockInput);
+    }
+
+    function refreshFromStorage(skipFocusRebuild) {
+      appointments = storage.get('appointments') || [];
+      renderPlanList();
+      document.querySelectorAll('textarea.sync-notes').forEach(el => {
+        if (el !== document.activeElement) el.value = storage.get(el.dataset.key) || '';
+      });
+      renderPick();
+      renderToday();
+      if (!skipFocusRebuild && document.getElementById('panel-focus').style.display !== 'none') buildFocusTimeline();
+    }
+
+    function syncSignIn() {
+      if (!(window.firebase && firebase.apps.length)) return alert('Sync is not configured yet — add your Firebase config.');
+      const provider = new firebase.auth.GoogleAuthProvider();
+      firebase.auth().signInWithPopup(provider).catch(e => {
+        // Popups are often blocked in installed PWAs / iOS — fall back to redirect
+        if (e.code === 'auth/popup-blocked' || e.code === 'auth/cancelled-popup-request' || e.code === 'auth/operation-not-supported-in-this-environment')
+          firebase.auth().signInWithRedirect(provider);
+        else syncStatus('Sign-in error: ' + e.message);
+      });
+    }
+
+    function syncSignOut() { if (window.firebase && firebase.apps.length) firebase.auth().signOut(); }
+
+    (function initSync() {
+      if (!window.firebase || !FIREBASE_CONFIG.apiKey) { syncStatus('Sync not configured'); return; }
+      firebase.initializeApp(FIREBASE_CONFIG);
+      const auth = firebase.auth();
+      const db = firebase.firestore();
+      db.enablePersistence({ synchronizeTabs: true }).catch(() => {}); // offline cache; ok if it fails
+      syncStatus('Not signed in');
+      auth.onAuthStateChanged(user => {
+        document.getElementById('sync-signin').style.display = user ? 'none' : '';
+        document.getElementById('sync-signout').style.display = user ? '' : 'none';
+        if (!user) { _fbDocRef = null; syncStatus('Not signed in'); return; }
+        syncStatus('Signed in as ' + (user.email || user.uid));
+        _fbDocRef = db.collection('users').doc(user.uid);
+        let first = true;
+        _fbDocRef.onSnapshot(snap => {
+          const remote = snap.exists ? (snap.data().data || {}) : null;
+          if (first) {
+            first = false;
+            if (remote) applyRemote(remote);   // pull existing cloud data down
+            else queuePush();                  // brand-new account: seed cloud from local
+            return;
+          }
+          if (remote) applyRemote(remote);     // live updates from another device
+        }, e => syncStatus('Sync error: ' + e.message));
+      });
+    })();
+  </script>
+</body>
+</html>

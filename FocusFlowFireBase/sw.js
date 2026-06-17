@@ -1,0 +1,24 @@
+const CACHE = 'focusflowfb-v1';
+const ASSETS = ['./focus-flow.html', './manifest.json', './icon.svg'];
+
+self.addEventListener('install', e => {
+  e.waitUntil(caches.open(CACHE).then(c => c.addAll(ASSETS)));
+  self.skipWaiting();
+});
+
+self.addEventListener('activate', e => {
+  e.waitUntil(
+    caches.keys().then(keys =>
+      // Only clean up our own old caches — leave the sibling FocusFlow cache alone
+      Promise.all(keys.filter(k => k.startsWith('focusflowfb-') && k !== CACHE).map(k => caches.delete(k)))
+    )
+  );
+  self.clients.claim();
+});
+
+self.addEventListener('fetch', e => {
+  if (e.request.method !== 'GET') return;
+  e.respondWith(
+    caches.match(e.request).then(cached => cached || fetch(e.request))
+  );
+});
