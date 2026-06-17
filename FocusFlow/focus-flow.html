@@ -105,6 +105,34 @@
     .plan-input::placeholder { color: #445; }
     .plan-btn { background: var(--primary); color: #000; border: none; border-radius: 5px; padding: 4px 10px; font-size: 0.78rem; font-weight: 700; cursor: pointer; white-space: nowrap; }
 
+    /* Pick tab */
+    .pick-list { background:#151a28; border:1px solid #252b40; border-radius:0 6px 6px 6px; padding:8px 10px; min-height:320px; }
+    .pick-item { display:flex; align-items:center; gap:8px; padding:4px 0; font-size:0.9rem; }
+    .pick-item.step { padding-left:18px; font-size:0.84rem; color:#9aabbd; }
+    .pick-item .ptext { flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+    .prio-badge { width:24px; height:24px; flex-shrink:0; border-radius:50%; border:1.5px solid #38415c; color:#566; display:flex; align-items:center; justify-content:center; font-size:0.8rem; font-weight:700; cursor:pointer; user-select:none; background:transparent; }
+    .prio-badge.p1 { border-color:#00ffcc; color:#00ffcc; background:rgba(0,255,204,0.12); }
+    .prio-badge.p2 { border-color:#ffcc00; color:#ffcc00; background:rgba(255,204,0,0.12); }
+    .prio-badge.p3 { border-color:#ff8866; color:#ff8866; background:rgba(255,136,102,0.12); }
+    .pick-empty, .today-empty { color:#556; font-size:0.85rem; padding:8px 2px; }
+
+    /* Today summary (read-only) */
+    .today-summary { background:#151a28; border:1px solid #252b40; border-radius:0 6px 6px 6px; padding:10px 12px; min-height:60px; }
+    .today-summary.compact { min-height:0; padding:8px 10px; }
+    .today-row { display:flex; align-items:center; gap:8px; padding:3px 0; font-size:0.9rem; }
+    .today-row.step { padding-left:16px; font-size:0.82rem; color:#9aabbd; }
+    .today-dot { width:9px; height:9px; border-radius:50%; flex-shrink:0; }
+    .today-dot.p1 { background:#00ffcc; } .today-dot.p2 { background:#ffcc00; } .today-dot.p3 { background:#ff8866; }
+    .today-row .tparent { color:#566; }
+
+    /* Focus block tray */
+    .time-block.magnified { flex-wrap: wrap; }
+    .tray { width:100%; display:flex; flex-wrap:wrap; gap:5px; padding:6px 0 2px; }
+    .tray-chip { background:#222a40; border:1px solid #313a58; color:#aeb8d8; font-size:0.78rem; padding:3px 9px; border-radius:12px; cursor:pointer; white-space:nowrap; max-width:100%; overflow:hidden; text-overflow:ellipsis; }
+    .tray-chip:hover { background:#2c3656; color:#dde; }
+    .tray-chip .tc-dot { display:inline-block; width:7px; height:7px; border-radius:50%; margin-right:5px; vertical-align:middle; }
+    .tray-chip .tc-dot.p1{background:#00ffcc;} .tray-chip .tc-dot.p2{background:#ffcc00;} .tray-chip .tc-dot.p3{background:#ff8866;}
+
   </style>
 </head>
 <body>
@@ -149,17 +177,29 @@
     </div>
     <div id="appointment-list"></div>
 
-    <!-- Full notes -->
+    <!-- Plan sub-tabs: Deliverables / Pick / Today / Notes -->
     <div style="margin-top:12px;">
       <div class="notes-header">
         <div class="notes-tabs">
-          <span class="notes-tab active" data-main-tab="dailyNotes">Daily</span>
-          <span class="notes-tab" data-main-tab="deliverables">Deliverables</span>
+          <span class="notes-tab active" data-target="plan-deliverables">Deliverables</span>
+          <span class="notes-tab" data-target="plan-pick">Pick</span>
+          <span class="notes-tab" data-target="plan-today">Today</span>
+          <span class="notes-tab" data-target="plan-notes">Notes</span>
         </div>
         <button class="export-btn" onclick="exportData()" title="Export today's data">📤</button>
       </div>
-      <textarea id="daily-notes" class="notes sync-notes" data-key="dailyNotes" placeholder="Brain dump, loose thoughts…" style="min-height:320px;"></textarea>
-      <textarea id="deliverables-notes" class="notes sync-notes" data-key="deliverables" placeholder="Your deliverables, free-form…" style="display:none; min-height:320px;"></textarea>
+      <div id="plan-deliverables" class="subpanel">
+        <textarea id="deliverables-notes" class="notes sync-notes" data-key="deliverables" placeholder="One deliverable per line.&#10;Indent its steps with a leading - dash:&#10;Ship the report&#10;- draft outline&#10;- pull numbers" style="min-height:320px;"></textarea>
+      </div>
+      <div id="plan-pick" class="subpanel" style="display:none;">
+        <div id="pick-list" class="pick-list"></div>
+      </div>
+      <div id="plan-today" class="subpanel" style="display:none;">
+        <div id="today-summary" class="today-summary"></div>
+      </div>
+      <div id="plan-notes" class="subpanel" style="display:none;">
+        <textarea id="daily-notes" class="notes sync-notes" data-key="dailyNotes" placeholder="Quick notes, brain dump, loose thoughts…" style="min-height:320px;"></textarea>
+      </div>
     </div>
   </div>
 
@@ -169,12 +209,16 @@
     <div style="margin-top:10px;">
       <div class="notes-header">
         <div class="notes-tabs">
-          <span class="notes-tab active" data-focus-tab="dailyNotes">Daily</span>
-          <span class="notes-tab" data-focus-tab="deliverables">Deliverables</span>
+          <span class="notes-tab active" data-target="focus-today">Today</span>
+          <span class="notes-tab" data-target="focus-notes">Notes</span>
         </div>
       </div>
-      <textarea id="focus-daily-notes" class="notes sync-notes" data-key="dailyNotes" placeholder="Brain dump, loose thoughts…" style="min-height:60px;"></textarea>
-      <textarea id="focus-deliverables" class="notes sync-notes" data-key="deliverables" placeholder="Your deliverables…" style="display:none; min-height:60px;"></textarea>
+      <div id="focus-today" class="subpanel">
+        <div id="focus-today-summary" class="today-summary compact"></div>
+      </div>
+      <div id="focus-notes" class="subpanel" style="display:none;">
+        <textarea id="focus-daily-notes" class="notes sync-notes" data-key="dailyNotes" placeholder="Quick notes, brain dump…" style="min-height:120px;"></textarea>
+      </div>
     </div>
   </div>
 
@@ -478,6 +522,10 @@
           input.placeholder = m === 50 ? (hourGoal || 'did you hit it?') : 'what are you doing?';
           input.value = storage.get(storageKey) || '';
           input.addEventListener('input', () => storage.set(storageKey, input.value));
+          input.addEventListener('focus', () => showTray(input));
+          input.addEventListener('blur', () => setTimeout(() => {
+            block.querySelectorAll('.tray').forEach(t => t.remove());
+          }, 200));
           block.appendChild(input);
 
           // Progress bar on current block only
@@ -524,6 +572,140 @@
       return parseInt(document.getElementById('tenmin-interval')?.value ?? 10);
     }
 
+    // ---- Deliverables parsing, today picks, and focus tray ----
+    function escapeHtml(s){return String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));}
+
+    function getDeliverablesText() {
+      const el = document.getElementById('deliverables-notes');
+      return (el && el.value) || storage.get('deliverables') || '';
+    }
+
+    // Each non-dash line is a deliverable; following lines starting with "-" are its steps.
+    function parseDeliverables(text) {
+      const items = [];
+      (text || '').split('\n').forEach(line => {
+        const raw = line.trim();
+        if (!raw) return;
+        if (raw[0] === '-') {
+          const stepText = raw.replace(/^-+\s*/, '').trim();
+          if (!stepText) return;
+          const parent = [...items].reverse().find(i => !i.isStep);
+          items.push({ text: stepText, isStep: true, parent: parent ? parent.text : null,
+                       key: (parent ? parent.text + ' ▸ ' : '') + stepText });
+        } else {
+          items.push({ text: raw, isStep: false, parent: null, key: raw });
+        }
+      });
+      return items;
+    }
+
+    function getPicks() { return storage.get('todayPicks') || {}; }
+    function savePicks(p) { storage.set('todayPicks', p); }
+    function getMRU() { return storage.get('trayMRU') || []; }
+    function saveMRU(m) { storage.set('trayMRU', m); }
+
+    // Tap a badge to cycle off → 1 → 2 → 3 → off
+    function cyclePriority(key) {
+      const picks = getPicks();
+      const cur = picks[key] || 0;
+      if (cur >= 3) delete picks[key]; else picks[key] = cur + 1;
+      savePicks(picks);
+      renderPick(); renderToday();
+    }
+
+    function renderPick() {
+      const host = document.getElementById('pick-list');
+      if (!host) return;
+      const items = parseDeliverables(getDeliverablesText());
+      const picks = getPicks();
+      host.innerHTML = '';
+      if (items.length === 0) {
+        host.innerHTML = '<div class="pick-empty">Add deliverables first — one per line, steps indented with a leading dash.</div>';
+        return;
+      }
+      items.forEach(it => {
+        const row = document.createElement('div');
+        row.className = 'pick-item' + (it.isStep ? ' step' : '');
+        const pr = picks[it.key] || 0;
+        const badge = document.createElement('div');
+        badge.className = 'prio-badge' + (pr ? ' p' + pr : '');
+        badge.textContent = pr || '';
+        badge.title = 'Tap to set priority (1, 2, 3, off)';
+        badge.addEventListener('click', () => cyclePriority(it.key));
+        const txt = document.createElement('div');
+        txt.className = 'ptext';
+        txt.textContent = (it.isStep ? '↳ ' : '') + it.text;
+        row.appendChild(badge); row.appendChild(txt);
+        host.appendChild(row);
+      });
+    }
+
+    function pickedItems() {
+      const items = parseDeliverables(getDeliverablesText());
+      const picks = getPicks();
+      return items
+        .map((it, i) => ({ ...it, prio: picks[it.key], order: i }))
+        .filter(it => it.prio);
+    }
+
+    function renderToday() {
+      const picked = pickedItems().sort((a, b) => (a.prio - b.prio) || (a.order - b.order));
+      const html = picked.length === 0
+        ? '<div class="today-empty">No items picked yet — use the Pick tab to set priorities.</div>'
+        : picked.map(it => {
+            const parent = it.isStep && it.parent ? `<span class="tparent">${escapeHtml(it.parent)} ▸ </span>` : '';
+            return `<div class="today-row${it.isStep ? ' step' : ''}"><span class="today-dot p${it.prio}"></span><span>${parent}${escapeHtml(it.text)}</span></div>`;
+          }).join('');
+      ['today-summary', 'focus-today-summary'].forEach(id => {
+        const el = document.getElementById(id); if (el) el.innerHTML = html;
+      });
+    }
+
+    // Tray order: most-recently-used first, then remaining picks by priority.
+    function trayItems() {
+      const picked = pickedItems();
+      const mru = getMRU();
+      return picked.sort((a, b) => {
+        const ia = mru.indexOf(a.key), ib = mru.indexOf(b.key);
+        if (ia !== -1 || ib !== -1) {
+          if (ia === -1) return 1;
+          if (ib === -1) return -1;
+          return ia - ib;
+        }
+        return (a.prio - b.prio) || (a.order - b.order);
+      });
+    }
+
+    function showTray(input) {
+      const block = input.closest('.time-block');
+      if (!block) return;
+      block.querySelectorAll('.tray').forEach(t => t.remove());
+      const items = trayItems();
+      if (items.length === 0) return;
+      const tray = document.createElement('div');
+      tray.className = 'tray';
+      items.forEach(it => {
+        const chip = document.createElement('span');
+        chip.className = 'tray-chip';
+        chip.title = it.text;
+        const label = it.text.length > 22 ? it.text.slice(0, 21) + '…' : it.text;
+        chip.innerHTML = `<span class="tc-dot p${it.prio}"></span>${escapeHtml(label)}`;
+        chip.addEventListener('mousedown', e => e.preventDefault()); // keep input focused
+        chip.addEventListener('click', () => {
+          const cur = input.value.trim();
+          input.value = cur ? cur + ', ' + it.text : it.text;
+          input.dispatchEvent(new Event('input'));
+          const mru = getMRU().filter(k => k !== it.key);
+          mru.unshift(it.key);
+          saveMRU(mru);
+          input.focus();
+          showTray(input); // rebuild so most-recent floats to front
+        });
+        tray.appendChild(chip);
+      });
+      block.appendChild(tray);
+    }
+
     function currentBlockMinutes() {
       const now = new Date();
       const interval = getInterval();
@@ -553,7 +735,7 @@
       document.getElementById('panel-plan').style.display = n === 0 ? 'block' : 'none';
       document.getElementById('panel-focus').style.display = n === 1 ? 'block' : 'none';
       document.getElementById('panel-settings').style.display = n === 2 ? 'block' : 'none';
-      if (n === 1) { windowStartMinutes = getCurrentWindowStart(); buildFocusTimeline(); }
+      if (n === 1) { windowStartMinutes = getCurrentWindowStart(); buildFocusTimeline(); renderToday(); }
     }
 
     function addWheelListener() {
@@ -646,7 +828,8 @@
         hourGoals,
         blockLogs,
         notes: document.getElementById('daily-notes').value,
-        deliverables: storage.get('deliverables') || ''
+        deliverables: storage.get('deliverables') || '',
+        todayPicks: getPicks()
       };
       const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
       const url = URL.createObjectURL(blob);
@@ -833,21 +1016,32 @@
       });
     }
 
-    // Notes tab switching — each tab group is scoped to its parent container
-    document.querySelectorAll('.notes-tab').forEach(tab => {
-      tab.addEventListener('click', () => {
-        const group = tab.closest('div').querySelectorAll('.notes-tab');
-        group.forEach(t => t.classList.remove('active'));
-        tab.classList.add('active');
-        const key = tab.dataset.mainTab || tab.dataset.focusTab;
-        // Toggle textareas within the same parent container
-        tab.closest('div').parentElement.parentElement.querySelectorAll('textarea.sync-notes').forEach(el => {
-          el.style.display = el.dataset.key === key ? '' : 'none';
+    // Sub-tab switching — each .notes-tabs group toggles its own data-target panels
+    document.querySelectorAll('.notes-tabs').forEach(group => {
+      const tabs = [...group.querySelectorAll('.notes-tab')];
+      const targets = tabs.map(t => t.dataset.target);
+      tabs.forEach(tab => {
+        tab.addEventListener('click', () => {
+          tabs.forEach(t => t.classList.remove('active'));
+          tab.classList.add('active');
+          targets.forEach(id => {
+            const p = document.getElementById(id);
+            if (p) p.style.display = id === tab.dataset.target ? '' : 'none';
+          });
+          if (tab.dataset.target === 'plan-pick') renderPick();
+          if (tab.dataset.target === 'plan-today' || tab.dataset.target === 'focus-today') renderToday();
         });
       });
     });
 
+    // Re-render pick/today views live as deliverables text changes
+    document.querySelectorAll('textarea.sync-notes[data-key="deliverables"]').forEach(el => {
+      el.addEventListener('input', () => { renderPick(); renderToday(); });
+    });
+
 initSyncedNotes();
+renderPick();
+renderToday();
   </script>
 </body>
 </html>
