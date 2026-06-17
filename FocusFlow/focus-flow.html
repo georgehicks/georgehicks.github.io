@@ -856,11 +856,27 @@
       return (parseInt(document.getElementById('volume-slider')?.value ?? 50) / 100);
     }
 
+    // One shared AudioContext, reused for every beep. Creating a new one each
+    // time leaks contexts and silently stops working after the browser's limit.
+    let audioCtx = null;
+    function getAudioCtx() {
+      if (!audioCtx) {
+        try { audioCtx = new (window.AudioContext || window.webkitAudioContext)(); }
+        catch (e) { return null; }
+      }
+      if (audioCtx.state === 'suspended') audioCtx.resume();
+      return audioCtx;
+    }
+    // Unlock/resume audio on the first user gesture (required by iOS/Safari)
+    ['click','touchend','keydown'].forEach(evt =>
+      document.addEventListener(evt, () => getAudioCtx(), { once: true, passive: true }));
+
     function playTone() {
       if (muted) return;
       const vol = getVolume();
       if (vol === 0) return;
-      const ctx = new (window.AudioContext || window.webkitAudioContext)();
+      const ctx = getAudioCtx();
+      if (!ctx) return;
       const osc = ctx.createOscillator();
       const gain = ctx.createGain();
       osc.connect(gain);
