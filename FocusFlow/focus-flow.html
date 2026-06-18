@@ -513,11 +513,21 @@
       renderPlanList();
     }
 
+    function appendCalRefresh(container) {
+      if (!(storage.get('icsUrl') || '')) return; // only when a calendar is configured
+      const link = document.createElement('button');
+      link.textContent = '↻ Refresh from calendar';
+      link.style.cssText = 'display:block;margin-top:8px;background:none;border:none;color:#8ab4f8;font-size:0.8rem;cursor:pointer;padding:0;text-decoration:underline;';
+      link.addEventListener('click', () => { link.textContent = '↻ Refreshing…'; pullCalendar(); });
+      container.appendChild(link);
+    }
+
     function renderPlanList() {
       const container = document.getElementById('appointment-list');
       container.innerHTML = '';
       if (appointments.length === 0) {
         container.innerHTML = '<div style="color:#555;font-size:0.85rem;margin-top:8px;">No appointments.</div>';
+        appendCalRefresh(container);
         return;
       }
       appointments.sort((a,b) => a.startMinutes - b.startMinutes);
@@ -543,6 +553,7 @@
         }
       });
       container.appendChild(clearAll);
+      appendCalRefresh(container);
     }
 
     // FOCUS TAB
