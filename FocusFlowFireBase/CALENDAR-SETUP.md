@@ -1,8 +1,9 @@
 # FocusFlow — Calendar import (ICS)
 
-Pulls today's events from a published `.ics` calendar feed into your appointments.
-Settings → **Calendar Import (ICS)**: paste the feed URL, (usually) a proxy URL, then
-tap **Pull appointments now**. Imported events are tagged 📅 and refreshed on each pull;
+Pulls today's events from one or more published `.ics` calendar feeds into your appointments.
+Settings → **Calendar Import (ICS)**: paste one feed URL **per line** (e.g. work Outlook +
+personal Google), (usually) a proxy URL, then tap **Pull appointments now**. Events from all
+listed calendars are merged (duplicates collapsed), tagged 📅, and refreshed on each pull;
 appointments you add by hand are left alone.
 
 ## 1. Get your calendar's .ics URL
@@ -10,7 +11,10 @@ appointments you add by hand are left alone.
   **Publish a calendar** → choose the calendar, set permission to **"Can view all details"**
   (so you get titles, not just busy), then copy the **ICS** link.
   (If "Publish a calendar" is missing, your admin disabled it — this route won't work.)
-- **Google / iCloud:** use the calendar's secret/private `.ics` address.
+- **Google Calendar:** Google Calendar → hover the calendar → ⋮ → **Settings and sharing** →
+  **Integrate calendar** → copy the **Secret address in iCal format** (a
+  `https://calendar.google.com/calendar/ical/.../basic.ics` URL).
+- **iCloud:** use the calendar's public/private `.ics` address.
 
 > The published URL is a **secret** — anyone with it can read your calendar. You can
 > regenerate/unpublish it any time from the same screen.
@@ -34,8 +38,8 @@ export default {
     if (request.method === 'OPTIONS') return new Response(null, { headers: cors });
     const target = new URL(request.url).searchParams.get('url');
     if (!target) return new Response('Missing url', { status: 400, headers: cors });
-    // Restrict to your calendar host so this isn't an open proxy:
-    if (!/^https:\/\/outlook\.office365\.com\//.test(target))
+    // Restrict to your calendar hosts so this isn't an open proxy:
+    if (!/^https:\/\/(outlook\.office365\.com|calendar\.google\.com)\//.test(target))
       return new Response('Forbidden host', { status: 403, headers: cors });
     const upstream = await fetch(target, { headers: { 'User-Agent': 'FocusFlow' } });
     return new Response(upstream.body, {
@@ -50,8 +54,8 @@ export default {
 4. In FocusFlow, set the **Proxy URL** to that address with `/?url=` on the end:
    `https://focusflow-cal.yourname.workers.dev/?url=`
 
-(The host check restricts it to `outlook.office365.com`. Change that regex if you point it
-at a different calendar provider.)
+(The host check restricts it to `outlook.office365.com` and `calendar.google.com`. Add more
+hosts to that regex if you point it at other calendar providers.)
 
 ## 3. Use it
 - Tap **Pull appointments now**, or tick **Auto-pull when the app opens**.

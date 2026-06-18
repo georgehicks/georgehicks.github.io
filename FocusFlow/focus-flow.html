@@ -279,7 +279,7 @@
     <button onclick="toggleMute()" id="mute-btn" style="width:100%; padding:10px; background:#333; color:#ddd; border:none; border-radius:8px;">🔇 Mute All</button>
     <div style="margin-top:20px; padding-top:16px; border-top:1px solid #252b3d;">
       <strong>Calendar Import (ICS)</strong>
-      <input id="ics-url" type="text" placeholder="Published .ics URL" style="width:100%; padding:8px; margin-top:6px; background:#252b3d; color:#ddd; border:1px solid #333; border-radius:6px;">
+      <textarea id="ics-url" rows="2" placeholder="Published .ics URLs — one per line (Outlook, Google, …)" style="width:100%; padding:8px; margin-top:6px; background:#252b3d; color:#ddd; border:1px solid #333; border-radius:6px; font-family:inherit; resize:vertical;"></textarea>
       <input id="ics-proxy" type="text" placeholder="CORS proxy URL (ends with ?url=)" style="width:100%; padding:8px; margin-top:6px; background:#252b3d; color:#ddd; border:1px solid #333; border-radius:6px;">
       <label style="display:block; margin-top:8px; font-size:0.85rem;"><input type="checkbox" id="ics-auto"> Auto-pull when the app opens</label>
       <button onclick="pullCalendar()" style="width:100%; margin-top:8px; padding:10px; background:#1a2030; color:#8ab4f8; border:1px solid #2a3555; border-radius:8px; cursor:pointer;">Pull appointments now</button>
@@ -359,30 +359,32 @@
     }
 
     async function pullCalendar() {
-      const url = (document.getElementById('ics-url')?.value || '').trim();
+      const urls = (document.getElementById('ics-url')?.value || '').split('\n').map(s => s.trim()).filter(Boolean);
       const proxy = (document.getElementById('ics-proxy')?.value || '').trim();
-      if (!url) return icsStatus('Enter your calendar .ics URL first.');
+      if (!urls.length) return icsStatus('Enter at least one calendar .ics URL.');
       if (typeof ICAL === 'undefined') return icsStatus('Calendar library still loading — try again in a moment.');
       icsStatus('Fetching…');
-      let text;
-      try {
-        const res = await fetch(proxy ? proxy + encodeURIComponent(url) : url);
-        if (!res.ok) throw new Error('HTTP ' + res.status);
-        text = await res.text();
-      } catch (e) {
-        return icsStatus('Fetch failed (' + e.message + '). A CORS proxy is required — see CALENDAR-SETUP.');
+      let all = [], ok = 0, failed = 0;
+      for (const url of urls) {
+        try {
+          const res = await fetch(proxy ? proxy + encodeURIComponent(url) : url);
+          if (!res.ok) throw new Error('HTTP ' + res.status);
+          all = all.concat(parseTodayEvents(await res.text()));
+          ok++;
+        } catch (e) { failed++; }
       }
-      let events;
-      try { events = parseTodayEvents(text); }
-      catch (e) { return icsStatus('Could not parse calendar: ' + e.message); }
+      if (ok === 0) return icsStatus('All fetches failed — check the URLs and proxy (see CALENDAR-SETUP).');
+      // de-dupe identical events that appear on more than one calendar
+      const seen = new Set();
+      const merged = all.filter(ev => { const k = ev.start + '|' + ev.end + '|' + ev.text; if (seen.has(k)) return false; seen.add(k); return true; });
       appointments = appointments.filter(a => a.source !== 'ics');     // refresh imported, keep manual
-      events.forEach(ev => appointments.push({ id: 'ics_' + ev.uid, startMinutes: ev.start, endMinutes: ev.end, text: ev.text, source: 'ics' }));
+      merged.forEach((ev, i) => appointments.push({ id: 'ics_' + i + '_' + ev.uid, startMinutes: ev.start, endMinutes: ev.end, text: ev.text, source: 'ics' }));
       saveAppointments();
       renderPlanList();
       if (typeof renderTimePicker === 'function') renderTimePicker();
       if (document.getElementById('panel-focus').style.display !== 'none') buildFocusTimeline();
       storage.set('icsLastPull', Date.now());
-      icsStatus(`Imported ${events.length} event${events.length === 1 ? '' : 's'} for today · ${new Date().toLocaleTimeString()}`);
+      icsStatus(`Imported ${merged.length} event${merged.length === 1 ? '' : 's'} from ${ok} calendar${ok === 1 ? '' : 's'}${failed ? `, ${failed} failed` : ''} · ${new Date().toLocaleTimeString()}`);
     }
 
     function formatAMPM(minutes) {
@@ -514,7 +516,7 @@
     }
 
     function appendCalRefresh(container) {
-      if (!(storage.get('icsUrl') || '')) return; // only when a calendar is configured
+      if (!((storage.get('icsUrl') || '').trim())) return; // only when a calendar is configured
       const link = document.createElement('button');
       link.textContent = '↻ Refresh from calendar';
       link.style.cssText = 'display:block;margin-top:8px;background:none;border:none;color:#8ab4f8;font-size:0.8rem;cursor:pointer;padding:0;text-decoration:underline;';
