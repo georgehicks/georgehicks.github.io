@@ -237,13 +237,13 @@
   <!-- SETTINGS TAB -->
   <div id="panel-settings" class="section" style="display:none;">
     <div style="margin-bottom:16px;">
-      <strong>Hourly Feedback</strong><br>
-      <select id="hourly-mode" style="width:100%; padding:8px; margin-top:4px;">
-        <option value="speech">Speech</option>
-        <option value="tone">Pleasant Tone</option>
+      <strong>Speech Feedback</strong><br>
+      <select id="speech-mode" style="width:100%; padding:8px; margin-top:4px;">
+        <option value="hourly">Hourly</option>
+        <option value="30">Every 30 minutes</option>
         <option value="none">None</option>
       </select>
-      <button onclick="testHourly()" style="width:100%; margin-top:4px; padding:8px;">Test Hourly</button>
+      <button onclick="testSpeech()" style="width:100%; margin-top:4px; padding:8px;">Test Speech</button>
     </div>
     <div style="margin-bottom:16px;">
       <strong>Interval Feedback</strong><br>
@@ -256,7 +256,6 @@
         <option value="20">Every 20 minutes</option>
       </select>
       <select id="tenmin-mode" style="width:100%; padding:8px; margin-top:4px;">
-        <option value="speech">Speech</option>
         <option value="tone" selected>Pleasant Tone</option>
         <option value="none">None</option>
       </select>
@@ -952,16 +951,12 @@
       URL.revokeObjectURL(url);
     }
 
-    function testHourly() {
-      const mode = document.getElementById('hourly-mode').value;
-      if (mode === "speech") speak("The time is eleven o'clock");
-      else if (mode === "tone") playTone();
+    function testSpeech() {
+      speak(`The time is ${formatAMPM(new Date().getHours() * 60 + new Date().getMinutes())}`);
     }
 
     function testTenMin() {
-      const mode = document.getElementById('tenmin-mode').value;
-      if (mode === "speech") speak("Ten minutes have passed");
-      else if (mode === "tone") playTone();
+      if (document.getElementById('tenmin-mode').value === "tone") playTone();
     }
 
     function getVolume() {
@@ -1027,24 +1022,19 @@
       lastNotifiedMinute = mins;
 
       const m = now.getMinutes();
-      if (m === 0) {
-        // Top of hour
-        const mode = document.getElementById('hourly-mode').value;
-        if (mode === 'speech') {
-          speak(`The time is ${formatAMPM(mins)}`);
-        } else if (mode === 'tone') {
-          playTone();
-        }
-      } else {
+
+      // Speech feedback — hourly, every 30m, or none
+      const speechMode = document.getElementById('speech-mode')?.value || 'none';
+      let spoke = false;
+      if ((speechMode === 'hourly' && m === 0) || (speechMode === '30' && (m === 0 || m === 30))) {
+        speak(`The time is ${formatAMPM(mins)}`);
+        spoke = true;
+      }
+
+      // Interval tone feedback — skipped on minutes where speech just fired
+      if (!spoke) {
         const interval = parseInt(document.getElementById('tenmin-interval')?.value ?? 10);
-        if (m % interval === 0) {
-          const mode = document.getElementById('tenmin-mode').value;
-          if (mode === 'speech') {
-            speak(`${m} minutes past the hour`);
-          } else if (mode === 'tone') {
-            playTone();
-          }
-        }
+        if (m % interval === 0 && document.getElementById('tenmin-mode')?.value === 'tone') playTone();
       }
     }
 
@@ -1124,6 +1114,15 @@
       if (saved !== null) cb.checked = saved;
       cb.addEventListener('change', () => storage.set('autoMute', cb.checked));
     })();
+
+    // Persist feedback mode selects
+    ['speech-mode', 'tenmin-mode'].forEach(id => {
+      const sel = document.getElementById(id);
+      if (!sel) return;
+      const saved = storage.get(id);
+      if (saved !== null) sel.value = saved;
+      sel.addEventListener('change', () => storage.set(id, sel.value));
+    });
 
     // Service Worker (PWA)
     if ('serviceWorker' in navigator) {
