@@ -4,6 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="theme-color" content="#00ffcc">
+  <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="FocusFlow">
@@ -1355,7 +1356,17 @@ renderToday();
       firebase.initializeApp(FIREBASE_CONFIG);
       const auth = firebase.auth();
       const db = firebase.firestore();
-      db.enablePersistence({ synchronizeTabs: true }).catch(() => {}); // offline cache; ok if it fails
+      firebase.firestore.setLogLevel('error'); // keep console clean (hides info/deprecation noise)
+      // Offline cache. Prefer the modern cache setting; fall back to the legacy API.
+      try {
+        db.settings({
+          cache: firebase.firestore.persistentLocalCache({
+            tabManager: firebase.firestore.persistentMultipleTabManager()
+          })
+        });
+      } catch (e) {
+        try { db.enablePersistence({ synchronizeTabs: true }); } catch (_) {}
+      }
       syncStatus('Not signed in');
       auth.onAuthStateChanged(user => {
         document.getElementById('sync-signin').style.display = user ? 'none' : '';
