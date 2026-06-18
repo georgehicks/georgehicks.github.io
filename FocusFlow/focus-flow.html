@@ -105,6 +105,16 @@
     .plan-input::placeholder { color: #445; }
     .plan-btn { background: var(--primary); color: #000; border: none; border-radius: 5px; padding: 4px 10px; font-size: 0.78rem; font-weight: 700; cursor: pointer; white-space: nowrap; }
 
+    /* Tap-to-pick appointment times */
+    .time-pills { display:flex; gap:6px; }
+    .time-pill { flex:1; background:#151a28; border:1px solid #252b40; color:#99a; border-radius:6px; padding:6px 9px; font-size:0.8rem; cursor:pointer; font-family:inherit; text-align:left; }
+    .time-pill.active { border-color:var(--primary); color:#dde; }
+    .time-pill span { color:var(--primary); font-weight:700; margin-left:3px; }
+    .chip-row { display:flex; flex-wrap:wrap; gap:4px; align-items:center; }
+    .chip-label { color:#5a6480; font-size:0.68rem; width:24px; flex-shrink:0; }
+    .tchip { background:#1a2030; border:1px solid #2a3350; color:#9aa8c8; border-radius:13px; padding:4px 9px; font-size:0.78rem; cursor:pointer; font-family:inherit; }
+    .tchip.sel { background:rgba(0,255,204,0.15); border-color:var(--primary); color:var(--primary); }
+
     /* Pick tab */
     .pick-list { background:#151a28; border:1px solid #252b40; border-radius:0 6px 6px 6px; padding:8px 10px; min-height:320px; }
     .pick-item { display:flex; align-items:center; gap:8px; padding:4px 0; font-size:0.9rem; }
@@ -166,14 +176,15 @@
   <!-- PLAN TAB -->
   <div id="panel-plan" class="section">
     <div class="plan-form">
-      <div class="plan-form-row">
-        <input id="plan-start" type="text" class="plan-input" placeholder="Start (11:00 AM)">
-        <input id="plan-end" type="text" class="plan-input" placeholder="End (11:45 AM)">
+      <input id="plan-text" type="text" class="plan-input" placeholder="Appointment title">
+      <div class="time-pills">
+        <button type="button" id="pill-start" class="time-pill active" onclick="setTarget('start')">Start<span id="pill-start-val">—</span></button>
+        <button type="button" id="pill-end" class="time-pill" onclick="setTarget('end')">End<span id="pill-end-val">—</span></button>
       </div>
-      <div style="display:flex; gap:5px;">
-        <input id="plan-text" type="text" class="plan-input" placeholder="Appointment title" style="flex:1;">
-        <button onclick="addAppointment()" class="plan-btn">+ Add</button>
-      </div>
+      <div class="chip-row" id="hour-chips"></div>
+      <div class="chip-row" id="min-chips"></div>
+      <div class="chip-row" id="dur-chips"></div>
+      <button onclick="addAppointment()" class="plan-btn" style="width:100%;">+ Add Appointment</button>
     </div>
     <div id="appointment-list"></div>
 
@@ -329,20 +340,95 @@
       return h * 60 + m;
     }
 
+    // ---- Tap-to-pick appointment times ----
+    let apptStart = null, apptEnd = null, apptTarget = 'start';
+    let sH = null, sM = 0, eH = null, eM = 0, lastDur = null;
+    const DUR_LABELS = { 15:'+15m', 30:'+30m', 45:'+45m', 60:'+1h', 90:'+90m', 120:'+2h' };
+
+    function hourChipLabel(h) { const ap = h < 12 ? 'a' : 'p'; return (h % 12 || 12) + ap; }
+
+    function setTarget(t) { apptTarget = t; renderTimePicker(); }
+
+    function syncEndFromDur() {
+      if (lastDur != null && apptStart != null) {
+        apptEnd = apptStart + lastDur; eH = Math.floor(apptEnd / 60); eM = apptEnd % 60;
+      }
+    }
+
+    function pickHour(h) {
+      if (apptTarget === 'start') { sH = h; apptStart = sH * 60 + sM; syncEndFromDur(); }
+      else { eH = h; apptEnd = eH * 60 + eM; lastDur = null; }
+      renderTimePicker();
+    }
+    function pickMin(m) {
+      if (apptTarget === 'start') { sM = m; if (sH != null) { apptStart = sH * 60 + sM; syncEndFromDur(); } }
+      else { eM = m; if (eH != null) { apptEnd = eH * 60 + eM; lastDur = null; } }
+      renderTimePicker();
+    }
+    function pickDur(d) {
+      if (apptStart == null) { apptTarget = 'start'; renderTimePicker(); return; }
+      lastDur = d; apptEnd = apptStart + d; eH = Math.floor(apptEnd / 60); eM = apptEnd % 60;
+      apptTarget = 'end';
+      renderTimePicker();
+    }
+
+    function renderTimePicker() {
+      const hourRow = document.getElementById('hour-chips');
+      if (!hourRow) return;
+      const minRow = document.getElementById('min-chips');
+      const durRow = document.getElementById('dur-chips');
+
+      document.getElementById('pill-start').classList.toggle('active', apptTarget === 'start');
+      document.getElementById('pill-end').classList.toggle('active', apptTarget === 'end');
+      document.getElementById('pill-start-val').textContent = apptStart != null ? formatAMPM(apptStart) : '—';
+      document.getElementById('pill-end-val').textContent = apptEnd != null ? formatAMPM(apptEnd) : '—';
+
+      const curH = apptTarget === 'start' ? sH : eH;
+      const curM = apptTarget === 'start' ? sM : eM;
+
+      hourRow.innerHTML = '<span class="chip-label">Hr</span>';
+      for (let h = startHour; h <= endHour; h++) {
+        const c = document.createElement('button');
+        c.type = 'button';
+        c.className = 'tchip' + (curH === h ? ' sel' : '');
+        c.textContent = hourChipLabel(h);
+        c.addEventListener('click', () => pickHour(h));
+        hourRow.appendChild(c);
+      }
+
+      minRow.innerHTML = '<span class="chip-label">Min</span>';
+      [0, 15, 30, 45].forEach(m => {
+        const c = document.createElement('button');
+        c.type = 'button';
+        c.className = 'tchip' + (curH != null && curM === m ? ' sel' : '');
+        c.textContent = ':' + String(m).padStart(2, '0');
+        c.addEventListener('click', () => pickMin(m));
+        minRow.appendChild(c);
+      });
+
+      durRow.innerHTML = '<span class="chip-label">Len</span>';
+      [15, 30, 45, 60, 90, 120].forEach(d => {
+        const c = document.createElement('button');
+        c.type = 'button';
+        const sel = apptStart != null && apptEnd != null && (apptEnd - apptStart) === d;
+        c.className = 'tchip' + (sel ? ' sel' : '');
+        c.textContent = DUR_LABELS[d];
+        c.addEventListener('click', () => pickDur(d));
+        durRow.appendChild(c);
+      });
+    }
+
     function addAppointment() {
-      const startStr = document.getElementById('plan-start').value.trim();
-      const endStr = document.getElementById('plan-end').value.trim();
       const text = document.getElementById('plan-text').value.trim();
-      if (!startStr || !endStr || !text) return alert("Fill all fields");
-      const startMin = parseTime(startStr);
-      const endMin = parseTime(endStr);
-      if (startMin === null || endMin === null) return alert("Use format like 11:00 AM");
-      appointments.push({ id: Date.now(), startMinutes: startMin, endMinutes: endMin, text: text });
+      if (!text) return alert('Enter an appointment title');
+      if (apptStart == null || apptEnd == null) return alert('Tap a start and end time');
+      if (apptEnd <= apptStart) return alert('End time must be after start time');
+      appointments.push({ id: Date.now(), startMinutes: apptStart, endMinutes: apptEnd, text });
       saveAppointments();
       renderPlanList();
-      document.getElementById('plan-start').value = '';
-      document.getElementById('plan-end').value = '';
       document.getElementById('plan-text').value = '';
+      apptStart = apptEnd = null; sH = null; sM = 0; eH = null; eM = 0; lastDur = null; apptTarget = 'start';
+      renderTimePicker();
     }
 
     function deleteAppointment(id) {
@@ -968,11 +1054,13 @@
         startHour = parseInt(startSel.value);
         storage.set('startHour', startHour);
         windowStartMinutes = getCurrentWindowStart();
+        renderTimePicker();
         if (document.getElementById('panel-focus').style.display !== 'none') buildFocusTimeline();
       });
       endSel.addEventListener('change', () => {
         endHour = parseInt(endSel.value);
         storage.set('endHour', endHour);
+        renderTimePicker();
         if (document.getElementById('panel-focus').style.display !== 'none') buildFocusTimeline();
       });
     }
@@ -1023,6 +1111,7 @@
 
     // Init
     renderPlanList();
+    renderTimePicker();
     buildMiniCalendar();
     initClockMarks();
     initHourSettings();
