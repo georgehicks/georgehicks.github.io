@@ -278,6 +278,14 @@
     <label><input type="checkbox" id="auto-mute" checked> Auto-mute during appointments</label><br><br>
     <button onclick="toggleMute()" id="mute-btn" style="width:100%; padding:10px; background:#333; color:#ddd; border:none; border-radius:8px;">🔇 Mute All</button>
     <div style="margin-top:20px; padding-top:16px; border-top:1px solid #252b3d;">
+      <strong>Calendar Import (ICS)</strong>
+      <input id="ics-url" type="text" placeholder="Published .ics URL" style="width:100%; padding:8px; margin-top:6px; background:#252b3d; color:#ddd; border:1px solid #333; border-radius:6px;">
+      <input id="ics-proxy" type="text" placeholder="CORS proxy URL (ends with ?url=)" style="width:100%; padding:8px; margin-top:6px; background:#252b3d; color:#ddd; border:1px solid #333; border-radius:6px;">
+      <label style="display:block; margin-top:8px; font-size:0.85rem;"><input type="checkbox" id="ics-auto"> Auto-pull when the app opens</label>
+      <button onclick="pullCalendar()" style="width:100%; margin-top:8px; padding:10px; background:#1a2030; color:#8ab4f8; border:1px solid #2a3555; border-radius:8px; cursor:pointer;">Pull appointments now</button>
+      <div id="ics-status" style="color:#888; font-size:0.8rem; margin-top:6px;"></div>
+    </div>
+    <div style="margin-top:20px; padding-top:16px; border-top:1px solid #252b3d;">
       <strong>Reset</strong><br>
       <button onclick="resetDay()" style="width:100%; margin-top:8px; padding:10px; background:#2a1a1a; color:#ff6b6b; border:1px solid #5a2020; border-radius:8px; cursor:pointer;">🗑 Reset Today's Notes &amp; Goals</button>
     </div>
@@ -286,6 +294,9 @@
     </div>
   </div>
 
+
+  <!-- ICS calendar parser -->
+  <script src="https://cdn.jsdelivr.net/npm/ical.js@1.5.0/build/ical.min.js"></script>
 
   <script>
     const storage = { data: {}, get(k){try{return JSON.parse(localStorage.getItem(k));}catch(e){return this.data[k]||null;}}, set(k,v){try{localStorage.setItem(k,JSON.stringify(v));}catch(e){this.data[k]=v;}} };
@@ -307,6 +318,72 @@
 
     let appointments = storage.get('appointments') || [];
     function saveAppointments() { storage.set('appointments', appointments); }
+
+    // ---- Calendar import (ICS) ----
+    function icsStatus(m) { const el = document.getElementById('ics-status'); if (el) el.textContent = m; }
+
+    function parseTodayEvents(icsText) {
+      const comp = new ICAL.Component(ICAL.parse(icsText));
+      const now = new Date();
+      const dayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+      const dayEnd = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1);
+      const toMin = d => d.getHours() * 60 + d.getMinutes();
+      const results = [];
+      const add = (startJs, endJs, summary, uid) => {
+        if (startJs >= dayEnd || endJs <= dayStart) return;       // not today
+        const s = startJs < dayStart ? 0 : toMin(startJs);
+        const e = endJs >= dayEnd ? 1439 : toMin(endJs);
+        if (e <= s) return;
+        results.push({ uid, start: s, end: e, text: summary || '(busy)' });
+      };
+      comp.getAllSubcomponents('vevent').forEach(ve => {
+        const event = new ICAL.Event(ve);
+        if (event.startDate && event.startDate.isDate) return;    // skip all-day
+        if (event.isRecurring()) {
+          const it = event.iterator();
+          let next, guard = 0;
+          while ((next = it.next()) && guard++ < 5000) {
+            const startJs = next.toJSDate();
+            if (startJs >= dayEnd) break;
+            const det = event.getOccurrenceDetails(next);
+            const endJs = det.endDate.toJSDate();
+            if (endJs <= dayStart) continue;
+            add(startJs, endJs, event.summary, (event.uid || 'e') + '_' + next.toUnixTime());
+          }
+        } else {
+          add(event.startDate.toJSDate(), event.endDate.toJSDate(), event.summary, event.uid || ('e' + Math.random().toString(36).slice(2)));
+        }
+      });
+      results.sort((a, b) => a.start - b.start);
+      return results;
+    }
+
+    async function pullCalendar() {
+      const url = (document.getElementById('ics-url')?.value || '').trim();
+      const proxy = (document.getElementById('ics-proxy')?.value || '').trim();
+      if (!url) return icsStatus('Enter your calendar .ics URL first.');
+      if (typeof ICAL === 'undefined') return icsStatus('Calendar library still loading — try again in a moment.');
+      icsStatus('Fetching…');
+      let text;
+      try {
+        const res = await fetch(proxy ? proxy + encodeURIComponent(url) : url);
+        if (!res.ok) throw new Error('HTTP ' + res.status);
+        text = await res.text();
+      } catch (e) {
+        return icsStatus('Fetch failed (' + e.message + '). A CORS proxy is required — see CALENDAR-SETUP.');
+      }
+      let events;
+      try { events = parseTodayEvents(text); }
+      catch (e) { return icsStatus('Could not parse calendar: ' + e.message); }
+      appointments = appointments.filter(a => a.source !== 'ics');     // refresh imported, keep manual
+      events.forEach(ev => appointments.push({ id: 'ics_' + ev.uid, startMinutes: ev.start, endMinutes: ev.end, text: ev.text, source: 'ics' }));
+      saveAppointments();
+      renderPlanList();
+      if (typeof renderTimePicker === 'function') renderTimePicker();
+      if (document.getElementById('panel-focus').style.display !== 'none') buildFocusTimeline();
+      storage.set('icsLastPull', Date.now());
+      icsStatus(`Imported ${events.length} event${events.length === 1 ? '' : 's'} for today · ${new Date().toLocaleTimeString()}`);
+    }
 
     function formatAMPM(minutes) {
       let h = Math.floor(minutes / 60);
@@ -447,7 +524,7 @@
       appointments.forEach(appt => {
         const div = document.createElement('div');
         div.style.cssText = 'display:flex;align-items:center;gap:8px;margin-bottom:6px;';
-        div.innerHTML = `<span style="color:#888;font-size:0.88rem;">${formatAMPM(appt.startMinutes)} – ${formatAMPM(appt.endMinutes)}</span><span class="appointment-tag">${appt.text}</span>`;
+        div.innerHTML = `<span style="color:#888;font-size:0.88rem;">${formatAMPM(appt.startMinutes)} – ${formatAMPM(appt.endMinutes)}</span><span class="appointment-tag">${appt.source === 'ics' ? '📅 ' : ''}${appt.text}</span>`;
         const del = document.createElement('button');
         del.textContent = '✕';
         del.style.cssText = 'margin-left:auto;background:none;border:none;color:#555;cursor:pointer;font-size:1rem;padding:0 4px;flex-shrink:0;';
@@ -1097,6 +1174,20 @@
       if (saved !== null) sel.value = saved;
       sel.addEventListener('change', () => storage.set(id, sel.value));
     });
+
+    // Calendar import settings — persist + optional auto-pull on open
+    (function() {
+      const url = document.getElementById('ics-url');
+      const proxy = document.getElementById('ics-proxy');
+      const auto = document.getElementById('ics-auto');
+      if (url) { url.value = storage.get('icsUrl') || ''; url.addEventListener('change', () => storage.set('icsUrl', url.value.trim())); }
+      if (proxy) { proxy.value = storage.get('icsProxy') || ''; proxy.addEventListener('change', () => storage.set('icsProxy', proxy.value.trim())); }
+      if (auto) {
+        const a = storage.get('icsAuto'); if (a !== null) auto.checked = a;
+        auto.addEventListener('change', () => storage.set('icsAuto', auto.checked));
+        if (auto.checked && (storage.get('icsUrl') || '')) setTimeout(() => pullCalendar(), 1500);
+      }
+    })();
 
     // Service Worker (PWA)
     if ('serviceWorker' in navigator) {
