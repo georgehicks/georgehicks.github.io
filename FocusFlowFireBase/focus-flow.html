@@ -283,6 +283,7 @@
       <div id="sync-status" style="color:#888; font-size:0.82rem; margin:6px 0;">Sync not configured</div>
       <button id="sync-signin" onclick="syncSignIn()" style="width:100%; padding:10px; background:#1a2030; color:#8ab4f8; border:1px solid #2a3555; border-radius:8px; cursor:pointer;">Sign in with Google</button>
       <button id="sync-signout" onclick="syncSignOut()" style="display:none; width:100%; padding:10px; background:#2a1a1a; color:#ff9b9b; border:1px solid #5a2020; border-radius:8px; cursor:pointer;">Sign out</button>
+      <div id="sync-devices" style="margin-top:10px;"></div>
     </div>
     <div style="margin-top:20px; padding-top:16px; border-top:1px solid #252b3d;">
       <strong>Reset</strong><br>
@@ -1204,7 +1205,11 @@ renderToday();
 
     function allLocalData() {
       const out = {};
-      for (let i = 0; i < localStorage.length; i++) { const k = localStorage.key(i); out[k] = localStorage.getItem(k); }
+      for (let i = 0; i < localStorage.length; i++) {
+        const k = localStorage.key(i);
+        if (k.startsWith('__local_')) continue; // device-private keys never sync
+        out[k] = localStorage.getItem(k);
+      }
       return out;
     }
 
@@ -1225,13 +1230,18 @@ renderToday();
       const isBlockInput = active && active.classList && active.classList.contains('block-input');
       const activeBlockKey = isBlockInput ? `block_${todayKey()}_${active.id.replace('block-input-','')}` : null;
       _fbApplyingRemote = true;
+      let nonPresenceChanged = false;
       Object.keys(data).forEach(k => {
+        if (k.startsWith('__local_')) return;               // never accept device-private keys
         if (isTextarea && active.dataset.key === k) return; // don't clobber active edit
         if (k === activeBlockKey) return;
+        if (!k.startsWith('device_') && localStorage.getItem(k) !== data[k]) nonPresenceChanged = true;
         localStorage.setItem(k, data[k]);
       });
       _fbApplyingRemote = false;
-      refreshFromStorage(isBlockInput);
+      renderDevices();
+      // A pure heartbeat shouldn't rebuild the whole timeline — only refresh on real data changes
+      if (nonPresenceChanged) refreshFromStorage(isBlockInput);
     }
 
     function refreshFromStorage(skipFocusRebuild) {
@@ -1258,6 +1268,88 @@ renderToday();
 
     function syncSignOut() { if (window.firebase && firebase.apps.length) firebase.auth().signOut(); }
 
+    // ===== Device presence =====
+    // Each device writes a heartbeat (name + timestamp) through the normal sync
+    // channel; every device then lists who's been seen recently. No rules change.
+    let _presenceTimer = null;
+    const HEARTBEAT_MS = 90 * 1000;      // how often we beat
+    const ACTIVE_MS = 3 * 60 * 1000;     // "active now" threshold
+    const LIST_MS = 10 * 60 * 1000;      // hide devices not seen within this
+
+    function deviceId() {
+      let id = localStorage.getItem('__local_deviceId');
+      if (!id) { id = 'd' + Math.random().toString(36).slice(2, 10); localStorage.setItem('__local_deviceId', id); }
+      return id;
+    }
+
+    function deviceName() {
+      const ua = navigator.userAgent;
+      let os = 'Device';
+      if (/iPhone/.test(ua)) os = 'iPhone';
+      else if (/iPad/.test(ua)) os = 'iPad';
+      else if (/Android/.test(ua)) os = 'Android';
+      else if (/Macintosh|Mac OS X/.test(ua)) os = 'Mac';
+      else if (/Windows/.test(ua)) os = 'Windows';
+      else if (/Linux/.test(ua)) os = 'Linux';
+      let br = 'Browser';
+      if (/Firefox\//.test(ua)) br = 'Firefox';
+      else if (/Edg\//.test(ua)) br = 'Edge';
+      else if (/CriOS\/|Chrome\//.test(ua)) br = 'Chrome';
+      else if (/Safari\//.test(ua)) br = 'Safari';
+      const installed = window.matchMedia('(display-mode: standalone)').matches || navigator.standalone;
+      return os + ' · ' + br + (installed ? ' (app)' : '');
+    }
+
+    function pruneOldDevices() {
+      const cutoff = Date.now() - 14 * 24 * 60 * 60 * 1000; // 14 days
+      for (let i = localStorage.length - 1; i >= 0; i--) {
+        const k = localStorage.key(i);
+        if (!k || !k.startsWith('device_')) continue;
+        const v = storage.get(k);
+        if (!v || !v.lastSeen || v.lastSeen < cutoff) localStorage.removeItem(k);
+      }
+    }
+
+    function heartbeat() {
+      storage.set('device_' + deviceId(), { name: deviceName(), lastSeen: Date.now() });
+      renderDevices();
+    }
+
+    function startPresence() {
+      pruneOldDevices();
+      heartbeat();
+      clearInterval(_presenceTimer);
+      _presenceTimer = setInterval(heartbeat, HEARTBEAT_MS);
+    }
+    function stopPresence() { clearInterval(_presenceTimer); _presenceTimer = null; }
+
+    function presenceAgo(ms) { const m = Math.round(ms / 60000); return m < 1 ? 'just now' : m + 'm ago'; }
+
+    function renderDevices() {
+      const host = document.getElementById('sync-devices');
+      if (!host) return;
+      if (!_fbDocRef) { host.innerHTML = ''; return; }
+      const me = deviceId();
+      const now = Date.now();
+      const list = [];
+      for (let i = 0; i < localStorage.length; i++) {
+        const k = localStorage.key(i);
+        if (!k.startsWith('device_')) continue;
+        const v = storage.get(k);
+        if (v && v.lastSeen && now - v.lastSeen < LIST_MS) list.push({ id: k.slice(7), name: v.name, lastSeen: v.lastSeen });
+      }
+      list.sort((a, b) => b.lastSeen - a.lastSeen);
+      host.innerHTML = '<div style="color:#778; font-size:0.74rem; margin-bottom:4px;">Connected devices</div>' + (
+        list.length ? list.map(d => {
+          const active = now - d.lastSeen < ACTIVE_MS;
+          const dot = `<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${active ? '#33d17a' : '#667'};margin-right:7px;flex-shrink:0;"></span>`;
+          const meTag = d.id === me ? ' <span style="color:var(--primary);">(this device)</span>' : '';
+          const when = active ? 'active now' : presenceAgo(now - d.lastSeen);
+          return `<div style="display:flex;align-items:center;font-size:0.82rem;color:#aab;padding:2px 0;">${dot}<span>${escapeHtml(d.name)}${meTag} <span style="color:#667;">· ${when}</span></span></div>`;
+        }).join('') : '<div style="color:#667; font-size:0.82rem;">No active devices</div>'
+      );
+    }
+
     (function initSync() {
       if (!window.firebase || !FIREBASE_CONFIG.apiKey) { syncStatus('Sync not configured'); return; }
       firebase.initializeApp(FIREBASE_CONFIG);
@@ -1268,9 +1360,10 @@ renderToday();
       auth.onAuthStateChanged(user => {
         document.getElementById('sync-signin').style.display = user ? 'none' : '';
         document.getElementById('sync-signout').style.display = user ? '' : 'none';
-        if (!user) { _fbDocRef = null; syncStatus('Not signed in'); return; }
+        if (!user) { _fbDocRef = null; stopPresence(); renderDevices(); syncStatus('Not signed in'); return; }
         syncStatus('Signed in as ' + (user.email || user.uid));
         _fbDocRef = db.collection('users').doc(user.uid);
+        startPresence();
         let first = true;
         _fbDocRef.onSnapshot(snap => {
           const remote = snap.exists ? (snap.data().data || {}) : null;
