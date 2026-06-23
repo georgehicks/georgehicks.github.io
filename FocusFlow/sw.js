@@ -1,4 +1,4 @@
-const CACHE = 'focusflow-v31';
+const CACHE = 'focusflow-v32';
 const ASSETS = ['./focus-flow.html', './manifest.json', './icon.svg'];
 
 self.addEventListener('install', e => {
@@ -17,7 +17,18 @@ self.addEventListener('activate', e => {
 
 self.addEventListener('fetch', e => {
   if (e.request.method !== 'GET') return;
-  e.respondWith(
-    caches.match(e.request).then(cached => cached || fetch(e.request))
-  );
+  const req = e.request;
+  const isHTML = req.mode === 'navigate' || (req.headers.get('accept') || '').includes('text/html');
+  if (isHTML) {
+    // Network-first: a new deploy loads immediately; cache is only the offline fallback
+    e.respondWith(
+      fetch(req).then(res => {
+        const copy = res.clone();
+        caches.open(CACHE).then(c => c.put('./focus-flow.html', copy));
+        return res;
+      }).catch(() => caches.match(req).then(c => c || caches.match('./focus-flow.html')))
+    );
+  } else {
+    e.respondWith(caches.match(req).then(c => c || fetch(req)));
+  }
 });
