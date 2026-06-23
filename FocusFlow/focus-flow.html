@@ -117,7 +117,7 @@
     .tchip.sel { background:rgba(0,255,204,0.15); border-color:var(--primary); color:var(--primary); }
 
     /* Pick tab */
-    .pick-list { background:#151a28; border:1px solid #252b40; border-radius:0 6px 6px 6px; padding:8px 10px; min-height:320px; }
+    .pick-list { background:#151a28; border:1px solid #252b40; border-radius:0 6px 6px 6px; padding:8px 10px; min-height:max(300px, calc(100dvh - 260px)); }
     .pick-item { display:flex; align-items:center; gap:8px; padding:4px 0; font-size:0.9rem; }
     .pick-item.step { padding-left:18px; font-size:0.84rem; color:#9aabbd; }
     .pick-item .ptext { flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
@@ -128,7 +128,7 @@
     .pick-empty, .today-empty { color:#556; font-size:0.85rem; padding:8px 2px; }
 
     /* Today summary (read-only) */
-    .today-summary { background:#151a28; border:1px solid #252b40; border-radius:0 6px 6px 6px; padding:10px 12px; min-height:60px; }
+    .today-summary { background:#151a28; border:1px solid #252b40; border-radius:0 6px 6px 6px; padding:10px 12px; min-height:max(300px, calc(100dvh - 260px)); }
     .today-summary.compact { min-height:0; padding:8px 10px; }
     .today-row { display:flex; align-items:center; gap:8px; padding:3px 0; font-size:0.9rem; }
     .today-dot { width:17px; height:17px; border-radius:50%; flex-shrink:0; display:flex; align-items:center; justify-content:center; font-size:0.68rem; font-weight:700; color:#0f1117; }
@@ -202,7 +202,7 @@
         <div id="appointment-list"></div>
       </div>
       <div id="plan-deliverables" class="subpanel">
-        <textarea id="deliverables-notes" class="notes sync-notes" data-key="deliverables" placeholder="One deliverable per line.&#10;Indent its steps with a leading - dash:&#10;Ship the report&#10;- draft outline&#10;- pull numbers" style="min-height:320px;"></textarea>
+        <textarea id="deliverables-notes" class="notes sync-notes" data-key="deliverables" placeholder="One deliverable per line.&#10;Indent its steps with a leading - dash:&#10;Ship the report&#10;- draft outline&#10;- pull numbers" style="min-height:max(300px, calc(100dvh - 260px));"></textarea>
       </div>
       <div id="plan-pick" class="subpanel" style="display:none;">
         <div id="pick-list" class="pick-list"></div>
@@ -211,7 +211,7 @@
         <div id="today-summary" class="today-summary"></div>
       </div>
       <div id="plan-notes" class="subpanel" style="display:none;">
-        <textarea id="daily-notes" class="notes sync-notes" data-key="dailyNotes" placeholder="Quick notes, brain dump, loose thoughts…" style="min-height:320px;"></textarea>
+        <textarea id="daily-notes" class="notes sync-notes" data-key="dailyNotes" placeholder="Quick notes, brain dump, loose thoughts…" style="min-height:max(300px, calc(100dvh - 260px));"></textarea>
       </div>
     </div>
   </div>
