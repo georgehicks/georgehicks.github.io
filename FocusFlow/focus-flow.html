@@ -175,29 +175,31 @@
 
   <!-- PLAN TAB -->
   <div id="panel-plan" class="section">
-    <div class="plan-form">
-      <input id="plan-text" type="text" class="plan-input" placeholder="Appointment title">
-      <div class="time-pills">
-        <button type="button" id="pill-start" class="time-pill active" onclick="setTarget('start')">Start<span id="pill-start-val">—</span></button>
-        <button type="button" id="pill-end" class="time-pill" onclick="setTarget('end')">End<span id="pill-end-val">—</span></button>
-      </div>
-      <div class="chip-row" id="hour-chips"></div>
-      <div class="chip-row" id="min-chips"></div>
-      <div class="chip-row" id="dur-chips"></div>
-      <button onclick="addAppointment()" class="plan-btn" style="width:100%;">+ Add Appointment</button>
-    </div>
-    <div id="appointment-list"></div>
-
-    <!-- Plan sub-tabs: Deliverables / Pick / Today / Notes -->
-    <div style="margin-top:12px;">
+    <!-- Plan sub-tabs: Cal / Deliverables / Pick / Today / Notes -->
+    <div style="margin-top:0;">
       <div class="notes-header">
         <div class="notes-tabs">
+          <span class="notes-tab" data-target="plan-cal">Cal</span>
           <span class="notes-tab active" data-target="plan-deliverables">Deliverables</span>
           <span class="notes-tab" data-target="plan-pick">Pick</span>
           <span class="notes-tab" data-target="plan-today">Today</span>
           <span class="notes-tab" data-target="plan-notes">Notes</span>
         </div>
         <button class="export-btn" onclick="exportData()" title="Export today's data">📤</button>
+      </div>
+      <div id="plan-cal" class="subpanel" style="display:none;">
+        <div class="plan-form">
+          <input id="plan-text" type="text" class="plan-input" placeholder="Appointment title">
+          <div class="time-pills">
+            <button type="button" id="pill-start" class="time-pill active" onclick="setTarget('start')">Start<span id="pill-start-val">—</span></button>
+            <button type="button" id="pill-end" class="time-pill" onclick="setTarget('end')">End<span id="pill-end-val">—</span></button>
+          </div>
+          <div class="chip-row" id="hour-chips"></div>
+          <div class="chip-row" id="min-chips"></div>
+          <div class="chip-row" id="dur-chips"></div>
+          <button onclick="addAppointment()" class="plan-btn" style="width:100%;">+ Add Appointment</button>
+        </div>
+        <div id="appointment-list"></div>
       </div>
       <div id="plan-deliverables" class="subpanel">
         <textarea id="deliverables-notes" class="notes sync-notes" data-key="deliverables" placeholder="One deliverable per line.&#10;Indent its steps with a leading - dash:&#10;Ship the report&#10;- draft outline&#10;- pull numbers" style="min-height:320px;"></textarea>
