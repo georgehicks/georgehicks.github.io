@@ -142,6 +142,7 @@
     .tray-chip:hover { background:#2c3656; color:#dde; }
     .tray-chip .tc-dot { display:inline-block; width:7px; height:7px; border-radius:50%; margin-right:5px; vertical-align:middle; }
     .tray-chip .tc-dot.p1{background:#00ffcc;} .tray-chip .tc-dot.p2{background:#ffcc00;} .tray-chip .tc-dot.p3{background:#ff8866;}
+    .tray-chip.same { background:#243047; border-color:#3a4a70; color:#cfe0ff; }
 
   </style>
 </head>
@@ -853,14 +854,53 @@
       });
     }
 
+    // Most recent non-empty slot logged before this block (for the "same" chip)
+    function lastSlotInput(beforeMinutes) {
+      const today = todayKey();
+      let best = null;
+      for (let i = 0; i < localStorage.length; i++) {
+        const k = localStorage.key(i);
+        const m = k && k.match(/^block_(.+)_(\d+)$/);
+        if (!m || m[1] !== today) continue;
+        const mins = parseInt(m[2]);
+        if (mins >= beforeMinutes) continue;
+        const v = storage.get(k);
+        if (v && String(v).trim() && (best === null || mins > best.mins)) best = { mins, text: String(v).trim() };
+      }
+      return best ? best.text : null;
+    }
+
     function showTray(input) {
       const block = input.closest('.time-block');
       if (!block) return;
       block.querySelectorAll('.tray').forEach(t => t.remove());
       const items = trayItems();
-      if (items.length === 0) return;
+      const blockMin = parseInt((input.id || '').replace('block-input-', '')) || 0;
+      const last = lastSlotInput(blockMin);
+
       const tray = document.createElement('div');
       tray.className = 'tray';
+
+      const appendText = (text, key) => {
+        const cur = input.value.trim();
+        input.value = cur ? cur + ', ' + text : text;
+        input.dispatchEvent(new Event('input'));
+        if (key) { const mru = getMRU().filter(k => k !== key); mru.unshift(key); saveMRU(mru); }
+        input.focus();
+        showTray(input);
+      };
+
+      // "Same as last slot" first — unless that text is already a today-item chip
+      if (last && !items.some(it => it.text === last)) {
+        const chip = document.createElement('span');
+        chip.className = 'tray-chip same';
+        chip.title = 'Same as last: ' + last;
+        chip.innerHTML = '↻ ' + escapeHtml(last.length > 20 ? last.slice(0, 19) + '…' : last);
+        chip.addEventListener('mousedown', e => e.preventDefault());
+        chip.addEventListener('click', () => appendText(last, null));
+        tray.appendChild(chip);
+      }
+
       items.forEach(it => {
         const chip = document.createElement('span');
         chip.className = 'tray-chip';
@@ -868,19 +908,11 @@
         const label = it.text.length > 22 ? it.text.slice(0, 21) + '…' : it.text;
         chip.innerHTML = `<span class="tc-dot p${it.prio}"></span>${escapeHtml(label)}`;
         chip.addEventListener('mousedown', e => e.preventDefault()); // keep input focused
-        chip.addEventListener('click', () => {
-          const cur = input.value.trim();
-          input.value = cur ? cur + ', ' + it.text : it.text;
-          input.dispatchEvent(new Event('input'));
-          const mru = getMRU().filter(k => k !== it.key);
-          mru.unshift(it.key);
-          saveMRU(mru);
-          input.focus();
-          showTray(input); // rebuild so most-recent floats to front
-        });
+        chip.addEventListener('click', () => appendText(it.text, it.key));
         tray.appendChild(chip);
       });
-      block.appendChild(tray);
+
+      if (tray.children.length) block.appendChild(tray);
     }
 
     function currentBlockMinutes() {
