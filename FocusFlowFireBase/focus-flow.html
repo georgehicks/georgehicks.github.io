@@ -594,6 +594,10 @@
     function buildFocusTimeline() {
       const container = document.getElementById('focus-timeline');
       const notesSection = document.getElementById('focus-notes-section');
+      // If the user is typing in the docked notes, remember focus+caret so reparenting doesn't drop it
+      const ae = document.activeElement;
+      const keepFocus = notesSection && ae && notesSection.contains(ae)
+        ? { el: ae, s: ae.selectionStart, e: ae.selectionEnd } : null;
       if (notesSection) document.getElementById('panel-focus').appendChild(notesSection); // park safely before clearing
       container.innerHTML = '';
       let magWindow = null;
@@ -753,6 +757,7 @@
       }
       // Dock the Today/Notes panel to the footer of the magnified hour so it stays in view
       if (notesSection) (magWindow || container).appendChild(notesSection);
+      if (keepFocus) { keepFocus.el.focus({ preventScroll: true }); try { keepFocus.el.setSelectionRange(keepFocus.s, keepFocus.e); } catch (_) {} }
       start10MinProgressBar();
     }
 
@@ -1388,6 +1393,7 @@ renderToday();
       const active = document.activeElement;
       const isTextarea = active && active.tagName === 'TEXTAREA' && active.dataset && active.dataset.key;
       const isBlockInput = active && active.classList && active.classList.contains('block-input');
+      const inNotes = active && document.getElementById('focus-notes-section') && document.getElementById('focus-notes-section').contains(active);
       const activeBlockKey = isBlockInput ? `block_${todayKey()}_${active.id.replace('block-input-','')}` : null;
       _fbApplyingRemote = true;
       let nonPresenceChanged = false;
@@ -1400,8 +1406,9 @@ renderToday();
       });
       _fbApplyingRemote = false;
       renderDevices();
-      // A pure heartbeat shouldn't rebuild the whole timeline — only refresh on real data changes
-      if (nonPresenceChanged) refreshFromStorage(isBlockInput);
+      // A pure heartbeat shouldn't rebuild the whole timeline — only refresh on real data changes,
+      // and never rebuild (which would steal focus) while typing in a block input or the notes panel
+      if (nonPresenceChanged) refreshFromStorage(isBlockInput || inNotes);
     }
 
     function refreshFromStorage(skipFocusRebuild) {

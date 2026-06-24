@@ -570,6 +570,10 @@
     function buildFocusTimeline() {
       const container = document.getElementById('focus-timeline');
       const notesSection = document.getElementById('focus-notes-section');
+      // If the user is typing in the docked notes, remember focus+caret so reparenting doesn't drop it
+      const ae = document.activeElement;
+      const keepFocus = notesSection && ae && notesSection.contains(ae)
+        ? { el: ae, s: ae.selectionStart, e: ae.selectionEnd } : null;
       if (notesSection) document.getElementById('panel-focus').appendChild(notesSection); // park safely before clearing
       container.innerHTML = '';
       let magWindow = null;
@@ -729,6 +733,7 @@
       }
       // Dock the Today/Notes panel to the footer of the magnified hour so it stays in view
       if (notesSection) (magWindow || container).appendChild(notesSection);
+      if (keepFocus) { keepFocus.el.focus({ preventScroll: true }); try { keepFocus.el.setSelectionRange(keepFocus.s, keepFocus.e); } catch (_) {} }
       start10MinProgressBar();
     }
 
