@@ -1,4 +1,4 @@
-const CACHE = 'focusflowfb-v16';
+const CACHE = 'focusflowfb-v17';
 const ASSETS = ['./focus-flow.html', './manifest.json', './icon.svg'];
 
 self.addEventListener('install', e => {

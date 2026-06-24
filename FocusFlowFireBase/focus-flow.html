@@ -220,7 +220,7 @@
   <!-- FOCUS TAB -->
   <div id="panel-focus" class="section" style="display:none;">
     <div id="focus-timeline" class="timeline"></div>
-    <div style="margin-top:10px;">
+    <div id="focus-notes-section" style="margin-top:10px;">
       <div class="notes-header">
         <div class="notes-tabs">
           <span class="notes-tab active" data-target="focus-today">Today</span>
@@ -590,7 +590,10 @@
 
     function buildFocusTimeline() {
       const container = document.getElementById('focus-timeline');
+      const notesSection = document.getElementById('focus-notes-section');
+      if (notesSection) document.getElementById('panel-focus').appendChild(notesSection); // park safely before clearing
       container.innerHTML = '';
+      let magWindow = null;
 
       const now = new Date();
       const nowMinutes = now.getHours() * 60 + now.getMinutes();
@@ -743,8 +746,10 @@
           winWrapper.appendChild(block);
         }
 
-        if (winWrapper.children.length > 0) container.appendChild(winWrapper);
+        if (winWrapper.children.length > 0) { container.appendChild(winWrapper); magWindow = winWrapper; }
       }
+      // Dock the Today/Notes panel to the footer of the magnified hour so it stays in view
+      if (notesSection) (magWindow || container).appendChild(notesSection);
       start10MinProgressBar();
     }
 
