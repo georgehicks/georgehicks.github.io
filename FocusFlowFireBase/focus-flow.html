@@ -134,6 +134,9 @@
     .today-dot { width:17px; height:17px; border-radius:50%; flex-shrink:0; display:flex; align-items:center; justify-content:center; font-size:0.68rem; font-weight:700; color:#0f1117; }
     .today-dot.p1 { background:#00ffcc; } .today-dot.p2 { background:#ffcc00; } .today-dot.p3 { background:#ff8866; }
     .today-row .tparent { color:#566; }
+    .today-row .t-txt { flex:1; min-width:0; }
+    .today-done { margin-left:auto; background:none; border:1px solid #2a3350; color:#6a7a55; border-radius:6px; font-size:0.8rem; cursor:pointer; padding:1px 8px; flex-shrink:0; }
+    .today-done:hover { color:#4caf50; border-color:#3a5a30; }
 
     /* Focus block tray */
     .time-block.magnified { flex-wrap: wrap; }
@@ -790,17 +793,20 @@
     // Each non-dash line is a deliverable; following lines starting with "-" are its steps.
     function parseDeliverables(text) {
       const items = [];
-      (text || '').split('\n').forEach(line => {
+      (text || '').split('\n').forEach((line, idx) => {
         const raw = line.trim();
         if (!raw) return;
-        if (raw[0] === '-') {
-          const stepText = raw.replace(/^-+\s*/, '').trim();
+        const done = /\s+DONE$/.test(raw);            // line ends with the DONE marker
+        const body = raw.replace(/\s+DONE$/, '').trim();
+        if (!body) return;
+        if (body[0] === '-') {
+          const stepText = body.replace(/^-+\s*/, '').trim();
           if (!stepText) return;
           const parent = [...items].reverse().find(i => !i.isStep);
           items.push({ text: stepText, isStep: true, parent: parent ? parent.text : null,
-                       key: (parent ? parent.text + ' ▸ ' : '') + stepText });
+                       key: (parent ? parent.text + ' ▸ ' : '') + stepText, done, lineIndex: idx });
         } else {
-          items.push({ text: raw, isStep: false, parent: null, key: raw });
+          items.push({ text: body, isStep: false, parent: null, key: body, done, lineIndex: idx });
         }
       });
       return items;
@@ -823,7 +829,7 @@
     function renderPick() {
       const host = document.getElementById('pick-list');
       if (!host) return;
-      const items = parseDeliverables(getDeliverablesText());
+      const items = parseDeliverables(getDeliverablesText()).filter(it => !it.done);
       const picks = getPicks();
       host.innerHTML = '';
       if (items.length === 0) {
@@ -852,7 +858,7 @@
       const picks = getPicks();
       return items
         .map((it, i) => ({ ...it, prio: picks[it.key], order: i }))
-        .filter(it => it.prio);
+        .filter(it => it.prio && !it.done);
     }
 
     function renderToday() {
@@ -861,11 +867,24 @@
         ? '<div class="today-empty">No items picked yet — use the Pick tab to set priorities.</div>'
         : picked.map(it => {
             const parent = it.isStep && it.parent ? `<span class="tparent">${escapeHtml(it.parent)} ▸ </span>` : '';
-            return `<div class="today-row"><span class="today-dot p${it.prio}">${it.prio}</span><span>${parent}${escapeHtml(it.text)}</span></div>`;
+            return `<div class="today-row"><span class="today-dot p${it.prio}">${it.prio}</span><span class="t-txt">${parent}${escapeHtml(it.text)}</span><button class="today-done" title="Mark done" onclick="markItemDone(${it.lineIndex})">✓</button></div>`;
           }).join('');
       ['today-summary', 'focus-today-summary'].forEach(id => {
         const el = document.getElementById(id); if (el) el.innerHTML = html;
       });
+    }
+
+    // Mark a Today item done: append " DONE" to its Deliverables line (hides it from Pick/Today)
+    function markItemDone(lineIndex) {
+      const lines = getDeliverablesText().split('\n');
+      if (lineIndex < 0 || lineIndex >= lines.length) return;
+      if (!/\s+DONE$/.test(lines[lineIndex].trim())) {
+        lines[lineIndex] = lines[lineIndex].replace(/\s+$/, '') + ' DONE';
+      }
+      const newText = lines.join('\n');
+      storage.set('deliverables', newText);
+      document.querySelectorAll('textarea.sync-notes[data-key="deliverables"]').forEach(el => el.value = newText);
+      renderPick(); renderToday();
     }
 
     // Tray order: most-recently-used first, then remaining picks by priority.
