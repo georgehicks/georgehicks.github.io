@@ -36,6 +36,8 @@
 
     .section { background: var(--card); border-radius: 12px; padding: 12px; margin-bottom: 12px; }
 
+    .timeline { height: calc(100dvh - 250px); min-height: 320px; overflow-y: auto; overflow-x: hidden; scroll-behavior: smooth; }
+
     /* Hour rows — readable scaffold */
     .time-block {
       display: flex; align-items: center; padding: 5px 12px; margin-bottom: 2px;
@@ -591,6 +593,17 @@
     // FOCUS TAB
     let windowStartMinutes = getCurrentWindowStart();
 
+    function scrollCurrentBlockIntoView() {
+      const container = document.getElementById('focus-timeline');
+      if (!container) return;
+      const cur = container.querySelector('.time-block.magnified.current');
+      const target = cur || container.querySelector('.magnified-window');
+      if (!target) return;
+      const top = target.getBoundingClientRect().top - container.getBoundingClientRect().top + container.scrollTop;
+      const offset = cur ? Math.max(12, (container.clientHeight - cur.clientHeight) / 2) : 12;
+      container.scrollTop = Math.max(0, top - offset);
+    }
+
     function buildFocusTimeline() {
       const container = document.getElementById('focus-timeline');
       const notesSection = document.getElementById('focus-notes-section');
@@ -758,6 +771,9 @@
       // Dock the Today/Notes panel to the footer of the magnified hour so it stays in view
       if (notesSection) (magWindow || container).appendChild(notesSection);
       if (keepFocus) { keepFocus.el.focus({ preventScroll: true }); try { keepFocus.el.setSelectionRange(keepFocus.s, keepFocus.e); } catch (_) {} }
+      // Re-center the current block in the timeline on each (re)build, unless editing inside it
+      const ae2 = document.activeElement;
+      if (!(ae2 && container.contains(ae2) && (ae2.tagName === 'INPUT' || ae2.tagName === 'TEXTAREA'))) scrollCurrentBlockIntoView();
       start10MinProgressBar();
     }
 
