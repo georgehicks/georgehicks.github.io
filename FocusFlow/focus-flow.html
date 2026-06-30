@@ -38,6 +38,13 @@
 
     .timeline { height: calc(100dvh - 250px); min-height: 320px; overflow-y: auto; overflow-x: hidden; scroll-behavior: smooth; }
 
+    /* Refined, subtle scrollbars */
+    .timeline, .notes, .pick-list, .today-summary { scrollbar-width: thin; scrollbar-color: rgba(120,140,180,0.28) transparent; }
+    .timeline::-webkit-scrollbar, .notes::-webkit-scrollbar, .pick-list::-webkit-scrollbar, .today-summary::-webkit-scrollbar { width: 7px; height: 7px; }
+    .timeline::-webkit-scrollbar-track, .notes::-webkit-scrollbar-track, .pick-list::-webkit-scrollbar-track, .today-summary::-webkit-scrollbar-track { background: transparent; }
+    .timeline::-webkit-scrollbar-thumb, .notes::-webkit-scrollbar-thumb, .pick-list::-webkit-scrollbar-thumb, .today-summary::-webkit-scrollbar-thumb { background: rgba(120,140,180,0.25); border-radius: 10px; }
+    .timeline::-webkit-scrollbar-thumb:hover, .notes::-webkit-scrollbar-thumb:hover, .pick-list::-webkit-scrollbar-thumb:hover, .today-summary::-webkit-scrollbar-thumb:hover { background: rgba(120,140,180,0.45); }
+
     /* Hour rows — readable scaffold */
     .time-block {
       display: flex; align-items: center; padding: 5px 12px; margin-bottom: 2px;
