@@ -308,6 +308,15 @@
       <div id="sync-devices" style="margin-top:10px;"></div>
     </div>
     <div style="margin-top:20px; padding-top:16px; border-top:1px solid #252b3d;">
+      <strong>Recover Notes</strong><br>
+      <div style="color:#888; font-size:0.8rem; margin-top:4px;">Auto-saved snapshots, in case a stray edit wipes something out.</div>
+      <select id="recover-key" style="width:100%; padding:8px; margin-top:8px; background:#252b3d; color:#ddd; border:1px solid #333; border-radius:6px;">
+        <option value="deliverables">Deliverables</option>
+        <option value="dailyNotes">Daily Notes</option>
+      </select>
+      <div id="recover-list" style="margin-top:8px;"></div>
+    </div>
+    <div style="margin-top:20px; padding-top:16px; border-top:1px solid #252b3d;">
       <strong>Reset</strong><br>
       <button onclick="resetDay()" style="width:100%; margin-top:8px; padding:10px; background:#2a1a1a; color:#ff6b6b; border:1px solid #5a2020; border-radius:8px; cursor:pointer;">🗑 Reset Today's Notes &amp; Goals</button>
     </div>
@@ -339,6 +348,33 @@
     };
 
     const storage = { data: {}, get(k){try{return JSON.parse(localStorage.getItem(k));}catch(e){return this.data[k]||null;}}, set(k,v){try{localStorage.setItem(k,JSON.stringify(v));}catch(e){this.data[k]=v;}} };
+
+    // ---- Notes snapshot history (recover from an edit that accidentally wipes a field) ----
+    const NOTES_HISTORY_KEYS = ['deliverables', 'dailyNotes'];
+    const NOTES_CHECKPOINT_MS = 20000;
+    let lastNotesCheckpoint = {};
+    function notesHistoryKey(key) { return `notesHistory_${key}`; }
+    function getNotesHistory(key) { return storage.get(notesHistoryKey(key)) || []; }
+    function pushNotesHistory(key, value) {
+      if (!value || !value.trim()) return;
+      const hist = getNotesHistory(key);
+      if (hist.length && hist[0].value === value) return;
+      hist.unshift({ value, ts: Date.now() });
+      storage.set(notesHistoryKey(key), hist.slice(0, 5));
+    }
+    // Snapshot the previous value before an edit overwrites it: immediately if the
+    // text just shrank a lot (likely an accidental select-all + type), otherwise
+    // throttled so normal typing doesn't spam the history with near-duplicates.
+    function checkpointNotes(key, oldValue, newValue) {
+      if (!oldValue || !oldValue.trim()) return;
+      const now = Date.now();
+      const droppedBig = oldValue.length > 20 && newValue.length < oldValue.length * 0.5;
+      const stale = !lastNotesCheckpoint[key] || (now - lastNotesCheckpoint[key] > NOTES_CHECKPOINT_MS);
+      if (droppedBig || stale) {
+        pushNotesHistory(key, oldValue);
+        lastNotesCheckpoint[key] = now;
+      }
+    }
 
     function todayKey() {
       const d = new Date();
@@ -1021,6 +1057,7 @@
       document.getElementById('panel-focus').style.display = n === 1 ? 'block' : 'none';
       document.getElementById('panel-settings').style.display = n === 2 ? 'block' : 'none';
       if (n === 1) { windowStartMinutes = getCurrentWindowStart(); buildFocusTimeline(); renderToday(); }
+      if (n === 2) renderRecoverList();
     }
 
     function addWheelListener() {
@@ -1341,13 +1378,53 @@
       document.querySelectorAll('textarea.sync-notes').forEach(el => {
         el.value = storage.get(el.dataset.key) || '';
         el.addEventListener('input', () => {
-          storage.set(el.dataset.key, el.value);
-          document.querySelectorAll(`textarea.sync-notes[data-key="${el.dataset.key}"]`).forEach(other => {
+          const key = el.dataset.key;
+          if (NOTES_HISTORY_KEYS.includes(key)) checkpointNotes(key, storage.get(key) || '', el.value);
+          storage.set(key, el.value);
+          document.querySelectorAll(`textarea.sync-notes[data-key="${key}"]`).forEach(other => {
             if (other !== el) other.value = el.value;
           });
         });
       });
     }
+
+    // ---- Recover Notes panel (Settings) ----
+    function renderRecoverList() {
+      const sel = document.getElementById('recover-key');
+      const host = document.getElementById('recover-list');
+      if (!sel || !host) return;
+      const key = sel.value;
+      const hist = getNotesHistory(key);
+      if (!hist.length) { host.innerHTML = '<div style="color:#555;font-size:0.85rem;">No snapshots yet — they build up as you edit.</div>'; return; }
+      host.innerHTML = '';
+      hist.forEach(entry => {
+        const row = document.createElement('div');
+        row.style.cssText = 'display:flex;align-items:center;gap:8px;margin-bottom:6px;background:#1a2030;border:1px solid #2a3555;border-radius:8px;padding:8px;';
+        const info = document.createElement('div');
+        info.style.cssText = 'flex:1;min-width:0;';
+        const time = document.createElement('div');
+        time.style.cssText = 'color:#8ab4f8;font-size:0.78rem;';
+        time.textContent = new Date(entry.ts).toLocaleString();
+        const preview = document.createElement('div');
+        preview.style.cssText = 'color:#888;font-size:0.8rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;';
+        preview.textContent = entry.value.slice(0, 80).replace(/\n/g, ' ↵ ') || '(empty)';
+        info.appendChild(time); info.appendChild(preview);
+        const btn = document.createElement('button');
+        btn.textContent = 'Restore';
+        btn.style.cssText = 'background:#252b3d;color:#ddd;border:1px solid #333;border-radius:6px;padding:6px 10px;cursor:pointer;flex-shrink:0;';
+        btn.addEventListener('click', () => {
+          if (!confirm('Restore this version? The current text will be saved as a snapshot first.')) return;
+          pushNotesHistory(key, storage.get(key) || '');
+          storage.set(key, entry.value);
+          document.querySelectorAll(`textarea.sync-notes[data-key="${key}"]`).forEach(t => t.value = entry.value);
+          if (key === 'deliverables') { renderPick(); renderToday(); }
+          renderRecoverList();
+        });
+        row.appendChild(info); row.appendChild(btn);
+        host.appendChild(row);
+      });
+    }
+    document.getElementById('recover-key')?.addEventListener('change', renderRecoverList);
 
     // Sub-tab switching — each .notes-tabs group toggles its own data-target panels
     document.querySelectorAll('.notes-tabs').forEach(group => {
