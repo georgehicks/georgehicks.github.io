@@ -41,7 +41,7 @@
   button { cursor: pointer; }
   :focus-visible { outline: 2px solid var(--brass); outline-offset: 2px; }
 
-  .page { min-height: 100vh; padding: 1.25rem 1.1rem 3rem; }
+  .page { min-height: 100vh; padding: calc(1.25rem + env(safe-area-inset-top, 0px)) 1.1rem calc(3rem + env(safe-area-inset-bottom, 0px)); }
   .wrap { max-width: 28rem; margin: 0 auto; }
 
   .topbar { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.6rem; min-height: 2rem; }
@@ -237,7 +237,16 @@
 
     <div class="view" data-view="session">
       <div class="exercise-track" id="exercise-track"></div>
-      <div class="session-stage" id="session-stage"></div>
+      <div class="session-stage" id="session-stage">
+        <div id="stage-round">
+          <p class="stage-instruction" id="stage-instruction"></p>
+          <div id="stage-visual"></div>
+          <input id="answer-input" class="answer-input" inputmode="numeric" pattern="-?[0-9]*" autocomplete="off" style="display:none;" />
+          <button id="check-btn" class="check-btn" type="button" style="display:none;">Check</button>
+          <div id="feedback" class="feedback"></div>
+        </div>
+        <div id="stage-summary" style="display:none;"></div>
+      </div>
     </div>
 
     <div class="view" data-view="progress">
@@ -474,17 +483,53 @@
 
   function startSession() {
     session = { rounds: buildSession(), idx: 0, results: [], mathTimes: [] };
+    document.getElementById('stage-round').style.display = '';
+    document.getElementById('stage-summary').style.display = 'none';
     showView('session');
     renderRound();
   }
 
-  function wireAnswerInput(onSubmit) {
+  // The answer input/button are persistent DOM nodes (see initPersistentInput)
+  // rather than being recreated per round. Recreating + refocusing them from
+  // inside a setTimeout silently fails to reopen the iOS keyboard, since iOS
+  // only allows .focus() to summon the keyboard in direct response to a real
+  // user gesture. Keeping the same node focused across rounds sidesteps that
+  // restriction entirely — the keyboard just never closes.
+  var currentSubmit = null;
+
+  function initPersistentInput() {
     var input = document.getElementById('answer-input');
     var btn = document.getElementById('check-btn');
-    input.focus();
-    function submit() { if (input.value.trim() !== '') onSubmit(); }
+    function submit() {
+      if (!currentSubmit) return;
+      if (input.value.trim() === '') return;
+      var fn = currentSubmit;
+      currentSubmit = null;
+      fn(input.value.trim());
+    }
     btn.addEventListener('click', submit);
     input.addEventListener('keydown', function (e) { if (e.key === 'Enter') submit(); });
+  }
+
+  function showAnswerField(opts) {
+    opts = opts || {};
+    var input = document.getElementById('answer-input');
+    var btn = document.getElementById('check-btn');
+    input.style.display = '';
+    btn.style.display = '';
+    input.value = '';
+    if (opts.maxLength) input.maxLength = opts.maxLength; else input.removeAttribute('maxlength');
+    input.classList.toggle('letters', !!opts.uppercase);
+    input.inputMode = opts.uppercase ? 'text' : 'numeric';
+    input.focus();
+  }
+
+  function hideAnswerField() {
+    var input = document.getElementById('answer-input');
+    var btn = document.getElementById('check-btn');
+    input.style.display = 'none';
+    btn.style.display = 'none';
+    input.blur();
   }
 
   function updateSessionProgressDots() {
@@ -509,18 +554,15 @@
 
   function renderMathRound(round, stage) {
     var p = round.problem;
-    stage.innerHTML =
-      '<p class="stage-instruction">Solve</p>' +
-      '<div class="equation-big">' + p.prompt + ' = ?</div>' +
-      '<input id="answer-input" class="answer-input" inputmode="numeric" pattern="-?[0-9]*" autocomplete="off" />' +
-      '<button id="check-btn" class="check-btn" type="button">Check</button>' +
-      '<div id="feedback" class="feedback"></div>';
+    document.getElementById('stage-instruction').textContent = 'Solve';
+    document.getElementById('stage-visual').innerHTML = '<div class="equation-big">' + p.prompt + ' = ?</div>';
+    document.getElementById('feedback').innerHTML = '';
+    showAnswerField({});
     round._startedAt = Date.now();
-    wireAnswerInput(function () {
-      var val = document.getElementById('answer-input').value.trim();
+    currentSubmit = function (val) {
       var correct = Number(val) === p.answer;
       handleMathResult(round, correct);
-    });
+    };
   }
 
   function handleMathResult(round, correct) {
@@ -528,8 +570,6 @@
     var ms = Date.now() - round._startedAt;
     session.mathTimes.push(ms);
     bumpLevel(p.type, correct);
-    document.getElementById('check-btn').disabled = true;
-    document.getElementById('answer-input').disabled = true;
     var fb = document.getElementById('feedback');
     if (correct) {
       state.xp += 10;
@@ -541,6 +581,7 @@
     } else {
       session.results.push({ kind: 'math', type: p.type, correct: false, ms: ms });
       addToReviewQueue(p);
+      hideAnswerField();
       fb.innerHTML = '<span class="fb-bad">Not quite — answer is ' + p.answer + '.</span><p class="hint">' + genHint(p) + '</p><button id="continue-btn" class="continue-btn" type="button">Continue</button>';
       saveState();
       document.getElementById('continue-btn').addEventListener('click', function () { session.idx++; renderRound(); });
@@ -551,9 +592,10 @@
     var spec = round.spec;
     if (!round._phase) round._phase = 'watch';
     if (round._phase === 'watch') {
-      stage.innerHTML =
-        '<p class="stage-instruction">Watch the sequence' + (spec.direction === 'backward' ? ' — you’ll recall it in reverse' : '') + '</p>' +
-        '<div class="ds-display" id="ds-display">·</div>';
+      hideAnswerField();
+      document.getElementById('stage-instruction').textContent = 'Watch the sequence' + (spec.direction === 'backward' ? ' — you’ll recall it in reverse' : '');
+      document.getElementById('stage-visual').innerHTML = '<div class="ds-display" id="ds-display">·</div>';
+      document.getElementById('feedback').innerHTML = '';
       var display = document.getElementById('ds-display');
       var i = 0;
       function showNext() {
@@ -566,15 +608,13 @@
       setTimeout(showNext, 450);
     } else {
       var target = spec.direction === 'forward' ? spec.digits.join('') : spec.digits.slice().reverse().join('');
-      stage.innerHTML =
-        '<p class="stage-instruction">Enter the digits ' + (spec.direction === 'backward' ? 'in reverse order' : 'in order') + '</p>' +
-        '<input id="answer-input" class="answer-input" inputmode="numeric" pattern="[0-9]*" autocomplete="off" maxlength="' + spec.digits.length + '" />' +
-        '<button id="check-btn" class="check-btn" type="button">Check</button>' +
-        '<div id="feedback" class="feedback"></div>';
-      wireAnswerInput(function () {
-        var val = document.getElementById('answer-input').value.trim();
+      document.getElementById('stage-instruction').textContent = 'Enter the digits ' + (spec.direction === 'backward' ? 'in reverse order' : 'in order');
+      document.getElementById('stage-visual').innerHTML = '';
+      document.getElementById('feedback').innerHTML = '';
+      showAnswerField({ maxLength: spec.digits.length });
+      currentSubmit = function (val) {
         handleDigitSpanResult(round, val === target, target);
-      });
+      };
     }
   }
 
@@ -583,14 +623,13 @@
     bumpLevel(key, correct);
     if (correct) state.xp += 15;
     session.results.push({ kind: 'digitspan', correct: correct });
-    document.getElementById('check-btn').disabled = true;
-    document.getElementById('answer-input').disabled = true;
     var fb = document.getElementById('feedback');
     saveState();
     if (correct) {
       fb.innerHTML = '<span class="fb-ok">Correct — +15 XP</span>';
       setTimeout(function () { session.idx++; renderRound(); }, 700);
     } else {
+      hideAnswerField();
       fb.innerHTML = '<span class="fb-bad">The sequence was ' + target + '.</span><button id="continue-btn" class="continue-btn" type="button">Continue</button>';
       document.getElementById('continue-btn').addEventListener('click', function () { session.idx++; renderRound(); });
     }
@@ -600,12 +639,14 @@
     if (round._phase === undefined) { round._phase = 'rounds'; round._i = 0; round._collected = []; round._correctMath = 0; }
     if (round._phase === 'rounds') {
       if (round._i >= round.rounds.length) { round._phase = 'recall'; renderRound(); return; }
+      hideAnswerField();
       var r = round.rounds[round._i];
-      stage.innerHTML =
-        '<p class="stage-instruction">Verify, then remember the letter (' + (round._i + 1) + ' of ' + round.rounds.length + ')</p>' +
+      document.getElementById('stage-instruction').textContent = 'Verify, then remember the letter (' + (round._i + 1) + ' of ' + round.rounds.length + ')';
+      document.getElementById('stage-visual').innerHTML =
         '<div class="equation-big">' + r.problem.prompt + ' = ' + r.displayedAnswer + '?</div>' +
         '<div class="tf-row"><button id="tf-true" class="tf-btn true" type="button">TRUE</button><button id="tf-false" class="tf-btn false" type="button">FALSE</button></div>' +
         '<div class="ds-display" id="letter-display" style="opacity:0">·</div>';
+      document.getElementById('feedback').innerHTML = '';
       function answer(choice) {
         var correct = choice === r.isTrue;
         if (correct) round._correctMath++;
@@ -620,16 +661,14 @@
       document.getElementById('tf-true').addEventListener('click', function () { answer(true); });
       document.getElementById('tf-false').addEventListener('click', function () { answer(false); });
     } else {
-      stage.innerHTML =
-        '<p class="stage-instruction">Type the letters in the order they appeared</p>' +
-        '<input id="answer-input" class="answer-input letters" inputmode="text" autocomplete="off" maxlength="' + round._collected.length + '" style="text-transform:uppercase" />' +
-        '<button id="check-btn" class="check-btn" type="button">Check</button>' +
-        '<div id="feedback" class="feedback"></div>';
-      wireAnswerInput(function () {
-        var val = document.getElementById('answer-input').value.trim().toUpperCase();
+      document.getElementById('stage-instruction').textContent = 'Type the letters in the order they appeared';
+      document.getElementById('stage-visual').innerHTML = '';
+      document.getElementById('feedback').innerHTML = '';
+      showAnswerField({ maxLength: round._collected.length, uppercase: true });
+      currentSubmit = function (val) {
         var target = round._collected.join('');
-        handleOpSpanResult(round, val === target, target);
-      });
+        handleOpSpanResult(round, val.toUpperCase() === target, target);
+      };
     }
   }
 
@@ -637,14 +676,13 @@
     bumpLevel('opspan', correct);
     if (correct) state.xp += 25;
     session.results.push({ kind: 'opspan', correct: correct });
-    document.getElementById('check-btn').disabled = true;
-    document.getElementById('answer-input').disabled = true;
     var fb = document.getElementById('feedback');
     saveState();
     if (correct) {
       fb.innerHTML = '<span class="fb-ok">Correct — +25 XP</span>';
       setTimeout(function () { session.idx++; renderRound(); }, 800);
     } else {
+      hideAnswerField();
       fb.innerHTML = '<span class="fb-bad">The order was ' + target + '.</span><button id="continue-btn" class="continue-btn" type="button">Continue</button>';
       document.getElementById('continue-btn').addEventListener('click', function () { session.idx++; renderRound(); });
     }
@@ -675,7 +713,11 @@
     saveState();
 
     document.getElementById('exercise-track').innerHTML = '';
-    document.getElementById('session-stage').innerHTML =
+    hideAnswerField();
+    document.getElementById('stage-round').style.display = 'none';
+    var summaryEl = document.getElementById('stage-summary');
+    summaryEl.style.display = '';
+    summaryEl.innerHTML =
       '<div class="summary">' +
       '<p class="stage-instruction">Session complete</p>' +
       '<div class="summary-big">' + accuracy + '%</div>' +
@@ -804,6 +846,7 @@
 
   document.addEventListener('DOMContentLoaded', function () {
     applyTheme();
+    initPersistentInput();
     document.getElementById('start-session-btn').addEventListener('click', startSession);
     document.getElementById('progress-link').addEventListener('click', function () { showView('progress'); renderProgress(); });
     document.getElementById('home-link').addEventListener('click', function () { showView('home'); renderHome(); });
