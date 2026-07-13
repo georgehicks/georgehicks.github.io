@@ -158,6 +158,14 @@
   }
   .cta-btn.ghost { background: var(--surface); color: var(--ink); border: 1px solid var(--border); }
 
+  .weak-heading { color: var(--ink-muted); font-size: 0.8rem; margin: 1.3rem 0 0.6rem; }
+  .weak-list { display: flex; flex-wrap: wrap; gap: 0.4rem; justify-content: center; }
+  .weak-chip {
+    font-family: var(--font-mono); font-size: 0.8rem; font-variant-numeric: tabular-nums;
+    background: var(--surface-2); border: 1px solid var(--border); border-radius: 8px;
+    padding: 0.35rem 0.6rem;
+  }
+
   @media (prefers-reduced-motion: reduce) {
     .drill-progress-fill { transition: none; }
   }
@@ -199,6 +207,22 @@
       </button>
 
       <div id="ladder"></div>
+
+      <div class="section-label">Drills</div>
+      <button class="cta-secondary" id="mixed-single-btn" type="button">
+        <div>
+          <div class="cta-title">Single-Digit Mix</div>
+          <div class="cta-meta" id="mixed-single-meta"></div>
+        </div>
+        <div class="cta-arrow">→</div>
+      </button>
+      <button class="cta-secondary" id="mixed-double-btn" type="button">
+        <div>
+          <div class="cta-title">Double-Digit Mix</div>
+          <div class="cta-meta" id="mixed-double-meta"></div>
+        </div>
+        <div class="cta-arrow">→</div>
+      </button>
     </div>
 
     <div class="view" data-view="session">
@@ -225,6 +249,8 @@
   "use strict";
 
   /* ---------------- curriculum ---------------- */
+  function randInt(min, max) { return Math.floor(Math.random() * (max - min + 1)) + min; }
+
   function shuffle(arr) {
     for (var i = arr.length - 1; i > 0; i--) {
       var j = Math.floor(Math.random() * (i + 1));
@@ -332,15 +358,84 @@
   var GLOBAL_TIERS = assembleGlobalTiers();
   function getTierById(id) { return GLOBAL_TIERS.filter(function (t) { return t.id === id; })[0]; }
 
+  /* ---------------- mixed drills (random pairs, all four ops) ---------------- */
+  // Unlike the ladder tiers, these draw from an open-ended pool rather than a
+  // fixed fact list, so weak combos are tracked individually in
+  // state.factStats and resurfaced with higher probability in later sessions.
+  function genMixedFact(mode) {
+    var ops = ['add', 'sub', 'mul', 'div'];
+    var type = ops[randInt(0, ops.length - 1)];
+    var f;
+    if (mode === 'single') {
+      if (type === 'add') { var a = randInt(0, 9), b = randInt(0, 9); f = { type: 'add', a: a, b: b, answer: a + b, prompt: a + ' + ' + b }; }
+      else if (type === 'sub') { var a2 = randInt(0, 9), b2 = randInt(0, 9); if (b2 > a2) { var t = a2; a2 = b2; b2 = t; } f = { type: 'sub', a: a2, b: b2, answer: a2 - b2, prompt: a2 + ' − ' + b2 }; }
+      else if (type === 'mul') { var a3 = randInt(0, 9), b3 = randInt(0, 9); f = { type: 'mul', a: a3, b: b3, answer: a3 * b3, prompt: a3 + ' × ' + b3 }; }
+      else { var b4 = randInt(1, 9), q4 = randInt(0, 9), a4 = b4 * q4; f = { type: 'div', a: a4, b: b4, answer: q4, prompt: a4 + ' ÷ ' + b4 }; }
+    } else {
+      if (type === 'add') { var a5 = randInt(10, 99), b5 = randInt(10, 99); f = { type: 'add', a: a5, b: b5, answer: a5 + b5, prompt: a5 + ' + ' + b5 }; }
+      else if (type === 'sub') { var a6 = randInt(10, 99), b6 = randInt(10, 99); if (b6 > a6) { var t2 = a6; a6 = b6; b6 = t2; } f = { type: 'sub', a: a6, b: b6, answer: a6 - b6, prompt: a6 + ' − ' + b6 }; }
+      else if (type === 'mul') { var a7 = randInt(10, 99), b7 = randInt(2, 9); f = { type: 'mul', a: a7, b: b7, answer: a7 * b7, prompt: a7 + ' × ' + b7 }; }
+      else { var b8 = randInt(2, 9), q8 = randInt(10, 99), a8 = b8 * q8; f = { type: 'div', a: a8, b: b8, answer: q8, prompt: a8 + ' ÷ ' + b8 }; }
+    }
+    f.statKey = mode + '|' + f.type + '_' + f.a + '_' + f.b;
+    return f;
+  }
+
+  function reconstructMixedFact(mode, key) {
+    var parts = key.slice(mode.length + 1).split('_');
+    var type = parts[0], a = Number(parts[1]), b = Number(parts[2]);
+    var f;
+    if (type === 'add') f = { type: type, a: a, b: b, answer: a + b, prompt: a + ' + ' + b };
+    else if (type === 'sub') f = { type: type, a: a, b: b, answer: a - b, prompt: a + ' − ' + b };
+    else if (type === 'mul') f = { type: type, a: a, b: b, answer: a * b, prompt: a + ' × ' + b };
+    else f = { type: type, a: a, b: b, answer: a / b, prompt: a + ' ÷ ' + b };
+    f.statKey = key;
+    return f;
+  }
+
+  function factWeakness(key) {
+    var s = state.factStats[key];
+    if (!s) return 0;
+    return s.missed * 3 - Math.min(s.streak, 4);
+  }
+
+  function updateFactStats(key, correct, ms) {
+    var s = state.factStats[key] || { seen: 0, missed: 0, streak: 0, lastMs: null };
+    s.seen++;
+    if (correct) { s.streak++; s.lastMs = ms; } else { s.missed++; s.streak = 0; }
+    state.factStats[key] = s;
+  }
+
+  function weakKeysForMode(mode) {
+    var prefix = mode + '|';
+    return Object.keys(state.factStats).filter(function (k) { return k.indexOf(prefix) === 0 && factWeakness(k) > 0; });
+  }
+
+  function pickMixedFact(mode) {
+    var weak = weakKeysForMode(mode);
+    if (weak.length && Math.random() < 0.45) {
+      weak.sort(function (a, b) { return factWeakness(b) - factWeakness(a); });
+      var top = weak.slice(0, 8);
+      return reconstructMixedFact(mode, top[randInt(0, top.length - 1)]);
+    }
+    return genMixedFact(mode);
+  }
+
   /* ---------------- state ---------------- */
   var LS_KEY = 'flash-state-v1';
   function defaultState() {
-    return { xp: 0, streak: 0, lastPlayedDate: null, totalSessions: 0, currentTierIndex: 0, tierStats: {}, history: [], theme: null };
+    return { xp: 0, streak: 0, lastPlayedDate: null, totalSessions: 0, currentTierIndex: 0, tierStats: {}, factStats: {}, history: [], theme: null };
   }
   function loadState() {
     try {
       var raw = localStorage.getItem(LS_KEY);
-      if (raw) { var parsed = JSON.parse(raw); return Object.assign(defaultState(), parsed, { tierStats: Object.assign({}, parsed.tierStats || {}) }); }
+      if (raw) {
+        var parsed = JSON.parse(raw);
+        return Object.assign(defaultState(), parsed, {
+          tierStats: Object.assign({}, parsed.tierStats || {}),
+          factStats: Object.assign({}, parsed.factStats || {})
+        });
+      }
     } catch (e) {}
     return defaultState();
   }
@@ -381,6 +476,15 @@
     drill = { tierId: 'mixed', queue: queue, idx: 0, results: [], originalSize: queue.length };
     showView('session');
     document.getElementById('drill-title').textContent = 'Mixed Review';
+    renderDrillCard();
+  }
+
+  function startMixedDrill(mode) {
+    var queue = [];
+    for (var i = 0; i < 20; i++) queue.push(pickMixedFact(mode));
+    drill = { tierId: null, mode: mode, queue: queue, idx: 0, results: [], originalSize: queue.length };
+    showView('session');
+    document.getElementById('drill-title').textContent = (mode === 'single' ? 'Single-Digit Mix' : 'Double-Digit Mix') + ' — Random +, −, ×, ÷';
     renderDrillCard();
   }
 
@@ -439,7 +543,10 @@
     var correct = Number(val) === f.answer;
     var fb = document.getElementById('feedback');
 
-    if (!f.isRetry) drill.results.push({ correct: correct, ms: ms });
+    if (!f.isRetry) {
+      drill.results.push({ correct: correct, ms: ms });
+      if (f.statKey) updateFactStats(f.statKey, correct, ms);
+    }
     if (correct) {
       if (!f.isRetry) state.xp += 5;
       fb.innerHTML = '<span class="fb-ok">Correct</span>';
@@ -448,7 +555,7 @@
     } else {
       if (!f._requeued) {
         f._requeued = true;
-        drill.queue.push({ a: f.a, b: f.b, answer: f.answer, prompt: f.prompt, isRetry: true });
+        drill.queue.push({ a: f.a, b: f.b, answer: f.answer, prompt: f.prompt, isRetry: true, statKey: f.statKey });
       }
       fb.innerHTML = '<span class="fb-bad">Answer: ' + f.answer + '</span>';
       saveState();
@@ -465,7 +572,7 @@
     var times = drill.results.filter(function (r) { return r.correct; }).map(function (r) { return r.ms; });
     var avgMs = times.length ? Math.round(times.reduce(function (a, b) { return a + b; }, 0) / times.length) : null;
 
-    var tier = drill.tierId === 'mixed' ? null : getTierById(drill.tierId);
+    var tier = (drill.tierId && drill.tierId !== 'mixed') ? getTierById(drill.tierId) : null;
     var mastered = false;
     var accOk = accuracy >= ACCURACY_TARGET;
     var speedTarget = tier ? SPEED_TARGET_MS[tier.op] : null;
@@ -507,15 +614,24 @@
       html += '<div class="crit-row"><span class="crit-label">Accuracy</span><span class="crit-val ok">' + accuracy + '%</span></div>';
       html += '<div class="crit-row"><span class="crit-label">Avg speed</span><span class="crit-val ok">' + (avgMs !== null ? (avgMs / 1000).toFixed(1) + 's' : '—') + '</span></div>';
     }
+    if (drill.mode) {
+      var weak = weakKeysForMode(drill.mode);
+      if (weak.length) {
+        weak.sort(function (a, b) { return factWeakness(b) - factWeakness(a); });
+        var chips = weak.slice(0, 6).map(function (k) { return '<span class="weak-chip">' + reconstructMixedFact(drill.mode, k).prompt + '</span>'; }).join('');
+        html += '<p class="weak-heading">Still shaky on these combos</p><div class="weak-list">' + chips + '</div>';
+      }
+    }
     html += '<div class="summary-actions">';
-    if (tier) html += '<button id="retry-btn" class="cta-btn ghost" type="button">Retry</button>';
+    if (tier || drill.mode) html += '<button id="retry-btn" class="cta-btn ghost" type="button">' + (drill.mode ? 'Go again' : 'Retry') + '</button>';
     html += '<button id="done-btn" class="cta-btn" type="button">Home</button>';
     html += '</div></div>';
     stage.innerHTML = html;
 
     document.getElementById('done-btn').addEventListener('click', function () { drill = null; showView('home'); renderHome(); });
     var retryBtn = document.getElementById('retry-btn');
-    if (retryBtn) retryBtn.addEventListener('click', function () { startDrill(tier.id); });
+    var mode = drill.mode;
+    if (retryBtn) retryBtn.addEventListener('click', function () { if (mode) startMixedDrill(mode); else startDrill(tier.id); });
   }
 
   /* ---------------- home rendering ---------------- */
@@ -556,6 +672,14 @@
     document.getElementById('mixed-meta').textContent = mfc ? mfc + ' facts in rotation' : 'Unlocks after your first mastered tier';
     mixedBtn.disabled = !mfc;
     mixedBtn.onclick = mfc ? startMixedReview : null;
+
+    var singleWeak = weakKeysForMode('single').length;
+    document.getElementById('mixed-single-meta').textContent = singleWeak ? singleWeak + ' combos need more reps' : 'Random +, −, ×, ÷ · single digits';
+    document.getElementById('mixed-single-btn').onclick = function () { startMixedDrill('single'); };
+
+    var doubleWeak = weakKeysForMode('double').length;
+    document.getElementById('mixed-double-meta').textContent = doubleWeak ? doubleWeak + ' combos need more reps' : 'Random +, −, ×, ÷ · double digits';
+    document.getElementById('mixed-double-btn').onclick = function () { startMixedDrill('double'); };
 
     renderLadder();
   }
