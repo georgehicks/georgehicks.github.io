@@ -41,7 +41,7 @@
   button { cursor: pointer; }
   :focus-visible { outline: 2px solid var(--brass); outline-offset: 2px; }
 
-  .page { min-height: 100vh; padding: 1.25rem 1.1rem 3rem; }
+  .page { min-height: 100vh; padding: calc(1.25rem + env(safe-area-inset-top, 0px)) 1.1rem calc(3rem + env(safe-area-inset-bottom, 0px)); }
   .wrap { max-width: 28rem; margin: 0 auto; }
 
   .topbar { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.4rem; min-height: 2rem; }
@@ -207,7 +207,14 @@
         <div class="drill-progress-track"><div class="drill-progress-fill" id="drill-progress-fill"></div></div>
         <div class="drill-progress-label" id="drill-progress-label"></div>
       </div>
-      <div class="session-stage" id="session-stage"></div>
+      <div class="session-stage" id="session-stage">
+        <div id="drill-card">
+          <div class="equation-big" id="equation-big"></div>
+          <input id="answer-input" class="answer-input" inputmode="numeric" pattern="[0-9]*" autocomplete="off" />
+          <div id="feedback" class="feedback"></div>
+        </div>
+        <div id="drill-summary" style="display:none;width:100%;"></div>
+      </div>
     </div>
 
   </div>
@@ -383,31 +390,41 @@
     document.getElementById('drill-progress-label').textContent = drill.results.length + ' / ' + drill.originalSize;
   }
 
+  var drillAnswered = false;
+
   function renderDrillCard() {
     updateDrillProgress();
     if (drill.idx >= drill.queue.length) { renderDrillSummary(); return; }
+    document.getElementById('drill-card').style.display = '';
+    document.getElementById('drill-summary').style.display = 'none';
     var f = drill.queue[drill.idx];
-    var stage = document.getElementById('session-stage');
-    stage.innerHTML =
-      '<div class="equation-big">' + f.prompt + ' = ?</div>' +
-      '<input id="answer-input" class="answer-input" inputmode="numeric" pattern="[0-9]*" autocomplete="off" />' +
-      '<div id="feedback" class="feedback"></div>';
+    document.getElementById('equation-big').textContent = f.prompt + ' = ?';
+    document.getElementById('feedback').innerHTML = '';
+    var input = document.getElementById('answer-input');
+    input.value = '';
     f._startedAt = Date.now();
-    wireDrillInput(f);
+    drillAnswered = false;
+    // The input element is never destroyed or blurred between cards, so on
+    // iOS Safari the keyboard — once opened by the first tap — stays open
+    // for the whole drill instead of requiring a fresh tap every card.
+    input.focus();
   }
 
-  function wireDrillInput(f) {
+  function initDrillInput() {
     var input = document.getElementById('answer-input');
-    input.focus();
-    var expectedLen = String(f.answer).length;
     var timer = null;
     function trySubmit() {
       clearTimeout(timer);
+      if (drillAnswered) return;
       if (input.value.trim() === '') return;
       submitDrillAnswer(input.value.trim());
     }
     input.addEventListener('input', function () {
+      if (drillAnswered) return;
       clearTimeout(timer);
+      var f = drill && drill.queue[drill.idx];
+      if (!f) return;
+      var expectedLen = String(f.answer).length;
       if (input.value.trim() !== '' && input.value.length >= expectedLen) { trySubmit(); return; }
       timer = setTimeout(trySubmit, 700);
     });
@@ -415,9 +432,8 @@
   }
 
   function submitDrillAnswer(val) {
-    var input = document.getElementById('answer-input');
-    if (input.disabled) return;
-    input.disabled = true;
+    if (drillAnswered) return;
+    drillAnswered = true;
     var f = drill.queue[drill.idx];
     var ms = Date.now() - f._startedAt;
     var correct = Number(val) === f.answer;
@@ -471,7 +487,9 @@
     if (state.history.length > 80) state.history.shift();
     saveState();
 
-    var stage = document.getElementById('session-stage');
+    document.getElementById('drill-card').style.display = 'none';
+    var stage = document.getElementById('drill-summary');
+    stage.style.display = '';
     document.getElementById('drill-progress-fill').style.width = '100%';
     var html = '<div class="summary">';
     if (tier) {
@@ -590,6 +608,7 @@
 
   document.addEventListener('DOMContentLoaded', function () {
     applyTheme();
+    initDrillInput();
     document.getElementById('theme-toggle').addEventListener('click', toggleTheme);
     document.getElementById('exit-session-btn').addEventListener('click', function () {
       if (confirm('Leave this drill? Progress on the current set won’t be saved.')) { drill = null; showView('home'); renderHome(); }
