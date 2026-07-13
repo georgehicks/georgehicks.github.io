@@ -1,5 +1,5 @@
 /**
- * Abide — Scripture canon (38)
+ * Abide — Scripture canon (44)
  * Themes: rest in the Vine; belong / abide / move; sow & work with God.
  *
  * Translation note: ESV-style wording for personal use.
@@ -16,7 +16,8 @@
     { id: "D", name: "Ask / Seek / Trust", short: "Ask", focus: "Ask, seek, knock; listen, obey, trust; accept what unfolds." },
     { id: "E", name: "Love / Enough / Home", short: "Love", focus: "Relentless love; already enough; already home." },
     { id: "F", name: "Capacity / With-ness", short: "With", focus: "Bear, do, walk — God always with you." },
-    { id: "G", name: "Work / Effort / Sow–Reap", short: "Sow", focus: "Serve and sow; plant and water; God gives growth." }
+    { id: "G", name: "Work / Effort / Sow–Reap", short: "Sow", focus: "Serve and sow; plant and water; God gives growth." },
+    { id: "H", name: "Undivided / Steadfast Faith", short: "Undivided", focus: "Doubt and worry that divide a pure faith; asking and trusting without wavering." }
   ];
 
   var VERSES = [
@@ -336,6 +337,56 @@
       group: "G",
       themes: ["faithful", "servant", "joy"],
       assertions: ["prefer-serve-sow", "take-a-step", "who-god-says"]
+    },
+
+    // ── H. Undivided / Steadfast Faith ────────────────────────────────
+    {
+      id: 39,
+      ref: "James 1:6–8",
+      text: "But let him ask in faith, with no doubting, for the one who doubts is like a wave of the sea that is driven and tossed by the wind. For that person must not suppose that he will receive anything from the Lord; he is a double-minded man, unstable in all his ways.",
+      group: "H",
+      themes: ["doubt", "double-minded", "faith", "ask"],
+      assertions: ["ask-seek-knock", "prefer-truth"]
+    },
+    {
+      id: 40,
+      ref: "Matthew 21:21",
+      text: "Truly, I say to you, if you have faith and do not doubt, you will not only do what has been done to the fig tree, but even if you say to this mountain, 'Be taken up and thrown into the sea,' it will happen.",
+      group: "H",
+      themes: ["doubt", "faith", "believe"],
+      assertions: ["ask-seek-knock", "do-all"]
+    },
+    {
+      id: 41,
+      ref: "James 4:8",
+      text: "Draw near to God, and he will draw near to you. Cleanse your hands, you sinners, and purify your hearts, you double-minded.",
+      group: "H",
+      themes: ["double-minded", "purify", "draw-near"],
+      assertions: ["prefer-truth", "belong-abide-move"]
+    },
+    {
+      id: 42,
+      ref: "Philippians 4:6–7",
+      text: "Do not be anxious about anything, but in everything by prayer and supplication with thanksgiving let your requests be made known to God. And the peace of God, which surpasses all understanding, will guard your hearts and your minds in Christ Jesus.",
+      group: "H",
+      themes: ["anxious", "peace", "prayer", "worry"],
+      assertions: ["rest-in-god", "ask-seek-knock"]
+    },
+    {
+      id: 43,
+      ref: "Matthew 6:34",
+      text: "Therefore do not be anxious about tomorrow, for tomorrow will be anxious for itself. Sufficient for the day is its own trouble.",
+      group: "H",
+      themes: ["worry", "tomorrow", "today"],
+      assertions: ["rest-in-god", "breathe"]
+    },
+    {
+      id: 44,
+      ref: "1 Peter 5:7",
+      text: "Casting all your anxieties on him, because he cares for you.",
+      group: "H",
+      themes: ["anxiety", "cast", "care"],
+      assertions: ["rest-in-god", "god-always-with"]
     }
   ];
 
