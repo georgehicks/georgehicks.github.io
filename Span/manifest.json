@@ -1,0 +1,19 @@
+{
+  "name": "Span — Working Memory & Mental Math",
+  "short_name": "Span",
+  "description": "Daily working memory and mental math practice, adaptive and spaced.",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#14171C",
+  "theme_color": "#14171C",
+  "categories": ["education", "productivity"],
+  "icons": [
+    {
+      "src": "icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
