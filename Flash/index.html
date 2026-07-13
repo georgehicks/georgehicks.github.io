@@ -1,0 +1,606 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+<meta name="theme-color" content="#14171C" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+<title>Flash — Basic Math Facts, Fast</title>
+<link rel="manifest" href="manifest.json" />
+<link rel="icon" href="icon.svg" type="image/svg+xml" />
+<link rel="apple-touch-icon" href="icon.svg" />
+<style>
+  :root {
+    --bg: #14171C; --surface: #1B1F26; --surface-2: #232832; --border: #2E3440;
+    --ink: #ECE8DF; --ink-muted: #9AA0AC; --ink-faint: #5B6270;
+    --brass: #CD9A4E; --brass-strong: #E4B268; --teal: #5FA98C; --rust: #C1614A;
+    --font-display: Georgia, "Iowan Old Style", "Palatino Linotype", "Book Antiqua", serif;
+    --font-body: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    --font-mono: ui-monospace, "SF Mono", "Cascadia Code", Menlo, Consolas, monospace;
+  }
+  @media (prefers-color-scheme: light) {
+    :root { --bg:#F5F1E8; --surface:#FFFFFF; --surface-2:#EDE7D8; --border:#DDD5C0;
+      --ink:#201C15; --ink-muted:#6B6455; --ink-faint:#A79E8A;
+      --brass:#A9782F; --brass-strong:#8C6224; --teal:#3F8367; --rust:#A8432C; }
+  }
+  :root[data-theme="dark"] { --bg:#14171C; --surface:#1B1F26; --surface-2:#232832; --border:#2E3440;
+    --ink:#ECE8DF; --ink-muted:#9AA0AC; --ink-faint:#5B6270;
+    --brass:#CD9A4E; --brass-strong:#E4B268; --teal:#5FA98C; --rust:#C1614A; }
+  :root[data-theme="light"] { --bg:#F5F1E8; --surface:#FFFFFF; --surface-2:#EDE7D8; --border:#DDD5C0;
+    --ink:#201C15; --ink-muted:#6B6455; --ink-faint:#A79E8A;
+    --brass:#A9782F; --brass-strong:#8C6224; --teal:#3F8367; --rust:#A8432C; }
+
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; }
+  body {
+    background: var(--bg); color: var(--ink); font-family: var(--font-body);
+    line-height: 1.5; font-size: 16px; -webkit-tap-highlight-color: transparent;
+  }
+  button, input { font-family: inherit; }
+  button { cursor: pointer; }
+  :focus-visible { outline: 2px solid var(--brass); outline-offset: 2px; }
+
+  .page { min-height: 100vh; padding: 1.25rem 1.1rem 3rem; }
+  .wrap { max-width: 28rem; margin: 0 auto; }
+
+  .topbar { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.4rem; min-height: 2rem; }
+  .wordmark { font-family: var(--font-display); font-size: 1.3rem; }
+  .topbar-right { display: flex; align-items: center; gap: 0.9rem; }
+  .streak-badge { font-family: var(--font-mono); font-size: 0.72rem; color: var(--ink-muted); }
+  .streak-badge b { color: var(--brass-strong); font-variant-numeric: tabular-nums; }
+  .icon-btn {
+    background: var(--surface); border: 1px solid var(--border); border-radius: 8px;
+    width: 2rem; height: 2rem; display: flex; align-items: center; justify-content: center;
+    color: var(--ink-muted); font-size: 0.95rem;
+  }
+  .link-btn { background: none; border: none; color: var(--rust); font-size: 0.85rem; padding: 0.3rem 0.1rem; display: none; }
+  .topbar.in-session .topbar-right { display: none; }
+  .topbar.in-session .link-btn { display: inline-block; }
+
+  .view { display: none; }
+  .view.active { display: block; }
+
+  /* ---- home ---- */
+  .stats-row { display: flex; gap: 0.6rem; margin-bottom: 1.3rem; }
+  .stat-chip {
+    flex: 1; background: var(--surface-2); border: 1px solid var(--border); border-radius: 12px;
+    padding: 0.65rem 0.8rem;
+  }
+  .stat-chip .stat-val { font-family: var(--font-mono); font-variant-numeric: tabular-nums; font-size: 1.05rem; font-weight: 700; color: var(--brass-strong); }
+  .stat-chip .stat-label { font-size: 0.66rem; color: var(--ink-muted); letter-spacing: 0.03em; text-transform: uppercase; margin-top: 0.1rem; }
+
+  .cta {
+    width: 100%; border: none; text-align: left;
+    background: linear-gradient(160deg, var(--brass-strong), var(--brass));
+    color: #1B1305; border-radius: 16px; padding: 1.1rem 1.2rem;
+    display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.7rem;
+  }
+  .cta-title { font-weight: 700; font-size: 1.02rem; }
+  .cta-meta { font-family: var(--font-mono); font-size: 0.7rem; opacity: 0.75; margin-top: 0.2rem; letter-spacing: 0.03em; }
+  .cta-arrow { font-size: 1.3rem; }
+
+  .cta-secondary {
+    width: 100%; border: 1px solid var(--border); text-align: left; background: var(--surface);
+    color: var(--ink); border-radius: 14px; padding: 0.85rem 1.1rem;
+    display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.7rem;
+  }
+  .cta-secondary .cta-title { font-size: 0.9rem; font-weight: 600; color: var(--ink); }
+  .cta-secondary .cta-meta { color: var(--ink-muted); opacity: 1; }
+  .cta-secondary .cta-arrow { color: var(--ink); }
+  .cta-secondary:disabled .cta-title { color: var(--ink-faint); }
+  .cta-secondary:disabled .cta-arrow { color: var(--ink-faint); }
+  .cta-secondary:disabled { opacity: 0.7; }
+
+  .section-label {
+    font-family: var(--font-mono); font-size: 0.68rem; letter-spacing: 0.1em; text-transform: uppercase;
+    color: var(--ink-faint); margin: 1.5rem 0 0.6rem;
+  }
+  .ladder-group + .ladder-group { margin-top: 1.5rem; }
+  .ladder-group-title {
+    font-family: var(--font-mono); font-size: 0.68rem; letter-spacing: 0.12em; text-transform: uppercase;
+    color: var(--ink-faint); margin-bottom: 0.5rem;
+  }
+  .ladder-row {
+    width: 100%; display: flex; align-items: center; gap: 0.7rem;
+    background: var(--surface); border: 1px solid var(--border); border-radius: 10px;
+    padding: 0.6rem 0.8rem; margin-bottom: 0.4rem; text-align: left;
+  }
+  .ladder-row.active { border-color: var(--brass); }
+  .ladder-status { width: 1.1rem; flex-shrink: 0; text-align: center; font-size: 0.9rem; }
+  .ladder-status.mastered { color: var(--teal); }
+  .ladder-status.active { color: var(--brass-strong); }
+  .ladder-status.locked { color: var(--ink-faint); }
+  .ladder-label { flex: 1; font-size: 0.88rem; color: var(--ink); }
+  .ladder-row.locked .ladder-label { color: var(--ink-faint); }
+  .ladder-meta { font-family: var(--font-mono); font-size: 0.72rem; color: var(--ink-muted); }
+  .ladder-row.locked .ladder-meta { color: var(--ink-faint); }
+
+  /* ---- session ---- */
+  .drill-head { margin-bottom: 1.6rem; }
+  .drill-title { font-size: 0.9rem; color: var(--ink-muted); margin: 0 0 0.5rem; }
+  .drill-progress-track { height: 4px; border-radius: 2px; background: var(--surface-2); overflow: hidden; }
+  .drill-progress-fill { height: 100%; width: 0%; background: var(--brass); transition: width 0.25s ease; }
+  .drill-progress-label { font-family: var(--font-mono); font-size: 0.68rem; color: var(--ink-faint); margin-top: 0.35rem; }
+
+  .session-stage { display: flex; flex-direction: column; align-items: center; text-align: center; min-height: 20rem; padding-top: 2.2rem; }
+  .equation-big {
+    font-family: var(--font-mono); font-variant-numeric: tabular-nums; font-weight: 600;
+    font-size: clamp(2.2rem, 1.7rem + 2.5vw, 3rem); margin-bottom: 1.8rem; letter-spacing: -0.01em;
+  }
+  .answer-input {
+    width: 10rem; max-width: 70%; text-align: center; font-family: var(--font-mono);
+    font-size: 1.8rem; font-variant-numeric: tabular-nums; padding: 0.55rem 0.5rem;
+    border-radius: 12px; border: 1px solid var(--border); background: var(--surface-2); color: var(--ink);
+  }
+  .answer-input:focus { border-color: var(--brass); }
+  .feedback { margin-top: 1.3rem; min-height: 2.4rem; font-family: var(--font-mono); font-size: 1.2rem; font-weight: 700; }
+  .fb-ok { color: var(--teal); }
+  .fb-bad { color: var(--rust); }
+
+  .summary { padding-top: 1.5rem; width: 100%; }
+  .summary-verdict { font-family: var(--font-display); font-size: 1.5rem; margin-bottom: 1.6rem; text-wrap: balance; }
+  .summary-verdict.pass { color: var(--teal); }
+  .summary-verdict.fail { color: var(--ink); }
+  .crit-row {
+    display: flex; justify-content: space-between; align-items: center;
+    background: var(--surface-2); border: 1px solid var(--border); border-radius: 10px;
+    padding: 0.7rem 0.9rem; margin-bottom: 0.5rem;
+  }
+  .crit-label { font-size: 0.85rem; color: var(--ink-muted); }
+  .crit-val { font-family: var(--font-mono); font-weight: 700; font-variant-numeric: tabular-nums; }
+  .crit-val.ok { color: var(--teal); }
+  .crit-val.bad { color: var(--rust); }
+  .summary-actions { display: flex; gap: 0.7rem; margin-top: 1.5rem; }
+  .cta-btn {
+    font-weight: 600; font-size: 0.92rem; background: var(--brass); color: #1B1305;
+    border: none; border-radius: 12px; padding: 0.7rem 1.4rem; flex: 1;
+  }
+  .cta-btn.ghost { background: var(--surface); color: var(--ink); border: 1px solid var(--border); }
+
+  @media (prefers-reduced-motion: reduce) {
+    .drill-progress-fill { transition: none; }
+  }
+</style>
+</head>
+<body>
+<div class="page">
+  <div class="wrap">
+
+    <div class="topbar" id="topbar">
+      <div class="wordmark">Flash</div>
+      <div class="topbar-right">
+        <span class="streak-badge" id="streak-badge"></span>
+        <button class="icon-btn" id="theme-toggle" type="button" aria-label="Toggle theme">◐</button>
+      </div>
+      <button class="link-btn" id="exit-session-btn" type="button">Exit</button>
+    </div>
+
+    <div class="view active" data-view="home">
+      <div class="stats-row">
+        <div class="stat-chip"><div class="stat-val" id="stat-mastered"></div><div class="stat-label">Tiers mastered</div></div>
+        <div class="stat-chip"><div class="stat-val" id="stat-speed"></div><div class="stat-label">Avg speed</div></div>
+      </div>
+
+      <button class="cta" id="start-drill-btn" type="button">
+        <div>
+          <div class="cta-title" id="cta-title">Drill</div>
+          <div class="cta-meta" id="cta-meta"></div>
+        </div>
+        <div class="cta-arrow">→</div>
+      </button>
+
+      <button class="cta-secondary" id="mixed-review-btn" type="button">
+        <div>
+          <div class="cta-title">Mixed review</div>
+          <div class="cta-meta" id="mixed-meta"></div>
+        </div>
+        <div class="cta-arrow">→</div>
+      </button>
+
+      <div id="ladder"></div>
+    </div>
+
+    <div class="view" data-view="session">
+      <div class="drill-head">
+        <p class="drill-title" id="drill-title"></p>
+        <div class="drill-progress-track"><div class="drill-progress-fill" id="drill-progress-fill"></div></div>
+        <div class="drill-progress-label" id="drill-progress-label"></div>
+      </div>
+      <div class="session-stage" id="session-stage"></div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+(function () {
+  "use strict";
+
+  /* ---------------- curriculum ---------------- */
+  function shuffle(arr) {
+    for (var i = arr.length - 1; i > 0; i--) {
+      var j = Math.floor(Math.random() * (i + 1));
+      var t = arr[i]; arr[i] = arr[j]; arr[j] = t;
+    }
+    return arr;
+  }
+
+  function buildAddSubTiers(maxOperand, defs) {
+    var used = {};
+    var tiers = [];
+    defs.forEach(function (def) {
+      var pairs = [];
+      for (var a = 0; a <= maxOperand; a++) {
+        for (var b = 0; b <= maxOperand; b++) {
+          var key = a + '_' + b;
+          if (used[key]) continue;
+          if (def.predicate(a, b)) { pairs.push([a, b]); used[key] = true; }
+        }
+      }
+      if (pairs.length) tiers.push({ label: def.label, pairs: pairs });
+    });
+    return tiers;
+  }
+
+  var ADD_TIER_DEFS = [
+    { label: 'Zeros & Ones', predicate: function (a, b) { return a <= 1 || b <= 1; } },
+    { label: 'Doubles', predicate: function (a, b) { return a === b; } },
+    { label: 'Twos', predicate: function (a, b) { return a === 2 || b === 2; } },
+    { label: 'Make Ten', predicate: function (a, b) { return a + b === 10; } },
+    { label: 'Tens', predicate: function (a, b) { return a === 10 || b === 10; } },
+    { label: 'Fives', predicate: function (a, b) { return a === 5 || b === 5; } },
+    { label: 'The Rest (to 10)', predicate: function (a, b) { return a + b <= 10; } },
+    { label: 'Teens', predicate: function () { return true; } }
+  ];
+
+  function buildMulTiers() {
+    var maxOperand = 12;
+    var used = {};
+    function claim(pairs) { pairs.forEach(function (p) { used[p[0] + '_' + p[1]] = true; }); }
+    function collect(predicate) {
+      var out = [];
+      for (var a = 0; a <= maxOperand; a++) for (var b = 0; b <= maxOperand; b++) {
+        if (used[a + '_' + b]) continue;
+        if (predicate(a, b)) out.push([a, b]);
+      }
+      return out;
+    }
+    var tiers = [];
+    function addTier(label, predicate, noClaim) {
+      var pairs = collect(predicate);
+      if (!pairs.length) return;
+      tiers.push({ label: label, pairs: pairs });
+      if (!noClaim) claim(pairs);
+    }
+    addTier('×0 & ×1', function (a, b) { return a <= 1 || b <= 1; });
+    addTier('×2 & ×10', function (a, b) { return a === 2 || b === 2 || a === 10 || b === 10; });
+    addTier('×5', function (a, b) { return a === 5 || b === 5; });
+    addTier('×3 & ×4', function (a, b) { return a === 3 || b === 3 || a === 4 || b === 4; });
+    addTier('×11', function (a, b) { return a === 11 || b === 11; });
+    [6, 7, 8, 9].forEach(function (n) {
+      addTier('×' + n, function (a, b) { return a === n || b === n; }, true);
+    });
+    claim(collect(function (a, b) { return [6,7,8,9].indexOf(a) >= 0 || [6,7,8,9].indexOf(b) >= 0; }));
+    addTier('×12 & the Rest', function () { return true; });
+    return tiers;
+  }
+
+  var SPEED_TARGET_MS = { add: 2000, sub: 2500, mul: 3000, div: 3000 };
+  var ACCURACY_TARGET = 90;
+
+  function assembleGlobalTiers() {
+    var list = [];
+    var addTiers = buildAddSubTiers(10, ADD_TIER_DEFS);
+    var mulTiers = buildMulTiers();
+
+    addTiers.forEach(function (t, i) {
+      list.push({
+        id: 'add-' + i, op: 'add', opLabel: 'Addition', label: t.label,
+        facts: t.pairs.map(function (p) { return { a: p[0], b: p[1], answer: p[0] + p[1], prompt: p[0] + ' + ' + p[1] }; })
+      });
+    });
+    addTiers.forEach(function (t, i) {
+      list.push({
+        id: 'sub-' + i, op: 'sub', opLabel: 'Subtraction', label: t.label,
+        facts: t.pairs.map(function (p) { var sum = p[0] + p[1]; return { a: sum, b: p[0], answer: p[1], prompt: sum + ' − ' + p[0] }; })
+      });
+    });
+    mulTiers.forEach(function (t, i) {
+      list.push({
+        id: 'mul-' + i, op: 'mul', opLabel: 'Multiplication', label: t.label,
+        facts: t.pairs.map(function (p) { return { a: p[0], b: p[1], answer: p[0] * p[1], prompt: p[0] + ' × ' + p[1] }; })
+      });
+    });
+    mulTiers.forEach(function (t, i) {
+      var facts = t.pairs.filter(function (p) { return p[0] > 0; })
+        .map(function (p) { var prod = p[0] * p[1]; return { a: prod, b: p[0], answer: p[1], prompt: prod + ' ÷ ' + p[0] }; });
+      if (facts.length) list.push({ id: 'div-' + i, op: 'div', opLabel: 'Division', label: t.label, facts: facts });
+    });
+
+    list.forEach(function (t, i) { t.index = i; });
+    return list;
+  }
+
+  var GLOBAL_TIERS = assembleGlobalTiers();
+  function getTierById(id) { return GLOBAL_TIERS.filter(function (t) { return t.id === id; })[0]; }
+
+  /* ---------------- state ---------------- */
+  var LS_KEY = 'flash-state-v1';
+  function defaultState() {
+    return { xp: 0, streak: 0, lastPlayedDate: null, totalSessions: 0, currentTierIndex: 0, tierStats: {}, history: [], theme: null };
+  }
+  function loadState() {
+    try {
+      var raw = localStorage.getItem(LS_KEY);
+      if (raw) { var parsed = JSON.parse(raw); return Object.assign(defaultState(), parsed, { tierStats: Object.assign({}, parsed.tierStats || {}) }); }
+    } catch (e) {}
+    return defaultState();
+  }
+  function saveState() { try { localStorage.setItem(LS_KEY, JSON.stringify(state)); } catch (e) {} }
+  var state = loadState();
+
+  function todayStr() { return new Date().toISOString().slice(0, 10); }
+  function updateStreakOnSessionComplete() {
+    var today = todayStr();
+    if (state.lastPlayedDate === today) return;
+    var yesterday = new Date(Date.now() - 86400000).toISOString().slice(0, 10);
+    state.streak = (state.lastPlayedDate === yesterday) ? state.streak + 1 : 1;
+    state.lastPlayedDate = today;
+  }
+
+  /* ---------------- drill runner ---------------- */
+  var drill = null;
+
+  function startDrill(tierId) {
+    var tier = getTierById(tierId);
+    var pool = tier.facts.slice();
+    shuffle(pool);
+    var setSize = Math.min(pool.length, 15);
+    var queue = pool.slice(0, setSize).map(function (f) { return { a: f.a, b: f.b, answer: f.answer, prompt: f.prompt }; });
+    drill = { tierId: tierId, queue: queue, idx: 0, results: [], originalSize: queue.length };
+    showView('session');
+    document.getElementById('drill-title').textContent = tier.opLabel + ' — ' + tier.label;
+    renderDrillCard();
+  }
+
+  function startMixedReview() {
+    var pool = [];
+    for (var i = 0; i < state.currentTierIndex; i++) pool = pool.concat(GLOBAL_TIERS[i].facts);
+    if (!pool.length) return;
+    shuffle(pool);
+    var setSize = Math.min(pool.length, 20);
+    var queue = pool.slice(0, setSize).map(function (f) { return { a: f.a, b: f.b, answer: f.answer, prompt: f.prompt }; });
+    drill = { tierId: 'mixed', queue: queue, idx: 0, results: [], originalSize: queue.length };
+    showView('session');
+    document.getElementById('drill-title').textContent = 'Mixed Review';
+    renderDrillCard();
+  }
+
+  function updateDrillProgress() {
+    var pct = drill.originalSize ? Math.round(100 * drill.results.length / drill.originalSize) : 0;
+    document.getElementById('drill-progress-fill').style.width = pct + '%';
+    document.getElementById('drill-progress-label').textContent = drill.results.length + ' / ' + drill.originalSize;
+  }
+
+  function renderDrillCard() {
+    updateDrillProgress();
+    if (drill.idx >= drill.queue.length) { renderDrillSummary(); return; }
+    var f = drill.queue[drill.idx];
+    var stage = document.getElementById('session-stage');
+    stage.innerHTML =
+      '<div class="equation-big">' + f.prompt + ' = ?</div>' +
+      '<input id="answer-input" class="answer-input" inputmode="numeric" pattern="[0-9]*" autocomplete="off" />' +
+      '<div id="feedback" class="feedback"></div>';
+    f._startedAt = Date.now();
+    wireDrillInput(f);
+  }
+
+  function wireDrillInput(f) {
+    var input = document.getElementById('answer-input');
+    input.focus();
+    var expectedLen = String(f.answer).length;
+    var timer = null;
+    function trySubmit() {
+      clearTimeout(timer);
+      if (input.value.trim() === '') return;
+      submitDrillAnswer(input.value.trim());
+    }
+    input.addEventListener('input', function () {
+      clearTimeout(timer);
+      if (input.value.trim() !== '' && input.value.length >= expectedLen) { trySubmit(); return; }
+      timer = setTimeout(trySubmit, 700);
+    });
+    input.addEventListener('keydown', function (e) { if (e.key === 'Enter') trySubmit(); });
+  }
+
+  function submitDrillAnswer(val) {
+    var input = document.getElementById('answer-input');
+    if (input.disabled) return;
+    input.disabled = true;
+    var f = drill.queue[drill.idx];
+    var ms = Date.now() - f._startedAt;
+    var correct = Number(val) === f.answer;
+    var fb = document.getElementById('feedback');
+
+    if (!f.isRetry) drill.results.push({ correct: correct, ms: ms });
+    if (correct) {
+      if (!f.isRetry) state.xp += 5;
+      fb.innerHTML = '<span class="fb-ok">Correct</span>';
+      saveState();
+      setTimeout(nextDrillCard, 200);
+    } else {
+      if (!f._requeued) {
+        f._requeued = true;
+        drill.queue.push({ a: f.a, b: f.b, answer: f.answer, prompt: f.prompt, isRetry: true });
+      }
+      fb.innerHTML = '<span class="fb-bad">Answer: ' + f.answer + '</span>';
+      saveState();
+      setTimeout(nextDrillCard, 700);
+    }
+  }
+
+  function nextDrillCard() { drill.idx++; renderDrillCard(); }
+
+  function renderDrillSummary() {
+    var total = drill.results.length;
+    var correctCount = drill.results.filter(function (r) { return r.correct; }).length;
+    var accuracy = total ? Math.round(100 * correctCount / total) : 0;
+    var times = drill.results.filter(function (r) { return r.correct; }).map(function (r) { return r.ms; });
+    var avgMs = times.length ? Math.round(times.reduce(function (a, b) { return a + b; }, 0) / times.length) : null;
+
+    var tier = drill.tierId === 'mixed' ? null : getTierById(drill.tierId);
+    var mastered = false;
+    var accOk = accuracy >= ACCURACY_TARGET;
+    var speedTarget = tier ? SPEED_TARGET_MS[tier.op] : null;
+    var speedOk = tier ? (avgMs !== null && avgMs <= speedTarget) : true;
+
+    if (tier) {
+      mastered = accOk && speedOk;
+      var ts = state.tierStats[tier.id] || { bestAccuracy: 0, bestAvgMs: null, attempts: 0, masteredAt: null };
+      ts.attempts++;
+      if (accuracy > ts.bestAccuracy) ts.bestAccuracy = accuracy;
+      if (avgMs !== null && (ts.bestAvgMs === null || avgMs < ts.bestAvgMs)) ts.bestAvgMs = avgMs;
+      if (mastered && !ts.masteredAt) { ts.masteredAt = todayStr(); if (state.currentTierIndex === tier.index) state.currentTierIndex++; }
+      state.tierStats[tier.id] = ts;
+    }
+
+    updateStreakOnSessionComplete();
+    state.totalSessions++;
+    state.history.push({ date: todayStr(), tierId: drill.tierId, accuracy: accuracy, avgMs: avgMs });
+    if (state.history.length > 80) state.history.shift();
+    saveState();
+
+    var stage = document.getElementById('session-stage');
+    document.getElementById('drill-progress-fill').style.width = '100%';
+    var html = '<div class="summary">';
+    if (tier) {
+      if (mastered) {
+        var next = GLOBAL_TIERS[tier.index + 1];
+        html += '<h2 class="summary-verdict pass">Mastered — ' + tier.label + '</h2>';
+        if (next) html += '<p style="color:var(--ink-muted);margin-top:-1rem;margin-bottom:1.6rem;">Next up: ' + next.opLabel + ' — ' + next.label + '</p>';
+      } else {
+        html += '<h2 class="summary-verdict fail">Not yet — another rep?</h2>';
+      }
+      html += '<div class="crit-row"><span class="crit-label">Accuracy</span><span class="crit-val ' + (accOk ? 'ok' : 'bad') + '">' + accuracy + '% <span style="color:var(--ink-faint);font-weight:400;">(need ' + ACCURACY_TARGET + '%)</span></span></div>';
+      html += '<div class="crit-row"><span class="crit-label">Avg speed</span><span class="crit-val ' + (speedOk ? 'ok' : 'bad') + '">' + (avgMs !== null ? (avgMs / 1000).toFixed(1) + 's' : '—') + ' <span style="color:var(--ink-faint);font-weight:400;">(need under ' + (speedTarget / 1000).toFixed(1) + 's)</span></span></div>';
+    } else {
+      html += '<h2 class="summary-verdict pass">Nice reps</h2>';
+      html += '<div class="crit-row"><span class="crit-label">Accuracy</span><span class="crit-val ok">' + accuracy + '%</span></div>';
+      html += '<div class="crit-row"><span class="crit-label">Avg speed</span><span class="crit-val ok">' + (avgMs !== null ? (avgMs / 1000).toFixed(1) + 's' : '—') + '</span></div>';
+    }
+    html += '<div class="summary-actions">';
+    if (tier) html += '<button id="retry-btn" class="cta-btn ghost" type="button">Retry</button>';
+    html += '<button id="done-btn" class="cta-btn" type="button">Home</button>';
+    html += '</div></div>';
+    stage.innerHTML = html;
+
+    document.getElementById('done-btn').addEventListener('click', function () { drill = null; showView('home'); renderHome(); });
+    var retryBtn = document.getElementById('retry-btn');
+    if (retryBtn) retryBtn.addEventListener('click', function () { startDrill(tier.id); });
+  }
+
+  /* ---------------- home rendering ---------------- */
+  function masteredFactCount() {
+    var n = 0;
+    for (var i = 0; i < state.currentTierIndex; i++) n += GLOBAL_TIERS[i].facts.length;
+    return n;
+  }
+  function overallAvgSpeed() {
+    var recent = state.history.slice(-10).filter(function (h) { return h.avgMs !== null; });
+    if (!recent.length) return null;
+    return Math.round(recent.reduce(function (s, h) { return s + h.avgMs; }, 0) / recent.length);
+  }
+
+  function renderHome() {
+    document.getElementById('streak-badge').innerHTML = 'Streak <b>' + state.streak + '</b>';
+    document.getElementById('stat-mastered').textContent = state.currentTierIndex + ' / ' + GLOBAL_TIERS.length;
+    var avgSpeed = overallAvgSpeed();
+    document.getElementById('stat-speed').textContent = avgSpeed !== null ? (avgSpeed / 1000).toFixed(1) + 's' : '—';
+
+    var startBtn = document.getElementById('start-drill-btn');
+    if (state.currentTierIndex >= GLOBAL_TIERS.length) {
+      document.getElementById('cta-title').textContent = 'All tiers mastered';
+      document.getElementById('cta-meta').textContent = 'KEEP SHARP WITH MIXED REVIEW';
+      startBtn.disabled = true;
+      startBtn.style.opacity = 0.5;
+    } else {
+      var tier = GLOBAL_TIERS[state.currentTierIndex];
+      document.getElementById('cta-title').textContent = 'Drill: ' + tier.opLabel + ' — ' + tier.label;
+      document.getElementById('cta-meta').textContent = tier.facts.length + ' FACTS · TARGET ' + (SPEED_TARGET_MS[tier.op] / 1000).toFixed(1) + 'S · ' + ACCURACY_TARGET + '%+';
+      startBtn.disabled = false;
+      startBtn.style.opacity = 1;
+      startBtn.onclick = function () { startDrill(tier.id); };
+    }
+
+    var mfc = masteredFactCount();
+    var mixedBtn = document.getElementById('mixed-review-btn');
+    document.getElementById('mixed-meta').textContent = mfc ? mfc + ' facts in rotation' : 'Unlocks after your first mastered tier';
+    mixedBtn.disabled = !mfc;
+    mixedBtn.onclick = mfc ? startMixedReview : null;
+
+    renderLadder();
+  }
+
+  function statusIcon(status) {
+    if (status === 'mastered') return '✓';
+    if (status === 'active') return '●';
+    return '○';
+  }
+
+  function renderLadder() {
+    var groups = [['add', 'Addition'], ['sub', 'Subtraction'], ['mul', 'Multiplication'], ['div', 'Division']];
+    var html = '';
+    groups.forEach(function (g) {
+      var opKey = g[0], opLabel = g[1];
+      var tiers = GLOBAL_TIERS.filter(function (t) { return t.op === opKey; });
+      html += '<div class="ladder-group"><div class="ladder-group-title">' + opLabel + '</div>';
+      tiers.forEach(function (t) {
+        var status = t.index < state.currentTierIndex ? 'mastered' : t.index === state.currentTierIndex ? 'active' : 'locked';
+        var ts = state.tierStats[t.id];
+        var meta = ts && ts.bestAvgMs !== null ? (ts.bestAvgMs / 1000).toFixed(1) + 's best' : (t.facts.length + ' facts');
+        html += '<button class="ladder-row ' + status + '" data-tier="' + t.id + '" type="button" ' + (status === 'locked' ? 'disabled' : '') + '>' +
+          '<span class="ladder-status ' + status + '">' + statusIcon(status) + '</span>' +
+          '<span class="ladder-label">' + t.label + '</span>' +
+          '<span class="ladder-meta">' + meta + '</span></button>';
+      });
+      html += '</div>';
+    });
+    var el = document.getElementById('ladder');
+    el.innerHTML = html;
+    el.querySelectorAll('.ladder-row:not([disabled])').forEach(function (row) {
+      row.addEventListener('click', function () { startDrill(row.getAttribute('data-tier')); });
+    });
+  }
+
+  /* ---------------- view switching / theme / init ---------------- */
+  function showView(name) {
+    document.querySelectorAll('.view').forEach(function (v) { v.classList.toggle('active', v.getAttribute('data-view') === name); });
+    document.getElementById('topbar').classList.toggle('in-session', name === 'session');
+  }
+
+  function applyTheme() { if (state.theme) document.documentElement.setAttribute('data-theme', state.theme); }
+  function toggleTheme() {
+    var current = document.documentElement.getAttribute('data-theme') || (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+    var next = current === 'dark' ? 'light' : 'dark';
+    document.documentElement.setAttribute('data-theme', next);
+    state.theme = next;
+    saveState();
+  }
+
+  document.addEventListener('DOMContentLoaded', function () {
+    applyTheme();
+    document.getElementById('theme-toggle').addEventListener('click', toggleTheme);
+    document.getElementById('exit-session-btn').addEventListener('click', function () {
+      if (confirm('Leave this drill? Progress on the current set won’t be saved.')) { drill = null; showView('home'); renderHome(); }
+    });
+    renderHome();
+  });
+
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', function () { navigator.serviceWorker.register('./sw.js'); });
+  }
+})();
+</script>
+</body>
+</html>

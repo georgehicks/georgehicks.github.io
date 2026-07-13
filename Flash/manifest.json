@@ -1,0 +1,19 @@
+{
+  "name": "Flash — Basic Math Facts, Fast",
+  "short_name": "Flash",
+  "description": "Gated speed drills that lock in addition, subtraction, multiplication, and division facts to automaticity before moving on.",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#14171C",
+  "theme_color": "#14171C",
+  "categories": ["education", "productivity"],
+  "icons": [
+    {
+      "src": "icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
