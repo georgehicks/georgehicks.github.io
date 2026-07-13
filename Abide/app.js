@@ -1173,8 +1173,31 @@
   }
 
   /* ───────────── events ───────────── */
+  function bindSongToggle() {
+    var audio = document.getElementById("bg-audio");
+    var btn = document.getElementById("song-toggle");
+    if (!audio || !btn) return;
+    audio.addEventListener("play", function () {
+      btn.classList.add("playing");
+      btn.textContent = "❚❚";
+      btn.setAttribute("aria-pressed", "true");
+      btn.setAttribute("aria-label", "Pause background song");
+    });
+    audio.addEventListener("pause", function () {
+      btn.classList.remove("playing");
+      btn.textContent = "♪";
+      btn.setAttribute("aria-pressed", "false");
+      btn.setAttribute("aria-label", "Play background song");
+    });
+    btn.addEventListener("click", function () {
+      if (audio.paused) audio.play().catch(function () {});
+      else audio.pause();
+    });
+  }
+
   function bind() {
     document.getElementById("theme-toggle").addEventListener("click", toggleTheme);
+    bindSongToggle();
     document.getElementById("exit-session-btn").addEventListener("click", exitSession);
     document.getElementById("wordmark-home").addEventListener("click", function () {
       if (activeSession) exitSession();
