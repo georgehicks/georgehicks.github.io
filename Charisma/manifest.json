@@ -1,0 +1,19 @@
+{
+  "name": "Charisma — Awareness & Social Skill Training",
+  "short_name": "Charisma",
+  "description": "Daily charisma training: spot opportunity moments, practice micro-challenges, level up presence, rapport, and calm under pressure.",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#14171C",
+  "theme_color": "#14171C",
+  "categories": ["education", "lifestyle", "productivity"],
+  "icons": [
+    {
+      "src": "icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <rect width="512" height="512" rx="96" fill="#14171C"/>
+  <!-- Opportunity radar rings -->
+  <circle cx="256" cy="256" r="170" fill="none" stroke="#2E3440" stroke-width="14"/>
+  <circle cx="256" cy="256" r="120" fill="none" stroke="#2E3440" stroke-width="12"/>
+  <circle cx="256" cy="256" r="70" fill="none" stroke="#2E3440" stroke-width="10"/>
+  <!-- Brass arc sweep -->
+  <circle cx="256" cy="256" r="170" fill="none" stroke="#CD9A4E" stroke-width="14"
+    stroke-linecap="round" stroke-dasharray="420 650" stroke-dashoffset="80"
+    transform="rotate(-90 256 256)"/>
+  <!-- Center presence node -->
+  <circle cx="256" cy="256" r="22" fill="#CD9A4E"/>
+  <circle cx="256" cy="256" r="10" fill="#ECE8DF"/>
+  <!-- Connection nodes -->
+  <circle cx="340" cy="180" r="12" fill="#5FA98C"/>
+  <circle cx="180" cy="320" r="10" fill="#E4B268"/>
+  <circle cx="360" cy="300" r="9" fill="#9AA0AC"/>
+  <line x1="256" y1="256" x2="340" y2="180" stroke="#5FA98C" stroke-width="4" opacity="0.7"/>
+  <line x1="256" y1="256" x2="180" y2="320" stroke="#E4B268" stroke-width="4" opacity="0.7"/>
+  <line x1="256" y1="256" x2="360" y2="300" stroke="#9AA0AC" stroke-width="3" opacity="0.5"/>
+</svg>
