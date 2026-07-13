@@ -13,7 +13,7 @@
  *   id, name, short, badge, stats[], principle, models[], opportunities[],
  *   drills[{title,time,text}], challenges[{level,title,text}],
  *   reflections[], resources[{title,url,note}],
- *   quizzes[{q, choices, answer /* 0-based */, why}]
+ *   quizzes[{q, choices, answer (0-based index), why}]
  *
  * Pack schema: same + parent (core module id), optional avoid[]
  */
