@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <rect width="512" height="512" rx="96" fill="#14171C"/>
+  <!-- Vine ring -->
+  <circle cx="256" cy="256" r="148" fill="none" stroke="#2E3440" stroke-width="22"/>
+  <circle cx="256" cy="256" r="148" fill="none" stroke="#CD9A4E" stroke-width="22"
+    stroke-linecap="round" stroke-dasharray="620 930" stroke-dashoffset="40"
+    transform="rotate(-90 256 256)"/>
+  <!-- Branch node -->
+  <circle cx="256" cy="256" r="18" fill="#ECE8DF"/>
+  <!-- Small leaf marks -->
+  <ellipse cx="318" cy="198" rx="22" ry="12" fill="#5FA98C" transform="rotate(35 318 198)" opacity="0.9"/>
+  <ellipse cx="198" cy="300" rx="20" ry="11" fill="#5FA98C" transform="rotate(-40 198 300)" opacity="0.75"/>
+</svg>

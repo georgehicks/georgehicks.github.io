@@ -1,0 +1,19 @@
+{
+  "name": "Abide — Rest in the Vine",
+  "short_name": "Abide",
+  "description": "Mind, body, and spirit realignment — assertions, Scripture, and resting in Christ.",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#14171C",
+  "theme_color": "#14171C",
+  "categories": ["lifestyle", "education"],
+  "icons": [
+    {
+      "src": "icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
