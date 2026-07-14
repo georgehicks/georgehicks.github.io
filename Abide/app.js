@@ -330,11 +330,12 @@
     document.getElementById("realign-cta-meta").textContent =
       ASSERTIONS.length + " steps · confess · tag · identity";
 
-    var streakEl = document.getElementById("streak-badge");
-    var parts = [];
-    if (state.realignStreak > 0) parts.push("abide <b>" + state.realignStreak + "</b>");
-    if (state.challengeStreak > 0) parts.push("match <b>" + state.challengeStreak + "</b>");
-    streakEl.innerHTML = parts.join(" · ");
+    var streakRow = document.getElementById("streak-row");
+    var streakItems = [];
+    if (state.realignStreak > 0) streakItems.push('<div class="streak-item"><div class="streak-lbl">Abide</div><div class="streak-val">' + state.realignStreak + '</div></div>');
+    if (state.challengeStreak > 0) streakItems.push('<div class="streak-item"><div class="streak-lbl">Match</div><div class="streak-val">' + state.challengeStreak + '</div></div>');
+    streakRow.innerHTML = streakItems.join("");
+    streakRow.style.display = streakItems.length ? "flex" : "none";
 
     var strip = document.getElementById("home-history-strip");
     strip.innerHTML = realignHistory14().map(function (d) {

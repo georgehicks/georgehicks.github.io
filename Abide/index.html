@@ -50,8 +50,19 @@
   .topbar-left { display: flex; align-items: center; gap: 0.6rem; }
   .topbar-right { display: flex; align-items: center; gap: 0.75rem; }
   .icon-btn.playing { color: var(--brass-strong); border-color: var(--brass); }
-  .streak-badge { font-family: var(--font-mono); font-size: 0.72rem; color: var(--ink-muted); }
-  .streak-badge b { color: var(--brass-strong); font-variant-numeric: tabular-nums; }
+  .streak-row { display: flex; gap: 0.5rem; margin: 0 0 1.1rem; }
+  .streak-item {
+    flex: 1; background: var(--surface); border: 1px solid var(--border); border-radius: 10px;
+    padding: 0.5rem 0.4rem; text-align: center;
+  }
+  .streak-item .streak-lbl {
+    font-family: var(--font-mono); font-size: 0.62rem; letter-spacing: 0.08em; text-transform: uppercase;
+    color: var(--ink-faint);
+  }
+  .streak-item .streak-val {
+    font-family: var(--font-mono); font-weight: 700; font-size: 1rem; color: var(--brass-strong);
+    font-variant-numeric: tabular-nums; margin-top: 0.1rem;
+  }
   .link-btn {
     background: none; border: none; color: var(--ink-muted); font-size: 0.85rem;
     padding: 0.3rem 0.1rem; border-bottom: 1px solid transparent;
@@ -286,7 +297,6 @@
         <button class="icon-btn" id="song-restart" type="button" aria-label="Restart background song" title="Restart from beginning">↺</button>
       </div>
       <div class="topbar-right">
-        <span class="streak-badge" id="streak-badge"></span>
         <button class="link-btn" id="patterns-link" type="button">Patterns</button>
         <button class="icon-btn" id="theme-toggle" type="button" aria-label="Toggle theme">◐</button>
       </div>
@@ -298,6 +308,8 @@
     <div class="view active" data-view="home">
       <p class="greet-sub" id="home-date"></p>
       <h1 class="greet">Rest in the Vine</h1>
+
+      <div class="streak-row" id="streak-row"></div>
 
       <button class="cta" id="btn-realign" type="button">
         <div>
