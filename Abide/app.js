@@ -1193,6 +1193,14 @@
       if (audio.paused) audio.play().catch(function () {});
       else audio.pause();
     });
+
+    var restartBtn = document.getElementById("song-restart");
+    if (restartBtn) {
+      restartBtn.addEventListener("click", function () {
+        audio.currentTime = 0;
+        if (audio.paused) audio.play().catch(function () {});
+      });
+    }
   }
 
   function bind() {
