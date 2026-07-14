@@ -77,7 +77,15 @@
     display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.7rem;
   }
   .cta-title { font-weight: 700; font-size: 1.02rem; }
-  .cta-meta { font-family: var(--font-mono); font-size: 0.7rem; opacity: 0.75; margin-top: 0.2rem; letter-spacing: 0.03em; }
+  .cta-meta { font-family: var(--font-mono); font-size: 0.7rem; opacity: 0.75; margin-top: 0.2rem; letter-spacing: 0.03em; line-height: 1.45; }
+
+  .speed-stats { margin-top: 0.3rem; }
+  .stat-row { display: grid; grid-template-columns: 1.1em repeat(3, 2.3em) 2.1em; gap: 0.45rem; font-variant-numeric: tabular-nums; }
+  .stat-row + .stat-row { margin-top: 0.15rem; }
+  .stat-header { color: var(--ink-faint); font-size: 0.58rem; text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 0.2rem; }
+  .stat-header .stat-cell { text-align: center; }
+  .stat-op { color: var(--brass-strong); font-weight: 700; text-align: left; }
+  .stat-cell { text-align: right; }
   .cta-arrow { font-size: 1.3rem; }
 
   .cta-secondary {
@@ -496,21 +504,39 @@
     return shuffle(choices);
   }
 
-  function updateSpeedStats(type, ms) {
+  function updateSpeedStats(type, correct, ms) {
     var arr = state.speedStats[type] || (state.speedStats[type] = []);
-    arr.push(ms);
+    arr.push({ correct: correct, ms: correct ? ms : null });
     if (arr.length > 20) arr.shift();
+  }
+
+  // Entries saved before accuracy tracking was added are bare numbers
+  // (a correct-answer ms); normalize those alongside the {correct, ms} shape.
+  function speedStatEntries(op) {
+    return (state.speedStats[op] || []).map(function (e) {
+      return (typeof e === 'number') ? { correct: true, ms: e } : e;
+    });
   }
 
   function speedStatsSummary() {
     var ops = [['add', '+'], ['sub', '−'], ['mul', '×'], ['div', '÷']];
-    return ops.map(function (o) {
-      var arr = state.speedStats[o[0]] || [];
-      if (!arr.length) return o[1] + ' —';
-      var min = Math.min.apply(null, arr), max = Math.max.apply(null, arr);
-      var mean = Math.round(arr.reduce(function (a, b) { return a + b; }, 0) / arr.length);
-      return o[1] + ' ' + (min / 1000).toFixed(1) + '/' + (mean / 1000).toFixed(1) + '/' + (max / 1000).toFixed(1) + 's';
-    }).join(' · ');
+    var rows = ops.map(function (o) {
+      var entries = speedStatEntries(o[0]);
+      var cells;
+      if (!entries.length) {
+        cells = '<span class="stat-cell">—</span><span class="stat-cell">—</span><span class="stat-cell">—</span><span class="stat-cell">—</span>';
+      } else {
+        var times = entries.filter(function (e) { return e.correct; }).map(function (e) { return e.ms; });
+        var acc = Math.round(100 * entries.filter(function (e) { return e.correct; }).length / entries.length);
+        var minS = times.length ? (Math.min.apply(null, times) / 1000).toFixed(1) + 's' : '—';
+        var meanS = times.length ? (Math.round(times.reduce(function (a, b) { return a + b; }, 0) / times.length) / 1000).toFixed(1) + 's' : '—';
+        var maxS = times.length ? (Math.max.apply(null, times) / 1000).toFixed(1) + 's' : '—';
+        cells = '<span class="stat-cell">' + minS + '</span><span class="stat-cell">' + meanS + '</span><span class="stat-cell">' + maxS + '</span><span class="stat-cell">' + acc + '%</span>';
+      }
+      return '<div class="stat-row"><span class="stat-op">' + o[1] + '</span>' + cells + '</div>';
+    }).join('');
+    var header = '<div class="stat-row stat-header"><span class="stat-op"></span><span class="stat-cell">min</span><span class="stat-cell">avg</span><span class="stat-cell">max</span><span class="stat-cell">acc</span></div>';
+    return '<div class="speed-stats">' + header + rows + '</div>';
   }
 
   function hasSpeedStats() {
@@ -653,10 +679,10 @@
     if (!f.isRetry) {
       drill.results.push({ correct: correct, ms: ms });
       if (f.statKey) updateFactStats(f.statKey, correct, ms);
+      if (drill.mode === 'speed') updateSpeedStats(f.type, correct, ms);
     }
     if (correct) {
       if (!f.isRetry) state.xp += 5;
-      if (drill.mode === 'speed' && !f.isRetry) updateSpeedStats(f.type, ms);
       fb.innerHTML = '<span class="fb-ok">Correct</span>';
       saveState();
       setTimeout(nextDrillCard, 200);
@@ -789,7 +815,7 @@
     document.getElementById('mixed-double-meta').textContent = doubleWeak ? doubleWeak + ' combos need more reps' : 'Random +, −, ×, ÷ · double digits';
     document.getElementById('mixed-double-btn').onclick = function () { startMixedDrill('double'); };
 
-    document.getElementById('mixed-speed-meta').textContent = hasSpeedStats() ? speedStatsSummary() : 'Random +, −, ×, ÷ · digits 1–12 · multiple choice';
+    document.getElementById('mixed-speed-meta').innerHTML = hasSpeedStats() ? speedStatsSummary() : 'Random +, −, ×, ÷ · digits 1–12 · multiple choice';
     document.getElementById('mixed-speed-btn').onclick = function () { startMixedDrill('speed'); };
 
     renderLadder();

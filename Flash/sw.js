@@ -1,4 +1,4 @@
-const CACHE = 'flash-v4';
+const CACHE = 'flash-v5';
 const ASSETS = ['./index.html', './manifest.json', './icon.svg'];
 
 self.addEventListener('install', e => {
