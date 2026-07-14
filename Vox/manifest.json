@@ -1,0 +1,19 @@
+{
+  "name": "Vox — Voice Training",
+  "short_name": "Vox",
+  "description": "Pitch matching, warm-ups, range tracking, and speech delivery feedback — all from the microphone, nothing uploaded.",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#14171C",
+  "theme_color": "#14171C",
+  "categories": ["education", "health", "productivity"],
+  "icons": [
+    {
+      "src": "icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

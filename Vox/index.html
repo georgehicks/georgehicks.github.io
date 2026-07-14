@@ -1,0 +1,1579 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+<meta name="theme-color" content="#14171C" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+<meta name="description" content="Vox — pitch matching, warm-ups, range tracking, and speech delivery feedback, all from the microphone." />
+<title>Vox — Voice Training</title>
+<link rel="manifest" href="manifest.json" />
+<link rel="icon" href="icon.svg" type="image/svg+xml" />
+<link rel="apple-touch-icon" href="icon.svg" />
+<style>
+  :root {
+    --bg: #14171C; --surface: #1B1F26; --surface-2: #232832; --border: #2E3440;
+    --ink: #ECE8DF; --ink-muted: #9AA0AC; --ink-faint: #5B6270;
+    --brass: #CD9A4E; --brass-strong: #E4B268; --teal: #5FA98C; --rust: #C1614A;
+    --font-display: Georgia, "Iowan Old Style", "Palatino Linotype", "Book Antiqua", serif;
+    --font-body: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    --font-mono: ui-monospace, "SF Mono", "Cascadia Code", Menlo, Consolas, monospace;
+  }
+  @media (prefers-color-scheme: light) {
+    :root { --bg:#F5F1E8; --surface:#FFFFFF; --surface-2:#EDE7D8; --border:#DDD5C0;
+      --ink:#201C15; --ink-muted:#6B6455; --ink-faint:#A79E8A;
+      --brass:#A9782F; --brass-strong:#8C6224; --teal:#3F8367; --rust:#A8432C; }
+  }
+  :root[data-theme="dark"] { --bg:#14171C; --surface:#1B1F26; --surface-2:#232832; --border:#2E3440;
+    --ink:#ECE8DF; --ink-muted:#9AA0AC; --ink-faint:#5B6270;
+    --brass:#CD9A4E; --brass-strong:#E4B268; --teal:#5FA98C; --rust:#C1614A; }
+  :root[data-theme="light"] { --bg:#F5F1E8; --surface:#FFFFFF; --surface-2:#EDE7D8; --border:#DDD5C0;
+    --ink:#201C15; --ink-muted:#6B6455; --ink-faint:#A79E8A;
+    --brass:#A9782F; --brass-strong:#8C6224; --teal:#3F8367; --rust:#A8432C; }
+
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; }
+  body {
+    background: var(--bg); color: var(--ink); font-family: var(--font-body);
+    line-height: 1.5; font-size: 16px; -webkit-tap-highlight-color: transparent;
+  }
+  button, input, select { font-family: inherit; }
+  button { cursor: pointer; }
+  :focus-visible { outline: 2px solid var(--brass); outline-offset: 2px; }
+
+  .page { min-height: 100vh; padding: calc(1.25rem + env(safe-area-inset-top, 0px)) 1.1rem calc(3rem + env(safe-area-inset-bottom, 0px)); }
+  .wrap { max-width: 28rem; margin: 0 auto; }
+
+  .topbar { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.4rem; min-height: 2rem; }
+  .wordmark { font-family: var(--font-display); font-size: 1.3rem; }
+  .topbar-right { display: flex; align-items: center; gap: 0.9rem; }
+  .streak-badge { font-family: var(--font-mono); font-size: 0.72rem; color: var(--ink-muted); }
+  .streak-badge b { color: var(--brass-strong); font-variant-numeric: tabular-nums; }
+  .icon-btn {
+    background: var(--surface); border: 1px solid var(--border); border-radius: 8px;
+    width: 2rem; height: 2rem; display: flex; align-items: center; justify-content: center;
+    color: var(--ink-muted); font-size: 0.95rem;
+  }
+  .link-btn { background: none; border: none; color: var(--rust); font-size: 0.85rem; padding: 0.3rem 0.1rem; display: none; }
+  .topbar.in-session .topbar-right { display: none; }
+  .topbar.in-session .link-btn { display: inline-block; }
+
+  .view { display: none; }
+  .view.active { display: block; }
+
+  /* ---- home ---- */
+  .tagline { color: var(--ink-muted); font-size: 0.88rem; margin: -0.6rem 0 1.4rem; }
+  .mode-card {
+    width: 100%; border: 1px solid var(--border); text-align: left; background: var(--surface);
+    color: var(--ink); border-radius: 16px; padding: 1rem 1.1rem;
+    display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.8rem;
+  }
+  .mode-card.primary { background: linear-gradient(160deg, var(--brass-strong), var(--brass)); color: #1B1305; border: none; }
+  .mode-title { font-weight: 700; font-size: 1rem; }
+  .mode-desc { font-size: 0.78rem; color: var(--ink-muted); margin-top: 0.2rem; }
+  .mode-card.primary .mode-desc { color: #1B1305; opacity: 0.75; }
+  .mode-meta { font-family: var(--font-mono); font-size: 0.7rem; color: var(--ink-faint); margin-top: 0.3rem; letter-spacing: 0.02em; }
+  .mode-card.primary .mode-meta { color: #1B1305; opacity: 0.7; }
+  .mode-arrow { font-size: 1.3rem; flex-shrink: 0; margin-left: 0.6rem; }
+
+  .section-label {
+    font-family: var(--font-mono); font-size: 0.68rem; letter-spacing: 0.1em; text-transform: uppercase;
+    color: var(--ink-faint); margin: 1.5rem 0 0.6rem;
+  }
+  .mic-note { font-size: 0.76rem; color: var(--ink-faint); margin-top: 1.6rem; text-align: center; }
+
+  /* ---- shared session chrome ---- */
+  .mode-head { margin-bottom: 1.4rem; }
+  .mode-head h2 { font-family: var(--font-display); font-size: 1.25rem; margin: 0 0 0.3rem; }
+  .mode-head p { font-size: 0.85rem; color: var(--ink-muted); margin: 0; }
+  .subtabs { display: flex; gap: 0.5rem; margin-bottom: 1.2rem; }
+  .subtab-btn {
+    flex: 1; background: var(--surface); border: 1px solid var(--border); border-radius: 10px;
+    padding: 0.55rem; font-size: 0.82rem; color: var(--ink-muted); font-weight: 600;
+  }
+  .subtab-btn.active { color: var(--ink); border-color: var(--brass); background: var(--surface-2); }
+  .subview { display: none; }
+  .subview.active { display: block; }
+
+  .mic-gate { text-align: center; padding: 2.5rem 1rem; }
+  .mic-gate p { color: var(--ink-muted); font-size: 0.88rem; margin-bottom: 1.2rem; }
+  .cta-btn {
+    font-weight: 600; font-size: 0.92rem; background: var(--brass); color: #1B1305;
+    border: none; border-radius: 12px; padding: 0.7rem 1.4rem;
+  }
+  .cta-btn.ghost { background: var(--surface); color: var(--ink); border: 1px solid var(--border); }
+  .cta-btn.block { width: 100%; }
+  .cta-btn:disabled { opacity: 0.5; }
+
+  /* ---- pitch meter (tuner + drill) ---- */
+  .meter-stage { display: flex; flex-direction: column; align-items: center; text-align: center; padding: 1.2rem 0 0.6rem; }
+  .note-big { font-family: var(--font-mono); font-weight: 700; font-size: clamp(2.4rem, 1.9rem + 2.5vw, 3.2rem); letter-spacing: -0.01em; }
+  .note-big.idle { color: var(--ink-faint); }
+  .freq-sub { font-family: var(--font-mono); font-size: 0.8rem; color: var(--ink-muted); margin-top: 0.1rem; min-height: 1.1rem; }
+  .cents-track { position: relative; width: 100%; max-width: 20rem; height: 10px; border-radius: 5px; background: var(--surface-2); margin: 1.3rem 0 0.4rem; overflow: visible; }
+  .cents-zone { position: absolute; top: 0; bottom: 0; left: 45%; width: 10%; background: rgba(95,169,140,0.25); border-radius: 5px; }
+  .cents-tick { position: absolute; top: -3px; bottom: -3px; left: 50%; width: 2px; background: var(--ink-faint); }
+  .cents-marker {
+    position: absolute; top: -5px; width: 20px; height: 20px; margin-left: -10px;
+    border-radius: 50%; background: var(--ink-faint); left: 50%; transition: left 0.06s linear, background 0.15s;
+  }
+  .cents-marker.in-tune { background: var(--teal); }
+  .cents-marker.sharp, .cents-marker.flat { background: var(--rust); }
+  .cents-label { font-family: var(--font-mono); font-size: 0.72rem; color: var(--ink-faint); min-height: 1rem; }
+
+  .target-picker { display: flex; align-items: center; justify-content: center; gap: 0.6rem; margin-bottom: 0.6rem; }
+  .target-picker select { background: var(--surface); border: 1px solid var(--border); color: var(--ink); border-radius: 8px; padding: 0.45rem 0.6rem; font-size: 0.85rem; }
+  .listen-toggle { display: flex; justify-content: center; margin-top: 1rem; }
+
+  /* ---- drill ---- */
+  .drill-progress-track { height: 4px; border-radius: 2px; background: var(--surface-2); overflow: hidden; margin-bottom: 0.3rem; }
+  .drill-progress-fill { height: 100%; width: 0%; background: var(--brass); transition: width 0.25s ease; }
+  .drill-progress-label { font-family: var(--font-mono); font-size: 0.68rem; color: var(--ink-faint); }
+  .hold-ring-track { width: 4.2rem; height: 4.2rem; border-radius: 50%; border: 4px solid var(--surface-2); position: relative; margin: 1rem auto 0; display: flex; align-items: center; justify-content: center; }
+  .hold-ring-fill { position: absolute; inset: -4px; border-radius: 50%; }
+  .hold-ring-label { font-family: var(--font-mono); font-size: 0.75rem; color: var(--ink-muted); z-index: 1; }
+  .drill-feedback { margin-top: 1rem; min-height: 1.6rem; font-family: var(--font-mono); font-weight: 700; font-size: 1.05rem; }
+  .fb-ok { color: var(--teal); }
+  .fb-bad { color: var(--rust); }
+
+  .summary { padding-top: 0.5rem; width: 100%; }
+  .summary-verdict { font-family: var(--font-display); font-size: 1.4rem; margin-bottom: 1.4rem; text-wrap: balance; }
+  .summary-verdict.pass { color: var(--teal); }
+  .crit-row {
+    display: flex; justify-content: space-between; align-items: center;
+    background: var(--surface-2); border: 1px solid var(--border); border-radius: 10px;
+    padding: 0.7rem 0.9rem; margin-bottom: 0.5rem;
+  }
+  .crit-label { font-size: 0.85rem; color: var(--ink-muted); }
+  .crit-val { font-family: var(--font-mono); font-weight: 700; font-variant-numeric: tabular-nums; }
+  .summary-actions { display: flex; gap: 0.7rem; margin-top: 1.3rem; }
+  .summary-actions .cta-btn { flex: 1; }
+
+  /* ---- range / warm-up ---- */
+  .siren-canvas-wrap { width: 100%; background: var(--surface-2); border: 1px solid var(--border); border-radius: 14px; padding: 0.6rem; margin-bottom: 1rem; }
+  canvas { width: 100%; height: 12rem; display: block; }
+  .range-result { text-align: center; padding: 1rem 0; }
+  .range-result .big { font-family: var(--font-mono); font-size: 1.6rem; font-weight: 700; color: var(--brass-strong); }
+  .range-result .span { color: var(--ink-muted); font-size: 0.85rem; margin-top: 0.2rem; }
+  .history-list { margin-top: 0.4rem; }
+  .history-row {
+    display: flex; justify-content: space-between; align-items: center;
+    background: var(--surface); border: 1px solid var(--border); border-radius: 10px;
+    padding: 0.6rem 0.85rem; margin-bottom: 0.4rem; font-size: 0.82rem;
+  }
+  .history-date { color: var(--ink-faint); font-family: var(--font-mono); font-size: 0.72rem; }
+  .history-val { font-family: var(--font-mono); color: var(--ink); }
+  .empty-note { color: var(--ink-faint); font-size: 0.82rem; text-align: center; padding: 1rem 0; }
+
+  /* ---- speech ---- */
+  .rec-stage { text-align: center; padding: 1.4rem 0 0.6rem; }
+  .rec-dot { width: 0.7rem; height: 0.7rem; border-radius: 50%; background: var(--rust); display: inline-block; margin-right: 0.4rem; animation: pulse 1.2s infinite; }
+  @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.3; } }
+  .rec-timer { font-family: var(--font-mono); font-size: 2rem; font-weight: 700; margin: 0.6rem 0; }
+  .rec-vu-track { width: 100%; max-width: 18rem; height: 8px; border-radius: 4px; background: var(--surface-2); margin: 0 auto 1.2rem; overflow: hidden; }
+  .rec-vu-fill { height: 100%; width: 0%; background: var(--teal); }
+  .feedback-list { display: flex; flex-direction: column; gap: 0.6rem; margin-top: 1rem; }
+  .feedback-item {
+    background: var(--surface-2); border: 1px solid var(--border); border-radius: 12px; padding: 0.8rem 0.95rem;
+  }
+  .feedback-item .fi-label { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.06em; color: var(--ink-faint); }
+  .feedback-item .fi-val { font-family: var(--font-mono); font-weight: 700; font-size: 1.1rem; margin: 0.15rem 0; }
+  .feedback-item .fi-note { font-size: 0.82rem; color: var(--ink-muted); }
+  .fi-trend { font-family: var(--font-mono); font-size: 0.72rem; color: var(--ink-faint); margin-top: 0.3rem; }
+  .privacy-note { font-size: 0.72rem; color: var(--ink-faint); text-align: center; margin-top: 1rem; }
+  .chip-list { display: flex; flex-wrap: wrap; gap: 0.4rem; margin-top: 0.5rem; }
+  .chip { font-family: var(--font-mono); font-size: 0.78rem; background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 0.3rem 0.55rem; }
+  .transcript-box { font-size: 0.8rem; color: var(--ink-muted); font-style: italic; margin-top: 0.7rem; line-height: 1.5; }
+  #accuracy-status { font-size: 0.82rem; color: var(--ink-muted); text-align: center; padding: 0.5rem 0; }
+  .passage-box {
+    background: var(--surface-2); border: 1px solid var(--border); border-radius: 12px;
+    padding: 0.9rem 1rem; font-size: 0.92rem; line-height: 1.6; color: var(--ink); margin-bottom: 1rem;
+  }
+  .passage-box-active { text-align: left; max-height: 8rem; overflow-y: auto; font-size: 0.85rem; margin: 1rem 0; }
+
+  @media (prefers-reduced-motion: reduce) {
+    .drill-progress-fill, .cents-marker, .rec-dot { transition: none; animation: none; }
+  }
+</style>
+</head>
+<body>
+<div class="page">
+  <div class="wrap">
+
+    <div class="topbar" id="topbar">
+      <div class="wordmark">Vox</div>
+      <div class="topbar-right">
+        <span class="streak-badge" id="streak-badge"></span>
+        <button class="icon-btn" id="theme-toggle" type="button" aria-label="Toggle theme">◐</button>
+      </div>
+      <button class="link-btn" id="exit-session-btn" type="button">Exit</button>
+    </div>
+
+    <!-- HOME -->
+    <div class="view active" data-view="home">
+      <p class="tagline">Train pitch, range, and delivery — straight from the mic.</p>
+
+      <button class="mode-card" id="home-tuner-btn" type="button">
+        <div>
+          <div class="mode-title">Tuner</div>
+          <div class="mode-desc">Sustain a note, watch your pitch in real time</div>
+        </div>
+        <div class="mode-arrow">→</div>
+      </button>
+
+      <button class="mode-card primary" id="home-drill-btn" type="button">
+        <div>
+          <div class="mode-title">Pitch Match Drill</div>
+          <div class="mode-meta" id="drill-meta">—</div>
+        </div>
+        <div class="mode-arrow">→</div>
+      </button>
+
+      <button class="mode-card" id="home-range-btn" type="button">
+        <div>
+          <div class="mode-title">Warm-ups &amp; Range</div>
+          <div class="mode-desc" id="range-meta">Sirens and a range finder</div>
+        </div>
+        <div class="mode-arrow">→</div>
+      </button>
+
+      <button class="mode-card" id="home-speech-btn" type="button">
+        <div>
+          <div class="mode-title">Speech Pacing</div>
+          <div class="mode-desc" id="speech-meta">Record a bit of talking, get delivery feedback</div>
+        </div>
+        <div class="mode-arrow">→</div>
+      </button>
+
+      <button class="mode-card" id="home-profile-btn" type="button">
+        <div>
+          <div class="mode-title">Voice Profile</div>
+          <div class="mode-desc" id="profile-meta">A rough read on your speaking pitch, tone, and voice type</div>
+        </div>
+        <div class="mode-arrow">→</div>
+      </button>
+
+      <p class="mic-note">Uses your microphone locally. Voice is analyzed live and never uploaded — the optional reading-accuracy check briefly holds audio in memory on-device to run a local speech model, then discards it.</p>
+    </div>
+
+    <!-- TUNER -->
+    <div class="view" data-view="tuner">
+      <div class="mode-head"><h2>Tuner</h2><p>Pick a note and hold it steady, or leave it on Free to see whatever you sing.</p></div>
+      <div class="mic-gate" id="tuner-gate">
+        <p>Vox needs mic access to hear your pitch.</p>
+        <button class="cta-btn" id="tuner-enable-btn" type="button">Enable microphone</button>
+      </div>
+      <div id="tuner-body" style="display:none;">
+        <div class="target-picker">
+          <label for="tuner-target-select" style="font-size:0.82rem;color:var(--ink-muted);">Target</label>
+          <select id="tuner-target-select"></select>
+        </div>
+        <div class="meter-stage">
+          <div class="note-big idle" id="tuner-note">—</div>
+          <div class="freq-sub" id="tuner-freq">&nbsp;</div>
+          <div class="cents-track">
+            <div class="cents-zone"></div>
+            <div class="cents-tick"></div>
+            <div class="cents-marker" id="tuner-marker" style="left:50%;"></div>
+          </div>
+          <div class="cents-label" id="tuner-cents-label">&nbsp;</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- DRILL -->
+    <div class="view" data-view="drill">
+      <div class="mode-head"><h2>Pitch Match Drill</h2><p id="drill-sub">Sing the target note and hold it steady.</p></div>
+      <div class="mic-gate" id="drill-gate">
+        <p>Vox needs mic access to score your pitch.</p>
+        <button class="cta-btn" id="drill-enable-btn" type="button">Enable microphone</button>
+      </div>
+      <div id="drill-body" style="display:none;">
+        <div id="drill-start-screen">
+          <p style="color:var(--ink-muted);font-size:0.85rem;">10 random notes drawn from your working range. Hold each one within pitch for about a second.</p>
+          <button class="cta-btn block" id="drill-start-btn" type="button">Start drill</button>
+        </div>
+        <div id="drill-session" style="display:none;">
+          <div class="drill-progress-track"><div class="drill-progress-fill" id="drill-progress-fill"></div></div>
+          <div class="drill-progress-label" id="drill-progress-label"></div>
+          <div class="meter-stage" id="drill-stage">
+            <div class="note-big idle" id="drill-note">—</div>
+            <div class="freq-sub" id="drill-freq">&nbsp;</div>
+            <div class="cents-track">
+              <div class="cents-zone"></div>
+              <div class="cents-tick"></div>
+              <div class="cents-marker" id="drill-marker" style="left:50%;"></div>
+            </div>
+            <div class="hold-ring-track"><span class="hold-ring-label" id="drill-hold-label">0%</span></div>
+            <div class="drill-feedback" id="drill-feedback"></div>
+          </div>
+          <div id="drill-summary" style="display:none;"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- RANGE / WARM-UPS -->
+    <div class="view" data-view="range">
+      <div class="mode-head"><h2>Warm-ups &amp; Range</h2><p>Glide through a siren to warm up, or find your current range.</p></div>
+      <div class="subtabs">
+        <button class="subtab-btn active" data-subtab="siren" type="button">Siren warm-up</button>
+        <button class="subtab-btn" data-subtab="finder" type="button">Find my range</button>
+      </div>
+      <div class="mic-gate" id="range-gate">
+        <p>Vox needs mic access for this one.</p>
+        <button class="cta-btn" id="range-enable-btn" type="button">Enable microphone</button>
+      </div>
+      <div id="range-body" style="display:none;">
+        <div class="subview active" data-subview="siren">
+          <div class="siren-canvas-wrap"><canvas id="siren-canvas" width="600" height="240"></canvas></div>
+          <p style="color:var(--ink-muted);font-size:0.82rem;text-align:center;">The line glides between two notes — follow it with an "ooh" or a hum. Your pitch traces in teal.</p>
+          <button class="cta-btn block" id="siren-toggle-btn" type="button">Start warm-up</button>
+        </div>
+        <div class="subview" data-subview="finder">
+          <div id="finder-idle">
+            <p style="color:var(--ink-muted);font-size:0.85rem;">Hum or sing from your lowest comfortable note up to your highest, then stop. Up to 15 seconds.</p>
+            <button class="cta-btn block" id="finder-start-btn" type="button">Start</button>
+          </div>
+          <div id="finder-active" style="display:none;text-align:center;">
+            <div class="rec-timer" id="finder-timer">0:00</div>
+            <div class="note-big idle" id="finder-note">—</div>
+            <button class="cta-btn ghost block" id="finder-stop-btn" type="button" style="margin-top:1rem;">Stop</button>
+          </div>
+          <div id="finder-result" style="display:none;"></div>
+          <div class="section-label">History</div>
+          <div class="history-list" id="finder-history"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SPEECH -->
+    <div class="view" data-view="speech">
+      <div class="mode-head"><h2>Speech Pacing</h2><p>Read or talk naturally for up to a minute, then see how your delivery landed.</p></div>
+      <div class="subtabs">
+        <button class="subtab-btn active" data-speech-subtab="free" type="button">Free talk</button>
+        <button class="subtab-btn" data-speech-subtab="passage" type="button">Read passage</button>
+      </div>
+      <div class="mic-gate" id="speech-gate">
+        <p>Vox needs mic access to listen.</p>
+        <button class="cta-btn" id="speech-enable-btn" type="button">Enable microphone</button>
+      </div>
+      <div id="speech-body" style="display:none;">
+        <div id="speech-idle">
+          <div class="subview active" data-speech-subview="free">
+            <p style="color:var(--ink-muted);font-size:0.85rem;">Talk about anything — describe your day, rehearse a talk. Good for a general read on delivery.</p>
+          </div>
+          <div class="subview" data-speech-subview="passage">
+            <p style="color:var(--ink-muted);font-size:0.85rem;">Read the passage below at a natural pace. Because the words are fixed, this is the one worth tracking over time — later readings are directly comparable to earlier ones.</p>
+            <div class="passage-box" id="passage-text">Before the storm rolled over the quiet valley, a fox paced along the ridge, sniffing at the cool autumn air. Farther down, children chased a bright kite across the open field, laughing as gusts shook the ribbons and tugged it higher. Their grandmother watched from the porch, humming an old tune while she peeled apples for a pie. By evening, thick clouds gathered above the hills, and the first heavy drops began to patter on the tin roof. Everyone hurried inside, joking about who would get soaked fetching the last basket of vegetables from the garden.</div>
+          </div>
+          <button class="cta-btn block" id="speech-start-btn" type="button">Start recording</button>
+        </div>
+        <div id="speech-active" style="display:none;">
+          <div class="rec-stage">
+            <div><span class="rec-dot"></span><span style="color:var(--ink-muted);font-size:0.85rem;">Listening</span></div>
+            <div class="rec-timer" id="speech-timer">0:00</div>
+            <div class="rec-vu-track"><div class="rec-vu-fill" id="speech-vu"></div></div>
+            <div class="passage-box passage-box-active" id="passage-text-active" style="display:none;"></div>
+            <button class="cta-btn ghost block" id="speech-stop-btn" type="button">Stop</button>
+          </div>
+        </div>
+        <div id="speech-result" style="display:none;"></div>
+        <p class="privacy-note">Nothing you say is recorded to a file — only live pitch, pace, tone, and volume signals are measured.</p>
+        <div class="section-label">History</div>
+        <div class="history-list" id="speech-history"></div>
+      </div>
+    </div>
+
+    <!-- VOICE PROFILE -->
+    <div class="view" data-view="profile">
+      <div class="mode-head"><h2>Voice Profile</h2><p>Talk normally for a few seconds — this reads your speaking pitch, tone, and (if you've run Find My Range) a rough voice-type match.</p></div>
+      <div class="mic-gate" id="profile-gate">
+        <p>Vox needs mic access to listen.</p>
+        <button class="cta-btn" id="profile-enable-btn" type="button">Enable microphone</button>
+      </div>
+      <div id="profile-body" style="display:none;">
+        <div id="profile-idle">
+          <p style="color:var(--ink-muted);font-size:0.85rem;">Just talk normally — describe your day, read something aloud. About 10 seconds is enough.</p>
+          <button class="cta-btn block" id="profile-start-btn" type="button">Record voice sample</button>
+        </div>
+        <div id="profile-active" style="display:none;">
+          <div class="rec-stage">
+            <div><span class="rec-dot"></span><span style="color:var(--ink-muted);font-size:0.85rem;">Listening</span></div>
+            <div class="rec-timer" id="profile-timer">0:00</div>
+            <div class="rec-vu-track"><div class="rec-vu-fill" id="profile-vu"></div></div>
+            <button class="cta-btn ghost block" id="profile-stop-btn" type="button">Stop</button>
+          </div>
+        </div>
+        <div id="profile-result" style="display:none;"></div>
+        <div class="section-label">History</div>
+        <div class="history-list" id="profile-history"></div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+(function () {
+  "use strict";
+
+  /* ================= note / pitch math ================= */
+  var NOTE_NAMES = ['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'];
+  function midiToName(m) { return NOTE_NAMES[((m % 12) + 12) % 12] + (Math.floor(m / 12) - 1); }
+  function midiToFreq(m) { return 440 * Math.pow(2, (m - 69) / 12); }
+  function freqToMidiContinuous(f) { return 69 + 12 * (Math.log(f / 440) / Math.LN2); }
+
+  /* ================= audio engine ================= */
+  var audioCtx = null, analyser = null, micStream = null, sourceNode = null, micReady = false;
+
+  function ensureMic() {
+    if (micReady) return Promise.resolve();
+    return navigator.mediaDevices.getUserMedia({
+      audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: false }
+    }).then(function (stream) {
+      micStream = stream;
+      audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      sourceNode = audioCtx.createMediaStreamSource(stream);
+      analyser = audioCtx.createAnalyser();
+      analyser.fftSize = 2048;
+      sourceNode.connect(analyser);
+      micReady = true;
+    });
+  }
+
+  // Autocorrelation pitch detector restricted to the human voice band (70-1000Hz)
+  // for speed, with parabolic interpolation for sub-sample lag precision and a
+  // normalized-correlation floor to reject unvoiced/noisy frames.
+  var pitchBuf = new Float32Array(2048);
+  function autoCorrelate(buf, sampleRate) {
+    var SIZE = buf.length;
+    var rms = 0;
+    for (var i = 0; i < SIZE; i++) rms += buf[i] * buf[i];
+    var energy = rms / SIZE;
+    rms = Math.sqrt(energy);
+    if (rms < 0.01) return -1;
+
+    var minLag = Math.floor(sampleRate / 1000);
+    var maxLag = Math.min(Math.ceil(sampleRate / 70), SIZE - 2);
+
+    function corrAt(lag) {
+      var c = 0;
+      var n = SIZE - lag;
+      for (var i = 0; i < n; i++) c += buf[i] * buf[i + lag];
+      return c / n;
+    }
+
+    var bestLag = -1, bestCorr = 0;
+    for (var lag = minLag; lag <= maxLag; lag++) {
+      var c = corrAt(lag);
+      if (c > bestCorr) { bestCorr = c; bestLag = lag; }
+    }
+    if (bestLag < 0 || energy <= 0 || bestCorr / energy < 0.35) return -1;
+
+    var y1 = bestLag - 1 >= minLag ? corrAt(bestLag - 1) : bestCorr;
+    var y2 = bestCorr;
+    var y3 = bestLag + 1 <= maxLag ? corrAt(bestLag + 1) : bestCorr;
+    var denom = (y1 - 2 * y2 + y3);
+    var shift = denom !== 0 ? 0.5 * (y1 - y3) / denom : 0;
+    var refinedLag = bestLag + shift;
+    return sampleRate / refinedLag;
+  }
+
+  function analyzeFrame() {
+    analyser.getFloatTimeDomainData(pitchBuf);
+    var rms = 0;
+    for (var i = 0; i < pitchBuf.length; i++) rms += pitchBuf[i] * pitchBuf[i];
+    rms = Math.sqrt(rms / pitchBuf.length);
+    var freq = autoCorrelate(pitchBuf, audioCtx.sampleRate);
+    return { freq: freq > 0 ? freq : null, rms: rms };
+  }
+
+  // Spectral centroid: energy-weighted average frequency across the current
+  // frame's spectrum. Higher = more high-harmonic energy ("brighter" tone),
+  // lower = energy concentrated in the fundamental/low harmonics ("warmer").
+  // hfRatio: share of energy sitting above 2kHz, the band consonants (s, f,
+  // sh, t, k...) mostly live in — a rough proxy for articulation "crispness"
+  // vs. energy piling up low, which reads as muffled. Both are coarse,
+  // relative signals, not validated acoustic-phonetic measurements.
+  var spectralFreqData = null;
+  function computeSpectralMetrics() {
+    if (!spectralFreqData) spectralFreqData = new Float32Array(analyser.frequencyBinCount);
+    analyser.getFloatFrequencyData(spectralFreqData);
+    var binHz = audioCtx.sampleRate / analyser.fftSize;
+    var num = 0, den = 0, hfEnergy = 0, totalEnergy = 0;
+    for (var i = 0; i < spectralFreqData.length; i++) {
+      var db = spectralFreqData[i];
+      if (!isFinite(db)) continue;
+      var mag = Math.pow(10, db / 20);
+      var f = i * binHz;
+      num += f * mag;
+      den += mag;
+      if (f <= 8000) {
+        var energy = mag * mag;
+        totalEnergy += energy;
+        if (f >= 2000) hfEnergy += energy;
+      }
+    }
+    return {
+      centroid: den > 0 ? num / den : null,
+      hfRatio: totalEnergy > 0 ? hfEnergy / totalEnergy : null
+    };
+  }
+
+  function playReferenceTone(freq, dur) {
+    if (!audioCtx) return;
+    var osc = audioCtx.createOscillator();
+    var gain = audioCtx.createGain();
+    osc.type = 'sine';
+    osc.frequency.value = freq;
+    gain.gain.value = 0;
+    osc.connect(gain).connect(audioCtx.destination);
+    var now = audioCtx.currentTime;
+    gain.gain.linearRampToValueAtTime(0.15, now + 0.03);
+    gain.gain.linearRampToValueAtTime(0.15, now + Math.max(0.05, dur - 0.05));
+    gain.gain.linearRampToValueAtTime(0, now + dur);
+    osc.start(now);
+    osc.stop(now + dur + 0.02);
+  }
+
+  /* ================= state ================= */
+  var LS_KEY = 'vox-state-v1';
+  function defaultState() {
+    return {
+      theme: null, streak: 0, lastPlayedDate: null,
+      drill: { bestStreak: 0, lastAccuracy: null, sessions: [] },
+      range: { history: [] },
+      speech: { history: [] },
+      profile: { history: [] }
+    };
+  }
+  function loadState() {
+    try {
+      var raw = localStorage.getItem(LS_KEY);
+      if (raw) {
+        var parsed = JSON.parse(raw);
+        return Object.assign(defaultState(), parsed, {
+          drill: Object.assign(defaultState().drill, parsed.drill || {}),
+          range: Object.assign(defaultState().range, parsed.range || {}),
+          speech: Object.assign(defaultState().speech, parsed.speech || {}),
+          profile: Object.assign(defaultState().profile, parsed.profile || {})
+        });
+      }
+    } catch (e) {}
+    return defaultState();
+  }
+  function saveState() { try { localStorage.setItem(LS_KEY, JSON.stringify(state)); } catch (e) {} }
+  var state = loadState();
+
+  function todayStr() { return new Date().toISOString().slice(0, 10); }
+  function markPracticedToday() {
+    var today = todayStr();
+    if (state.lastPlayedDate === today) return;
+    var yesterday = new Date(Date.now() - 86400000).toISOString().slice(0, 10);
+    state.streak = (state.lastPlayedDate === yesterday) ? state.streak + 1 : 1;
+    state.lastPlayedDate = today;
+    saveState();
+  }
+
+  function fmtClock(sec) {
+    var m = Math.floor(sec / 60), s = Math.floor(sec % 60);
+    return m + ':' + (s < 10 ? '0' : '') + s;
+  }
+
+  /* ================= view switching ================= */
+  var activeView = 'home';
+  function showView(name) {
+    activeView = name;
+    document.querySelectorAll('.view').forEach(function (v) { v.classList.toggle('active', v.getAttribute('data-view') === name); });
+    document.getElementById('topbar').classList.toggle('in-session', name !== 'home');
+    stopAllLoops();
+    if (name === 'tuner') enterTuner();
+    else if (name === 'drill') enterDrill();
+    else if (name === 'range') enterRange();
+    else if (name === 'speech') enterSpeech();
+    else if (name === 'profile') enterProfile();
+    else renderHome();
+  }
+
+  function stopAllLoops() {
+    if (tunerRaf) cancelAnimationFrame(tunerRaf), tunerRaf = null;
+    if (drillRaf) cancelAnimationFrame(drillRaf), drillRaf = null;
+    if (sirenRaf) cancelAnimationFrame(sirenRaf), sirenRaf = null;
+    if (finderRaf) cancelAnimationFrame(finderRaf), finderRaf = null;
+    if (speechRaf) cancelAnimationFrame(speechRaf), speechRaf = null;
+    if (profileRaf) cancelAnimationFrame(profileRaf), profileRaf = null;
+    if (finderTimerInt) clearInterval(finderTimerInt), finderTimerInt = null;
+    if (speechTimerInt) clearInterval(speechTimerInt), speechTimerInt = null;
+    if (profileTimerInt) clearInterval(profileTimerInt), profileTimerInt = null;
+  }
+
+  /* ================= home ================= */
+  function renderHome() {
+    document.getElementById('streak-badge').innerHTML = state.streak ? 'Streak <b>' + state.streak + '</b>' : '';
+
+    var d = state.drill;
+    document.getElementById('drill-meta').textContent = d.sessions.length
+      ? 'BEST STREAK ' + d.bestStreak + ' · LAST ' + d.lastAccuracy + '%'
+      : '10 TARGET NOTES · HOLD STEADY';
+
+    var rh = state.range.history;
+    if (rh.length) {
+      var last = rh[rh.length - 1];
+      document.getElementById('range-meta').textContent = midiToName(last.lowNote) + ' – ' + midiToName(last.highNote) + ' (' + (last.highNote - last.lowNote) + ' semitones)';
+    } else {
+      document.getElementById('range-meta').textContent = 'Sirens and a range finder';
+    }
+
+    var sh = state.speech.history;
+    if (sh.length) {
+      var lastS = sh[sh.length - 1];
+      document.getElementById('speech-meta').textContent = lastS.pitchRange.toFixed(1) + ' semitones of variation last time';
+    } else {
+      document.getElementById('speech-meta').textContent = 'Record a bit of talking, get delivery feedback';
+    }
+
+    var ph = state.profile.history;
+    if (ph.length) {
+      var lastP = ph[ph.length - 1];
+      var matchLabel = lastP.matches && lastP.matches.length ? lastP.matches[0].label : midiToName(lastP.avgNote) + ' avg';
+      document.getElementById('profile-meta').textContent = matchLabel + ' · ' + lastP.avgHz.toFixed(0) + ' Hz avg speaking pitch';
+    } else {
+      document.getElementById('profile-meta').textContent = 'A rough read on your speaking pitch, tone, and voice type';
+    }
+  }
+
+  /* ================= tuner ================= */
+  var tunerRaf = null;
+  var TUNER_TARGETS = [];
+  (function buildTunerTargets() {
+    TUNER_TARGETS.push({ value: 'free', label: 'Free (no target)' });
+    for (var m = 48; m <= 79; m++) TUNER_TARGETS.push({ value: String(m), label: midiToName(m) });
+  })();
+
+  function enterTuner() {
+    var sel = document.getElementById('tuner-target-select');
+    if (!sel.options.length) {
+      sel.innerHTML = TUNER_TARGETS.map(function (t) { return '<option value="' + t.value + '">' + t.label + '</option>'; }).join('');
+      sel.value = '60';
+    }
+    var gate = document.getElementById('tuner-gate'), body = document.getElementById('tuner-body');
+    if (micReady) { gate.style.display = 'none'; body.style.display = ''; startTunerLoop(); }
+    else { gate.style.display = ''; body.style.display = 'none'; }
+  }
+
+  function startTunerLoop() {
+    function loop() {
+      var r = analyzeFrame();
+      renderTunerFrame(r);
+      tunerRaf = requestAnimationFrame(loop);
+    }
+    loop();
+  }
+
+  function renderTunerFrame(r) {
+    var noteEl = document.getElementById('tuner-note');
+    var freqEl = document.getElementById('tuner-freq');
+    var marker = document.getElementById('tuner-marker');
+    var centsLabel = document.getElementById('tuner-cents-label');
+    var targetVal = document.getElementById('tuner-target-select').value;
+
+    if (!r.freq) {
+      noteEl.textContent = '—'; noteEl.classList.add('idle');
+      freqEl.innerHTML = '&nbsp;';
+      marker.style.left = '50%'; marker.className = 'cents-marker';
+      centsLabel.innerHTML = '&nbsp;';
+      return;
+    }
+    var midiCont = freqToMidiContinuous(r.freq);
+    var targetNote = targetVal === 'free' ? Math.round(midiCont) : Number(targetVal);
+    var cents = Math.round((midiCont - targetNote) * 100);
+    var clamped = Math.max(-50, Math.min(50, cents));
+
+    noteEl.textContent = midiToName(targetVal === 'free' ? Math.round(midiCont) : targetNote);
+    noteEl.classList.remove('idle');
+    freqEl.textContent = r.freq.toFixed(1) + ' Hz';
+    marker.style.left = (50 + clamped) + '%';
+    marker.className = 'cents-marker' + (Math.abs(cents) <= 10 ? ' in-tune' : (cents > 0 ? ' sharp' : ' flat'));
+    centsLabel.textContent = Math.abs(cents) <= 10 ? 'in tune' : (cents > 0 ? '+' + cents + ' cents (sharp)' : cents + ' cents (flat)');
+  }
+
+  document.getElementById('tuner-enable-btn').addEventListener('click', function () {
+    ensureMic().then(function () { enterTuner(); }).catch(function () { alert('Microphone access was denied or unavailable.'); });
+  });
+
+  /* ================= drill ================= */
+  var drillRaf = null;
+  var drill = null; // { notes:[], idx, results:[], holdMs, elapsedMs, lastTs }
+  var HOLD_TOLERANCE_CENTS = 25, HOLD_REQUIRED_MS = 1100, NOTE_TIME_LIMIT_MS = 8000;
+
+  function getDrillRange() {
+    var rh = state.range.history;
+    if (rh.length) {
+      var last = rh[rh.length - 1];
+      var lo = last.lowNote + 2, hi = last.highNote - 2;
+      if (hi - lo >= 6) return [lo, hi];
+    }
+    return [55, 72];
+  }
+
+  function enterDrill() {
+    var gate = document.getElementById('drill-gate'), body = document.getElementById('drill-body');
+    if (micReady) { gate.style.display = 'none'; body.style.display = ''; }
+    else { gate.style.display = ''; body.style.display = 'none'; return; }
+    document.getElementById('drill-start-screen').style.display = drill ? 'none' : '';
+    document.getElementById('drill-session').style.display = drill ? '' : 'none';
+    if (drill) startDrillLoop();
+  }
+
+  document.getElementById('drill-enable-btn').addEventListener('click', function () {
+    ensureMic().then(function () { enterDrill(); }).catch(function () { alert('Microphone access was denied or unavailable.'); });
+  });
+
+  document.getElementById('drill-start-btn').addEventListener('click', function () {
+    var range = getDrillRange();
+    var pool = [];
+    for (var m = range[0]; m <= range[1]; m++) pool.push(m);
+    for (var i = pool.length - 1; i > 0; i--) { var j = Math.floor(Math.random() * (i + 1)); var t = pool[i]; pool[i] = pool[j]; pool[j] = t; }
+    var notes = [];
+    while (notes.length < 10) notes.push(pool[notes.length % pool.length]);
+    drill = { notes: notes, idx: 0, results: [], holdMs: 0, elapsedMs: 0, lastTs: null, done: false };
+    document.getElementById('drill-start-screen').style.display = 'none';
+    document.getElementById('drill-session').style.display = '';
+    document.getElementById('drill-card') || null;
+    document.getElementById('drill-stage').style.display = '';
+    document.getElementById('drill-summary').style.display = 'none';
+    beginDrillNote();
+    startDrillLoop();
+  });
+
+  function beginDrillNote() {
+    drill.holdMs = 0; drill.elapsedMs = 0; drill.lastTs = null; drill.answered = false;
+    var note = drill.notes[drill.idx];
+    document.getElementById('drill-feedback').innerHTML = '';
+    document.getElementById('drill-sub').textContent = 'Target: ' + midiToName(note);
+    updateDrillProgress();
+    if (audioCtx) playReferenceTone(midiToFreq(note), 0.7);
+  }
+
+  function updateDrillProgress() {
+    var pct = Math.round(100 * drill.idx / drill.notes.length);
+    document.getElementById('drill-progress-fill').style.width = pct + '%';
+    document.getElementById('drill-progress-label').textContent = drill.idx + ' / ' + drill.notes.length;
+  }
+
+  function startDrillLoop() {
+    function loop(ts) {
+      if (!drill || drill.answered) { drillRaf = requestAnimationFrame(loop); return; }
+      if (drill.lastTs === null) drill.lastTs = ts;
+      var dt = ts - drill.lastTs;
+      drill.lastTs = ts;
+      var r = analyzeFrame();
+      var note = drill.notes[drill.idx];
+      var cents = null;
+      if (r.freq) {
+        var midiCont = freqToMidiContinuous(r.freq);
+        cents = Math.round((midiCont - note) * 100);
+      }
+      renderDrillFrame(r, note, cents);
+
+      if (cents !== null && Math.abs(cents) <= HOLD_TOLERANCE_CENTS) drill.holdMs += dt;
+      else drill.holdMs = Math.max(0, drill.holdMs - dt * 1.5);
+      drill.elapsedMs += dt;
+
+      var pct = Math.min(100, Math.round(100 * drill.holdMs / HOLD_REQUIRED_MS));
+      document.getElementById('drill-hold-label').textContent = pct + '%';
+      document.getElementById('drill-stage').querySelector('.hold-ring-track').style.borderColor = pct >= 100 ? 'var(--teal)' : 'var(--surface-2)';
+
+      if (drill.holdMs >= HOLD_REQUIRED_MS) resolveDrillNote(true, cents);
+      else if (drill.elapsedMs >= NOTE_TIME_LIMIT_MS) resolveDrillNote(false, cents);
+
+      drillRaf = requestAnimationFrame(loop);
+    }
+    drillRaf = requestAnimationFrame(loop);
+  }
+
+  function renderDrillFrame(r, targetNote, cents) {
+    var noteEl = document.getElementById('drill-note');
+    var freqEl = document.getElementById('drill-freq');
+    var marker = document.getElementById('drill-marker');
+    if (!r.freq) {
+      noteEl.textContent = '—'; noteEl.classList.add('idle');
+      freqEl.innerHTML = '&nbsp;';
+      marker.style.left = '50%'; marker.className = 'cents-marker';
+      return;
+    }
+    var clamped = Math.max(-50, Math.min(50, cents));
+    noteEl.textContent = midiToName(Math.round(freqToMidiContinuous(r.freq)));
+    noteEl.classList.remove('idle');
+    freqEl.textContent = r.freq.toFixed(1) + ' Hz · target ' + midiToName(targetNote);
+    marker.style.left = (50 + clamped) + '%';
+    marker.className = 'cents-marker' + (Math.abs(cents) <= HOLD_TOLERANCE_CENTS ? ' in-tune' : (cents > 0 ? ' sharp' : ' flat'));
+  }
+
+  function resolveDrillNote(success, cents) {
+    drill.answered = true;
+    drill.results.push({ note: drill.notes[drill.idx], success: success, cents: cents });
+    var fb = document.getElementById('drill-feedback');
+    fb.innerHTML = success ? '<span class="fb-ok">Nice — matched</span>' : '<span class="fb-bad">Missed — was ' + midiToName(drill.notes[drill.idx]) + '</span>';
+    setTimeout(function () {
+      drill.idx++;
+      if (drill.idx >= drill.notes.length) renderDrillSummary();
+      else beginDrillNote();
+    }, success ? 500 : 900);
+  }
+
+  function renderDrillSummary() {
+    updateDrillProgress();
+    var total = drill.results.length;
+    var hits = drill.results.filter(function (r) { return r.success; }).length;
+    var accuracy = total ? Math.round(100 * hits / total) : 0;
+    var bestStreak = 0, cur = 0;
+    drill.results.forEach(function (r) { if (r.success) { cur++; bestStreak = Math.max(bestStreak, cur); } else cur = 0; });
+
+    state.drill.sessions.push({ date: todayStr(), accuracy: accuracy, bestStreak: bestStreak });
+    if (state.drill.sessions.length > 40) state.drill.sessions.shift();
+    state.drill.lastAccuracy = accuracy;
+    state.drill.bestStreak = Math.max(state.drill.bestStreak, bestStreak);
+    markPracticedToday();
+    saveState();
+
+    document.getElementById('drill-stage').style.display = 'none';
+    var box = document.getElementById('drill-summary');
+    box.style.display = '';
+    var html = '<div class="summary">';
+    html += '<h2 class="summary-verdict pass">' + accuracy + '% matched</h2>';
+    html += '<div class="crit-row"><span class="crit-label">Accuracy</span><span class="crit-val">' + accuracy + '%</span></div>';
+    html += '<div class="crit-row"><span class="crit-label">Best streak this session</span><span class="crit-val">' + bestStreak + '</span></div>';
+    html += '<div class="crit-row"><span class="crit-label">All-time best streak</span><span class="crit-val">' + state.drill.bestStreak + '</span></div>';
+    html += '<div class="summary-actions"><button class="cta-btn ghost" id="drill-again-btn" type="button">Go again</button><button class="cta-btn" id="drill-home-btn" type="button">Home</button></div>';
+    html += '</div>';
+    box.innerHTML = html;
+    document.getElementById('drill-sub').textContent = 'Session complete';
+    document.getElementById('drill-home-btn').addEventListener('click', function () { drill = null; showView('home'); });
+    document.getElementById('drill-again-btn').addEventListener('click', function () {
+      drill = null;
+      document.getElementById('drill-start-btn').click();
+    });
+  }
+
+  /* ================= range: siren + finder ================= */
+  var sirenRaf = null, sirenRunning = false, sirenStartTs = null;
+  var SIREN_LOW = 55, SIREN_HIGH = 67, SIREN_CYCLE_MS = 8000;
+
+  document.querySelectorAll('.subtab-btn').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      document.querySelectorAll('.subtab-btn').forEach(function (b) { b.classList.toggle('active', b === btn); });
+      var name = btn.getAttribute('data-subtab');
+      document.querySelectorAll('#range-body .subview').forEach(function (v) { v.classList.toggle('active', v.getAttribute('data-subview') === name); });
+      if (sirenRunning) stopSiren();
+      if (finderState) stopFinder(false);
+    });
+  });
+
+  function enterRange() {
+    var gate = document.getElementById('range-gate'), body = document.getElementById('range-body');
+    if (micReady) { gate.style.display = 'none'; body.style.display = ''; renderFinderHistory(); }
+    else { gate.style.display = ''; body.style.display = 'none'; }
+  }
+  document.getElementById('range-enable-btn').addEventListener('click', function () {
+    ensureMic().then(function () { enterRange(); }).catch(function () { alert('Microphone access was denied or unavailable.'); });
+  });
+
+  function sirenTargetFreqAt(elapsedMs) {
+    var pos = (elapsedMs % SIREN_CYCLE_MS) / SIREN_CYCLE_MS; // 0..1
+    var tri = pos < 0.5 ? pos * 2 : 2 - pos * 2; // 0->1->0
+    var midi = SIREN_LOW + tri * (SIREN_HIGH - SIREN_LOW);
+    return midiToFreq(midi);
+  }
+
+  var sirenTrace = [];
+  document.getElementById('siren-toggle-btn').addEventListener('click', function () {
+    if (sirenRunning) stopSiren(); else startSiren();
+  });
+
+  function startSiren() {
+    sirenRunning = true;
+    sirenStartTs = null;
+    sirenTrace = [];
+    document.getElementById('siren-toggle-btn').textContent = 'Stop warm-up';
+    var canvas = document.getElementById('siren-canvas');
+    var ctx = canvas.getContext('2d');
+
+    function loop(ts) {
+      if (sirenStartTs === null) sirenStartTs = ts;
+      var elapsed = ts - sirenStartTs;
+      var r = analyzeFrame();
+      var targetFreq = sirenTargetFreqAt(elapsed);
+      var targetMidi = freqToMidiContinuous(targetFreq);
+      var userMidi = r.freq ? freqToMidiContinuous(r.freq) : null;
+      sirenTrace.push({ t: elapsed, target: targetMidi, user: userMidi });
+      if (sirenTrace.length > 400) sirenTrace.shift();
+      drawSiren(ctx, canvas, elapsed);
+      sirenRaf = requestAnimationFrame(loop);
+    }
+    sirenRaf = requestAnimationFrame(loop);
+  }
+
+  function stopSiren() {
+    sirenRunning = false;
+    if (sirenRaf) cancelAnimationFrame(sirenRaf), sirenRaf = null;
+    document.getElementById('siren-toggle-btn').textContent = 'Start warm-up';
+    markPracticedToday();
+    saveState();
+  }
+
+  function drawSiren(ctx, canvas, elapsedNow) {
+    var w = canvas.width, h = canvas.height;
+    ctx.clearRect(0, 0, w, h);
+    var span = SIREN_HIGH - SIREN_LOW + 4;
+    var midiToY = function (m) { return h - ((m - (SIREN_LOW - 2)) / span) * h; };
+    var windowMs = 8000;
+
+    // target path
+    ctx.strokeStyle = '#9AA0AC';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    var first = true;
+    for (var x = 0; x <= w; x += 4) {
+      var t = elapsedNow - windowMs + (x / w) * windowMs;
+      if (t < 0) continue;
+      var m = freqToMidiContinuous(sirenTargetFreqAt(t));
+      var y = midiToY(m);
+      if (first) { ctx.moveTo(x, y); first = false; } else ctx.lineTo(x, y);
+    }
+    ctx.stroke();
+
+    // user trace
+    ctx.strokeStyle = '#5FA98C';
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    first = true;
+    sirenTrace.forEach(function (p) {
+      if (p.t < elapsedNow - windowMs || p.user === null) { first = true; return; }
+      var x = ((p.t - (elapsedNow - windowMs)) / windowMs) * w;
+      var y = midiToY(p.user);
+      if (first) { ctx.moveTo(x, y); first = false; } else ctx.lineTo(x, y);
+    });
+    ctx.stroke();
+  }
+
+  var finderRaf = null, finderTimerInt = null, finderState = null;
+  var FINDER_MAX_MS = 15000;
+
+  document.getElementById('finder-start-btn').addEventListener('click', startFinder);
+  document.getElementById('finder-stop-btn').addEventListener('click', function () { stopFinder(true); });
+
+  function startFinder() {
+    finderState = { startTs: null, samples: [] };
+    document.getElementById('finder-idle').style.display = 'none';
+    document.getElementById('finder-active').style.display = '';
+    document.getElementById('finder-result').style.display = 'none';
+    var timerEl = document.getElementById('finder-timer');
+    var noteEl = document.getElementById('finder-note');
+
+    finderTimerInt = setInterval(function () {
+      if (!finderState || finderState.startTs === null) return;
+      var elapsed = (Date.now() - finderState.startTs) / 1000;
+      timerEl.textContent = fmtClock(elapsed);
+      if (elapsed * 1000 >= FINDER_MAX_MS) stopFinder(true);
+    }, 200);
+
+    function loop(ts) {
+      if (!finderState) return;
+      if (finderState.startTs === null) finderState.startTs = Date.now();
+      var r = analyzeFrame();
+      if (r.freq) {
+        var midi = Math.round(freqToMidiContinuous(r.freq));
+        finderState.samples.push(midi);
+        noteEl.textContent = midiToName(midi);
+        noteEl.classList.remove('idle');
+      } else {
+        noteEl.textContent = '—';
+        noteEl.classList.add('idle');
+      }
+      finderRaf = requestAnimationFrame(loop);
+    }
+    finderRaf = requestAnimationFrame(loop);
+  }
+
+  function stopFinder(showResult) {
+    if (finderRaf) cancelAnimationFrame(finderRaf), finderRaf = null;
+    if (finderTimerInt) clearInterval(finderTimerInt), finderTimerInt = null;
+    var st = finderState;
+    finderState = null;
+    document.getElementById('finder-active').style.display = 'none';
+    document.getElementById('finder-idle').style.display = '';
+    if (!showResult || !st || st.samples.length < 8) {
+      document.getElementById('finder-result').style.display = 'none';
+      return;
+    }
+    var sorted = st.samples.slice().sort(function (a, b) { return a - b; });
+    var trimCount = Math.floor(sorted.length * 0.03);
+    var trimmed = sorted.slice(trimCount, sorted.length - trimCount || sorted.length);
+    var lowNote = trimmed[0], highNote = trimmed[trimmed.length - 1];
+    if (highNote <= lowNote) { document.getElementById('finder-result').style.display = 'none'; return; }
+
+    state.range.history.push({ date: todayStr(), lowNote: lowNote, highNote: highNote });
+    if (state.range.history.length > 30) state.range.history.shift();
+    markPracticedToday();
+    saveState();
+
+    var box = document.getElementById('finder-result');
+    box.style.display = '';
+    box.innerHTML = '<div class="range-result"><div class="big">' + midiToName(lowNote) + ' – ' + midiToName(highNote) + '</div><div class="span">' + (highNote - lowNote) + ' semitones</div></div>';
+    renderFinderHistory();
+  }
+
+  function renderFinderHistory() {
+    var el = document.getElementById('finder-history');
+    var hist = state.range.history.slice().reverse().slice(0, 8);
+    if (!hist.length) { el.innerHTML = '<p class="empty-note">No sessions yet</p>'; return; }
+    el.innerHTML = hist.map(function (h) {
+      return '<div class="history-row"><span class="history-date">' + h.date + '</span><span class="history-val">' + midiToName(h.lowNote) + ' – ' + midiToName(h.highNote) + ' (' + (h.highNote - h.lowNote) + 'st)</span></div>';
+    }).join('');
+  }
+
+  /* ================= speech pacing ================= */
+  var speechRaf = null, speechTimerInt = null, speechState = null, speechMode = 'free';
+  var SPEECH_MAX_MS = 60000;
+  var speechRecorder = null, speechRecordedChunks = [];
+  // Kept only in memory, only for the duration of an on-device accuracy check
+  // the user explicitly requests — never written to storage, never uploaded.
+  var lastPassageBlob = null, lastPassageReferenceText = null, lastPassageEntry = null;
+
+  document.querySelectorAll('[data-speech-subtab]').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      speechMode = btn.getAttribute('data-speech-subtab');
+      document.querySelectorAll('[data-speech-subtab]').forEach(function (b) { b.classList.toggle('active', b === btn); });
+      document.querySelectorAll('#speech-idle .subview').forEach(function (v) { v.classList.toggle('active', v.getAttribute('data-speech-subview') === speechMode); });
+    });
+  });
+
+  function enterSpeech() {
+    var gate = document.getElementById('speech-gate'), body = document.getElementById('speech-body');
+    if (micReady) { gate.style.display = 'none'; body.style.display = ''; renderSpeechHistory(); }
+    else { gate.style.display = ''; body.style.display = 'none'; }
+  }
+  document.getElementById('speech-enable-btn').addEventListener('click', function () {
+    ensureMic().then(function () { enterSpeech(); }).catch(function () { alert('Microphone access was denied or unavailable.'); });
+  });
+
+  document.getElementById('speech-start-btn').addEventListener('click', startSpeechRecording);
+  document.getElementById('speech-stop-btn').addEventListener('click', function () { stopSpeechRecording(true); });
+
+  function startSpeechRecording() {
+    speechState = {
+      startTs: null, mode: speechMode, pitchSamples: [], rmsSamples: [], hfRatioSamples: [],
+      smoothRms: 0, lastPeakT: -1000, peakCount: 0, lastBelowFloorT: -1, riseTimes: []
+    };
+    document.getElementById('speech-idle').style.display = 'none';
+    document.getElementById('speech-active').style.display = '';
+    document.getElementById('speech-result').style.display = 'none';
+    var timerEl = document.getElementById('speech-timer');
+    var vuEl = document.getElementById('speech-vu');
+    var activePassage = document.getElementById('passage-text-active');
+    if (speechMode === 'passage') {
+      activePassage.textContent = document.getElementById('passage-text').textContent;
+      activePassage.style.display = '';
+    } else {
+      activePassage.style.display = 'none';
+    }
+
+    // Raw audio is only captured in Read Passage mode, and only held in memory
+    // for the optional on-device accuracy check — never in Free talk, never
+    // written to disk.
+    speechRecordedChunks = [];
+    speechRecorder = null;
+    if (speechMode === 'passage' && micStream && window.MediaRecorder) {
+      try {
+        speechRecorder = new MediaRecorder(micStream);
+        speechRecorder.ondataavailable = function (e) { if (e.data && e.data.size) speechRecordedChunks.push(e.data); };
+        speechRecorder.start();
+      } catch (e) { speechRecorder = null; }
+    }
+
+    speechTimerInt = setInterval(function () {
+      if (!speechState || speechState.startTs === null) return;
+      var elapsed = (Date.now() - speechState.startTs) / 1000;
+      timerEl.textContent = fmtClock(elapsed);
+      if (elapsed * 1000 >= SPEECH_MAX_MS) stopSpeechRecording(true);
+    }, 200);
+
+    function loop() {
+      if (!speechState) return;
+      if (speechState.startTs === null) speechState.startTs = Date.now();
+      var t = Date.now() - speechState.startTs;
+      var r = analyzeFrame();
+      vuEl.style.width = Math.min(100, Math.round(r.rms * 400)) + '%';
+      speechState.rmsSamples.push({ t: t, rms: r.rms });
+      if (r.freq) speechState.pitchSamples.push(freqToMidiContinuous(r.freq));
+
+      var spec = computeSpectralMetrics();
+      if (spec.hfRatio !== null) speechState.hfRatioSamples.push(spec.hfRatio);
+
+      // Onset detector on a smoothed envelope: each crossing above the
+      // threshold is treated as a syllable/word onset (rough pace estimate),
+      // and the time since the envelope was last near silence is that
+      // onset's "attack" — fast attacks read as crisp articulation, slow
+      // ones as smeared/mumbled.
+      speechState.smoothRms = speechState.smoothRms * 0.8 + r.rms * 0.2;
+      if (speechState.smoothRms < 0.02) speechState.lastBelowFloorT = t;
+      if (speechState.smoothRms > 0.045 && t - speechState.lastPeakT > 150) {
+        speechState.peakCount++;
+        if (speechState.lastBelowFloorT >= 0) {
+          var riseTime = t - speechState.lastBelowFloorT;
+          if (riseTime > 0 && riseTime < 500) speechState.riseTimes.push(riseTime);
+        }
+        speechState.lastPeakT = t;
+      }
+      speechRaf = requestAnimationFrame(loop);
+    }
+    speechRaf = requestAnimationFrame(loop);
+  }
+
+  function classifyHFClarity(ratio) {
+    if (ratio === null) return null;
+    var pct = ratio * 100;
+    if (pct < 8) return { label: 'Low', note: 'Energy sits mostly in the low end — this is the muffled/mumbled signature. Try opening your mouth more and giving consonants a bit more edge.' };
+    if (pct < 16) return { label: 'Moderate', note: 'Some high-frequency presence; consonants could still cut through a bit more.' };
+    return { label: 'Strong', note: 'Good high-frequency presence — consonants are carrying clearly.' };
+  }
+
+  function classifyAttack(ms) {
+    if (ms === null) return null;
+    if (ms > 140) return { label: 'Soft', note: 'Words ease in gradually — often reads as mumbled. Try starting consonants a touch more crisply.' };
+    if (ms > 80) return { label: 'Moderate', note: 'Reasonably defined word starts.' };
+    return { label: 'Sharp', note: 'Quick, defined onsets — articulation is landing cleanly.' };
+  }
+
+  function trendVsHistory(history, mode, field, todayVal, decimals) {
+    var prior = history.filter(function (h) { return h.mode === mode && typeof h[field] === 'number'; });
+    if (prior.length < 2) return '';
+    var avg = prior.reduce(function (a, h) { return a + h[field]; }, 0) / prior.length;
+    return 'your last ' + prior.length + ' "' + (mode === 'passage' ? 'read passage' : 'free talk') + '" readings averaged ' + avg.toFixed(decimals);
+  }
+
+  function stopSpeechRecording(showResult) {
+    if (speechRaf) cancelAnimationFrame(speechRaf), speechRaf = null;
+    if (speechTimerInt) clearInterval(speechTimerInt), speechTimerInt = null;
+    var st = speechState;
+    speechState = null;
+    document.getElementById('speech-active').style.display = 'none';
+    document.getElementById('speech-idle').style.display = '';
+
+    // Finalize the recorder (if any) exactly once here, regardless of which
+    // path below we take, so it never keeps capturing in the background.
+    var recorder = speechRecorder;
+    speechRecorder = null;
+    var recordingBlobPromise = recorder ? new Promise(function (resolve) {
+      recorder.onstop = function () { resolve(new Blob(speechRecordedChunks, { type: recorder.mimeType })); };
+      try { recorder.stop(); } catch (e) { resolve(null); }
+    }) : Promise.resolve(null);
+
+    if (!showResult || !st) return;
+
+    var durationSec = Math.max(1, (Date.now() - st.startTs) / 1000);
+    var box = document.getElementById('speech-result');
+
+    if (st.rmsSamples.length < 20) {
+      box.style.display = '';
+      box.innerHTML = '<p class="empty-note">Too short to analyze — try talking for a bit longer.</p>';
+      return;
+    }
+
+    var pitchRange = 0;
+    if (st.pitchSamples.length > 10) {
+      var sortedP = st.pitchSamples.slice().sort(function (a, b) { return a - b; });
+      var lo = sortedP[Math.floor(sortedP.length * 0.05)];
+      var hi = sortedP[Math.floor(sortedP.length * 0.95)];
+      pitchRange = Math.max(0, hi - lo);
+    }
+
+    var pace = st.peakCount / durationSec;
+
+    var rmsVals = st.rmsSamples.map(function (s) { return s.rms; });
+    var thirdLen = Math.floor(rmsVals.length / 3) || 1;
+    var firstThird = rmsVals.slice(0, thirdLen);
+    var lastThird = rmsVals.slice(rmsVals.length - thirdLen);
+    var avg = function (arr) { return arr.reduce(function (a, b) { return a + b; }, 0) / arr.length; };
+    var firstAvg = avg(firstThird), lastAvg = avg(lastThird);
+    var volDropPct = firstAvg > 0 ? Math.round(100 * (firstAvg - lastAvg) / firstAvg) : 0;
+
+    var hfRatio = st.hfRatioSamples.length ? median(st.hfRatioSamples) : null;
+    var riseMs = st.riseTimes.length ? median(st.riseTimes) : null;
+
+    var entry = { date: todayStr(), mode: st.mode, pitchRange: pitchRange, pace: pace, volDropPct: volDropPct, hfRatio: hfRatio, riseMs: riseMs };
+    var hfTrend = trendVsHistory(state.speech.history, st.mode, 'hfRatio', hfRatio, 1);
+    var riseTrend = trendVsHistory(state.speech.history, st.mode, 'riseMs', riseMs, 0);
+
+    state.speech.history.push(entry);
+    if (state.speech.history.length > 30) state.speech.history.shift();
+    markPracticedToday();
+    saveState();
+
+    var pitchNote = pitchRange < 2 ? 'Fairly flat — try letting your pitch rise and fall more with meaning.' :
+      pitchRange < 5 ? 'Some natural variation.' : 'Good expressive range.';
+    var paceNote = pace < 1.5 ? 'On the slower, measured side.' : pace < 3.2 ? 'Comfortable, conversational pace.' : 'Quite brisk — worth slowing down in places.';
+    var volNote = volDropPct > 25 ? 'Volume dropped noticeably toward the end — watch trailing off.' : 'Volume stayed fairly steady.';
+    var hfClass = classifyHFClarity(hfRatio);
+    var attackClass = classifyAttack(riseMs);
+
+    box.style.display = '';
+    var html = '<div class="feedback-list">';
+    html += '<div class="feedback-item"><div class="fi-label">Pitch range</div><div class="fi-val">' + pitchRange.toFixed(1) + ' semitones</div><div class="fi-note">' + pitchNote + '</div></div>';
+    html += '<div class="feedback-item"><div class="fi-label">Pace</div><div class="fi-val">' + pace.toFixed(1) + ' events/sec</div><div class="fi-note">' + paceNote + '</div></div>';
+    html += '<div class="feedback-item"><div class="fi-label">Volume consistency</div><div class="fi-val">' + (volDropPct > 0 ? '-' + volDropPct : Math.abs(volDropPct) + '+') + '%</div><div class="fi-note">' + volNote + '</div></div>';
+    if (hfClass) {
+      html += '<div class="feedback-item"><div class="fi-label">High-frequency clarity</div><div class="fi-val">' + hfClass.label + ' (' + (hfRatio * 100).toFixed(1) + '%)</div><div class="fi-note">' + hfClass.note + '</div>' + (hfTrend ? '<div class="fi-trend">' + hfTrend + '%</div>' : '') + '</div>';
+    }
+    if (attackClass) {
+      html += '<div class="feedback-item"><div class="fi-label">Consonant attack</div><div class="fi-val">' + attackClass.label + ' (' + Math.round(riseMs) + ' ms)</div><div class="fi-note">' + attackClass.note + '</div>' + (riseTrend ? '<div class="fi-trend">' + riseTrend + ' ms</div>' : '') + '</div>';
+    }
+    html += '</div>';
+    if (st.mode === 'free') {
+      html += '<p class="privacy-note">Tip: run this against Read Passage instead for numbers that are directly comparable session to session.</p>';
+    } else {
+      html += '<button class="cta-btn ghost block" id="check-accuracy-btn" type="button" style="margin-top:1rem;" disabled>Preparing recording…</button>';
+      html += '<div id="accuracy-status" style="display:none;"></div>';
+      html += '<div id="accuracy-result" style="display:none;"></div>';
+      html += '<p class="privacy-note">The accuracy check briefly holds this recording in memory on-device to run a local speech model (first run downloads it, ~75MB) — nothing is uploaded or saved to disk.</p>';
+    }
+    box.innerHTML = html;
+    renderSpeechHistory();
+
+    if (st.mode === 'passage') {
+      recordingBlobPromise.then(function (blob) {
+        var btn = document.getElementById('check-accuracy-btn');
+        if (!blob) {
+          if (btn) { btn.textContent = 'Recording unavailable in this browser'; }
+          return;
+        }
+        lastPassageBlob = blob;
+        lastPassageReferenceText = document.getElementById('passage-text').textContent;
+        lastPassageEntry = entry;
+        if (btn) {
+          btn.disabled = false;
+          btn.textContent = 'Check reading accuracy (on-device, ~75MB first time)';
+          btn.addEventListener('click', runAccuracyCheck);
+        }
+      });
+    }
+  }
+
+  function renderSpeechHistory() {
+    var el = document.getElementById('speech-history');
+    var hist = state.speech.history.slice().reverse().slice(0, 8);
+    if (!hist.length) { el.innerHTML = '<p class="empty-note">No sessions yet</p>'; return; }
+    el.innerHTML = hist.map(function (h) {
+      var modeTag = h.mode === 'passage' ? 'passage' : 'free';
+      var hf = typeof h.hfRatio === 'number' ? (h.hfRatio * 100).toFixed(0) + '% clarity' : '—';
+      var acc = typeof h.wordAccuracy === 'number' ? h.wordAccuracy + '% read' : null;
+      return '<div class="history-row"><span class="history-date">' + h.date + ' · ' + modeTag + '</span><span class="history-val">' + h.pitchRange.toFixed(1) + 'st · ' + h.pace.toFixed(1) + '/s · ' + hf + (acc ? ' · ' + acc : '') + '</span></div>';
+    }).join('');
+  }
+
+  /* ================= reading accuracy (on-device speech-to-text) ================= */
+  // Loaded lazily, only when the user taps "Check reading accuracy" — never
+  // fetched just for visiting Speech Pacing. Uses transformers.js running
+  // Whisper-tiny.en fully in-browser via WASM; the model is fetched from the
+  // Hugging Face hub on first use and cached by the browser, same as any
+  // other static asset. No audio or transcript ever leaves the device.
+  var asrPipelinePromise = null;
+  function loadASR(onProgress) {
+    if (asrPipelinePromise) return asrPipelinePromise;
+    asrPipelinePromise = import('https://cdn.jsdelivr.net/npm/@xenova/transformers@2.17.2').then(function (mod) {
+      mod.env.allowLocalModels = false;
+      return mod.pipeline('automatic-speech-recognition', 'Xenova/whisper-tiny.en', { progress_callback: onProgress });
+    });
+    return asrPipelinePromise;
+  }
+
+  function blobToWhisperInput(blob) {
+    return blob.arrayBuffer().then(function (buf) {
+      return audioCtx.decodeAudioData(buf);
+    }).then(function (audioBuffer) {
+      var targetRate = 16000;
+      var offline = new OfflineAudioContext(1, Math.ceil(audioBuffer.duration * targetRate), targetRate);
+      var src = offline.createBufferSource();
+      src.buffer = audioBuffer;
+      src.connect(offline.destination);
+      src.start(0);
+      return offline.startRendering();
+    }).then(function (rendered) {
+      return rendered.getChannelData(0);
+    });
+  }
+
+  function normalizeWords(text) {
+    return text.toLowerCase().replace(/[^a-z0-9\s']/g, '').split(/\s+/).filter(Boolean);
+  }
+
+  // Word-level Levenshtein distance (edits) between the reference passage and
+  // what the model transcribed, expressed as an accuracy percentage — the
+  // standard word-error-rate approach used to score reading/dictation tasks.
+  function wordDiffScore(reference, hypothesis) {
+    var ref = normalizeWords(reference), hyp = normalizeWords(hypothesis);
+    var n = ref.length, m = hyp.length;
+    var dp = [];
+    for (var i = 0; i <= n; i++) { dp.push(new Array(m + 1).fill(0)); dp[i][0] = i; }
+    for (var j = 0; j <= m; j++) dp[0][j] = j;
+    for (i = 1; i <= n; i++) {
+      for (j = 1; j <= m; j++) {
+        if (ref[i - 1] === hyp[j - 1]) dp[i][j] = dp[i - 1][j - 1];
+        else dp[i][j] = 1 + Math.min(dp[i - 1][j - 1], dp[i - 1][j], dp[i][j - 1]);
+      }
+    }
+    var edits = n > 0 && m >= 0 ? dp[n][m] : 0;
+    var wer = n > 0 ? edits / n : 0;
+    return { accuracy: Math.max(0, 1 - wer), edits: edits, refWordCount: n };
+  }
+
+  function likelyMissedWords(reference, hypothesis) {
+    var ref = normalizeWords(reference);
+    var hypSet = {};
+    normalizeWords(hypothesis).forEach(function (w) { hypSet[w] = true; });
+    var missed = [];
+    ref.forEach(function (w) { if (!hypSet[w] && missed.indexOf(w) === -1) missed.push(w); });
+    return missed;
+  }
+
+  function runAccuracyCheck() {
+    if (!lastPassageBlob) return;
+    var btn = document.getElementById('check-accuracy-btn');
+    var statusEl = document.getElementById('accuracy-status');
+    btn.style.display = 'none';
+    statusEl.style.display = '';
+    statusEl.textContent = 'Loading on-device speech model…';
+
+    var referenceText = lastPassageReferenceText;
+    var entryRef = lastPassageEntry;
+    var priorHistory = state.speech.history.slice(0, -1);
+
+    loadASR(function (p) {
+      if (p && p.status === 'progress' && typeof p.progress === 'number') {
+        statusEl.textContent = 'Downloading speech model… ' + Math.round(p.progress) + '%';
+      }
+    }).then(function (asr) {
+      statusEl.textContent = 'Transcribing…';
+      return blobToWhisperInput(lastPassageBlob).then(function (audioData) {
+        return asr(audioData);
+      });
+    }).then(function (result) {
+      var transcript = (result && result.text) ? result.text.trim() : '';
+      var score = wordDiffScore(referenceText, transcript);
+      var missed = likelyMissedWords(referenceText, transcript);
+      var accuracyPct = Math.round(score.accuracy * 100);
+
+      if (entryRef) { entryRef.wordAccuracy = accuracyPct; saveState(); }
+
+      var trend = trendVsHistory(priorHistory, 'passage', 'wordAccuracy', accuracyPct, 0);
+      var note = accuracyPct >= 90 ? 'The model understood nearly everything you read.' :
+        accuracyPct >= 75 ? 'Mostly clear, with a few words the model stumbled on.' :
+        'The model missed a fair number of words — could be articulation, could be mic distance or background noise.';
+
+      statusEl.style.display = 'none';
+      var resultBox = document.getElementById('accuracy-result');
+      resultBox.style.display = '';
+      var html = '<div class="feedback-item"><div class="fi-label">Reading accuracy</div><div class="fi-val">' + accuracyPct + '%</div><div class="fi-note">' + note + '</div>' + (trend ? '<div class="fi-trend">' + trend + '%</div>' : '') + '</div>';
+      if (missed.length) {
+        html += '<p style="font-size:0.8rem;color:var(--ink-muted);margin-top:0.6rem;">Words the model may have missed:</p><div class="chip-list">' + missed.slice(0, 10).map(function (w) { return '<span class="chip">' + w + '</span>'; }).join('') + '</div>';
+      }
+      html += '<p class="transcript-box">Model heard: “' + (transcript || '(nothing recognized)') + '”</p>';
+      resultBox.innerHTML = html;
+      renderSpeechHistory();
+    }).catch(function (err) {
+      statusEl.textContent = 'Could not run the on-device check (' + (err && err.message ? err.message : 'unknown error') + '). This needs a modern browser and an internet connection for the first model download.';
+    });
+  }
+
+  /* ================= voice profile ================= */
+  // Rough, signal-only estimate: median speaking pitch, a relative brightness
+  // reading from spectral centroid, and (if a sung range has been measured via
+  // Find My Range) the nearest overlapping fach bands. This is not a
+  // substitute for a trained ear judging tessitura, timbre, and register
+  // breaks — it's a starting point, framed as such in the UI copy.
+  var profileRaf = null, profileTimerInt = null, profileState = null;
+  var PROFILE_MAX_MS = 12000, PROFILE_MIN_SAMPLES = 40;
+
+  // Rough, overlapping fach bands in MIDI note numbers (comfortable full range).
+  var FACH_BANDS = [
+    { label: 'Bass', low: 40, high: 64 },
+    { label: 'Baritone', low: 45, high: 69 },
+    { label: 'Tenor', low: 48, high: 72 },
+    { label: 'Contralto / Alto', low: 52, high: 76 },
+    { label: 'Mezzo-soprano', low: 57, high: 81 },
+    { label: 'Soprano', low: 60, high: 84 }
+  ];
+
+  function median(arr) {
+    var sorted = arr.slice().sort(function (a, b) { return a - b; });
+    var mid = Math.floor(sorted.length / 2);
+    return sorted.length % 2 ? sorted[mid] : (sorted[mid - 1] + sorted[mid]) / 2;
+  }
+
+  function classifyBrightness(hz) {
+    if (hz === null) return null;
+    if (hz < 1200) return 'Leans warm / dark';
+    if (hz < 2200) return 'Balanced';
+    if (hz < 3200) return 'Leans bright';
+    return 'Very bright / forward';
+  }
+
+  function matchFachBands(lowNote, highNote) {
+    var scored = FACH_BANDS.map(function (b) {
+      var overlapLow = Math.max(lowNote, b.low);
+      var overlapHigh = Math.min(highNote, b.high);
+      var overlap = Math.max(0, overlapHigh - overlapLow);
+      return { label: b.label, score: overlap / (b.high - b.low) };
+    }).filter(function (b) { return b.score > 0; });
+    scored.sort(function (a, b) { return b.score - a.score; });
+    return scored.slice(0, 2);
+  }
+
+  function enterProfile() {
+    var gate = document.getElementById('profile-gate'), body = document.getElementById('profile-body');
+    if (micReady) { gate.style.display = 'none'; body.style.display = ''; renderProfileHistory(); }
+    else { gate.style.display = ''; body.style.display = 'none'; }
+  }
+  document.getElementById('profile-enable-btn').addEventListener('click', function () {
+    ensureMic().then(function () { enterProfile(); }).catch(function () { alert('Microphone access was denied or unavailable.'); });
+  });
+
+  document.getElementById('profile-start-btn').addEventListener('click', startProfileRecording);
+  document.getElementById('profile-stop-btn').addEventListener('click', function () { stopProfileRecording(true); });
+
+  function startProfileRecording() {
+    profileState = { startTs: null, pitchSamples: [], centroidSamples: [] };
+    document.getElementById('profile-idle').style.display = 'none';
+    document.getElementById('profile-active').style.display = '';
+    document.getElementById('profile-result').style.display = 'none';
+    var timerEl = document.getElementById('profile-timer');
+    var vuEl = document.getElementById('profile-vu');
+
+    profileTimerInt = setInterval(function () {
+      if (!profileState || profileState.startTs === null) return;
+      var elapsed = (Date.now() - profileState.startTs) / 1000;
+      timerEl.textContent = fmtClock(elapsed);
+      if (elapsed * 1000 >= PROFILE_MAX_MS) stopProfileRecording(true);
+    }, 200);
+
+    function loop() {
+      if (!profileState) return;
+      if (profileState.startTs === null) profileState.startTs = Date.now();
+      var r = analyzeFrame();
+      vuEl.style.width = Math.min(100, Math.round(r.rms * 400)) + '%';
+      if (r.freq) {
+        profileState.pitchSamples.push(r.freq);
+        var spec = computeSpectralMetrics();
+        if (spec.centroid !== null) profileState.centroidSamples.push(spec.centroid);
+      }
+      profileRaf = requestAnimationFrame(loop);
+    }
+    profileRaf = requestAnimationFrame(loop);
+  }
+
+  function stopProfileRecording(showResult) {
+    if (profileRaf) cancelAnimationFrame(profileRaf), profileRaf = null;
+    if (profileTimerInt) clearInterval(profileTimerInt), profileTimerInt = null;
+    var st = profileState;
+    profileState = null;
+    document.getElementById('profile-active').style.display = 'none';
+    document.getElementById('profile-idle').style.display = '';
+    if (!showResult || !st) return;
+
+    var box = document.getElementById('profile-result');
+    if (st.pitchSamples.length < PROFILE_MIN_SAMPLES) {
+      box.style.display = '';
+      box.innerHTML = '<p class="empty-note">Too short to read — try talking a bit longer, closer to the mic.</p>';
+      return;
+    }
+
+    var avgHz = median(st.pitchSamples);
+    var avgNote = Math.round(freqToMidiContinuous(avgHz));
+    var centroid = st.centroidSamples.length ? median(st.centroidSamples) : null;
+    var brightness = classifyBrightness(centroid);
+
+    var rh = state.range.history;
+    var matches = null;
+    if (rh.length) {
+      var last = rh[rh.length - 1];
+      matches = matchFachBands(last.lowNote, last.highNote);
+    }
+
+    state.profile.history.push({ date: todayStr(), avgHz: avgHz, avgNote: avgNote, centroid: centroid, matches: matches });
+    if (state.profile.history.length > 20) state.profile.history.shift();
+    markPracticedToday();
+    saveState();
+
+    var html = '<div class="feedback-list">';
+    html += '<div class="feedback-item"><div class="fi-label">Speaking pitch</div><div class="fi-val">' + midiToName(avgNote) + ' · ' + avgHz.toFixed(0) + ' Hz</div><div class="fi-note">Median pitch across your sample</div></div>';
+    if (brightness) {
+      html += '<div class="feedback-item"><div class="fi-label">Tone / brightness</div><div class="fi-val">' + brightness + '</div><div class="fi-note">A relative reading — most useful tracked over time, not as an absolute label</div></div>';
+    }
+    if (matches && matches.length) {
+      var matchText = matches.map(function (m) { return m.label; }).join(' / ');
+      html += '<div class="feedback-item"><div class="fi-label">Closest voice-type match</div><div class="fi-val">' + matchText + '</div><div class="fi-note">Based on your saved sung range — rerun Find My Range if it has changed</div></div>';
+    } else {
+      html += '<div class="feedback-item"><div class="fi-label">Voice-type match</div><div class="fi-val">—</div><div class="fi-note">Run Find My Range first (Warm-ups &amp; Range) for a range-based estimate</div></div>';
+    }
+    html += '</div>';
+    html += '<p class="privacy-note">Rough estimate from pitch and tone only — real vocal classification also weighs where your voice naturally breaks between registers, best judged by a teacher’s ear.</p>';
+    box.style.display = '';
+    box.innerHTML = html;
+    renderProfileHistory();
+  }
+
+  function renderProfileHistory() {
+    var el = document.getElementById('profile-history');
+    var hist = state.profile.history.slice().reverse().slice(0, 8);
+    if (!hist.length) { el.innerHTML = '<p class="empty-note">No sessions yet</p>'; return; }
+    el.innerHTML = hist.map(function (h) {
+      var m = h.matches && h.matches.length ? h.matches[0].label : '—';
+      return '<div class="history-row"><span class="history-date">' + h.date + '</span><span class="history-val">' + midiToName(h.avgNote) + ' · ' + m + '</span></div>';
+    }).join('');
+  }
+
+  /* ================= nav / theme / init ================= */
+  document.getElementById('home-tuner-btn').addEventListener('click', function () { showView('tuner'); });
+  document.getElementById('home-drill-btn').addEventListener('click', function () { showView('drill'); });
+  document.getElementById('home-range-btn').addEventListener('click', function () { showView('range'); });
+  document.getElementById('home-speech-btn').addEventListener('click', function () { showView('speech'); });
+  document.getElementById('home-profile-btn').addEventListener('click', function () { showView('profile'); });
+
+  document.getElementById('exit-session-btn').addEventListener('click', function () {
+    var leave = true;
+    if (drill && drill.idx < drill.notes.length && drill.results.length > 0) {
+      leave = confirm('Leave this drill? Progress on the current set won’t be saved.');
+    }
+    if (!leave) return;
+    drill = null;
+    if (sirenRunning) stopSiren();
+    if (finderState) stopFinder(false);
+    if (speechState) stopSpeechRecording(false);
+    if (profileState) stopProfileRecording(false);
+    showView('home');
+  });
+
+  function applyTheme() { if (state.theme) document.documentElement.setAttribute('data-theme', state.theme); }
+  function toggleTheme() {
+    var current = document.documentElement.getAttribute('data-theme') || (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+    var next = current === 'dark' ? 'light' : 'dark';
+    document.documentElement.setAttribute('data-theme', next);
+    state.theme = next;
+    saveState();
+  }
+
+  document.addEventListener('DOMContentLoaded', function () {
+    applyTheme();
+    document.getElementById('theme-toggle').addEventListener('click', toggleTheme);
+    renderHome();
+  });
+
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', function () { navigator.serviceWorker.register('./sw.js'); });
+  }
+})();
+</script>
+</body>
+</html>
