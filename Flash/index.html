@@ -134,6 +134,15 @@
     border-radius: 12px; border: 1px solid var(--border); background: var(--surface-2); color: var(--ink);
   }
   .answer-input:focus { border-color: var(--brass); }
+  .choices { display: grid; grid-template-columns: 1fr 1fr; gap: 0.7rem; width: 100%; max-width: 19rem; margin: 0 auto; }
+  .choice-btn {
+    background: var(--surface-2); border: 1px solid var(--border); border-radius: 12px;
+    padding: 0.9rem 0.6rem; font-family: var(--font-mono); font-size: 1.3rem;
+    font-variant-numeric: tabular-nums; color: var(--ink);
+  }
+  .choice-btn:disabled { opacity: 0.7; }
+  .choice-btn.correct { border-color: var(--teal); color: var(--teal); }
+  .choice-btn.incorrect { border-color: var(--rust); color: var(--rust); }
   .feedback { margin-top: 1.3rem; min-height: 2.4rem; font-family: var(--font-mono); font-size: 1.2rem; font-weight: 700; }
   .fb-ok { color: var(--teal); }
   .fb-bad { color: var(--rust); }
@@ -190,6 +199,23 @@
         <div class="stat-chip"><div class="stat-val" id="stat-speed"></div><div class="stat-label">Avg speed</div></div>
       </div>
 
+      <div class="section-label" style="margin-top:0;">Random Practice</div>
+      <button class="cta-secondary" id="mixed-single-btn" type="button">
+        <div>
+          <div class="cta-title">Single-Digit Mix</div>
+          <div class="cta-meta" id="mixed-single-meta"></div>
+        </div>
+        <div class="cta-arrow">→</div>
+      </button>
+      <button class="cta-secondary" id="mixed-double-btn" type="button">
+        <div>
+          <div class="cta-title">Double-Digit Mix</div>
+          <div class="cta-meta" id="mixed-double-meta"></div>
+        </div>
+        <div class="cta-arrow">→</div>
+      </button>
+
+      <div class="section-label">Lessons</div>
       <button class="cta" id="start-drill-btn" type="button">
         <div>
           <div class="cta-title" id="cta-title">Drill</div>
@@ -207,22 +233,6 @@
       </button>
 
       <div id="ladder"></div>
-
-      <div class="section-label">Drills</div>
-      <button class="cta-secondary" id="mixed-single-btn" type="button">
-        <div>
-          <div class="cta-title">Single-Digit Mix</div>
-          <div class="cta-meta" id="mixed-single-meta"></div>
-        </div>
-        <div class="cta-arrow">→</div>
-      </button>
-      <button class="cta-secondary" id="mixed-double-btn" type="button">
-        <div>
-          <div class="cta-title">Double-Digit Mix</div>
-          <div class="cta-meta" id="mixed-double-meta"></div>
-        </div>
-        <div class="cta-arrow">→</div>
-      </button>
     </div>
 
     <div class="view" data-view="session">
@@ -234,7 +244,8 @@
       <div class="session-stage" id="session-stage">
         <div id="drill-card">
           <div class="equation-big" id="equation-big"></div>
-          <input id="answer-input" class="answer-input" inputmode="numeric" pattern="[0-9]*" autocomplete="off" />
+          <input id="answer-input" class="answer-input" inputmode="numeric" pattern="[0-9]*" autocomplete="off" autofocus />
+          <div class="choices" id="choices-grid" style="display:none;"></div>
           <div id="feedback" class="feedback"></div>
         </div>
         <div id="drill-summary" style="display:none;width:100%;"></div>
@@ -453,6 +464,23 @@
 
   /* ---------------- drill runner ---------------- */
   var drill = null;
+  var inputFocused = false;
+
+  function buildChoices(f) {
+    var deltas = [1, -1, 2, -2, 3, -3, 5, -5, 10, -10];
+    shuffle(deltas);
+    var pool = [];
+    for (var i = 0; i < deltas.length && pool.length < 3; i++) {
+      var val = f.answer + deltas[i];
+      if (val >= 0 && val !== f.answer && pool.indexOf(val) === -1) pool.push(val);
+    }
+    while (pool.length < 3) {
+      var val2 = Math.max(0, f.answer + randInt(-15, 15));
+      if (val2 !== f.answer && pool.indexOf(val2) === -1) pool.push(val2);
+    }
+    var choices = pool.concat([f.answer]);
+    return shuffle(choices);
+  }
 
   function startDrill(tierId) {
     var tier = getTierById(tierId);
@@ -505,13 +533,37 @@
     document.getElementById('equation-big').textContent = f.prompt + ' = ?';
     document.getElementById('feedback').innerHTML = '';
     var input = document.getElementById('answer-input');
-    input.value = '';
-    f._startedAt = Date.now();
+    var choicesGrid = document.getElementById('choices-grid');
     drillAnswered = false;
-    // The input element is never destroyed or blurred between cards, so on
-    // iOS Safari the keyboard — once opened by the first tap — stays open
-    // for the whole drill instead of requiring a fresh tap every card.
-    input.focus();
+    f._startedAt = null;
+
+    if (drill.mode) {
+      // Free-entry drills (the random mixes): keep the number-pad input.
+      // The input element is never destroyed or blurred between cards, so on
+      // iOS Safari the keyboard — once opened by the first tap — stays open
+      // for the whole drill instead of requiring a fresh tap every card. If
+      // it's already open, start the timer now; otherwise wait for the real
+      // focus event so the clock doesn't run while the user is still tapping
+      // to bring the keyboard up.
+      choicesGrid.style.display = 'none';
+      choicesGrid.innerHTML = '';
+      input.style.display = '';
+      input.value = '';
+      input.focus();
+      if (inputFocused) f._startedAt = Date.now();
+    } else {
+      // Fixed-tier lessons: multiple choice, no keyboard involved.
+      input.style.display = 'none';
+      var choices = buildChoices(f);
+      choicesGrid.innerHTML = choices.map(function (c) {
+        return '<button class="choice-btn" type="button" data-val="' + c + '">' + c + '</button>';
+      }).join('');
+      choicesGrid.style.display = 'grid';
+      choicesGrid.querySelectorAll('.choice-btn').forEach(function (btn) {
+        btn.addEventListener('click', function () { submitDrillAnswer(btn.getAttribute('data-val'), btn); });
+      });
+      f._startedAt = Date.now();
+    }
   }
 
   function initDrillInput() {
@@ -523,6 +575,12 @@
       if (input.value.trim() === '') return;
       submitDrillAnswer(input.value.trim());
     }
+    input.addEventListener('focus', function () {
+      inputFocused = true;
+      var f = drill && drill.mode && drill.queue[drill.idx];
+      if (f && !f._startedAt) f._startedAt = Date.now();
+    });
+    input.addEventListener('blur', function () { inputFocused = false; });
     input.addEventListener('input', function () {
       if (drillAnswered) return;
       clearTimeout(timer);
@@ -535,13 +593,21 @@
     input.addEventListener('keydown', function (e) { if (e.key === 'Enter') trySubmit(); });
   }
 
-  function submitDrillAnswer(val) {
+  function submitDrillAnswer(val, btnEl) {
     if (drillAnswered) return;
     drillAnswered = true;
     var f = drill.queue[drill.idx];
-    var ms = Date.now() - f._startedAt;
+    var ms = Date.now() - (f._startedAt || Date.now());
     var correct = Number(val) === f.answer;
     var fb = document.getElementById('feedback');
+
+    if (btnEl) {
+      document.querySelectorAll('#choices-grid .choice-btn').forEach(function (b) {
+        b.disabled = true;
+        if (Number(b.getAttribute('data-val')) === f.answer) b.classList.add('correct');
+        else if (b === btnEl) b.classList.add('incorrect');
+      });
+    }
 
     if (!f.isRetry) {
       drill.results.push({ correct: correct, ms: ms });
@@ -559,7 +625,7 @@
       }
       fb.innerHTML = '<span class="fb-bad">Answer: ' + f.answer + '</span>';
       saveState();
-      setTimeout(nextDrillCard, 700);
+      setTimeout(nextDrillCard, btnEl ? 900 : 700);
     }
   }
 
