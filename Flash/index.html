@@ -214,6 +214,13 @@
         </div>
         <div class="cta-arrow">→</div>
       </button>
+      <button class="cta-secondary" id="mixed-speed-btn" type="button">
+        <div>
+          <div class="cta-title">Speed Multiple Choice</div>
+          <div class="cta-meta" id="mixed-speed-meta"></div>
+        </div>
+        <div class="cta-arrow">→</div>
+      </button>
 
       <div class="section-label">Lessons</div>
       <button class="cta" id="start-drill-btn" type="button">
@@ -382,11 +389,17 @@
       else if (type === 'sub') { var a2 = randInt(0, 9), b2 = randInt(0, 9); if (b2 > a2) { var t = a2; a2 = b2; b2 = t; } f = { type: 'sub', a: a2, b: b2, answer: a2 - b2, prompt: a2 + ' − ' + b2 }; }
       else if (type === 'mul') { var a3 = randInt(0, 9), b3 = randInt(0, 9); f = { type: 'mul', a: a3, b: b3, answer: a3 * b3, prompt: a3 + ' × ' + b3 }; }
       else { var b4 = randInt(1, 9), q4 = randInt(0, 9), a4 = b4 * q4; f = { type: 'div', a: a4, b: b4, answer: q4, prompt: a4 + ' ÷ ' + b4 }; }
-    } else {
+    } else if (mode === 'double') {
       if (type === 'add') { var a5 = randInt(10, 99), b5 = randInt(10, 99); f = { type: 'add', a: a5, b: b5, answer: a5 + b5, prompt: a5 + ' + ' + b5 }; }
       else if (type === 'sub') { var a6 = randInt(10, 99), b6 = randInt(10, 99); if (b6 > a6) { var t2 = a6; a6 = b6; b6 = t2; } f = { type: 'sub', a: a6, b: b6, answer: a6 - b6, prompt: a6 + ' − ' + b6 }; }
       else if (type === 'mul') { var a7 = randInt(10, 99), b7 = randInt(2, 9); f = { type: 'mul', a: a7, b: b7, answer: a7 * b7, prompt: a7 + ' × ' + b7 }; }
       else { var b8 = randInt(2, 9), q8 = randInt(10, 99), a8 = b8 * q8; f = { type: 'div', a: a8, b: b8, answer: q8, prompt: a8 + ' ÷ ' + b8 }; }
+    } else {
+      // speed: digits 1 through 12, multiple choice
+      if (type === 'add') { var a9 = randInt(1, 12), b9 = randInt(1, 12); f = { type: 'add', a: a9, b: b9, answer: a9 + b9, prompt: a9 + ' + ' + b9 }; }
+      else if (type === 'sub') { var a10 = randInt(1, 12), b10 = randInt(1, 12); if (b10 > a10) { var t3 = a10; a10 = b10; b10 = t3; } f = { type: 'sub', a: a10, b: b10, answer: a10 - b10, prompt: a10 + ' − ' + b10 }; }
+      else if (type === 'mul') { var a11 = randInt(1, 12), b11 = randInt(1, 12); f = { type: 'mul', a: a11, b: b11, answer: a11 * b11, prompt: a11 + ' × ' + b11 }; }
+      else { var b12 = randInt(1, 12), q12 = randInt(1, 12), a12 = b12 * q12; f = { type: 'div', a: a12, b: b12, answer: q12, prompt: a12 + ' ÷ ' + b12 }; }
     }
     f.statKey = mode + '|' + f.type + '_' + f.a + '_' + f.b;
     return f;
@@ -435,7 +448,7 @@
   /* ---------------- state ---------------- */
   var LS_KEY = 'flash-state-v1';
   function defaultState() {
-    return { xp: 0, streak: 0, lastPlayedDate: null, totalSessions: 0, currentTierIndex: 0, tierStats: {}, factStats: {}, history: [], theme: null };
+    return { xp: 0, streak: 0, lastPlayedDate: null, totalSessions: 0, currentTierIndex: 0, tierStats: {}, factStats: {}, speedStats: { add: [], sub: [], mul: [], div: [] }, history: [], theme: null };
   }
   function loadState() {
     try {
@@ -444,7 +457,8 @@
         var parsed = JSON.parse(raw);
         return Object.assign(defaultState(), parsed, {
           tierStats: Object.assign({}, parsed.tierStats || {}),
-          factStats: Object.assign({}, parsed.factStats || {})
+          factStats: Object.assign({}, parsed.factStats || {}),
+          speedStats: Object.assign({ add: [], sub: [], mul: [], div: [] }, parsed.speedStats || {})
         });
       }
     } catch (e) {}
@@ -482,13 +496,34 @@
     return shuffle(choices);
   }
 
+  function updateSpeedStats(type, ms) {
+    var arr = state.speedStats[type] || (state.speedStats[type] = []);
+    arr.push(ms);
+    if (arr.length > 20) arr.shift();
+  }
+
+  function speedStatsSummary() {
+    var ops = [['add', '+'], ['sub', '−'], ['mul', '×'], ['div', '÷']];
+    return ops.map(function (o) {
+      var arr = state.speedStats[o[0]] || [];
+      if (!arr.length) return o[1] + ' —';
+      var min = Math.min.apply(null, arr), max = Math.max.apply(null, arr);
+      var mean = Math.round(arr.reduce(function (a, b) { return a + b; }, 0) / arr.length);
+      return o[1] + ' ' + (min / 1000).toFixed(1) + '/' + (mean / 1000).toFixed(1) + '/' + (max / 1000).toFixed(1) + 's';
+    }).join(' · ');
+  }
+
+  function hasSpeedStats() {
+    return Object.keys(state.speedStats).some(function (k) { return state.speedStats[k].length; });
+  }
+
   function startDrill(tierId) {
     var tier = getTierById(tierId);
     var pool = tier.facts.slice();
     shuffle(pool);
     var setSize = Math.min(pool.length, 15);
     var queue = pool.slice(0, setSize).map(function (f) { return { a: f.a, b: f.b, answer: f.answer, prompt: f.prompt }; });
-    drill = { tierId: tierId, queue: queue, idx: 0, results: [], originalSize: queue.length };
+    drill = { tierId: tierId, uiMode: 'choice', queue: queue, idx: 0, results: [], originalSize: queue.length };
     showView('session');
     document.getElementById('drill-title').textContent = tier.opLabel + ' — ' + tier.label;
     renderDrillCard();
@@ -501,18 +536,24 @@
     shuffle(pool);
     var setSize = Math.min(pool.length, 20);
     var queue = pool.slice(0, setSize).map(function (f) { return { a: f.a, b: f.b, answer: f.answer, prompt: f.prompt }; });
-    drill = { tierId: 'mixed', queue: queue, idx: 0, results: [], originalSize: queue.length };
+    drill = { tierId: 'mixed', uiMode: 'choice', queue: queue, idx: 0, results: [], originalSize: queue.length };
     showView('session');
     document.getElementById('drill-title').textContent = 'Mixed Review';
     renderDrillCard();
   }
 
+  var MIXED_DRILL_TITLES = {
+    single: 'Single-Digit Mix — Random +, −, ×, ÷',
+    double: 'Double-Digit Mix — Random +, −, ×, ÷',
+    speed: 'Speed Multiple Choice — Random +, −, ×, ÷ (1–12)'
+  };
+
   function startMixedDrill(mode) {
     var queue = [];
     for (var i = 0; i < 20; i++) queue.push(pickMixedFact(mode));
-    drill = { tierId: null, mode: mode, queue: queue, idx: 0, results: [], originalSize: queue.length };
+    drill = { tierId: null, mode: mode, uiMode: (mode === 'speed' ? 'choice' : 'text'), queue: queue, idx: 0, results: [], originalSize: queue.length };
     showView('session');
-    document.getElementById('drill-title').textContent = (mode === 'single' ? 'Single-Digit Mix' : 'Double-Digit Mix') + ' — Random +, −, ×, ÷';
+    document.getElementById('drill-title').textContent = MIXED_DRILL_TITLES[mode];
     renderDrillCard();
   }
 
@@ -537,7 +578,7 @@
     drillAnswered = false;
     f._startedAt = null;
 
-    if (drill.mode) {
+    if (drill.uiMode === 'text') {
       // Free-entry drills (the random mixes): keep the number-pad input.
       // The input element is never destroyed or blurred between cards, so on
       // iOS Safari the keyboard — once opened by the first tap — stays open
@@ -577,7 +618,7 @@
     }
     input.addEventListener('focus', function () {
       inputFocused = true;
-      var f = drill && drill.mode && drill.queue[drill.idx];
+      var f = drill && drill.uiMode === 'text' && drill.queue[drill.idx];
       if (f && !f._startedAt) f._startedAt = Date.now();
     });
     input.addEventListener('blur', function () { inputFocused = false; });
@@ -615,6 +656,7 @@
     }
     if (correct) {
       if (!f.isRetry) state.xp += 5;
+      if (drill.mode === 'speed' && !f.isRetry) updateSpeedStats(f.type, ms);
       fb.innerHTML = '<span class="fb-ok">Correct</span>';
       saveState();
       setTimeout(nextDrillCard, 200);
@@ -746,6 +788,9 @@
     var doubleWeak = weakKeysForMode('double').length;
     document.getElementById('mixed-double-meta').textContent = doubleWeak ? doubleWeak + ' combos need more reps' : 'Random +, −, ×, ÷ · double digits';
     document.getElementById('mixed-double-btn').onclick = function () { startMixedDrill('double'); };
+
+    document.getElementById('mixed-speed-meta').textContent = hasSpeedStats() ? speedStatsSummary() : 'Random +, −, ×, ÷ · digits 1–12 · multiple choice';
+    document.getElementById('mixed-speed-btn').onclick = function () { startMixedDrill('speed'); };
 
     renderLadder();
   }
