@@ -1,0 +1,1153 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+<meta name="theme-color" content="#0B1624" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+<meta name="description" content="Two-phone classic Battleship over WiFi. Pair by QR code, no server, no internet — WebRTC peer-to-peer on the local network." />
+<title>Battleship2 — LAN 1v1</title>
+<link rel="manifest" href="manifest.json" />
+<link rel="icon" href="icon.svg" type="image/svg+xml" />
+<link rel="apple-touch-icon" href="icon.svg" />
+<style>
+  :root {
+    --bg: #0B1624; --surface: #132338; --surface-2: #1A2F4A; --border: #2A4566;
+    --ink: #E8ECEF; --ink-muted: #8FA3BC; --ink-faint: #52698A;
+    --accent: #3AA6C0; --accent-strong: #5EC8E0;
+    --hit: #D9614F; --hit-strong: #F0806D; --miss: #52698A; --sunk: #8B3A2E;
+    --font-display: Georgia, "Iowan Old Style", "Palatino Linotype", "Book Antiqua", serif;
+    --font-body: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    --font-mono: ui-monospace, "SF Mono", "Cascadia Code", Menlo, Consolas, monospace;
+  }
+  @media (prefers-color-scheme: light) {
+    :root { --bg:#EEF3F7; --surface:#FFFFFF; --surface-2:#E3ECF3; --border:#CBDAE6;
+      --ink:#132234; --ink-muted:#54677E; --ink-faint:#97A9BD;
+      --accent:#1F86A0; --accent-strong:#166B81; --hit:#C2503E; --hit-strong:#A8402F; --miss:#97A9BD; --sunk:#7A392D; }
+  }
+  :root[data-theme="dark"] { --bg:#0B1624; --surface:#132338; --surface-2:#1A2F4A; --border:#2A4566;
+    --ink:#E8ECEF; --ink-muted:#8FA3BC; --ink-faint:#52698A;
+    --accent:#3AA6C0; --accent-strong:#5EC8E0; --hit:#D9614F; --hit-strong:#F0806D; --miss:#52698A; --sunk:#8B3A2E; }
+  :root[data-theme="light"] { --bg:#EEF3F7; --surface:#FFFFFF; --surface-2:#E3ECF3; --border:#CBDAE6;
+    --ink:#132234; --ink-muted:#54677E; --ink-faint:#97A9BD;
+    --accent:#1F86A0; --accent-strong:#166B81; --hit:#C2503E; --hit-strong:#A8402F; --miss:#97A9BD; --sunk:#7A392D; }
+
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; }
+  body {
+    background: var(--bg); color: var(--ink); font-family: var(--font-body);
+    line-height: 1.5; font-size: 16px; -webkit-tap-highlight-color: transparent;
+  }
+  button, input, textarea { font-family: inherit; }
+  button { cursor: pointer; }
+  :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+  .page { min-height: 100vh; padding: calc(1.25rem + env(safe-area-inset-top, 0px)) 1.1rem calc(3rem + env(safe-area-inset-bottom, 0px)); }
+  .wrap { max-width: 28rem; margin: 0 auto; }
+
+  .topbar { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.2rem; min-height: 2rem; }
+  .wordmark { font-family: var(--font-display); font-size: 1.3rem; letter-spacing: 0.01em; }
+  .wordmark .ver { color: var(--accent); font-size: 0.85em; margin-left: 0.15em; }
+  .tagline { color: var(--ink-muted); font-size: 0.88rem; margin: -0.6rem 0 1.4rem; }
+
+  .view { display: none; }
+  .view.active { display: block; }
+
+  .btn {
+    width: 100%; border: 1px solid var(--border); background: var(--surface); color: var(--ink);
+    border-radius: 14px; padding: 0.95rem 1.1rem; font-size: 1rem; font-weight: 600;
+    display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.7rem;
+  }
+  .btn:disabled { opacity: 0.45; }
+  .btn .desc { display:block; font-weight:400; font-size:0.78rem; color:var(--ink-muted); margin-top:0.15rem; }
+  .btn.primary { background: linear-gradient(160deg, var(--accent-strong), var(--accent)); color: #06222A; border: none; }
+  .btn.ghost { background: none; }
+  .btn.small { padding: 0.6rem 0.9rem; font-size: 0.85rem; }
+  .row { display:flex; gap:0.6rem; }
+  .row .btn { margin-bottom:0; }
+
+  .card { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 1.1rem; margin-bottom: 0.9rem; }
+  .muted { color: var(--ink-muted); font-size: 0.85rem; }
+  .center { text-align: center; }
+  .step-label { font-family: var(--font-mono); font-size: 0.72rem; color: var(--accent); letter-spacing: 0.06em; text-transform: uppercase; margin-bottom: 0.3rem; }
+  h2 { font-family: var(--font-display); font-size: 1.25rem; margin: 0 0 0.4rem; }
+
+  .qr-wrap { background: #fff; border-radius: 14px; padding: 1rem; margin: 1rem 0; }
+  .qr-wrap svg { display:block; width:100%; height:auto; }
+
+  .scan-wrap { position: relative; border-radius: 16px; overflow: hidden; background:#111; aspect-ratio: 1; margin: 1rem 0; }
+  .scan-wrap video {
+    position: absolute; inset: 0; width: 100%; height: 100%;
+    object-fit: cover; background: #111; transform: translateZ(0);
+  }
+  .scan-frame { position:absolute; inset: 12%; border: 3px solid var(--accent-strong); border-radius: 16px; pointer-events:none; opacity:0.85; z-index: 1; }
+  .scan-wrap .scan-placeholder {
+    position:absolute; inset:0; display:flex; align-items:center; justify-content:center;
+    color: var(--ink-muted); font-size: 0.85rem; padding: 1.5rem; text-align: center; z-index: 0;
+  }
+  .scan-wrap.live .scan-placeholder { display: none; }
+
+  .paste-toggle { background:none; border:none; color: var(--accent-strong); font-size: 0.82rem; padding: 0.4rem 0; }
+  textarea.code-input { width:100%; min-height: 4.5rem; border-radius: 10px; border:1px solid var(--border); background: var(--surface-2); color: var(--ink); padding:0.6rem; font-family: var(--font-mono); font-size: 0.7rem; resize: vertical; }
+  .paste-panel {
+    display: block; margin: 0.8rem 0 1rem; padding: 0.9rem;
+    background: var(--surface); border: 1px solid var(--border); border-radius: 14px;
+  }
+  .paste-panel h3 { margin: 0 0 0.35rem; font-size: 0.95rem; font-family: var(--font-display); }
+  .paste-panel .muted { margin: 0 0 0.55rem; }
+  .scan-wrap.camera-blocked { display: none; }
+  .callout-warn {
+    background: color-mix(in srgb, var(--hit) 14%, var(--surface));
+    border: 1px solid color-mix(in srgb, var(--hit) 45%, var(--border));
+    color: var(--ink); border-radius: 12px; padding: 0.75rem 0.9rem;
+    font-size: 0.85rem; margin: 0.7rem 0 0.9rem; display: none;
+  }
+  .callout-warn.show { display: block; }
+  .callout-warn b { color: var(--hit-strong); }
+
+  .spinner { width: 1.1rem; height: 1.1rem; border-radius: 50%; border: 2px solid var(--border); border-top-color: var(--accent); animation: spin 0.8s linear infinite; display:inline-block; vertical-align:-2px; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .error-text { color: var(--hit-strong); font-size: 0.82rem; margin-top: 0.5rem; }
+
+  .board-label { display:flex; align-items:center; justify-content:space-between; margin-bottom:0.4rem; gap:0.5rem; }
+  .board-label .name { font-weight:700; font-size:0.92rem; }
+  .board-label .hint { font-size:0.76rem; color: var(--ink-muted); }
+  .grid10 { display:grid; grid-template-columns: repeat(10, 1fr); gap: 2px; aspect-ratio:1; margin-bottom:1rem; }
+  .cell { position:relative; background: var(--surface-2); border-radius: 3px; border:1px solid var(--border); min-width:0; min-height:0; }
+  .cell.ship { background: var(--accent); border-color: var(--accent); }
+  .cell.ship.active-ship { background: var(--accent-strong); }
+  .cell.hit { background: var(--hit); border-color: var(--hit); }
+  .cell.hit::after { content:'✕'; position:absolute; inset:0; display:flex; align-items:center; justify-content:center; font-size:0.65rem; color:#fff; font-weight:700; line-height:1; }
+  .cell.miss { background: var(--surface-2); }
+  .cell.miss::after { content:''; position:absolute; inset:34%; border-radius:50%; background: var(--ink-faint); }
+  .cell.sunk { background: var(--sunk); border-color: var(--sunk); }
+  .cell.sunk::after { content:'✕'; position:absolute; inset:0; display:flex; align-items:center; justify-content:center; font-size:0.65rem; color:#fff; font-weight:700; line-height:1; }
+  .cell.pending { animation: pulse 0.9s ease-in-out infinite; }
+  @keyframes pulse { 0%,100% { opacity:1; } 50% { opacity:0.4; } }
+  .cell.tappable { cursor:pointer; }
+  .cell.ghost { background: color-mix(in srgb, var(--accent) 45%, var(--surface-2)); border-color: var(--accent); opacity: 0.85; }
+  .cell.ghost-bad { background: color-mix(in srgb, var(--hit) 40%, var(--surface-2)); border-color: var(--hit); opacity: 0.85; }
+
+  .ship-list { display:flex; flex-wrap:wrap; gap:0.5rem; margin: 0.8rem 0; }
+  .ship-chip { border:1px solid var(--border); background: var(--surface-2); border-radius: 10px; padding:0.5rem 0.7rem; font-size:0.8rem; display:flex; align-items:center; gap:0.4rem; color: var(--ink); }
+  .ship-chip.active { border-color: var(--accent-strong); background: var(--accent); color:#06222A; font-weight:700; }
+  .ship-chip.placed { opacity:0.5; }
+  .ship-chip .dots { display:flex; gap:2px; }
+  .ship-chip .dots span { width:6px; height:6px; border-radius:1px; background: currentColor; opacity:0.6; }
+
+  .turn-banner { text-align:center; padding:0.8rem; border-radius: 12px; background: var(--surface); border:1px solid var(--border); margin-bottom:1rem; font-weight:700; }
+  .turn-banner.mine { background: linear-gradient(160deg, var(--accent-strong), var(--accent)); color:#06222A; border:none; }
+
+  .log { max-height: 5.5rem; overflow-y: auto; font-size: 0.78rem; color: var(--ink-muted); background: var(--surface); border:1px solid var(--border); border-radius: 10px; padding: 0.55rem 0.7rem; margin-bottom: 0.8rem; }
+  .log div { padding: 0.1rem 0; }
+  .log .hit-line { color: var(--hit-strong); }
+  .log .sunk-line { color: var(--accent-strong); font-weight: 600; }
+
+  .fleet-status { display:flex; flex-wrap:wrap; gap:0.35rem; margin: -0.4rem 0 0.9rem; }
+  .fleet-pip { font-size:0.7rem; padding:0.2rem 0.45rem; border-radius: 999px; border:1px solid var(--border); color: var(--ink-muted); background: var(--surface); }
+  .fleet-pip.alive { color: var(--accent-strong); border-color: color-mix(in srgb, var(--accent) 50%, var(--border)); }
+  .fleet-pip.dead { color: var(--hit-strong); opacity: 0.7; text-decoration: line-through; }
+
+  .toast { position: fixed; left:50%; bottom: calc(1.5rem + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%); background: var(--surface); border:1px solid var(--border); color: var(--ink); padding: 0.7rem 1.1rem; border-radius: 12px; font-size:0.85rem; box-shadow: 0 8px 24px rgba(0,0,0,0.3); z-index: 50; opacity:0; pointer-events:none; transition: opacity 0.25s, transform 0.25s; max-width: 90vw; text-align:center; }
+  .toast.show { opacity:1; transform: translateX(-50%) translateY(-4px); }
+
+  .overlay { position: fixed; inset:0; background: color-mix(in srgb, var(--bg) 88%, transparent); display:flex; align-items:center; justify-content:center; padding:1.5rem; z-index:40; }
+  .overlay .card { max-width: 22rem; width:100%; }
+
+  .gameover-title { font-family: var(--font-display); font-size: 2rem; text-align:center; margin: 1rem 0 0.3rem; }
+  .gameover-title.win { color: var(--accent-strong); }
+  .gameover-title.lose { color: var(--hit-strong); }
+
+  .howto { font-size: 0.82rem; color: var(--ink-muted); margin-top: 1.2rem; padding-top: 1rem; border-top: 1px solid var(--border); }
+  .howto ol { margin: 0.4rem 0 0; padding-left: 1.2rem; }
+  .howto li { margin-bottom: 0.3rem; }
+</style>
+</head>
+<body>
+<div class="page"><div class="wrap">
+
+  <div class="topbar">
+    <div class="wordmark">⚓ Battleship<span class="ver">2</span></div>
+  </div>
+
+  <!-- HOME -->
+  <div class="view active" id="view-home">
+    <div class="tagline">Classic 10×10 fleet combat. Two phones, one WiFi, no server. Pair by QR — pure peer-to-peer.</div>
+    <button class="btn primary" id="btn-host">
+      <span><span style="display:block;">Host Game</span><span class="desc">Show a QR code for your opponent to scan</span></span>
+      <span>→</span>
+    </button>
+    <button class="btn" id="btn-join">
+      <span><span style="display:block;">Join Game</span><span class="desc">Scan your opponent's QR code</span></span>
+      <span>→</span>
+    </button>
+    <div class="howto">
+      <b style="color:var(--ink);">How it works</b>
+      <ol>
+        <li>Both phones on the same WiFi or hotspot (AP isolation off).</li>
+        <li>Host shows a QR; Joiner scans it, then shows a reply QR.</li>
+        <li>Host scans the reply — DataChannel opens over the LAN.</li>
+        <li>Place ships, take turns firing. Hits keep your turn.</li>
+      </ol>
+      <p style="margin:0.6rem 0 0;"><b style="color:var(--ink);">iPhone tip:</b> Chrome/Safari block the camera on plain <code>http://192.168.…</code> URLs. Use the always-visible <b>paste code</b> panels (host copies text → joiner pastes → joiner copies reply → host pastes). Camera works on HTTPS or localhost only.</p>
+    </div>
+  </div>
+
+  <!-- HOST: show offer -->
+  <div class="view" id="view-host-offer">
+    <div class="step-label">Step 1 of 2</div>
+    <h2>Have your opponent scan this</h2>
+    <p class="muted">Open Battleship2 on their phone, tap <b>Join Game</b>, and scan this code — or send them the text code if their camera is blocked.</p>
+    <div class="qr-wrap" id="qr-host-offer"></div>
+    <div class="paste-panel" id="paste-host-offer">
+      <h3>Share as text (if camera blocked)</h3>
+      <p class="muted">Copy this and send it (Messages, etc.). They paste it on Join.</p>
+      <textarea class="code-input" readonly id="text-host-offer"></textarea>
+      <button class="btn small" id="btn-copy-host-offer" style="margin-top:0.5rem;">Copy code</button>
+    </div>
+    <button class="btn primary" id="btn-host-next" style="margin-top:1rem;">I'm ready — get their reply →</button>
+    <button class="btn ghost" id="btn-host-offer-back">← Cancel</button>
+  </div>
+
+  <!-- HOST: scan answer -->
+  <div class="view" id="view-host-scan">
+    <div class="step-label">Step 2 of 2</div>
+    <h2>Scan your opponent's reply code</h2>
+    <p class="muted">Their phone should now be showing a QR code — scan it, or paste the text code.</p>
+    <div class="callout-warn" id="host-scan-secure-warn">
+      <b>Camera blocked on this URL.</b> iPhone Chrome only allows the camera on HTTPS or localhost.
+      Paste their reply code below (on the host phone: expand “Show code as text” and Copy).
+    </div>
+    <div class="scan-wrap" id="wrap-host-scan">
+      <div class="scan-placeholder">Starting camera…</div>
+      <video id="video-host-scan" autoplay muted playsinline webkit-playsinline></video>
+      <div class="scan-frame"></div>
+    </div>
+    <div class="center muted" id="host-scan-status"><span class="spinner"></span>&nbsp; Looking for code…</div>
+    <div class="paste-panel" id="paste-host-answer">
+      <h3>Paste reply code</h3>
+      <p class="muted">From their phone: “Show code as text” → Copy, then paste here.</p>
+      <textarea class="code-input" id="text-host-answer" placeholder="Paste {&quot;t&quot;:&quot;answer&quot;,...} here" rows="5"></textarea>
+      <button class="btn primary small" id="btn-submit-host-answer" style="margin-top:0.5rem;">Connect</button>
+    </div>
+    <div class="error-text" id="host-scan-error"></div>
+    <button class="btn ghost" id="btn-host-scan-back">← Back</button>
+  </div>
+
+  <!-- JOIN: scan offer -->
+  <div class="view" id="view-join-scan">
+    <div class="step-label">Step 1 of 2</div>
+    <h2>Scan the host's code</h2>
+    <p class="muted">Point your camera at their QR code, or paste the text code they copied.</p>
+    <div class="callout-warn" id="join-scan-secure-warn">
+      <b>Camera blocked on this URL.</b> iPhone Chrome only allows the camera on HTTPS or localhost.
+      On the host phone, tap <b>Show code as text</b> → <b>Copy code</b>, then paste it below.
+    </div>
+    <div class="scan-wrap" id="wrap-join-scan">
+      <div class="scan-placeholder">Starting camera…</div>
+      <video id="video-join-scan" autoplay muted playsinline webkit-playsinline></video>
+      <div class="scan-frame"></div>
+    </div>
+    <div class="center muted" id="join-scan-status"><span class="spinner"></span>&nbsp; Looking for code…</div>
+    <div class="paste-panel" id="paste-join-offer">
+      <h3>Paste host code</h3>
+      <p class="muted">Host taps “Show code as text” → Copy, then paste here.</p>
+      <textarea class="code-input" id="text-join-offer" placeholder="Paste {&quot;t&quot;:&quot;offer&quot;,...} here" rows="5"></textarea>
+      <button class="btn primary small" id="btn-submit-join-offer" style="margin-top:0.5rem;">Continue</button>
+    </div>
+    <div class="error-text" id="join-scan-error"></div>
+    <button class="btn ghost" id="btn-join-scan-back">← Back</button>
+  </div>
+
+  <!-- JOIN: show answer -->
+  <div class="view" id="view-join-answer">
+    <div class="step-label">Step 2 of 2</div>
+    <h2>Show this to the host</h2>
+    <p class="muted">Hold your screen up so they can scan this reply — or copy the text code and send it to them.</p>
+    <div class="qr-wrap" id="qr-join-answer"></div>
+    <div class="paste-panel" id="paste-join-answer">
+      <h3>Share reply as text</h3>
+      <p class="muted">If the host’s camera is blocked, copy this and send it. They paste it on step 2.</p>
+      <textarea class="code-input" readonly id="text-join-answer"></textarea>
+      <button class="btn small" id="btn-copy-join-answer" style="margin-top:0.5rem;">Copy code</button>
+    </div>
+    <div class="center muted" style="margin-top:1rem;" id="join-answer-status"><span class="spinner"></span>&nbsp; Waiting for connection…</div>
+  </div>
+
+  <!-- PLACEMENT -->
+  <div class="view" id="view-placement">
+    <h2>Place your fleet</h2>
+    <p class="muted">Tap a ship, then a cell. Use rotate for orientation. Tap a placed ship to pick it up again.</p>
+    <div class="board-label"><span class="name">Your Waters</span>
+      <span class="hint"><button class="paste-toggle" id="btn-rotate" style="padding:0;">⟳ Rotate</button></span>
+    </div>
+    <div class="grid10" id="grid-placement"></div>
+    <div class="ship-list" id="ship-list"></div>
+    <div class="row">
+      <button class="btn small" id="btn-randomize">🎲 Randomize</button>
+      <button class="btn small" id="btn-reset-ships">Reset</button>
+    </div>
+    <button class="btn primary" id="btn-ready" style="margin-top:0.8rem;" disabled>Ready ✓</button>
+  </div>
+
+  <!-- BATTLE -->
+  <div class="view" id="view-battle">
+    <div class="turn-banner" id="turn-banner">—</div>
+    <div class="board-label"><span class="name">Enemy Waters</span><span class="hint" id="enemy-hint">Tap to fire</span></div>
+    <div class="grid10" id="grid-enemy"></div>
+    <div class="fleet-status" id="enemy-fleet-status"></div>
+    <div class="board-label"><span class="name">Your Fleet</span><span class="hint" id="fleet-hint"></span></div>
+    <div class="grid10" id="grid-fleet"></div>
+    <div class="fleet-status" id="my-fleet-status"></div>
+    <div class="log" id="battle-log" aria-live="polite"></div>
+  </div>
+
+  <!-- GAME OVER -->
+  <div class="view" id="view-gameover">
+    <div class="card center">
+      <div class="gameover-title" id="gameover-title">—</div>
+      <p class="muted" id="gameover-sub"></p>
+      <button class="btn primary" id="btn-rematch" style="margin-top:1rem;">Rematch</button>
+      <div class="muted" id="rematch-status" style="margin-top:0.5rem;"></div>
+      <button class="btn ghost" id="btn-home">Back to start</button>
+    </div>
+  </div>
+
+  <!-- CONNECTION LOST -->
+  <div class="overlay" id="overlay-lost" style="display:none;">
+    <div class="card center">
+      <h2>Connection lost</h2>
+      <p class="muted">The link to your opponent's phone dropped. You'll need to pair again.</p>
+      <button class="btn primary" id="btn-reload">Start over</button>
+    </div>
+  </div>
+
+  <canvas id="scan-canvas" style="display:none;"></canvas>
+  <div class="toast" id="toast"></div>
+
+</div></div>
+
+<script src="qrcode.js"></script>
+<script src="jsQR.js"></script>
+<script>
+(function(){
+  'use strict';
+
+  const GRID = 10;
+  const SHIP_DEFS = [
+    { name: 'Carrier', size: 5 },
+    { name: 'Battleship', size: 4 },
+    { name: 'Cruiser', size: 3 },
+    { name: 'Submarine', size: 3 },
+    { name: 'Destroyer', size: 2 },
+  ];
+  const COLS = 'ABCDEFGHIJ';
+
+  const S = {
+    isHost: null, pc: null, dc: null,
+    phase: 'pairing', orientation: 'h', activeShipIdx: 0,
+    myGrid: null, myShips: null, shotsOnMe: null, oppGrid: null,
+    turn: null, awaitingResult: false, pendingCell: null,
+    localReady: false, remoteReady: false,
+    gamesPlayed: 0, localWantsRematch: false, remoteWantsRematch: false, won: null,
+    log: [], enemySunk: {},
+  };
+
+  function makeGrid(fill){ return Array.from({ length: GRID }, () => Array(GRID).fill(fill)); }
+  function freshShips(){ return SHIP_DEFS.map(d => ({ name: d.name, size: d.size, cells: [], hits: 0 })); }
+  function resetBoards(){
+    S.myGrid = makeGrid(null);
+    S.myShips = freshShips();
+    S.shotsOnMe = makeGrid(null);
+    S.oppGrid = makeGrid(null);
+    S.activeShipIdx = 0;
+    S.pendingCell = null;
+    S.awaitingResult = false;
+    S.log = [];
+    S.enemySunk = {};
+  }
+  resetBoards();
+
+  const $ = id => document.getElementById(id);
+
+  function showView(id){
+    document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+    $('view-' + id).classList.add('active');
+  }
+
+  function toast(msg){
+    const t = $('toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    clearTimeout(toast._h);
+    toast._h = setTimeout(() => t.classList.remove('show'), 2800);
+  }
+
+  function cellLabel(x, y){ return COLS[x] + (y + 1); }
+
+  function pushLog(text, cls){
+    S.log.unshift({ text, cls: cls || '' });
+    if (S.log.length > 40) S.log.length = 40;
+    renderLog();
+  }
+
+  function renderLog(){
+    const el = $('battle-log');
+    if (!el) return;
+    el.innerHTML = S.log.length
+      ? S.log.map(e => '<div class="' + e.cls + '">' + e.text + '</div>').join('')
+      : '<div>Shots will appear here…</div>';
+  }
+
+  document.querySelectorAll('[data-toggle]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const el = $(btn.dataset.toggle);
+      el.style.display = el.style.display === 'none' ? 'block' : 'none';
+    });
+  });
+
+  // ---------------- WebRTC pairing (no STUN/TURN — LAN only) ----------------
+
+  function makePC(){ return new RTCPeerConnection({ iceServers: [] }); }
+
+  function waitIceComplete(pc, timeoutMs){
+    return new Promise(resolve => {
+      if (pc.iceGatheringState === 'complete') return resolve();
+      let done = false;
+      const finish = () => { if (done) return; done = true; pc.removeEventListener('icegatheringstatechange', check); resolve(); };
+      const check = () => { if (pc.iceGatheringState === 'complete') finish(); };
+      pc.addEventListener('icegatheringstatechange', check);
+      setTimeout(finish, timeoutMs || 4000);
+    });
+  }
+
+  function setupDC(dc){
+    S.dc = dc;
+    dc.binaryType = 'arraybuffer';
+    dc.onopen = onConnected;
+    dc.onclose = onDisconnected;
+    dc.onerror = onDisconnected;
+    dc.onmessage = e => {
+      try { handleMessage(JSON.parse(e.data)); }
+      catch (err) { console.error(err); }
+    };
+  }
+
+  function send(obj){
+    if (S.dc && S.dc.readyState === 'open') S.dc.send(JSON.stringify(obj));
+  }
+
+  function renderQR(containerId, textId, text){
+    // Prefer smaller QR when possible; fall back to higher capacity.
+    let lastErr = null;
+    for (const level of ['L', 'M']) {
+      try {
+        const qr = qrcode(0, level);
+        qr.addData(text);
+        qr.make();
+        $(containerId).innerHTML = qr.createSvgTag({ cellSize: 4, margin: 8, scalable: true });
+        $(textId).value = text;
+        return;
+      } catch (err) {
+        lastErr = err;
+      }
+    }
+    $(containerId).innerHTML = '<p style="color:#c00;font-size:0.85rem;margin:0;">QR too large — use the text code below.</p>';
+    $(textId).value = text;
+    if (lastErr) console.warn(lastErr);
+  }
+
+  async function hostGame(){
+    S.isHost = true;
+    const pc = makePC();
+    S.pc = pc;
+    setupDC(pc.createDataChannel('game', { ordered: true }));
+    const offer = await pc.createOffer();
+    await pc.setLocalDescription(offer);
+    await waitIceComplete(pc);
+    const payload = JSON.stringify({ t: 'offer', sdp: pc.localDescription.sdp, v: 2 });
+    renderQR('qr-host-offer', 'text-host-offer', payload);
+    showView('host-offer');
+  }
+
+  async function submitHostAnswer(text){
+    try {
+      const msg = JSON.parse(text);
+      if (msg.t !== 'answer') throw new Error('That code is not a reply code — make sure your opponent tapped Join and showed you their reply.');
+      $('host-scan-error').textContent = '';
+      stopScanner();
+      await S.pc.setRemoteDescription({ type: 'answer', sdp: msg.sdp });
+      $('host-scan-status').innerHTML = '<span class="spinner"></span>&nbsp; Connecting…';
+    } catch (err) {
+      $('host-scan-error').textContent = err.message || 'Could not read that code.';
+      stopScanner();
+      startScanner('video-host-scan', 'host-scan-error', submitHostAnswer);
+    }
+  }
+
+  async function submitJoinOffer(text){
+    try {
+      const msg = JSON.parse(text);
+      if (msg.t !== 'offer') throw new Error('That code is not a host code — make sure your opponent tapped Host Game and is showing you their code.');
+      $('join-scan-error').textContent = '';
+      stopScanner();
+      S.isHost = false;
+      const pc = makePC();
+      S.pc = pc;
+      pc.ondatachannel = e => setupDC(e.channel);
+      await pc.setRemoteDescription({ type: 'offer', sdp: msg.sdp });
+      const answer = await pc.createAnswer();
+      await pc.setLocalDescription(answer);
+      await waitIceComplete(pc);
+      const payload = JSON.stringify({ t: 'answer', sdp: pc.localDescription.sdp, v: 2 });
+      renderQR('qr-join-answer', 'text-join-answer', payload);
+      showView('join-answer');
+    } catch (err) {
+      $('join-scan-error').textContent = err.message || 'Could not read that code.';
+      stopScanner();
+      startScanner('video-join-scan', 'join-scan-error', submitJoinOffer);
+    }
+  }
+
+  function onConnected(){
+    resetBoards();
+    S.phase = 'placement';
+    S.localReady = false;
+    S.remoteReady = false;
+    renderPlacement();
+    showView('placement');
+    toast('Connected — place your fleet');
+  }
+
+  function onDisconnected(){
+    if (S.phase === 'gameover' || S.phase === 'pairing') return;
+    $('overlay-lost').style.display = 'flex';
+  }
+
+  $('btn-reload').addEventListener('click', () => location.reload());
+
+  // ---------------- QR camera scanning ----------------
+
+  let scanStream = null, scanRAF = null, scanBusy = false, scanVideoEl = null, scanWrapEl = null;
+
+  function statusForVideo(videoId){
+    return videoId === 'video-host-scan' ? 'host-scan-status' : 'join-scan-status';
+  }
+  function wrapForVideo(videoId){
+    return videoId === 'video-host-scan' ? 'wrap-host-scan' : 'wrap-join-scan';
+  }
+
+  async function openCameraStream(){
+    // Prefer rear camera; fall back through looser constraints so laptops / single-cam phones still work.
+    const attempts = [
+      { video: { facingMode: { ideal: 'environment' }, width: { ideal: 1280 }, height: { ideal: 720 } }, audio: false },
+      { video: { facingMode: 'environment' }, audio: false },
+      { video: { facingMode: 'user' }, audio: false },
+      { video: true, audio: false },
+    ];
+    let lastErr = null;
+    for (const constraints of attempts) {
+      try {
+        return await navigator.mediaDevices.getUserMedia(constraints);
+      } catch (err) {
+        lastErr = err;
+      }
+    }
+    throw lastErr || new Error('No camera available');
+  }
+
+  function setScanCameraBlocked(videoId, blocked, reason){
+    const wrap = $(wrapForVideo(videoId));
+    const statusEl = $(statusForVideo(videoId));
+    const warnId = videoId === 'video-host-scan' ? 'host-scan-secure-warn' : 'join-scan-secure-warn';
+    const warn = $(warnId);
+    if (wrap) {
+      wrap.classList.toggle('camera-blocked', !!blocked);
+      wrap.classList.remove('live');
+    }
+    if (warn) warn.classList.toggle('show', !!blocked);
+    if (statusEl) {
+      statusEl.style.display = blocked ? 'none' : '';
+      if (!blocked) statusEl.innerHTML = '<span class="spinner"></span>&nbsp; Looking for code…';
+    }
+    if (blocked && reason) {
+      // Keep error short; the callout + paste panel carry the instructions.
+      const errId = videoId === 'video-host-scan' ? 'host-scan-error' : 'join-scan-error';
+      $(errId).textContent = reason;
+    }
+  }
+
+  async function startScanner(videoId, errorId, onResult){
+    stopScanner();
+    scanBusy = false;
+    const video = $(videoId);
+    const statusEl = $(statusForVideo(videoId));
+    const wrap = $(wrapForVideo(videoId));
+    const errEl = $(errorId);
+    errEl.textContent = '';
+    scanVideoEl = video;
+    scanWrapEl = wrap;
+    setScanCameraBlocked(videoId, false);
+    if (wrap) {
+      wrap.classList.remove('live');
+      const ph = wrap.querySelector('.scan-placeholder');
+      if (ph) ph.textContent = 'Starting camera…';
+    }
+    statusEl.innerHTML = '<span class="spinner"></span>&nbsp; Starting camera…';
+    statusEl.style.display = '';
+
+    if (!window.isSecureContext) {
+      setScanCameraBlocked(videoId, true, 'Paste the code in the box above — camera needs HTTPS on phones.');
+      // Focus the paste field for easy entry.
+      const pasteId = videoId === 'video-host-scan' ? 'text-host-answer' : 'text-join-offer';
+      setTimeout(() => { try { $(pasteId).focus(); } catch (_) {} }, 50);
+      return;
+    }
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+      setScanCameraBlocked(videoId, true, 'Camera not supported here — paste the code instead.');
+      return;
+    }
+
+    try {
+      scanStream = await openCameraStream();
+    } catch (err) {
+      setScanCameraBlocked(videoId, true, 'Camera unavailable — paste the code instead. (' + (err && err.message ? err.message : err) + ')');
+      return;
+    }
+
+    // Critical for iOS / autoplay policies — mute + playsInline before assigning stream.
+    video.muted = true;
+    video.defaultMuted = true;
+    video.playsInline = true;
+    video.setAttribute('playsinline', '');
+    video.setAttribute('webkit-playsinline', '');
+    video.setAttribute('autoplay', '');
+    video.srcObject = scanStream;
+
+    try {
+      if (video.readyState < 1) {
+        await new Promise((resolve, reject) => {
+          const onMeta = () => { cleanup(); resolve(); };
+          const onErr = () => { cleanup(); reject(new Error('Video failed to load')); };
+          const cleanup = () => {
+            video.removeEventListener('loadedmetadata', onMeta);
+            video.removeEventListener('error', onErr);
+          };
+          video.addEventListener('loadedmetadata', onMeta);
+          video.addEventListener('error', onErr);
+          setTimeout(() => { cleanup(); resolve(); }, 2500);
+        });
+      }
+      await video.play();
+    } catch (err) {
+      errEl.textContent = 'Camera preview failed to start (' + (err && err.message ? err.message : err) + '). Try paste code below.';
+      statusEl.textContent = 'Preview failed';
+      return;
+    }
+
+    if (wrap) wrap.classList.add('live');
+    statusEl.innerHTML = '<span class="spinner"></span>&nbsp; Looking for code…';
+
+    const track = scanStream.getVideoTracks()[0];
+    if (track) {
+      track.onended = () => {
+        if (statusEl) statusEl.textContent = 'Camera stopped';
+        if (wrap) wrap.classList.remove('live');
+      };
+    }
+
+    const canvas = $('scan-canvas');
+    const ctx = canvas.getContext('2d', { willReadFrequently: true });
+    const tick = () => {
+      if (video.readyState >= video.HAVE_CURRENT_DATA && !scanBusy && video.videoWidth > 0) {
+        canvas.width = video.videoWidth;
+        canvas.height = video.videoHeight;
+        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+        const img = ctx.getImageData(0, 0, canvas.width, canvas.height);
+        const code = jsQR(img.data, img.width, img.height, { inversionAttempts: 'dontInvert' });
+        if (code && code.data) {
+          scanBusy = true;
+          stopScanner();
+          onResult(code.data);
+          return;
+        }
+      }
+      scanRAF = requestAnimationFrame(tick);
+    };
+    scanRAF = requestAnimationFrame(tick);
+  }
+
+  function stopScanner(){
+    if (scanRAF) cancelAnimationFrame(scanRAF);
+    scanRAF = null;
+    if (scanStream) {
+      scanStream.getTracks().forEach(t => t.stop());
+      scanStream = null;
+    }
+    if (scanVideoEl) {
+      try { scanVideoEl.pause(); } catch (_) {}
+      scanVideoEl.srcObject = null;
+      scanVideoEl = null;
+    }
+    if (scanWrapEl) {
+      scanWrapEl.classList.remove('live');
+      scanWrapEl = null;
+    }
+  }
+
+  // ---------------- Home / navigation wiring ----------------
+
+  $('btn-host').addEventListener('click', hostGame);
+  $('btn-join').addEventListener('click', () => {
+    showView('join-scan');
+    startScanner('video-join-scan', 'join-scan-error', submitJoinOffer);
+  });
+
+  $('btn-host-next').addEventListener('click', () => {
+    showView('host-scan');
+    startScanner('video-host-scan', 'host-scan-error', submitHostAnswer);
+  });
+  $('btn-host-offer-back').addEventListener('click', () => {
+    if (S.pc) try { S.pc.close(); } catch (_) {}
+    S.pc = null; S.dc = null;
+    showView('home');
+  });
+  $('btn-host-scan-back').addEventListener('click', () => { stopScanner(); showView('host-offer'); });
+  $('btn-join-scan-back').addEventListener('click', () => { stopScanner(); showView('home'); });
+
+  $('btn-submit-host-answer').addEventListener('click', () => {
+    const v = $('text-host-answer').value.trim();
+    if (v) submitHostAnswer(v);
+  });
+  $('btn-submit-join-offer').addEventListener('click', () => {
+    const v = $('text-join-offer').value.trim();
+    if (v) submitJoinOffer(v);
+  });
+  $('btn-copy-host-offer').addEventListener('click', () => copyText('text-host-offer', 'btn-copy-host-offer'));
+  $('btn-copy-join-answer').addEventListener('click', () => copyText('text-join-answer', 'btn-copy-join-answer'));
+
+  async function copyText(fieldId, btnId){
+    const el = $(fieldId);
+    const text = el.value;
+    el.focus();
+    el.select();
+    let ok = false;
+    try {
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        await navigator.clipboard.writeText(text);
+        ok = true;
+      }
+    } catch (_) {}
+    if (!ok) {
+      try { ok = document.execCommand('copy'); } catch (_) {}
+    }
+    const btn = $(btnId);
+    const orig = btn.textContent;
+    btn.textContent = ok ? 'Copied ✓' : 'Select & copy manually';
+    setTimeout(() => { btn.textContent = orig; }, 1800);
+  }
+
+  $('btn-home').addEventListener('click', () => location.reload());
+
+  // ---------------- Placement ----------------
+
+  function buildGrid(container, onClick){
+    container.innerHTML = '';
+    const cells = [];
+    for (let y = 0; y < GRID; y++) {
+      const row = [];
+      for (let x = 0; x < GRID; x++) {
+        const div = document.createElement('div');
+        div.className = 'cell';
+        div.dataset.x = x;
+        div.dataset.y = y;
+        if (onClick) {
+          div.classList.add('tappable');
+          div.addEventListener('click', () => onClick(x, y));
+        }
+        container.appendChild(div);
+        row.push(div);
+      }
+      cells.push(row);
+    }
+    return cells;
+  }
+
+  const gridPlacementEl = buildGrid($('grid-placement'), onPlacementCellClick);
+  const gridEnemyEl = buildGrid($('grid-enemy'), onFireCellClick);
+  const gridFleetEl = buildGrid($('grid-fleet'), null);
+
+  // Hover preview while placing
+  $('grid-placement').addEventListener('pointerover', e => {
+    const cell = e.target.closest('.cell');
+    if (!cell || S.phase !== 'placement' || S.activeShipIdx == null) return;
+    const x = +cell.dataset.x, y = +cell.dataset.y;
+    previewPlacement(x, y);
+  });
+  $('grid-placement').addEventListener('pointerleave', () => clearPreview());
+
+  function clearPreview(){
+    for (let y = 0; y < GRID; y++) for (let x = 0; x < GRID; x++) {
+      gridPlacementEl[y][x].classList.remove('ghost', 'ghost-bad');
+    }
+  }
+
+  function previewPlacement(x, y){
+    clearPreview();
+    if (S.myGrid[y][x] != null) return;
+    const ship = S.myShips[S.activeShipIdx];
+    if (!ship || ship.cells.length) return;
+    const cells = cellsFor(ship, x, y, S.orientation);
+    const ok = cells && canPlace(cells);
+    if (!cells) return;
+    cells.forEach(({ x: cx, y: cy }) => {
+      if (S.myGrid[cy][cx] == null) {
+        gridPlacementEl[cy][cx].classList.add(ok ? 'ghost' : 'ghost-bad');
+      }
+    });
+  }
+
+  function cellsFor(ship, x, y, orientation){
+    const cells = [];
+    for (let i = 0; i < ship.size; i++) {
+      const cx = orientation === 'h' ? x + i : x;
+      const cy = orientation === 'v' ? y + i : y;
+      if (cx < 0 || cx >= GRID || cy < 0 || cy >= GRID) return null;
+      cells.push({ x: cx, y: cy });
+    }
+    return cells;
+  }
+  function canPlace(cells){ return cells.every(({ x, y }) => S.myGrid[y][x] == null); }
+
+  function placeShip(idx, x, y){
+    const ship = S.myShips[idx];
+    const cells = cellsFor(ship, x, y, S.orientation);
+    if (!cells || !canPlace(cells)) return false;
+    cells.forEach(({ x: cx, y: cy }) => { S.myGrid[cy][cx] = idx; });
+    ship.cells = cells;
+    return true;
+  }
+  function removeShip(idx){
+    const ship = S.myShips[idx];
+    ship.cells.forEach(({ x, y }) => { S.myGrid[y][x] = null; });
+    ship.cells = [];
+  }
+
+  function onPlacementCellClick(x, y){
+    const idx = S.myGrid[y][x];
+    if (idx != null) {
+      removeShip(idx);
+      S.activeShipIdx = idx;
+      renderPlacement();
+      return;
+    }
+    if (S.activeShipIdx == null) return;
+    if (placeShip(S.activeShipIdx, x, y)) {
+      const next = S.myShips.findIndex(s => s.cells.length === 0);
+      S.activeShipIdx = next === -1 ? null : next;
+      renderPlacement();
+    } else {
+      toast("Ship won't fit there");
+    }
+  }
+
+  $('btn-rotate').addEventListener('click', () => {
+    S.orientation = S.orientation === 'h' ? 'v' : 'h';
+    toast(S.orientation === 'h' ? 'Horizontal' : 'Vertical');
+    renderPlacement();
+  });
+
+  $('btn-randomize').addEventListener('click', () => {
+    S.myShips.forEach((ship, idx) => { if (ship.cells.length) removeShip(idx); });
+    S.myShips.forEach((ship, idx) => {
+      let placed = false, attempts = 0;
+      while (!placed && attempts < 400) {
+        attempts++;
+        const orientation = Math.random() < 0.5 ? 'h' : 'v';
+        const x = Math.floor(Math.random() * GRID);
+        const y = Math.floor(Math.random() * GRID);
+        const cells = cellsFor(ship, x, y, orientation);
+        if (cells && canPlace(cells)) {
+          cells.forEach(({ x: cx, y: cy }) => { S.myGrid[cy][cx] = idx; });
+          ship.cells = cells;
+          placed = true;
+        }
+      }
+    });
+    S.activeShipIdx = null;
+    renderPlacement();
+  });
+
+  $('btn-reset-ships').addEventListener('click', () => {
+    S.myShips.forEach((ship, idx) => { if (ship.cells.length) removeShip(idx); });
+    S.activeShipIdx = 0;
+    renderPlacement();
+  });
+
+  function renderPlacement(){
+    clearPreview();
+    for (let y = 0; y < GRID; y++) for (let x = 0; x < GRID; x++) {
+      const idx = S.myGrid[y][x];
+      gridPlacementEl[y][x].className = 'cell tappable' + (idx != null ? ' ship' + (idx === S.activeShipIdx ? ' active-ship' : '') : '');
+    }
+    const list = $('ship-list');
+    list.innerHTML = '';
+    S.myShips.forEach((ship, idx) => {
+      const chip = document.createElement('button');
+      chip.type = 'button';
+      chip.className = 'ship-chip' + (idx === S.activeShipIdx ? ' active' : '') + (ship.cells.length ? ' placed' : '');
+      chip.innerHTML = '<span>' + ship.name + '</span><span class="dots">' + '<span></span>'.repeat(ship.size) + '</span>';
+      chip.addEventListener('click', () => {
+        if (ship.cells.length) removeShip(idx);
+        S.activeShipIdx = idx;
+        renderPlacement();
+      });
+      list.appendChild(chip);
+    });
+    const allPlaced = S.myShips.every(s => s.cells.length > 0);
+    $('btn-ready').disabled = !allPlaced || S.localReady;
+    $('btn-ready').textContent = S.localReady ? 'Waiting for opponent…' : 'Ready ✓';
+  }
+
+  $('btn-ready').addEventListener('click', () => {
+    if (!S.myShips.every(s => s.cells.length > 0) || S.localReady) return;
+    S.localReady = true;
+    send({ t: 'ready' });
+    renderPlacement();
+    maybeStartBattle();
+  });
+
+  // ---------------- Battle ----------------
+
+  function maybeStartBattle(){
+    if (S.phase !== 'placement' || !(S.localReady && S.remoteReady)) return;
+    // Alternate who starts each rematch; host starts game 1.
+    const starterIsHost = S.gamesPlayed % 2 === 0;
+    S.gamesPlayed++;
+    S.turn = (starterIsHost === S.isHost) ? 'me' : 'opp';
+    S.phase = 'battle';
+    S.awaitingResult = false;
+    S.pendingCell = null;
+    S.log = [];
+    S.enemySunk = {};
+    pushLog('Battle stations. ' + (S.turn === 'me' ? 'You fire first.' : 'Opponent fires first.'));
+    renderBattle();
+    showView('battle');
+  }
+
+  function onFireCellClick(x, y){
+    if (S.phase !== 'battle' || S.turn !== 'me' || S.awaitingResult) return;
+    if (S.oppGrid[y][x] != null) return;
+    S.awaitingResult = true;
+    S.pendingCell = { x, y };
+    send({ t: 'fire', x, y });
+    renderBattle();
+  }
+
+  function handleIncomingFire(x, y){
+    // Idempotent: ignore duplicate fires on already-resolved cells.
+    if (S.shotsOnMe[y][x] != null) {
+      const hit = S.shotsOnMe[y][x] === 'hit' || S.shotsOnMe[y][x] === 'sunk';
+      send({ t: 'result', x, y, hit, sunk: null, sunkCells: null, gameOver: false });
+      return;
+    }
+
+    const shipIdx = S.myGrid[y][x];
+    const hit = shipIdx != null;
+    let sunkName = null, sunkCells = null, gameOver = false;
+
+    if (hit) {
+      const ship = S.myShips[shipIdx];
+      ship.hits++;
+      if (ship.hits >= ship.size) {
+        sunkName = ship.name;
+        sunkCells = ship.cells.map(c => ({ x: c.x, y: c.y }));
+        ship.cells.forEach(({ x: cx, y: cy }) => { S.shotsOnMe[cy][cx] = 'sunk'; });
+      } else {
+        S.shotsOnMe[y][x] = 'hit';
+      }
+      gameOver = S.myShips.every(s => s.hits >= s.size);
+    } else {
+      S.shotsOnMe[y][x] = 'miss';
+    }
+
+    send({ t: 'result', x, y, hit, sunk: sunkName, sunkCells, gameOver });
+
+    pushLog(
+      'Enemy → ' + cellLabel(x, y) + (hit ? (sunkName ? ' — SUNK ' + sunkName + '!' : ' HIT') : ' miss'),
+      sunkName ? 'sunk-line' : (hit ? 'hit-line' : '')
+    );
+
+    if (gameOver) {
+      S.phase = 'gameover';
+      S.won = false;
+      renderBattle();
+      showGameOver();
+      return;
+    }
+    // Classic rules: hit keeps the attacker's turn; miss hands it over.
+    if (!hit) S.turn = 'me';
+    renderBattle();
+  }
+
+  function handleIncomingResult(msg){
+    if (msg.sunk && Array.isArray(msg.sunkCells)) {
+      msg.sunkCells.forEach(({ x, y }) => { S.oppGrid[y][x] = 'sunk'; });
+      S.enemySunk[msg.sunk] = true;
+    } else {
+      S.oppGrid[msg.y][msg.x] = msg.hit ? 'hit' : 'miss';
+    }
+    S.awaitingResult = false;
+    S.pendingCell = null;
+
+    pushLog(
+      'You → ' + cellLabel(msg.x, msg.y) + (msg.hit ? (msg.sunk ? ' — SUNK ' + msg.sunk + '!' : ' HIT') : ' miss'),
+      msg.sunk ? 'sunk-line' : (msg.hit ? 'hit-line' : '')
+    );
+
+    if (msg.sunk) toast('You sank their ' + msg.sunk + '!');
+    if (msg.gameOver) {
+      S.phase = 'gameover';
+      S.won = true;
+      renderBattle();
+      showGameOver();
+      return;
+    }
+    if (!msg.hit) S.turn = 'opp';
+    renderBattle();
+  }
+
+  function handleMessage(msg){
+    if (msg.t === 'ready') {
+      S.remoteReady = true;
+      if (S.phase === 'placement' && S.localReady) toast('Opponent is ready');
+      maybeStartBattle();
+    } else if (msg.t === 'fire') {
+      handleIncomingFire(msg.x, msg.y);
+    } else if (msg.t === 'result') {
+      handleIncomingResult(msg);
+    } else if (msg.t === 'rematch') {
+      S.remoteWantsRematch = true;
+      maybeRematch();
+      updateRematchStatus();
+    }
+  }
+
+  function renderFleetPips(el, ships, isMine){
+    el.innerHTML = '';
+    if (isMine) {
+      ships.forEach(ship => {
+        const pip = document.createElement('span');
+        const dead = ship.hits >= ship.size;
+        pip.className = 'fleet-pip ' + (dead ? 'dead' : 'alive');
+        pip.textContent = ship.name;
+        el.appendChild(pip);
+      });
+    } else {
+      SHIP_DEFS.forEach(d => {
+        const pip = document.createElement('span');
+        const dead = !!S.enemySunk[d.name];
+        pip.className = 'fleet-pip ' + (dead ? 'dead' : 'alive');
+        pip.textContent = d.name;
+        el.appendChild(pip);
+      });
+    }
+  }
+
+  function renderBattle(){
+    const myTurn = S.turn === 'me' && S.phase === 'battle' && !S.awaitingResult;
+    const banner = $('turn-banner');
+    banner.className = 'turn-banner' + (S.turn === 'me' && S.phase === 'battle' ? ' mine' : '');
+    if (S.phase !== 'battle') {
+      banner.textContent = '—';
+    } else if (S.awaitingResult) {
+      banner.textContent = 'Firing…';
+    } else if (S.turn === 'me') {
+      banner.textContent = 'Your turn — tap Enemy Waters to fire';
+    } else {
+      banner.textContent = "Opponent's turn — stand by";
+    }
+    $('enemy-hint').textContent = myTurn ? 'Tap to fire' : (S.awaitingResult ? 'Waiting…' : 'Stand by');
+
+    for (let y = 0; y < GRID; y++) for (let x = 0; x < GRID; x++) {
+      const v = S.oppGrid[y][x];
+      const isPending = S.pendingCell && S.pendingCell.x === x && S.pendingCell.y === y;
+      let cls = 'cell';
+      if (v === 'hit') cls += ' hit';
+      else if (v === 'miss') cls += ' miss';
+      else if (v === 'sunk') cls += ' sunk';
+      if (isPending) cls += ' pending';
+      if (myTurn && v == null) cls += ' tappable';
+      gridEnemyEl[y][x].className = cls;
+    }
+
+    for (let y = 0; y < GRID; y++) for (let x = 0; x < GRID; x++) {
+      const shipIdx = S.myGrid[y][x];
+      const shot = S.shotsOnMe[y][x];
+      let cls = 'cell';
+      if (shot === 'sunk') cls += ' sunk';
+      else if (shot === 'hit') cls += ' hit';
+      else if (shot === 'miss') cls += ' miss';
+      else if (shipIdx != null) cls += ' ship';
+      gridFleetEl[y][x].className = cls;
+    }
+
+    const remaining = S.myShips.filter(s => s.hits < s.size).length;
+    $('fleet-hint').textContent = remaining + '/' + S.myShips.length + ' ships afloat';
+    renderFleetPips($('my-fleet-status'), S.myShips, true);
+    renderFleetPips($('enemy-fleet-status'), null, false);
+    renderLog();
+  }
+
+  // ---------------- Game over / rematch ----------------
+
+  function showGameOver(){
+    stopScanner();
+    $('gameover-title').textContent = S.won ? 'Victory!' : 'Defeat';
+    $('gameover-title').className = 'gameover-title ' + (S.won ? 'win' : 'lose');
+    $('gameover-sub').textContent = S.won ? 'You sank their entire fleet.' : 'Your fleet has been sunk.';
+    S.localWantsRematch = false;
+    S.remoteWantsRematch = false;
+    updateRematchStatus();
+    showView('gameover');
+  }
+
+  $('btn-rematch').addEventListener('click', () => {
+    S.localWantsRematch = true;
+    send({ t: 'rematch' });
+    updateRematchStatus();
+    maybeRematch();
+  });
+
+  function updateRematchStatus(){
+    $('rematch-status').textContent =
+      S.localWantsRematch && !S.remoteWantsRematch ? 'Waiting for opponent…'
+      : (!S.localWantsRematch && S.remoteWantsRematch ? 'Opponent wants a rematch — tap Rematch!' : '');
+  }
+
+  function maybeRematch(){
+    if (S.localWantsRematch && S.remoteWantsRematch) {
+      resetBoards();
+      S.phase = 'placement';
+      S.localReady = false;
+      S.remoteReady = false;
+      renderPlacement();
+      showView('placement');
+      toast('Rematch — place your fleet');
+    }
+  }
+
+  // ---------------- PWA install ----------------
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('sw.js').catch(() => {});
+    });
+  }
+
+  renderPlacement();
+})();
+</script>
+</body>
+</html>

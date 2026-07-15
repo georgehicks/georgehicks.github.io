@@ -1,0 +1,19 @@
+{
+  "name": "Battleship — LAN 1v1",
+  "short_name": "Battleship",
+  "description": "Two-phone Battleship over WiFi. Pair by QR code, no server, no internet — just WebRTC peer-to-peer on the local network.",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#0E1B2B",
+  "theme_color": "#0E1B2B",
+  "categories": ["games", "entertainment"],
+  "icons": [
+    {
+      "src": "icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
