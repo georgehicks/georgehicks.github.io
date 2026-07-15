@@ -429,8 +429,13 @@
 
   function ensureMic() {
     if (micReady) return Promise.resolve();
+    // Echo cancellation / noise suppression are adaptive filters that can
+    // reshape frequency content, so they stay off for cleaner pitch/spectral
+    // analysis. Auto gain control only adjusts overall volume, not frequency
+    // content, so it stays on — without it, phone mics are far too quiet at
+    // normal talking distance.
     return navigator.mediaDevices.getUserMedia({
-      audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: false }
+      audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: true }
     }).then(function (stream) {
       micStream = stream;
       audioCtx = new (window.AudioContext || window.webkitAudioContext)();
