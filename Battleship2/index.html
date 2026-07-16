@@ -241,6 +241,16 @@
     0% { opacity: 1; }
     100% { opacity: 0; }
   }
+  /* Off-screen iOS switch used only to trigger Taptic via label.click() */
+  #haptic-switch-host {
+    position: fixed; left: 0; top: 0; width: 1px; height: 1px;
+    opacity: 0.01; overflow: hidden; pointer-events: none; z-index: -1;
+  }
+  #haptic-switch-host input,
+  #haptic-switch-host label {
+    position: absolute; width: 44px; height: 28px; margin: 0; padding: 0;
+  }
+
   /* Whole-page "haptic" jolt when vibration hardware isn't available (iOS). */
   body.feel-jolt-hit { animation: feel-jolt-hit 0.28s ease-out; }
   body.feel-jolt-sunk { animation: feel-jolt-sunk 0.55s ease-out; }
@@ -471,6 +481,13 @@
   <div class="toast" id="toast"></div>
   <div id="fx-layer" aria-hidden="true"></div>
 
+  <!-- iOS 17.4+ Taptic hack: toggling a native checkbox switch via its label fires system haptics.
+       Kept off-screen (not display:none) so WebKit still treats it as a real control. -->
+  <div id="haptic-switch-host" aria-hidden="true">
+    <input type="checkbox" switch id="haptic-switch" tabindex="-1" />
+    <label for="haptic-switch" id="haptic-switch-label"></label>
+  </div>
+
 </div></div>
 
 <script src="qrcode.js"></script>
@@ -548,6 +565,72 @@
     win:   [45, 55, 45, 55, 55, 70, 110, 55, 130],
     lose:  [90, 90, 140],
   };
+
+  /**
+   * iOS switch-haptic patterns: each entry is a delay (ms) before a label.click() tick.
+   * Safari 17.4+ fires Taptic when a checkbox[switch] is toggled via its associated label.
+   */
+  const IOS_SWITCH_TICKS = {
+    fire:  [0],
+    miss:  [0, 40],
+    hit:   [0, 45, 90],
+    sunk:  [0, 40, 80, 130, 190],
+    win:   [0, 50, 100, 160, 220, 300],
+    lose:  [0, 70, 160],
+  };
+
+  let iosSwitchTimer = 0;
+
+  function supportsIosSwitchHaptic(){
+    // Heuristic: WebKit on iPhone/iPad, or any browser that understands the switch attribute.
+    try {
+      const probe = document.createElement('input');
+      probe.type = 'checkbox';
+      // Reflects support for the non-standard switch content attribute in supporting engines.
+      return 'switch' in probe || /iPhone|iPad|iPod/.test(navigator.userAgent);
+    } catch (_) {
+      return /iPhone|iPad|iPod/.test(navigator.userAgent);
+    }
+  }
+
+  const useIosSwitchHaptic = supportsIosSwitchHaptic();
+
+  /** One Taptic tick by toggling the off-screen switch through its label. */
+  function iosSwitchTick(){
+    const input = $('haptic-switch');
+    const label = $('haptic-switch-label');
+    if (!input || !label) return;
+    // Ensure attribute form is present for Safari.
+    if (!input.hasAttribute('switch')) input.setAttribute('switch', '');
+    try {
+      // label.click() is what WebKit associates with the native control haptic.
+      label.click();
+    } catch (_) {
+      try { input.click(); } catch (__) {}
+    }
+  }
+
+  /**
+   * Pattern of switch toggles. Works best when the first tick is still near a user gesture;
+   * follow-up ticks still often fire haptics once Safari has engaged the control.
+   */
+  function iosSwitchPattern(kind){
+    if (!useIosSwitchHaptic) return;
+    const delays = IOS_SWITCH_TICKS[kind] || IOS_SWITCH_TICKS.fire;
+    // Cancel any in-flight pattern so rapid shots don't pile up.
+    iosSwitchTimer += 1;
+    const gen = iosSwitchTimer;
+    delays.forEach((delay) => {
+      if (delay <= 0) {
+        iosSwitchTick();
+      } else {
+        setTimeout(() => {
+          if (gen !== iosSwitchTimer) return;
+          iosSwitchTick();
+        }, delay);
+      }
+    });
+  }
 
   let audioCtx = null;
   let audioReady = false;
@@ -702,9 +785,15 @@
     }
   }
 
-  /** Combined feedback: vibration (Android) + impact audio + body jolt (all platforms). */
+  /**
+   * Combined feedback:
+   * - iOS: checkbox[switch] + label.click() Taptic hack
+   * - Android: navigator.vibrate
+   * - All: impact audio + body jolt
+   */
   function haptic(kind){
     unlockAudio();
+    iosSwitchPattern(kind);
     vibrate(kind);
     playFeelSound(kind);
     if (kind === 'hit' || kind === 'sunk' || kind === 'miss' || kind === 'lose' || kind === 'win') {
