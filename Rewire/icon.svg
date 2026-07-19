@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <!-- Rewire: abandon the old default, take the intentional path -->
+  <rect width="512" height="512" rx="96" fill="#1C1714"/>
+
+  <!-- Old reaction — lower, dim, still visible -->
+  <path d="M108 286 C190 374 322 374 404 286"
+        fill="none" stroke="#3A322A" stroke-width="22" stroke-linecap="round"/>
+
+  <!-- New response — upper rewired arc -->
+  <path d="M108 286 C168 118 344 118 404 286"
+        fill="none" stroke="#E08256" stroke-width="30" stroke-linecap="round"/>
+
+  <!-- Trigger node -->
+  <circle cx="108" cy="286" r="36" fill="#C86B44"/>
+  <circle cx="108" cy="286" r="14" fill="#1C1714"/>
+
+  <!-- Chosen response node -->
+  <circle cx="404" cy="286" r="36" fill="#7A9B6E"/>
+  <circle cx="404" cy="286" r="14" fill="#F0E8DC"/>
+
+  <!-- Intention mark at the apex of the new path -->
+  <circle cx="256" cy="134" r="18" fill="#F0E8DC"/>
+</svg>

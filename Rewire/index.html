@@ -1,0 +1,390 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+<meta name="theme-color" content="#1C1714" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+<meta name="description" content="Rewire — design new responses, rehearse them, and reinforce better defaults under pressure." />
+<title>Rewire — Design. Rehearse. Live it.</title>
+<link rel="manifest" href="manifest.json" />
+<link rel="icon" href="icon.svg" type="image/svg+xml" />
+<link rel="apple-touch-icon" href="icon.svg" />
+<style>
+  :root {
+    --bg: #1C1714; --surface: #241E19; --surface-2: #2D2620; --border: #3A322A;
+    --ink: #F0E8DC; --ink-muted: #A89B8A; --ink-faint: #6B5F52;
+    --clay: #C86B44; --clay-strong: #E08256; --moss: #7A9B6E; --berry: #B25577;
+    --font-display: Georgia, "Iowan Old Style", "Palatino Linotype", "Book Antiqua", serif;
+    --font-body: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    --font-mono: ui-monospace, "SF Mono", "Cascadia Code", Menlo, Consolas, monospace;
+  }
+  @media (prefers-color-scheme: light) {
+    :root { --bg:#F7F2E8; --surface:#FFFFFF; --surface-2:#EFE6D4; --border:#DDD2BB;
+      --ink:#241E19; --ink-muted:#6B6052; --ink-faint:#A89B8A;
+      --clay:#B25A34; --clay-strong:#8F4526; --moss:#4F7548; --berry:#8F3C5C; }
+  }
+  :root[data-theme="dark"] { --bg:#1C1714; --surface:#241E19; --surface-2:#2D2620; --border:#3A322A;
+    --ink:#F0E8DC; --ink-muted:#A89B8A; --ink-faint:#6B5F52;
+    --clay:#C86B44; --clay-strong:#E08256; --moss:#7A9B6E; --berry:#B25577; }
+  :root[data-theme="light"] { --bg:#F7F2E8; --surface:#FFFFFF; --surface-2:#EFE6D4; --border:#DDD2BB;
+    --ink:#241E19; --ink-muted:#6B6052; --ink-faint:#A89B8A;
+    --clay:#B25A34; --clay-strong:#8F4526; --moss:#4F7548; --berry:#8F3C5C; }
+
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; }
+  body {
+    background: var(--bg); color: var(--ink); font-family: var(--font-body);
+    line-height: 1.5; font-size: 16px; -webkit-tap-highlight-color: transparent;
+  }
+  button, input, textarea { font-family: inherit; color: inherit; }
+  button { cursor: pointer; }
+  :focus-visible { outline: 2px solid var(--clay); outline-offset: 2px; }
+
+  .page { min-height: 100vh; padding: calc(1.25rem + env(safe-area-inset-top, 0px)) 1.1rem calc(3rem + env(safe-area-inset-bottom, 0px)); }
+  .wrap { max-width: 28rem; margin: 0 auto; }
+
+  .topbar { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.4rem; min-height: 2rem; }
+  .wordmark { font-family: var(--font-display); font-size: 1.3rem; background: none; border: none; color: var(--ink); padding: 0; }
+  .topbar-left { display: flex; align-items: center; gap: 0.6rem; }
+  .topbar-right { display: flex; align-items: center; gap: 0.75rem; }
+  .streak-row { display: flex; gap: 0.5rem; margin: 0 0 1.1rem; flex-wrap: wrap; }
+  .streak-item {
+    flex: 1; min-width: 4.5rem; background: var(--surface); border: 1px solid var(--border); border-radius: 10px;
+    padding: 0.5rem 0.4rem; text-align: center;
+  }
+  .streak-item .streak-lbl {
+    font-family: var(--font-mono); font-size: 0.62rem; letter-spacing: 0.08em; text-transform: uppercase;
+    color: var(--ink-faint);
+  }
+  .streak-item .streak-val {
+    font-family: var(--font-mono); font-weight: 700; font-size: 1rem; color: var(--clay-strong);
+    font-variant-numeric: tabular-nums; margin-top: 0.1rem;
+  }
+  .link-btn {
+    background: none; border: none; color: var(--ink-muted); font-size: 0.85rem;
+    padding: 0.3rem 0.1rem; border-bottom: 1px solid transparent;
+  }
+  .link-btn:hover { color: var(--ink); border-color: var(--border); }
+  .icon-btn {
+    background: var(--surface); border: 1px solid var(--border); border-radius: 8px;
+    width: 2rem; height: 2rem; display: flex; align-items: center; justify-content: center;
+    color: var(--ink-muted); font-size: 0.95rem;
+  }
+  .exit-link { display: none; color: var(--berry); }
+  .topbar.in-session .topbar-right { display: none; }
+  .topbar.in-session .exit-link { display: inline-block; }
+
+  .view { display: none; }
+  .view.active { display: block; }
+
+  .greet-sub { font-size: 0.85rem; color: var(--ink-muted); margin: 0 0 0.15rem; }
+  .greet { font-family: var(--font-display); font-weight: 400; font-size: 1.65rem; margin: 0 0 1.2rem; text-wrap: balance; }
+
+  .cta {
+    width: 100%; border: none; text-align: left;
+    background: linear-gradient(160deg, var(--clay-strong), var(--clay));
+    color: #201205; border-radius: 16px; padding: 1.1rem 1.2rem;
+    display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.75rem;
+  }
+  .cta.secondary {
+    background: var(--surface); color: var(--ink); border: 1px solid var(--border);
+  }
+  .cta.secondary .cta-arrow { color: var(--ink-muted); }
+  .cta-title { font-weight: 700; font-size: 1.02rem; }
+  .cta-meta { font-family: var(--font-mono); font-size: 0.7rem; opacity: 0.85; margin-top: 0.2rem; letter-spacing: 0.03em; }
+  .cta-arrow { font-size: 1.3rem; }
+
+  .section-label {
+    font-family: var(--font-mono); font-size: 0.68rem; letter-spacing: 0.1em; text-transform: uppercase;
+    color: var(--ink-faint); margin: 1.4rem 0 0.7rem;
+  }
+
+  .stat-row { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 0.55rem; margin-bottom: 0.4rem; }
+  .stat-card {
+    background: var(--surface); border: 1px solid var(--border); border-radius: 12px;
+    padding: 0.7rem 0.55rem; text-align: center;
+  }
+  .stat-num {
+    font-family: var(--font-mono); font-variant-numeric: tabular-nums;
+    font-weight: 700; font-size: 1.15rem; color: var(--clay-strong);
+  }
+  .stat-lbl { font-size: 0.65rem; color: var(--ink-muted); margin-top: 0.15rem; }
+
+  .note-card {
+    background: var(--surface); border: 1px solid var(--border); border-radius: 14px;
+    padding: 1rem 1.05rem; margin-bottom: 0.75rem; font-size: 0.9rem; color: var(--ink-muted);
+  }
+  .note-card strong { color: var(--ink); font-weight: 600; }
+
+  .chip-row { display: flex; flex-wrap: wrap; gap: 0.4rem; margin-bottom: 1rem; }
+  .chip {
+    border: 1px solid var(--border); background: var(--surface); color: var(--ink-muted);
+    border-radius: 999px; padding: 0.35rem 0.7rem; font-size: 0.78rem;
+  }
+  .chip.active { background: var(--clay); color: #201205; border-color: var(--clay); font-weight: 600; }
+
+  .trigger-card, .pattern-card {
+    background: var(--surface); border: 1px solid var(--border); border-radius: 14px;
+    padding: 0.95rem 1rem; margin-bottom: 0.65rem;
+  }
+  .trigger-card-head { margin-bottom: 0.4rem; }
+  .trigger-situation { font-family: var(--font-display); font-size: 1.02rem; color: var(--clay-strong); line-height: 1.4; }
+  .trigger-old { font-size: 0.85rem; color: var(--ink-muted); margin-bottom: 0.4rem; }
+  .trigger-response { font-size: 0.92rem; color: var(--ink); margin-bottom: 0.4rem; line-height: 1.45; }
+  .trigger-reframe {
+    font-family: var(--font-display); font-style: italic; font-size: 0.86rem; line-height: 1.45;
+    color: var(--ink-muted); margin-bottom: 0.55rem;
+  }
+  .field-tag {
+    font-family: var(--font-mono); font-size: 0.65rem; letter-spacing: 0.06em; text-transform: uppercase;
+    color: var(--ink-faint);
+  }
+  .verse-stats { display: flex; align-items: center; gap: 0.55rem; flex-wrap: wrap; margin-bottom: 0.5rem; }
+  .hit-pill, .miss-pill, .none-pill {
+    font-family: var(--font-mono); font-size: 0.7rem; font-variant-numeric: tabular-nums;
+    border-radius: 6px; padding: 0.2rem 0.45rem;
+  }
+  .hit-pill { background: color-mix(in srgb, var(--moss) 18%, transparent); color: var(--moss); }
+  .miss-pill { background: color-mix(in srgb, var(--berry) 18%, transparent); color: var(--berry); }
+  .none-pill { background: var(--surface-2); color: var(--ink-faint); }
+  .card-actions { display: flex; gap: 1rem; }
+
+  .session-stage { display: flex; flex-direction: column; min-height: 20rem; }
+  .exercise-track { display: flex; gap: 3px; margin: 0 0 1.3rem; flex-wrap: nowrap; overflow: hidden; }
+  .exercise-track span { flex: 1; height: 4px; border-radius: 2px; background: var(--border); min-width: 4px; }
+  .exercise-track span.done { background: var(--moss); }
+  .exercise-track span.now { background: var(--clay); }
+  .exercise-track span.miss { background: var(--berry); }
+
+  .stage-instruction { font-size: 0.88rem; color: var(--ink-muted); margin: 0 0 0.9rem; text-align: center; }
+  .prompt-card {
+    background: var(--surface); border: 1px solid var(--border); border-radius: 16px;
+    padding: 1.25rem 1.15rem; margin-bottom: 1.1rem; text-align: center;
+  }
+  .prompt-text {
+    font-family: var(--font-display); font-style: italic; font-size: 1.05rem;
+    line-height: 1.55; margin: 0; text-wrap: balance;
+  }
+  .assertion-text {
+    font-family: var(--font-display); font-size: 1.35rem; line-height: 1.45;
+    margin: 0; text-wrap: balance; color: var(--ink);
+  }
+  .step-tag {
+    font-family: var(--font-mono); font-size: 0.65rem; letter-spacing: 0.08em; text-transform: uppercase;
+    color: var(--ink-faint); margin-bottom: 0.65rem; text-align: center;
+  }
+
+  .gate-row { display: flex; flex-direction: column; gap: 0.55rem; }
+  .gate-btn {
+    text-align: left; width: 100%;
+    background: var(--surface); border: 1px solid var(--border); border-radius: 12px;
+    padding: 0.85rem 0.95rem; color: var(--ink); font-size: 0.9rem; line-height: 1.4; text-align: center;
+  }
+  .gate-btn.primary {
+    background: var(--clay); color: #201205; border-color: var(--clay); font-weight: 700;
+  }
+  .gate-btn.soft { color: var(--ink-muted); }
+
+  .continue-btn, .cta-btn {
+    font-weight: 600; font-size: 0.92rem;
+    background: var(--clay); color: #201205; border: none; border-radius: 12px;
+    padding: 0.75rem 1.6rem; margin-top: 1rem; width: 100%;
+  }
+  .continue-btn.secondary, .cta-btn.secondary {
+    background: var(--surface); color: var(--ink); border: 1px solid var(--border);
+  }
+
+  .summary { text-align: center; padding-top: 1.2rem; }
+  .summary-big {
+    font-family: var(--font-mono); font-size: 2.6rem; font-weight: 700;
+    color: var(--clay-strong); margin-bottom: 0.35rem;
+  }
+  .summary-sub { color: var(--ink-muted); font-size: 0.9rem; margin-bottom: 1.2rem; }
+
+  .browse-toolbar {
+    display: flex; align-items: center; justify-content: space-between; gap: 0.6rem;
+    margin-bottom: 0.85rem;
+  }
+  .browse-meta { font-family: var(--font-mono); font-size: 0.72rem; color: var(--ink-muted); }
+
+  .field-label {
+    font-family: var(--font-mono); font-size: 0.68rem; letter-spacing: 0.08em; text-transform: uppercase;
+    color: var(--ink-faint); margin: 0.9rem 0 0.45rem;
+  }
+  .text-input, .text-area {
+    width: 100%; background: var(--surface-2); border: 1px solid var(--border); border-radius: 12px;
+    padding: 0.75rem 0.85rem; color: var(--ink); font-size: 0.95rem;
+  }
+  .text-area { min-height: 5.5rem; resize: vertical; line-height: 1.45; }
+  .text-input:focus, .text-area:focus { border-color: var(--clay); outline: none; }
+
+  .linked-verse {
+    margin-top: 0.85rem; padding: 0.75rem 0.85rem; border-radius: 12px;
+    background: var(--surface-2); border: 1px solid var(--border); text-align: left;
+  }
+  .linked-verse .lv-text { font-family: var(--font-display); font-style: italic; font-size: 0.88rem; line-height: 1.45; color: var(--ink-muted); }
+
+  .bar-row { display: flex; align-items: center; gap: 0.55rem; margin-bottom: 0.5rem; }
+  .bar-label { font-size: 0.78rem; color: var(--ink-muted); width: 9rem; flex-shrink: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .bar-track { flex: 1; height: 8px; border-radius: 4px; background: var(--surface-2); overflow: hidden; }
+  .bar-fill { height: 100%; border-radius: 4px; background: linear-gradient(90deg, var(--clay), var(--clay-strong)); }
+  .bar-fill.moss { background: linear-gradient(90deg, var(--moss), color-mix(in srgb, var(--moss) 70%, white)); }
+  .bar-fill.berry { background: linear-gradient(90deg, var(--berry), color-mix(in srgb, var(--berry) 70%, white)); }
+  .bar-n { font-family: var(--font-mono); font-size: 0.72rem; color: var(--ink-muted); width: 1.6rem; text-align: right; }
+
+  .history-strip { display: flex; gap: 4px; margin-bottom: 0.5rem; }
+  .history-strip i {
+    flex: 1; height: 22px; border-radius: 4px; background: var(--surface-2);
+    display: block; border: 1px solid var(--border); font-style: normal;
+  }
+  .history-strip i.ok { background: color-mix(in srgb, var(--moss) 45%, var(--surface-2)); border-color: var(--moss); }
+  .history-strip i.partial { background: color-mix(in srgb, var(--clay) 40%, var(--surface-2)); border-color: var(--clay); }
+  .history-strip i.hard { background: color-mix(in srgb, var(--berry) 35%, var(--surface-2)); border-color: var(--berry); }
+
+  .habit-card {
+    display: flex; align-items: center; gap: 0.75rem;
+    background: var(--surface); border: 1px solid var(--border); border-radius: 14px;
+    padding: 0.75rem 0.9rem; margin-bottom: 0.6rem;
+  }
+  .habit-check {
+    width: 2rem; height: 2rem; flex-shrink: 0; border-radius: 8px;
+    background: var(--surface-2); border: 1px solid var(--border); color: var(--moss);
+    display: flex; align-items: center; justify-content: center; font-size: 1.05rem; font-weight: 700;
+  }
+  .habit-check.checked { background: color-mix(in srgb, var(--moss) 22%, var(--surface)); border-color: var(--moss); }
+  .habit-info { flex: 1; min-width: 0; }
+  .habit-label { font-size: 0.94rem; color: var(--ink); }
+  .habit-cue { font-size: 0.78rem; color: var(--ink-muted); margin-top: 0.1rem; }
+  .habit-streak {
+    font-family: var(--font-mono); font-size: 0.85rem; font-weight: 700; color: var(--clay-strong);
+    font-variant-numeric: tabular-nums; min-width: 1.4rem; text-align: right;
+  }
+
+  .empty-note { color: var(--ink-muted); font-size: 0.88rem; }
+
+  @media (prefers-reduced-motion: reduce) {
+    * { transition: none !important; }
+  }
+</style>
+</head>
+<body>
+<div class="page">
+  <div class="wrap">
+
+    <div class="topbar" id="topbar">
+      <div class="topbar-left">
+        <button class="wordmark" id="wordmark-home" type="button">Rewire</button>
+      </div>
+      <div class="topbar-right">
+        <button class="link-btn" id="patterns-link" type="button">Patterns</button>
+        <button class="icon-btn" id="theme-toggle" type="button" aria-label="Toggle theme">◐</button>
+      </div>
+      <button class="link-btn exit-link" id="exit-session-btn" type="button">Exit</button>
+    </div>
+
+    <!-- HOME -->
+    <div class="view active" data-view="home">
+      <p class="greet-sub" id="home-date"></p>
+      <h1 class="greet">Rewire</h1>
+
+      <div class="streak-row" id="streak-row"></div>
+
+      <button class="cta" id="btn-practice" type="button">
+        <div>
+          <div class="cta-title">Practice session</div>
+          <div class="cta-meta" id="practice-cta-meta">Rehearse your chosen responses</div>
+        </div>
+        <div class="cta-arrow">→</div>
+      </button>
+
+      <button class="cta secondary" id="btn-triggers" type="button">
+        <div>
+          <div class="cta-title">My triggers</div>
+          <div class="cta-meta" id="triggers-cta-meta">Pre-decide how you'll respond</div>
+        </div>
+        <div class="cta-arrow">→</div>
+      </button>
+
+      <button class="cta secondary" id="btn-habits" type="button">
+        <div>
+          <div class="cta-title">Mini-habits</div>
+          <div class="cta-meta" id="habits-cta-meta">Small daily check-offs</div>
+        </div>
+        <div class="cta-arrow">→</div>
+      </button>
+
+      <div class="section-label">Last 30 days</div>
+      <div class="stat-row" id="home-stats"></div>
+
+      <div class="section-label">Rehearsal · 14 days</div>
+      <div class="history-strip" id="home-history-strip"></div>
+    </div>
+
+    <!-- TRIGGERS -->
+    <div class="view" data-view="triggers">
+      <div class="browse-toolbar">
+        <button class="link-btn" id="triggers-home" type="button">← Home</button>
+        <span class="browse-meta" id="triggers-count"></span>
+      </div>
+      <h1 class="greet" style="font-size:1.4rem;margin-bottom:0.85rem">My triggers</h1>
+      <button class="cta" id="btn-new-trigger" type="button" style="margin-bottom:1rem">
+        <div>
+          <div class="cta-title">+ New trigger</div>
+          <div class="cta-meta">Pre-decide your response, calmly</div>
+        </div>
+        <div class="cta-arrow">→</div>
+      </button>
+      <div id="trigger-form-wrap" style="display:none"></div>
+      <div id="trigger-list"></div>
+    </div>
+
+    <!-- PRACTICE -->
+    <div class="view" data-view="practice">
+      <div class="exercise-track" id="practice-track"></div>
+      <div class="session-stage" id="practice-stage"></div>
+    </div>
+
+    <!-- HABITS -->
+    <div class="view" data-view="habits">
+      <div class="browse-toolbar">
+        <button class="link-btn" id="habits-home" type="button">← Home</button>
+        <span class="browse-meta" id="habits-count"></span>
+      </div>
+      <h1 class="greet" style="font-size:1.4rem;margin-bottom:0.85rem">Mini-habits</h1>
+      <button class="cta" id="btn-new-habit" type="button" style="margin-bottom:1rem">
+        <div>
+          <div class="cta-title">+ New habit</div>
+          <div class="cta-meta">Keep it tiny</div>
+        </div>
+        <div class="cta-arrow">→</div>
+      </button>
+      <div id="habit-form-wrap" style="display:none"></div>
+      <div id="habit-list"></div>
+    </div>
+
+    <!-- PATTERNS -->
+    <div class="view" data-view="patterns">
+      <div class="browse-toolbar">
+        <button class="link-btn" id="patterns-home" type="button">← Home</button>
+        <span class="browse-meta">Last 30 days</span>
+      </div>
+      <h1 class="greet" style="font-size:1.4rem;margin-bottom:0.5rem">Patterns</h1>
+      <p class="greet-sub" style="margin-bottom:1rem">Friction, follow-through, and habit streaks over time.</p>
+      <div id="patterns-body"></div>
+    </div>
+
+  </div>
+</div>
+
+<script src="content/presets.js"></script>
+<script src="content/index.js"></script>
+<script src="app.js"></script>
+<script>
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('./sw.js').catch(function () {});
+  }
+</script>
+</body>
+</html>
