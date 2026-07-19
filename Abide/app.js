@@ -1210,8 +1210,9 @@
     examine = {
       category: { id, label, framing, prompt, assertionId },
       assertion: { id, text, tier },
-      phase: 'intro'|'assert'|'confess'|'reassert'|'note',
+      phase: 'intro'|'discern'|'clear'|'confess'|'reassert'|'note',
       introNote, confessNote, finalNote: string,
+      outcome: null|'clear'|'found',
       agreed, realigned, done: boolean
     }
   */
@@ -1227,15 +1228,26 @@
     var body = document.getElementById("examine-cards");
     var counts = {};
     fracturesInWindow().forEach(function (t) {
-      counts[t.category] = (counts[t.category] || 0) + 1;
+      if (!counts[t.category]) counts[t.category] = { clear: 0, found: 0 };
+      if (t.source === "examine" && t.outcome === "clear") counts[t.category].clear++;
+      else counts[t.category].found++;
     });
     body.innerHTML = FRACTURES.map(function (f) {
-      var n = counts[f.id] || 0;
+      var c = counts[f.id];
+      var meta;
+      if (!c || (!c.clear && !c.found)) {
+        meta = "not yet explored";
+      } else {
+        var parts = [];
+        if (c.clear) parts.push(c.clear + " clear");
+        if (c.found) parts.push(c.found + " found");
+        meta = parts.join(" · ") + " · 30d";
+      }
       return (
         '<button type="button" class="fracture-card" data-fracture="' + escapeHtml(f.id) + '">' +
           '<div class="fracture-card-label">' + escapeHtml(f.label) + "</div>" +
           '<div class="fracture-card-framing">' + escapeHtml(f.framing) + "</div>" +
-          '<div class="fracture-card-meta">' + (n ? n + " time" + (n === 1 ? "" : "s") + " · 30d" : "not yet explored") + "</div>" +
+          '<div class="fracture-card-meta">' + meta + "</div>" +
         "</button>"
       );
     }).join("");
@@ -1260,6 +1272,7 @@
       introNote: "",
       confessNote: "",
       finalNote: "",
+      outcome: null,
       agreed: false,
       realigned: false,
       done: false
@@ -1279,8 +1292,10 @@
       return;
     }
     if (examine.phase === "intro") { stage.innerHTML = renderExamineIntro(); return; }
-    if (examine.phase === "assert" || examine.phase === "reassert") { stage.innerHTML = renderExamineAssert(); return; }
+    if (examine.phase === "discern") { stage.innerHTML = renderExamineDiscern(); return; }
+    if (examine.phase === "clear") { stage.innerHTML = renderExamineClear(); return; }
     if (examine.phase === "confess") { stage.innerHTML = renderExamineConfess(); return; }
+    if (examine.phase === "reassert") { stage.innerHTML = renderExamineReassert(); return; }
     if (examine.phase === "note") { stage.innerHTML = renderExamineNote(); return; }
   }
 
@@ -1290,36 +1305,52 @@
       '<div class="step-tag">Examine · ' + escapeHtml(cat.label) + "</div>" +
       '<div class="prompt-card">' +
         '<p class="assertion-text" style="font-size:1.1rem">' + escapeHtml(cat.framing) + "</p>" +
-        '<p class="stage-instruction" style="margin:0.85rem 0 0">' + escapeHtml(cat.prompt) + "</p>" +
+        '<p class="stage-instruction" style="margin:0.85rem 0 0">Ask the Spirit to search you here. Wait quietly before you answer.</p>' +
       "</div>" +
-      '<p class="field-label">Name it, if you want to (optional)</p>' +
+      '<p class="field-label">What surfaces as you wait? (optional)</p>' +
       '<textarea class="text-area" id="examine-intro-note" placeholder="Write what comes to mind…">' +
         escapeHtml(examine.introNote || "") +
       "</textarea>" +
-      '<button type="button" class="continue-btn" data-ex="intro-next">Bring this to God</button>'
+      '<button type="button" class="continue-btn" data-ex="intro-next">I&rsquo;ve listened — continue</button>'
     );
   }
 
-  function renderExamineAssert() {
-    var reasserting = examine.phase === "reassert";
+  function renderExamineDiscern() {
+    var cat = examine.category;
+    return (
+      '<div class="step-tag">Discern</div>' +
+      '<div class="prompt-card"><p class="assertion-text" style="font-size:1.15rem">' + escapeHtml(cat.prompt) + "</p></div>" +
+      '<p class="stage-instruction">Answer honestly before Him — either is a good and true answer.</p>' +
+      '<div class="gate-row">' +
+        '<button type="button" class="gate-btn primary" data-ex="clear">All clear</button>' +
+        '<button type="button" class="gate-btn soft" data-ex="found">Something&rsquo;s here</button>' +
+      "</div>"
+    );
+  }
+
+  function renderExamineClear() {
     var a = examine.assertion;
     return (
-      '<div class="step-tag">' + (reasserting ? "Re-assert" : "Assertion") + "</div>" +
+      '<div class="step-tag">Clear</div>' +
+      '<div class="prompt-card"><p class="assertion-text" style="font-size:1.1rem">Good. Stand in it.</p>' +
+        '<p class="prompt-text" style="margin-top:0.6rem">"' + escapeHtml(a.text) + '"</p>' +
+        linkedVerseHtml(a.id) +
+      "</div>" +
+      '<button type="button" class="continue-btn" data-ex="clear-next">Continue</button>'
+    );
+  }
+
+  function renderExamineReassert() {
+    var a = examine.assertion;
+    return (
+      '<div class="step-tag">Re-assert</div>' +
       '<div class="prompt-card"><p class="assertion-text">' + escapeHtml(a.text) + "</p>" +
         linkedVerseHtml(a.id) +
       "</div>" +
-      '<p class="stage-instruction">' +
-        (reasserting
-          ? "When you are ready — can you stand in this with Him?"
-          : "Can you honestly stand in this right now?") +
-      "</p>" +
+      '<p class="stage-instruction">When you are ready — can you stand in this with Him?</p>' +
       '<div class="gate-row">' +
-        '<button type="button" class="gate-btn primary" data-ex="yes">' +
-          (reasserting ? "Yes — I stand in this" : "Yes") +
-        "</button>" +
-        '<button type="button" class="gate-btn soft" data-ex="no">' +
-          (reasserting ? "Not yet — continue with grace" : "Not yet") +
-        "</button>" +
+        '<button type="button" class="gate-btn primary" data-ex="yes">Yes — I stand in this</button>' +
+        '<button type="button" class="gate-btn soft" data-ex="no">Not yet — continue with grace</button>' +
       "</div>"
     );
   }
@@ -1327,9 +1358,8 @@
   function renderExamineConfess() {
     return (
       '<div class="step-tag">Confess</div>' +
-      '<div class="prompt-card"><p class="assertion-text" style="font-size:1.1rem">Bring this to God.</p>' +
-        '<p class="stage-instruction" style="margin:0.75rem 0 0">You could not yet stand in:</p>' +
-        '<p class="prompt-text" style="margin-top:0.4rem">"' + escapeHtml(examine.assertion.text) + '"</p>' +
+      '<div class="prompt-card"><p class="assertion-text" style="font-size:1.1rem">Bring it to God.</p>' +
+        '<p class="stage-instruction" style="margin:0.75rem 0 0">Unpack what surfaced, and confess and repent as He leads.</p>' +
       "</div>" +
       '<p class="field-label">Optional — name it before Him</p>' +
       '<textarea class="text-area" id="examine-confess-note" placeholder="Father, I confess…">' +
@@ -1352,9 +1382,10 @@
   }
 
   function renderExamineSummary() {
+    var big = examine.outcome === "clear" ? "All clear" : (examine.agreed ? "Stood in truth" : "Brought to grace");
     return (
       '<div class="summary">' +
-        '<div class="summary-big" style="font-size:1.55rem">' + (examine.agreed ? "Stood in truth" : "Brought to grace") + "</div>" +
+        '<div class="summary-big" style="font-size:1.55rem">' + big + "</div>" +
         '<div class="summary-sub">' + escapeHtml(examine.category.label) + " · " + escapeHtml(examine.assertion.text) + "</div>" +
         '<button type="button" class="cta-btn" id="ex-another">Explore another</button>' +
         '<button type="button" class="link-btn" id="ex-home" style="display:block;margin:1rem auto 0">← Home</button>' +
@@ -1379,6 +1410,7 @@
       category: examine.category.id,
       source: "examine",
       assertionId: examine.assertion.id,
+      outcome: examine.outcome,
       agreed: !!examine.agreed,
       realigned: !!examine.realigned,
       note: note,
@@ -1394,26 +1426,25 @@
     if (action === "intro-next") {
       var n = document.getElementById("examine-intro-note");
       if (n) examine.introNote = n.value;
-      examine.phase = "assert";
+      examine.phase = "discern";
       renderExamine();
       return;
     }
-    if (action === "yes") {
+    if (action === "clear") {
+      examine.outcome = "clear";
       examine.agreed = true;
-      if (examine.phase === "reassert") examine.realigned = true;
+      examine.phase = "clear";
+      renderExamine();
+      return;
+    }
+    if (action === "clear-next") {
       examine.phase = "note";
       renderExamine();
       return;
     }
-    if (action === "no") {
-      if (examine.phase === "assert") {
-        examine.phase = "confess";
-        renderExamine();
-        return;
-      }
-      examine.agreed = false;
-      examine.realigned = true;
-      examine.phase = "note";
+    if (action === "found") {
+      examine.outcome = "found";
+      examine.phase = "confess";
       renderExamine();
       return;
     }
@@ -1421,6 +1452,20 @@
       var c = document.getElementById("examine-confess-note");
       if (c) examine.confessNote = c.value;
       examine.phase = "reassert";
+      renderExamine();
+      return;
+    }
+    if (action === "yes") {
+      examine.agreed = true;
+      examine.realigned = true;
+      examine.phase = "note";
+      renderExamine();
+      return;
+    }
+    if (action === "no") {
+      examine.agreed = false;
+      examine.realigned = true;
+      examine.phase = "note";
       renderExamine();
       return;
     }
@@ -1467,7 +1512,9 @@
       };
     });
 
-    var fractures = countByText(fracturesInWindow().map(function (t) {
+    var fractures = countByText(fracturesInWindow().filter(function (t) {
+      return !(t.source === "examine" && t.outcome === "clear");
+    }).map(function (t) {
       return { text: fractureLabel(t.category) };
     }));
 
