@@ -1,4 +1,4 @@
-const CACHE = 'rewire-v2';
+const CACHE = 'rewire-v3';
 const ASSETS = [
   './index.html',
   './app.js',

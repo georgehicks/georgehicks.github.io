@@ -11,6 +11,8 @@
   var PRACTICE_ROUND_SIZE = 5;
 
   /* ───────────── state ───────────── */
+  var EXAMPLES_VERSION = 1;
+
   function defaultState() {
     return {
       theme: null,
@@ -19,7 +21,8 @@
       habits: [],
       habitLog: [],
       rehearsalStreak: 0,
-      lastRehearsalDate: null
+      lastRehearsalDate: null,
+      examplesVersion: 0
     };
   }
 
@@ -30,7 +33,8 @@
       triggers: Array.isArray(parsed.triggers) ? parsed.triggers : [],
       rehearsalLog: Array.isArray(parsed.rehearsalLog) ? parsed.rehearsalLog : [],
       habits: Array.isArray(parsed.habits) ? parsed.habits : [],
-      habitLog: Array.isArray(parsed.habitLog) ? parsed.habitLog : []
+      habitLog: Array.isArray(parsed.habitLog) ? parsed.habitLog : [],
+      examplesVersion: typeof parsed.examplesVersion === "number" ? parsed.examplesVersion : 0
     });
   }
 
@@ -68,6 +72,97 @@
 
   /* ───────────── content ───────────── */
   var TRIGGER_PRESETS = (window.RewireContent && window.RewireContent.TRIGGER_PRESETS) || [];
+  var EXAMPLE_TRIGGERS = (window.RewireContent && window.RewireContent.EXAMPLE_TRIGGERS) || [];
+  var EXAMPLE_HABITS = (window.RewireContent && window.RewireContent.EXAMPLE_HABITS) || [];
+
+  /* ───────────── starter examples ───────────── */
+  function exampleTriggerIds() {
+    return EXAMPLE_TRIGGERS.map(function (t) { return t.id; });
+  }
+
+  function exampleHabitIds() {
+    return EXAMPLE_HABITS.map(function (h) { return h.id; });
+  }
+
+  function isExampleTrigger(t) {
+    return !!(t && (t.example || exampleTriggerIds().indexOf(t.id) >= 0));
+  }
+
+  function isExampleHabit(h) {
+    return !!(h && (h.example || exampleHabitIds().indexOf(h.id) >= 0));
+  }
+
+  function countExampleTriggers() {
+    return state.triggers.filter(isExampleTrigger).length;
+  }
+
+  function countExampleHabits() {
+    return state.habits.filter(isExampleHabit).length;
+  }
+
+  function missingExampleTriggers() {
+    var have = {};
+    state.triggers.forEach(function (t) { have[t.id] = true; });
+    return EXAMPLE_TRIGGERS.filter(function (t) { return !have[t.id]; });
+  }
+
+  function missingExampleHabits() {
+    var have = {};
+    state.habits.forEach(function (h) { have[h.id] = true; });
+    return EXAMPLE_HABITS.filter(function (h) { return !have[h.id]; });
+  }
+
+  function buildExampleTrigger(ex) {
+    return {
+      id: ex.id,
+      label: ex.label || ex.situation,
+      situation: ex.situation,
+      oldReaction: ex.oldReaction || "",
+      response: ex.response,
+      reframe: ex.reframe || "",
+      tags: ex.tags ? ex.tags.slice() : [],
+      example: true,
+      createdAt: "2020-01-01T00:00:00.000Z"
+    };
+  }
+
+  function buildExampleHabit(ex) {
+    return {
+      id: ex.id,
+      label: ex.label,
+      cue: ex.cue || "",
+      example: true,
+      createdAt: "2020-01-01T00:00:00.000Z"
+    };
+  }
+
+  /** Auto-seed once when the library is still empty (first open). */
+  function ensureExamplesSeeded() {
+    if (state.examplesVersion >= EXAMPLES_VERSION) return;
+    var empty = !state.triggers.length && !state.habits.length;
+    if (empty && (EXAMPLE_TRIGGERS.length || EXAMPLE_HABITS.length)) {
+      installMissingExamples(true, true);
+    }
+    state.examplesVersion = EXAMPLES_VERSION;
+    saveState();
+  }
+
+  function installMissingExamples(doTriggers, doHabits) {
+    var added = 0;
+    if (doTriggers) {
+      missingExampleTriggers().forEach(function (ex) {
+        state.triggers.push(buildExampleTrigger(ex));
+        added++;
+      });
+    }
+    if (doHabits) {
+      missingExampleHabits().forEach(function (ex) {
+        state.habits.push(buildExampleHabit(ex));
+        added++;
+      });
+    }
+    return added;
+  }
 
   /* ───────────── helpers ───────────── */
   function todayStr() {
@@ -332,26 +427,63 @@
     return presetId ? [presetId] : [];
   }
 
+  function renderExamplesBar(kind) {
+    var missingT = missingExampleTriggers().length;
+    var missingH = missingExampleHabits().length;
+    var hasExT = countExampleTriggers() > 0;
+    var hasExH = countExampleHabits() > 0;
+    var parts = [];
+
+    if (kind === "triggers") {
+      if (hasExT) {
+        parts.push('<span>Starter examples included — edit to make them yours, or delete any you don’t want.</span>');
+        parts.push('<button type="button" class="link-btn" data-examples-action="remove-triggers">Remove all examples</button>');
+      }
+      if (missingT > 0) {
+        parts.push('<button type="button" class="link-btn" data-examples-action="add-triggers">Add starter examples</button>');
+      }
+    } else if (kind === "habits") {
+      if (hasExH) {
+        parts.push('<span>Starter habits included — delete any you don’t want.</span>');
+        parts.push('<button type="button" class="link-btn" data-examples-action="remove-habits">Remove example habits</button>');
+      }
+      if (missingH > 0) {
+        parts.push('<button type="button" class="link-btn" data-examples-action="add-habits">Add starter habits</button>');
+      }
+    }
+
+    if (!parts.length) return "";
+    return '<div class="examples-bar">' + parts.join("") + "</div>";
+  }
+
   function renderTriggers() {
     document.getElementById("triggers-count").textContent =
       state.triggers.length + (state.triggers.length === 1 ? " trigger" : " triggers");
 
     var listEl = document.getElementById("trigger-list");
+    var bar = renderExamplesBar("triggers");
+
     if (!state.triggers.length) {
-      listEl.innerHTML = '<p class="empty-note">No triggers yet — add one above to start pre-deciding your response.</p>';
+      listEl.innerHTML = bar +
+        '<p class="empty-note">No triggers yet — add one above, or load starter examples to see how a full response looks.</p>';
       return;
     }
 
     var sorted = state.triggers.slice().sort(function (a, b) {
+      // Examples first (stable), then newest user cards
+      var ae = isExampleTrigger(a) ? 0 : 1;
+      var be = isExampleTrigger(b) ? 0 : 1;
+      if (ae !== be) return ae - be;
       return (b.createdAt || "").localeCompare(a.createdAt || "");
     });
 
-    var out = "";
+    var out = bar;
     sorted.forEach(function (t) {
       var s = statsForTrigger(t.id, false);
       var pills = s.total === 0
         ? '<span class="none-pill">not rehearsed yet</span>'
         : '<span class="hit-pill">' + s.used + " used</span><span class=\"miss-pill\">" + s.reactedOld + " old way</span>";
+      if (isExampleTrigger(t)) pills = '<span class="example-pill">Example</span>' + pills;
       out +=
         '<article class="trigger-card">' +
           '<div class="trigger-card-head"><div class="trigger-situation">When ' + escapeHtml(t.situation) + '</div></div>' +
@@ -437,6 +569,8 @@
         t.response = resp;
         t.reframe = reframe;
         t.label = sit;
+        // Editing an example makes it yours
+        if (t.example) t.example = false;
       }
     } else {
       state.triggers.push({
@@ -447,6 +581,7 @@
         response: resp,
         reframe: reframe,
         tags: presetTagsFor(triggerFormState.presetId),
+        example: false,
         createdAt: new Date().toISOString()
       });
     }
@@ -458,11 +593,57 @@
   }
 
   function deleteTrigger(id) {
-    if (!confirm("Delete this trigger? Its rehearsal history will remain in your patterns as (deleted trigger).")) return;
-    state.triggers = state.triggers.filter(function (t) { return t.id !== id; });
+    var t = findTrigger(id);
+    var msg = isExampleTrigger(t)
+      ? "Remove this starter example?"
+      : "Delete this trigger? Its rehearsal history will remain in your patterns as (deleted trigger).";
+    if (!confirm(msg)) return;
+    state.triggers = state.triggers.filter(function (x) { return x.id !== id; });
     saveState();
     renderTriggers();
     renderHome();
+  }
+
+  function onExamplesAction(action) {
+    if (action === "add-triggers") {
+      installMissingExamples(true, false);
+      saveState();
+      renderTriggers();
+      renderHome();
+      return;
+    }
+    if (action === "add-habits") {
+      installMissingExamples(false, true);
+      saveState();
+      renderHabits();
+      renderHome();
+      return;
+    }
+    if (action === "remove-triggers") {
+      if (!confirm("Remove all starter example triggers? Your own triggers stay.")) return;
+      var exT = exampleTriggerIds();
+      state.triggers = state.triggers.filter(function (t) {
+        return !t.example && exT.indexOf(t.id) < 0;
+      });
+      saveState();
+      renderTriggers();
+      renderHome();
+      return;
+    }
+    if (action === "remove-habits") {
+      if (!confirm("Remove all starter example habits and their check history?")) return;
+      var exH = exampleHabitIds();
+      var removed = {};
+      state.habits = state.habits.filter(function (h) {
+        var drop = h.example || exH.indexOf(h.id) >= 0;
+        if (drop) removed[h.id] = true;
+        return !drop;
+      });
+      state.habitLog = state.habitLog.filter(function (e) { return !removed[e.habitId]; });
+      saveState();
+      renderHabits();
+      renderHome();
+    }
   }
 
   /* ───────────── practice session ───────────── */
@@ -656,23 +837,31 @@
       state.habits.length + (state.habits.length === 1 ? " habit" : " habits");
 
     var listEl = document.getElementById("habit-list");
+    var bar = renderExamplesBar("habits");
+
     if (!state.habits.length) {
-      listEl.innerHTML = '<p class="empty-note">No mini-habits yet — add a tiny one above. Small enough that it’s easy to say yes.</p>';
+      listEl.innerHTML = bar +
+        '<p class="empty-note">No mini-habits yet — add a tiny one above, or load starter habits. Small enough that it’s easy to say yes.</p>';
       return;
     }
 
     var sorted = state.habits.slice().sort(function (a, b) {
+      var ae = isExampleHabit(a) ? 0 : 1;
+      var be = isExampleHabit(b) ? 0 : 1;
+      if (ae !== be) return ae - be;
       return (a.createdAt || "").localeCompare(b.createdAt || "");
     });
 
-    var out = "";
+    var out = bar;
     sorted.forEach(function (h) {
       var checked = isCheckedToday(h.id);
       var streak = habitStreak(h.id);
       out +=
         '<div class="habit-card">' +
           '<button type="button" class="habit-check' + (checked ? " checked" : "") + '" data-toggle-habit="' + h.id + '" aria-label="Toggle done today">' + (checked ? "✓" : "") + "</button>" +
-          '<div class="habit-info"><div class="habit-label">' + escapeHtml(h.label) + "</div>" +
+          '<div class="habit-info"><div class="habit-label">' + escapeHtml(h.label) +
+            (isExampleHabit(h) ? ' <span class="example-pill">Example</span>' : "") +
+          "</div>" +
             (h.cue ? '<div class="habit-cue">' + escapeHtml(h.cue) + "</div>" : "") +
           "</div>" +
           '<div class="habit-streak">' + (streak > 0 ? streak : "—") + "</div>" +
@@ -723,9 +912,13 @@
   }
 
   function deleteHabit(id) {
-    if (!confirm("Delete this habit and its history?")) return;
-    state.habits = state.habits.filter(function (h) { return h.id !== id; });
-    state.habitLog = state.habitLog.filter(function (h) { return h.habitId !== id; });
+    var h = findHabit(id);
+    var msg = isExampleHabit(h)
+      ? "Remove this starter habit?"
+      : "Delete this habit and its history?";
+    if (!confirm(msg)) return;
+    state.habits = state.habits.filter(function (x) { return x.id !== id; });
+    state.habitLog = state.habitLog.filter(function (e) { return e.habitId !== id; });
     saveState();
     renderHabits();
     renderHome();
@@ -858,6 +1051,8 @@
     });
 
     document.getElementById("trigger-list").addEventListener("click", function (e) {
+      var exAct = e.target.closest("[data-examples-action]");
+      if (exAct) { onExamplesAction(exAct.getAttribute("data-examples-action")); return; }
       var editBtn = e.target.closest("[data-edit]");
       if (editBtn) { openEditTriggerForm(editBtn.getAttribute("data-edit")); window.scrollTo(0, 0); return; }
       var delBtn = e.target.closest("[data-delete]");
@@ -870,6 +1065,8 @@
     });
 
     document.getElementById("habit-list").addEventListener("click", function (e) {
+      var exAct = e.target.closest("[data-examples-action]");
+      if (exAct) { onExamplesAction(exAct.getAttribute("data-examples-action")); return; }
       var toggleBtn = e.target.closest("[data-toggle-habit]");
       if (toggleBtn) {
         toggleHabitToday(toggleBtn.getAttribute("data-toggle-habit"));
@@ -889,6 +1086,7 @@
   }
 
   /* ───────────── init ───────────── */
+  ensureExamplesSeeded();
   applyTheme();
   bind();
   renderHome();

@@ -263,6 +263,16 @@
   }
 
   .empty-note { color: var(--ink-muted); font-size: 0.88rem; }
+  .example-pill {
+    font-family: var(--font-mono); font-size: 0.65rem; letter-spacing: 0.06em; text-transform: uppercase;
+    border-radius: 6px; padding: 0.18rem 0.42rem;
+    background: color-mix(in srgb, var(--clay) 16%, transparent); color: var(--clay-strong);
+  }
+  .examples-bar {
+    display: flex; flex-wrap: wrap; align-items: center; gap: 0.65rem 1rem;
+    margin: 0 0 1rem; font-size: 0.82rem; color: var(--ink-muted);
+  }
+  .examples-bar .link-btn { font-size: 0.82rem; }
 
   @media (prefers-reduced-motion: reduce) {
     * { transition: none !important; }
