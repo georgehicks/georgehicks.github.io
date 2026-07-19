@@ -17,7 +17,8 @@
     { id: "E", name: "Love / Enough / Home", short: "Love", focus: "Relentless love; already enough; already home." },
     { id: "F", name: "Capacity / With-ness", short: "With", focus: "Bear, do, walk — God always with you." },
     { id: "G", name: "Work / Effort / Sow–Reap", short: "Sow", focus: "Serve and sow; plant and water; God gives growth." },
-    { id: "H", name: "Undivided / Steadfast Faith", short: "Undivided", focus: "Doubt and worry that divide a pure faith; asking and trusting without wavering." }
+    { id: "H", name: "Undivided / Steadfast Faith", short: "Undivided", focus: "Doubt and worry that divide a pure faith; asking and trusting without wavering." },
+    { id: "I", name: "Forgiveness / Release", short: "Release", focus: "Unforgiveness that divides the soul; releasing what we hold against others." }
   ];
 
   var VERSES = [
@@ -162,7 +163,7 @@
       text: "Trust in the LORD with all your heart, and do not lean on your own understanding. In all your ways acknowledge him, and he will make straight your paths.",
       group: "D",
       themes: ["trust", "paths", "acknowledge"],
-      assertions: ["ask-seek-knock", "walk-with-god", "aim-with-god"]
+      assertions: ["ask-seek-knock", "walk-with-god", "hope-with-god"]
     },
     {
       id: 18,
@@ -246,7 +247,7 @@
       text: "But he said to me, \"My grace is sufficient for you, for my power is made perfect in weakness.\" Therefore I will boast all the more gladly of my weaknesses, so that the power of Christ may rest upon me.",
       group: "F",
       themes: ["grace", "sufficient", "weakness", "power"],
-      assertions: ["already-enough", "bear-all", "ask-for-help"]
+      assertions: ["already-enough", "bear-all", "ask-for-help", "face-mess"]
     },
     {
       id: 28,
@@ -254,7 +255,7 @@
       text: "Fear not, for I am with you; be not dismayed, for I am your God; I will strengthen you, I will help you, I will uphold you with my righteous right hand.",
       group: "F",
       themes: ["with", "strengthen", "help", "fear-not"],
-      assertions: ["god-always-with", "ask-for-help", "take-a-step"]
+      assertions: ["god-always-with", "ask-for-help", "take-a-step", "face-fears"]
     },
     {
       id: 29,
@@ -296,7 +297,7 @@
       text: "Whatever you do, work heartily, as for the Lord and not for men, knowing that from the Lord you will receive the inheritance as your reward. You are serving the Lord Christ.",
       group: "G",
       themes: ["work", "serve", "reward"],
-      assertions: ["prefer-serve-sow", "aim-with-god", "walk-with-god"]
+      assertions: ["prefer-serve-sow", "envision-dream-with-god", "walk-with-god"]
     },
     {
       id: 34,
@@ -320,7 +321,7 @@
       text: "Therefore, my beloved, as you have always obeyed, so now, not only as in my presence but much more in my absence, work out your own salvation with fear and trembling, for it is God who works in you, both to will and to work for his good pleasure.",
       group: "G",
       themes: ["work-out", "god-works", "both-and"],
-      assertions: ["aim-with-god", "take-a-step", "belong-abide-move"]
+      assertions: ["envision-dream-with-god", "take-a-step", "belong-abide-move"]
     },
     {
       id: 37,
@@ -328,7 +329,7 @@
       text: "Sow for yourselves righteousness; reap steadfast love; break up your fallow ground, for it is the time to seek the LORD, that he may come and rain righteousness upon you.",
       group: "G",
       themes: ["sow", "reap", "seek", "righteousness"],
-      assertions: ["prefer-serve-sow", "ask-seek-knock", "aim-with-god"]
+      assertions: ["prefer-serve-sow", "ask-seek-knock", "hope-with-god"]
     },
     {
       id: 38,
@@ -370,7 +371,7 @@
       text: "Do not be anxious about anything, but in everything by prayer and supplication with thanksgiving let your requests be made known to God. And the peace of God, which surpasses all understanding, will guard your hearts and your minds in Christ Jesus.",
       group: "H",
       themes: ["anxious", "peace", "prayer", "worry"],
-      assertions: ["rest-in-god", "ask-seek-knock"]
+      assertions: ["rest-in-god", "ask-seek-knock", "face-fears"]
     },
     {
       id: 43,
@@ -378,7 +379,7 @@
       text: "Therefore do not be anxious about tomorrow, for tomorrow will be anxious for itself. Sufficient for the day is its own trouble.",
       group: "H",
       themes: ["worry", "tomorrow", "today"],
-      assertions: ["rest-in-god", "breathe"]
+      assertions: ["rest-in-god", "breathe", "face-fears"]
     },
     {
       id: 44,
@@ -386,7 +387,67 @@
       text: "Casting all your anxieties on him, because he cares for you.",
       group: "H",
       themes: ["anxiety", "cast", "care"],
-      assertions: ["rest-in-god", "god-always-with"]
+      assertions: ["rest-in-god", "god-always-with", "face-fears"]
+    },
+
+    // ── I. Forgiveness / Release ──────────────────────────────────────
+    {
+      id: 45,
+      ref: "Ephesians 4:31–32",
+      text: "Let all bitterness and wrath and anger and clamor and slander be put away from you, along with all malice. Be kind to one another, tenderhearted, forgiving one another, as God in Christ forgave you.",
+      group: "I",
+      themes: ["forgive", "bitterness", "kindness"],
+      assertions: ["relentless-love", "face-mess"]
+    },
+    {
+      id: 46,
+      ref: "Mark 11:25",
+      text: "And whenever you stand praying, forgive, if you have anything against anyone, so that your Father also who is in heaven may forgive you your trespasses.",
+      group: "I",
+      themes: ["forgive", "prayer", "release"],
+      assertions: ["relentless-love", "ask-seek-knock"]
+    },
+    {
+      id: 47,
+      ref: "Colossians 3:13",
+      text: "Bearing with one another and, if one has a complaint against another, forgiving each other; as the Lord has forgiven you, so you also must forgive.",
+      group: "I",
+      themes: ["forgive", "bear", "complaint"],
+      assertions: ["relentless-love", "bear-all"]
+    },
+    {
+      id: 48,
+      ref: "Matthew 6:14–15",
+      text: "For if you forgive others their trespasses, your heavenly Father will also forgive you, but if you do not forgive others their trespasses, neither will your Father forgive your trespasses.",
+      group: "I",
+      themes: ["forgive", "trespasses", "father"],
+      assertions: ["relentless-love", "receive-love"]
+    },
+
+    // ── More H. Undivided / Steadfast Faith ────────────────────────────
+    {
+      id: 49,
+      ref: "Psalm 86:11",
+      text: "Teach me your way, O LORD, that I may walk in your truth; unite my heart to fear your name.",
+      group: "H",
+      themes: ["undivided", "heart", "unite", "teach"],
+      assertions: ["belong-abide-move", "ask-seek-knock", "walk-with-god"]
+    },
+    {
+      id: 50,
+      ref: "2 Timothy 1:7",
+      text: "For God gave us a spirit not of fear but of power and love and self-control.",
+      group: "H",
+      themes: ["fear", "power", "self-control", "spirit"],
+      assertions: ["face-fears"]
+    },
+    {
+      id: 51,
+      ref: "1 Kings 18:21",
+      text: "And Elijah came near to all the people and said, \"How long will you go limping between two different opinions? If the LORD is God, follow him; but if Baal, follow him.\" And the people did not answer him a word.",
+      group: "H",
+      themes: ["divided", "limping", "choose", "follow"],
+      assertions: ["belong-abide-move"]
     }
   ];
 
@@ -406,9 +467,12 @@
     "do-all": "I can do all things in Christ.",
     "already-home": "I am already Home in Christ.",
     "already-enough": "I am already enough in Christ.",
-    "aim-with-god": "I can aim with God.",
+    "face-fears": "I can face my fears with God.",
+    "face-mess": "I can face any mess with God.",
+    "hope-with-god": "I can hope with God.",
+    "envision-dream-with-god": "I can envision and dream with God.",
     "walk-with-god": "I can walk with God.",
-    "god-always-with": "God is always with me.",
+    "god-always-with": "I am always with God.",
     "who-god-says": "Who does God say I am?"
   };
 

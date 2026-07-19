@@ -69,8 +69,23 @@
       tier: "capacity"
     },
     {
-      id: "aim-with-god",
-      text: "I can aim with God.",
+      id: "face-fears",
+      text: "I can face my fears with God.",
+      tier: "capacity"
+    },
+    {
+      id: "face-mess",
+      text: "I can face any mess with God.",
+      tier: "capacity"
+    },
+    {
+      id: "hope-with-god",
+      text: "I can hope with God.",
+      tier: "capacity"
+    },
+    {
+      id: "envision-dream-with-god",
+      text: "I can envision and dream with God.",
       tier: "capacity"
     },
     {
@@ -80,7 +95,7 @@
     },
     {
       id: "god-always-with",
-      text: "God is always with me.",
+      text: "I am always with God.",
       tier: "capacity"
     },
     {

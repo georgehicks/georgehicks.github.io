@@ -18,6 +18,7 @@
       totalChallengeRounds: 0,
       tagLog: [],
       identityLog: [],
+      fractureLog: [],
       realignSessions: [],
       realignStreak: 0,
       lastRealignDate: null
@@ -34,6 +35,7 @@
           attempts: Array.isArray(parsed.attempts) ? parsed.attempts : [],
           tagLog: Array.isArray(parsed.tagLog) ? parsed.tagLog : [],
           identityLog: Array.isArray(parsed.identityLog) ? parsed.identityLog : [],
+          fractureLog: Array.isArray(parsed.fractureLog) ? parsed.fractureLog : [],
           realignSessions: Array.isArray(parsed.realignSessions) ? parsed.realignSessions : []
         });
       }
@@ -53,6 +55,9 @@
       state.identityLog = (state.identityLog || []).filter(function (t) {
         return new Date(t.ts).getTime() >= cutoff;
       });
+      state.fractureLog = (state.fractureLog || []).filter(function (t) {
+        return new Date(t.ts).getTime() >= cutoff;
+      });
       if (state.realignSessions.length > 90) {
         state.realignSessions = state.realignSessions.slice(-90);
       }
@@ -65,9 +70,108 @@
   /* ───────────── content ───────────── */
   var V = (window.AbideVerses && window.AbideVerses.VERSES) || [];
   var GROUPS = (window.AbideVerses && window.AbideVerses.GROUPS) || [];
-  var ASSERTIONS = (window.AbideAssertions && window.AbideAssertions.ASSERTIONS) || [];
+  var RAW_ASSERTIONS = (window.AbideAssertions && window.AbideAssertions.ASSERTIONS) || [];
   var FEEL_PRESETS = (window.AbideAssertions && window.AbideAssertions.FEEL_PRESETS) || [];
   var BELIEF_PRESETS = (window.AbideAssertions && window.AbideAssertions.BELIEF_PRESETS) || [];
+  var FRACTURES = (window.AbideFractures && window.AbideFractures.FRACTURES) || [];
+
+  /* ───────────── customizable assertion ladder ───────────── */
+  var LS_LADDER_KEY = "abide-custom-ladder-v1";
+  var DEFAULT_LADDER = RAW_ASSERTIONS.filter(function (a) { return a.special !== "identity"; });
+  var IDENTITY_STEP = RAW_ASSERTIONS.filter(function (a) { return a.special === "identity"; })[0] || null;
+
+  function loadCustomLadder() {
+    try {
+      var raw = localStorage.getItem(LS_LADDER_KEY);
+      if (raw) {
+        var parsed = JSON.parse(raw);
+        if (Array.isArray(parsed) && parsed.length) return parsed;
+      }
+    } catch (e) {}
+    return null;
+  }
+
+  function saveCustomLadder(ladder) {
+    try { localStorage.setItem(LS_LADDER_KEY, JSON.stringify(ladder)); } catch (e) {}
+  }
+
+  var customLadder = loadCustomLadder();
+
+  function computeAssertions() {
+    var ladder = customLadder || DEFAULT_LADDER;
+    return IDENTITY_STEP ? ladder.concat([IDENTITY_STEP]) : ladder.slice();
+  }
+
+  var ASSERTIONS = computeAssertions();
+
+  function ensureCustomLadder() {
+    if (!customLadder) {
+      customLadder = (customLadder || DEFAULT_LADDER).map(function (a) {
+        return { id: a.id, text: a.text, tier: a.tier };
+      });
+    }
+  }
+
+  function persistLadder() {
+    saveCustomLadder(customLadder);
+    ASSERTIONS = computeAssertions();
+  }
+
+  function slugify(text) {
+    return String(text).toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "") || "step";
+  }
+
+  function uniqueId(base, existingIds) {
+    var id = base, n = 2;
+    while (existingIds.indexOf(id) !== -1) { id = base + "-" + n; n++; }
+    return id;
+  }
+
+  function addAssertion(tier, text) {
+    ensureCustomLadder();
+    var existingIds = customLadder.map(function (a) { return a.id; });
+    if (IDENTITY_STEP) existingIds.push(IDENTITY_STEP.id);
+    var id = uniqueId(slugify(text), existingIds);
+    customLadder.push({ id: id, text: text, tier: tier === "root" ? "root" : "capacity" });
+    persistLadder();
+  }
+
+  function removeAssertion(id) {
+    ensureCustomLadder();
+    customLadder = customLadder.filter(function (a) { return a.id !== id; });
+    persistLadder();
+  }
+
+  function moveAssertion(id, dir) {
+    ensureCustomLadder();
+    var idx = -1;
+    for (var i = 0; i < customLadder.length; i++) {
+      if (customLadder[i].id === id) { idx = i; break; }
+    }
+    if (idx === -1) return;
+    var newIdx = idx + dir;
+    if (newIdx < 0 || newIdx >= customLadder.length) return;
+    var tmp = customLadder[idx];
+    customLadder[idx] = customLadder[newIdx];
+    customLadder[newIdx] = tmp;
+    persistLadder();
+  }
+
+  function editAssertionText(id, text) {
+    ensureCustomLadder();
+    for (var i = 0; i < customLadder.length; i++) {
+      if (customLadder[i].id === id) { customLadder[i].text = text; break; }
+    }
+    persistLadder();
+  }
+
+  function resetLadder() {
+    customLadder = null;
+    try { localStorage.removeItem(LS_LADDER_KEY); } catch (e) {}
+    ASSERTIONS = computeAssertions();
+    renderSetup();
+    renderHome();
+  }
 
   function groupName(id) {
     for (var i = 0; i < GROUPS.length; i++) if (GROUPS[i].id === id) return GROUPS[i].short;
@@ -170,6 +274,17 @@
     return state.tagLog.filter(function (t) {
       return inWindow(t.ts) && (!type || t.type === type);
     });
+  }
+
+  function fractureLabel(id) {
+    for (var i = 0; i < FRACTURES.length; i++) {
+      if (FRACTURES[i].id === id) return FRACTURES[i].label;
+    }
+    return id;
+  }
+
+  function fracturesInWindow() {
+    return (state.fractureLog || []).filter(function (t) { return inWindow(t.ts); });
   }
 
   function countByText(list) {
@@ -296,7 +411,8 @@
   var browseFilter = "all";
   var challenge = null;
   var realign = null;
-  var activeSession = null; // 'challenge' | 'realign'
+  var examine = null;
+  var activeSession = null; // 'challenge' | 'realign' | 'examine'
 
   function showView(name) {
     var views = document.querySelectorAll(".view");
@@ -305,7 +421,8 @@
     }
     var inSession =
       (name === "challenge" && challenge && !challenge.done) ||
-      (name === "realign" && realign && !realign.done);
+      (name === "realign" && realign && !realign.done) ||
+      (name === "examine" && examine && !examine.done);
     document.getElementById("topbar").classList.toggle("in-session", !!inSession);
     activeSession = inSession ? name : null;
   }
@@ -594,7 +711,7 @@
     realign = {
       index, phase: 'assert'|'confess'|'ask'|'reassert'|'tag'|'identity'|'done',
       results: [{id, agreed, realigned}],
-      currentTags: { feels:Set-like array, beliefs: array },
+      currentTags: { feels:Set-like array, beliefs: array, fractures: array },
       sessionTags: [],
       identityPicked: [],
       identityCustom: '',
@@ -608,7 +725,7 @@
       index: 0,
       phase: "assert",
       results: [],
-      currentTags: { feels: [], beliefs: [] },
+      currentTags: { feels: [], beliefs: [], fractures: [] },
       sessionTags: [],
       identityPicked: [],
       identityCustom: "",
@@ -648,10 +765,7 @@
   function linkedVerseHtml(assertionId) {
     var list = versesForAssertion(assertionId);
     if (!list.length) return "";
-    var v = list[Math.floor(Math.random() * Math.min(2, list.length))];
-    // prefer first for stability, but allow second
-    v = list[0];
-    if (list.length > 1 && Math.random() < 0.5) v = list[1];
+    var v = list[Math.floor(Math.random() * list.length)];
     return (
       '<div class="linked-verse">' +
         '<div class="lv-ref">' + escapeHtml(v.ref) + "</div>" +
@@ -780,6 +894,11 @@
       return '<button type="button" class="chip' + sel + '" data-belief="' + escapeHtml(b) + '">' + escapeHtml(b) + "</button>";
     }).join("");
 
+    var fractureChips = FRACTURES.map(function (f) {
+      var sel = realign.currentTags.fractures.indexOf(f.id) !== -1 ? " selected" : "";
+      return '<button type="button" class="chip' + sel + '" data-fracture="' + escapeHtml(f.id) + '">' + escapeHtml(f.label) + "</button>";
+    }).join("");
+
     return (
       '<div class="step-tag">Capture</div>' +
       '<div class="prompt-card"><p class="assertion-text" style="font-size:1.1rem">Name what showed up.</p>' +
@@ -791,6 +910,10 @@
       '<p class="field-label">False belief</p>' +
       '<div class="chip-row" id="belief-chips">' + beliefChips + "</div>" +
       '<input class="text-input" id="belief-custom" placeholder="Other belief (e.g. I am…)" />' +
+      (fractureChips
+        ? '<p class="field-label">This might be…</p>' +
+          '<div class="chip-row" id="fracture-chips">' + fractureChips + "</div>"
+        : "") +
       '<button type="button" class="continue-btn" data-ra="tag-next">Continue</button>' +
       '<button type="button" class="continue-btn secondary" data-ra="tag-skip" style="margin-top:0.5rem">Skip tags</button>'
     );
@@ -906,7 +1029,11 @@
       state.tagLog.push(entry);
       realign.sessionTags.push(entry);
     });
-    realign.currentTags = { feels: [], beliefs: [] };
+    realign.currentTags.fractures.forEach(function (fid) {
+      state.fractureLog.push({ category: fid, source: "realign-tag", assertionId: a.id, ts: ts });
+      realign.sessionTags.push({ type: "fracture", text: fractureLabel(fid), assertionId: a.id, ts: ts });
+    });
+    realign.currentTags = { feels: [], beliefs: [], fractures: [] };
   }
 
   function advanceAfterAssert(agreed, cameFromRealign) {
@@ -933,7 +1060,7 @@
     realign.index++;
     realign.phase = "assert";
     realign.notes = { confess: "", know: "", do: "" };
-    realign.currentTags = { feels: [], beliefs: [] };
+    realign.currentTags = { feels: [], beliefs: [], fractures: [] };
     if (realign.index >= ASSERTIONS.length) {
       finishRealign();
       return;
@@ -1032,7 +1159,7 @@
       return;
     }
     if (action === "tag-skip") {
-      realign.currentTags = { feels: [], beliefs: [] };
+      realign.currentTags = { feels: [], beliefs: [], fractures: [] };
       nextAssertion();
       return;
     }
@@ -1054,6 +1181,12 @@
       el.classList.toggle("selected");
       return;
     }
+    if (el && el.hasAttribute("data-fracture")) {
+      var frac = el.getAttribute("data-fracture");
+      toggleInArray(realign.currentTags.fractures, frac);
+      el.classList.toggle("selected");
+      return;
+    }
     if (el && el.hasAttribute("data-id-text")) {
       var t = el.getAttribute("data-id-text");
       var idx = -1;
@@ -1071,6 +1204,232 @@
     var i = arr.indexOf(val);
     if (i >= 0) arr.splice(i, 1);
     else arr.push(val);
+  }
+
+  /* ───────────── examine: soul fracture exploration ─────────────
+    examine = {
+      category: { id, label, framing, prompt, assertionId },
+      assertion: { id, text, tier },
+      phase: 'intro'|'assert'|'confess'|'reassert'|'note',
+      introNote, confessNote, finalNote: string,
+      agreed, realigned, done: boolean
+    }
+  */
+  function openExamineHub() {
+    examine = null;
+    showView("examine");
+    document.getElementById("examine-hub").style.display = "block";
+    document.getElementById("examine-session").style.display = "none";
+    renderExamineHub();
+  }
+
+  function renderExamineHub() {
+    var body = document.getElementById("examine-cards");
+    var counts = {};
+    fracturesInWindow().forEach(function (t) {
+      counts[t.category] = (counts[t.category] || 0) + 1;
+    });
+    body.innerHTML = FRACTURES.map(function (f) {
+      var n = counts[f.id] || 0;
+      return (
+        '<button type="button" class="fracture-card" data-fracture="' + escapeHtml(f.id) + '">' +
+          '<div class="fracture-card-label">' + escapeHtml(f.label) + "</div>" +
+          '<div class="fracture-card-framing">' + escapeHtml(f.framing) + "</div>" +
+          '<div class="fracture-card-meta">' + (n ? n + " time" + (n === 1 ? "" : "s") + " · 30d" : "not yet explored") + "</div>" +
+        "</button>"
+      );
+    }).join("");
+  }
+
+  function startExamine(catId) {
+    var cat = null;
+    for (var i = 0; i < FRACTURES.length; i++) {
+      if (FRACTURES[i].id === catId) { cat = FRACTURES[i]; break; }
+    }
+    if (!cat) return;
+    var assertion = null;
+    for (var j = 0; j < ASSERTIONS.length; j++) {
+      if (ASSERTIONS[j].id === cat.assertionId) { assertion = ASSERTIONS[j]; break; }
+    }
+    if (!assertion) assertion = { id: cat.assertionId, text: cat.label, tier: "capacity" };
+
+    examine = {
+      category: cat,
+      assertion: assertion,
+      phase: "intro",
+      introNote: "",
+      confessNote: "",
+      finalNote: "",
+      agreed: false,
+      realigned: false,
+      done: false
+    };
+    showView("examine");
+    document.getElementById("examine-hub").style.display = "none";
+    document.getElementById("examine-session").style.display = "block";
+    renderExamine();
+  }
+
+  function renderExamine() {
+    var stage = document.getElementById("examine-stage");
+    if (!examine) return;
+    if (examine.done) {
+      stage.innerHTML = renderExamineSummary();
+      bindExamineSummary();
+      return;
+    }
+    if (examine.phase === "intro") { stage.innerHTML = renderExamineIntro(); return; }
+    if (examine.phase === "assert" || examine.phase === "reassert") { stage.innerHTML = renderExamineAssert(); return; }
+    if (examine.phase === "confess") { stage.innerHTML = renderExamineConfess(); return; }
+    if (examine.phase === "note") { stage.innerHTML = renderExamineNote(); return; }
+  }
+
+  function renderExamineIntro() {
+    var cat = examine.category;
+    return (
+      '<div class="step-tag">Examine · ' + escapeHtml(cat.label) + "</div>" +
+      '<div class="prompt-card">' +
+        '<p class="assertion-text" style="font-size:1.1rem">' + escapeHtml(cat.framing) + "</p>" +
+        '<p class="stage-instruction" style="margin:0.85rem 0 0">' + escapeHtml(cat.prompt) + "</p>" +
+      "</div>" +
+      '<p class="field-label">Name it, if you want to (optional)</p>' +
+      '<textarea class="text-area" id="examine-intro-note" placeholder="Write what comes to mind…">' +
+        escapeHtml(examine.introNote || "") +
+      "</textarea>" +
+      '<button type="button" class="continue-btn" data-ex="intro-next">Bring this to God</button>'
+    );
+  }
+
+  function renderExamineAssert() {
+    var reasserting = examine.phase === "reassert";
+    var a = examine.assertion;
+    return (
+      '<div class="step-tag">' + (reasserting ? "Re-assert" : "Assertion") + "</div>" +
+      '<div class="prompt-card"><p class="assertion-text">' + escapeHtml(a.text) + "</p>" +
+        linkedVerseHtml(a.id) +
+      "</div>" +
+      '<p class="stage-instruction">' +
+        (reasserting
+          ? "When you are ready — can you stand in this with Him?"
+          : "Can you honestly stand in this right now?") +
+      "</p>" +
+      '<div class="gate-row">' +
+        '<button type="button" class="gate-btn primary" data-ex="yes">' +
+          (reasserting ? "Yes — I stand in this" : "Yes") +
+        "</button>" +
+        '<button type="button" class="gate-btn soft" data-ex="no">' +
+          (reasserting ? "Not yet — continue with grace" : "Not yet") +
+        "</button>" +
+      "</div>"
+    );
+  }
+
+  function renderExamineConfess() {
+    return (
+      '<div class="step-tag">Confess</div>' +
+      '<div class="prompt-card"><p class="assertion-text" style="font-size:1.1rem">Bring this to God.</p>' +
+        '<p class="stage-instruction" style="margin:0.75rem 0 0">You could not yet stand in:</p>' +
+        '<p class="prompt-text" style="margin-top:0.4rem">"' + escapeHtml(examine.assertion.text) + '"</p>' +
+      "</div>" +
+      '<p class="field-label">Optional — name it before Him</p>' +
+      '<textarea class="text-area" id="examine-confess-note" placeholder="Father, I confess…">' +
+        escapeHtml(examine.confessNote || "") +
+      "</textarea>" +
+      '<button type="button" class="continue-btn" data-ex="confess-next">I have brought it to You</button>'
+    );
+  }
+
+  function renderExamineNote() {
+    return (
+      '<div class="step-tag">Reflect</div>' +
+      '<div class="prompt-card"><p class="assertion-text" style="font-size:1.1rem">' + escapeHtml(examine.assertion.text) + "</p></div>" +
+      '<p class="field-label">Anything else to name? (optional)</p>' +
+      '<textarea class="text-area" id="examine-final-note" placeholder="Optional">' +
+        escapeHtml(examine.finalNote || "") +
+      "</textarea>" +
+      '<button type="button" class="continue-btn" data-ex="finish">Finish</button>'
+    );
+  }
+
+  function renderExamineSummary() {
+    return (
+      '<div class="summary">' +
+        '<div class="summary-big" style="font-size:1.55rem">' + (examine.agreed ? "Stood in truth" : "Brought to grace") + "</div>" +
+        '<div class="summary-sub">' + escapeHtml(examine.category.label) + " · " + escapeHtml(examine.assertion.text) + "</div>" +
+        '<button type="button" class="cta-btn" id="ex-another">Explore another</button>' +
+        '<button type="button" class="link-btn" id="ex-home" style="display:block;margin:1rem auto 0">← Home</button>' +
+      "</div>"
+    );
+  }
+
+  function bindExamineSummary() {
+    var again = document.getElementById("ex-another");
+    var home = document.getElementById("ex-home");
+    if (again) again.onclick = openExamineHub;
+    if (home) home.onclick = goHome;
+  }
+
+  function finishExamine() {
+    examine.done = true;
+    var note = [examine.introNote, examine.confessNote, examine.finalNote]
+      .map(function (s) { return (s || "").trim(); })
+      .filter(Boolean)
+      .join(" / ");
+    state.fractureLog.push({
+      category: examine.category.id,
+      source: "examine",
+      assertionId: examine.assertion.id,
+      agreed: !!examine.agreed,
+      realigned: !!examine.realigned,
+      note: note,
+      ts: new Date().toISOString()
+    });
+    saveState();
+    document.getElementById("topbar").classList.remove("in-session");
+    renderExamine();
+  }
+
+  function onExamineAction(action) {
+    if (!examine || examine.done) return;
+    if (action === "intro-next") {
+      var n = document.getElementById("examine-intro-note");
+      if (n) examine.introNote = n.value;
+      examine.phase = "assert";
+      renderExamine();
+      return;
+    }
+    if (action === "yes") {
+      examine.agreed = true;
+      if (examine.phase === "reassert") examine.realigned = true;
+      examine.phase = "note";
+      renderExamine();
+      return;
+    }
+    if (action === "no") {
+      if (examine.phase === "assert") {
+        examine.phase = "confess";
+        renderExamine();
+        return;
+      }
+      examine.agreed = false;
+      examine.realigned = true;
+      examine.phase = "note";
+      renderExamine();
+      return;
+    }
+    if (action === "confess-next") {
+      var c = document.getElementById("examine-confess-note");
+      if (c) examine.confessNote = c.value;
+      examine.phase = "reassert";
+      renderExamine();
+      return;
+    }
+    if (action === "finish") {
+      var f = document.getElementById("examine-final-note");
+      if (f) examine.finalNote = f.value;
+      finishExamine();
+      return;
+    }
   }
 
   /* ───────────── patterns ───────────── */
@@ -1108,6 +1467,10 @@
       };
     });
 
+    var fractures = countByText(fracturesInWindow().map(function (t) {
+      return { text: fractureLabel(t.category) };
+    }));
+
     var ids = identityCounts();
     var idHtml = ids.length
       ? '<div class="identity-chip-list">' + ids.slice(0, 20).map(function (c) {
@@ -1137,6 +1500,9 @@
       '<div class="section-label">Assertions that needed realignment</div>' +
       '<div class="pattern-card">' + renderBarList(friction) + "</div>" +
 
+      '<div class="section-label">Where the soul fractures</div>' +
+      '<div class="pattern-card">' + renderBarList(fractures, null, "rust") + "</div>" +
+
       '<div class="section-label">Who God says I am</div>' +
       '<div class="pattern-card">' + idHtml + "</div>" +
 
@@ -1150,10 +1516,41 @@
       "</div>";
   }
 
+  /* ───────────── setup: customize assertions ───────────── */
+  function renderSetup() {
+    var listEl = document.getElementById("setup-list");
+    var ladder = customLadder || DEFAULT_LADDER;
+    document.getElementById("setup-count").textContent = ladder.length + " step" + (ladder.length === 1 ? "" : "s") + " · + identity";
+
+    if (!ladder.length) {
+      listEl.innerHTML = '<p class="empty-note">No steps — add one below.</p>';
+      return;
+    }
+
+    var out = "";
+    for (var i = 0; i < ladder.length; i++) {
+      var a = ladder[i];
+      out +=
+        '<div class="setup-item">' +
+          '<div class="setup-item-main">' +
+            '<div class="setup-item-tier">' + escapeHtml(tierLabel(a.tier)) + "</div>" +
+            '<textarea class="setup-item-text" data-id="' + escapeHtml(a.id) + '" rows="2">' + escapeHtml(a.text) + "</textarea>" +
+          "</div>" +
+          '<div class="setup-item-actions">' +
+            '<button type="button" class="setup-mini-btn" data-act="up" data-id="' + escapeHtml(a.id) + '"' + (i === 0 ? " disabled" : "") + ' aria-label="Move up">↑</button>' +
+            '<button type="button" class="setup-mini-btn" data-act="down" data-id="' + escapeHtml(a.id) + '"' + (i === ladder.length - 1 ? " disabled" : "") + ' aria-label="Move down">↓</button>' +
+            '<button type="button" class="setup-mini-btn danger" data-act="del" data-id="' + escapeHtml(a.id) + '" aria-label="Remove">✕</button>' +
+          "</div>" +
+        "</div>";
+    }
+    listEl.innerHTML = out;
+  }
+
   /* ───────────── navigation ───────────── */
   function goHome() {
     challenge = null;
     realign = null;
+    examine = null;
     showView("home");
     renderHome();
   }
@@ -1165,9 +1562,13 @@
     } else if (activeSession === "realign" && realign && !realign.done) {
       if (!confirm("Leave realignment? This session will not be saved.")) return;
       realign = null;
+    } else if (activeSession === "examine" && examine && !examine.done) {
+      if (!confirm("Leave this examine session? It will not be saved.")) return;
+      examine = null;
     } else {
       challenge = null;
       realign = null;
+      examine = null;
     }
     document.getElementById("topbar").classList.remove("in-session");
     goHome();
@@ -1247,10 +1648,70 @@
     });
 
     document.getElementById("realign-stage").addEventListener("click", function (e) {
-      var t = e.target.closest("[data-ra], [data-feel], [data-belief], [data-id-text]");
+      var t = e.target.closest("[data-ra], [data-feel], [data-belief], [data-fracture], [data-id-text]");
       if (!t) return;
       var action = t.getAttribute("data-ra");
       onRealignAction(action, t);
+    });
+
+    document.getElementById("btn-examine").addEventListener("click", openExamineHub);
+    document.getElementById("examine-home").addEventListener("click", goHome);
+    document.getElementById("examine-cards").addEventListener("click", function (e) {
+      var c = e.target.closest(".fracture-card");
+      if (!c) return;
+      startExamine(c.getAttribute("data-fracture"));
+    });
+    document.getElementById("examine-stage").addEventListener("click", function (e) {
+      var t = e.target.closest("[data-ex]");
+      if (!t) return;
+      onExamineAction(t.getAttribute("data-ex"));
+    });
+
+    document.getElementById("home-customize-link").addEventListener("click", function () {
+      showView("setup");
+      renderSetup();
+    });
+    document.getElementById("setup-home").addEventListener("click", goHome);
+    document.getElementById("setup-reset-btn").addEventListener("click", function () {
+      if (!confirm("Reset assertions to the defaults? Your customizations will be lost.")) return;
+      resetLadder();
+    });
+    document.getElementById("setup-tier-chips").addEventListener("click", function (e) {
+      var chip = e.target.closest(".chip");
+      if (!chip) return;
+      var chips = document.querySelectorAll("#setup-tier-chips .chip");
+      for (var i = 0; i < chips.length; i++) chips[i].classList.remove("active");
+      chip.classList.add("active");
+    });
+    document.getElementById("setup-add-btn").addEventListener("click", function () {
+      var input = document.getElementById("setup-new-text");
+      var text = input.value.trim();
+      if (!text) return;
+      var tierChip = document.querySelector("#setup-tier-chips .chip.active");
+      var tier = tierChip ? tierChip.getAttribute("data-tier") : "capacity";
+      addAssertion(tier, text);
+      input.value = "";
+      renderSetup();
+      renderHome();
+    });
+    document.getElementById("setup-list").addEventListener("click", function (e) {
+      var btn = e.target.closest("[data-act]");
+      if (!btn) return;
+      var id = btn.getAttribute("data-id");
+      var act = btn.getAttribute("data-act");
+      if (act === "up") moveAssertion(id, -1);
+      else if (act === "down") moveAssertion(id, 1);
+      else if (act === "del") {
+        if (!confirm("Remove this step?")) return;
+        removeAssertion(id);
+      }
+      renderSetup();
+      renderHome();
+    });
+    document.getElementById("setup-list").addEventListener("focusout", function (e) {
+      var t = e.target;
+      if (!t.classList || !t.classList.contains("setup-item-text")) return;
+      editAssertionText(t.getAttribute("data-id"), t.value);
     });
   }
 

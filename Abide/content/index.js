@@ -8,6 +8,9 @@
   if (!window.AbideAssertions || !window.AbideAssertions.ASSERTIONS) {
     console.error("[Abide] No assertions loaded. Include content/assertions.js before content/index.js.");
   }
+  if (!window.AbideFractures || !window.AbideFractures.FRACTURES) {
+    console.error("[Abide] No fractures loaded. Include content/fractures.js before content/index.js.");
+  }
 
   window.AbideContent = {
     verses: window.AbideVerses,
@@ -17,6 +20,8 @@
     assertions: window.AbideAssertions,
     ASSERTIONS: (window.AbideAssertions && window.AbideAssertions.ASSERTIONS) || [],
     FEEL_PRESETS: (window.AbideAssertions && window.AbideAssertions.FEEL_PRESETS) || [],
-    BELIEF_PRESETS: (window.AbideAssertions && window.AbideAssertions.BELIEF_PRESETS) || []
+    BELIEF_PRESETS: (window.AbideAssertions && window.AbideAssertions.BELIEF_PRESETS) || [],
+    fractures: window.AbideFractures,
+    FRACTURES: (window.AbideFractures && window.AbideFractures.FRACTURES) || []
   };
 })();

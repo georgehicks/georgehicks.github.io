@@ -281,6 +281,44 @@
 
   .empty-note { color: var(--ink-muted); font-size: 0.88rem; }
 
+  .setup-item {
+    display: flex; align-items: flex-start; gap: 0.6rem;
+    background: var(--surface); border: 1px solid var(--border); border-radius: 12px;
+    padding: 0.7rem 0.75rem; margin-bottom: 0.55rem;
+  }
+  .setup-item-main { flex: 1; min-width: 0; }
+  .setup-item-tier {
+    font-family: var(--font-mono); font-size: 0.62rem; letter-spacing: 0.06em; text-transform: uppercase;
+    color: var(--ink-faint); margin-bottom: 0.35rem;
+  }
+  .setup-item-text {
+    width: 100%; background: var(--surface-2); border: 1px solid var(--border); border-radius: 10px;
+    padding: 0.55rem 0.65rem; color: var(--ink); font-size: 0.88rem; line-height: 1.4;
+    min-height: 2.6rem; resize: vertical;
+  }
+  .setup-item-text:focus { border-color: var(--brass); outline: none; }
+  .setup-item-actions { display: flex; flex-direction: column; gap: 0.3rem; }
+  .setup-mini-btn {
+    width: 1.9rem; height: 1.9rem; border-radius: 8px;
+    background: var(--surface-2); border: 1px solid var(--border); color: var(--ink-muted); font-size: 0.85rem;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .setup-mini-btn:disabled { opacity: 0.3; }
+  .setup-mini-btn.danger { color: var(--rust); }
+  .setup-item-pinned { opacity: 0.75; margin-top: 0.3rem; margin-bottom: 1.3rem; }
+  .setup-item-text-static { font-size: 0.88rem; color: var(--ink-muted); padding-top: 0.1rem; }
+  .setup-add-card {
+    background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 0.9rem;
+  }
+
+  .fracture-card {
+    display: block; width: 100%; text-align: left; background: var(--surface); border: 1px solid var(--border);
+    border-radius: 14px; padding: 0.95rem 1rem; margin-bottom: 0.65rem;
+  }
+  .fracture-card-label { font-family: var(--font-display); font-size: 1.05rem; color: var(--ink); margin-bottom: 0.3rem; }
+  .fracture-card-framing { font-size: 0.85rem; color: var(--ink-muted); line-height: 1.45; margin-bottom: 0.4rem; }
+  .fracture-card-meta { font-family: var(--font-mono); font-size: 0.68rem; color: var(--ink-faint); }
+
   @media (prefers-reduced-motion: reduce) {
     * { transition: none !important; }
   }
@@ -315,6 +353,15 @@
         <div>
           <div class="cta-title">Realignment session</div>
           <div class="cta-meta" id="realign-cta-meta">Assertions · confess · return</div>
+        </div>
+        <div class="cta-arrow">→</div>
+      </button>
+      <button class="link-btn" id="home-customize-link" type="button" style="display:block;margin:-0.4rem 0 0.85rem">Customize assertions →</button>
+
+      <button class="cta secondary" id="btn-examine" type="button">
+        <div>
+          <div class="cta-title">Examine</div>
+          <div class="cta-meta" id="examine-cta-meta">Unforgiveness · worry · doubt · fear</div>
         </div>
         <div class="cta-arrow">→</div>
       </button>
@@ -386,11 +433,58 @@
       <div id="patterns-body"></div>
     </div>
 
+    <!-- SETUP: customize assertions -->
+    <div class="view" data-view="setup">
+      <div class="browse-toolbar">
+        <button class="link-btn" id="setup-home" type="button">← Home</button>
+        <span class="browse-meta" id="setup-count"></span>
+      </div>
+      <h1 class="greet" style="font-size:1.4rem;margin-bottom:0.5rem">Customize assertions</h1>
+      <p class="greet-sub" style="margin-bottom:1rem">Edit, reorder, add, or remove steps in your realignment ladder. Changes save automatically.</p>
+      <div id="setup-list"></div>
+      <div class="setup-item setup-item-pinned">
+        <div class="setup-item-tier">Identity · always last</div>
+        <div class="setup-item-text-static">Who does God say I am?</div>
+      </div>
+      <div class="section-label">Add a step</div>
+      <div class="setup-add-card">
+        <div class="chip-row" id="setup-tier-chips" style="margin-bottom:0.6rem">
+          <button type="button" class="chip active" data-tier="root">Root</button>
+          <button type="button" class="chip" data-tier="capacity">Capacity</button>
+        </div>
+        <input class="text-input" id="setup-new-text" placeholder="I can…" />
+        <button type="button" class="continue-btn" id="setup-add-btn">Add step</button>
+      </div>
+      <button type="button" class="continue-btn secondary" id="setup-reset-btn" style="margin-top:1.5rem">Reset to defaults</button>
+    </div>
+
+    <!-- EXAMINE: soul fracture exploration -->
+    <div class="view" data-view="examine">
+      <div id="examine-hub">
+        <div class="browse-toolbar">
+          <button class="link-btn" id="examine-home" type="button">← Home</button>
+          <span class="browse-meta">Undivided before God</span>
+        </div>
+        <h1 class="greet" style="font-size:1.4rem;margin-bottom:0.5rem">Examine</h1>
+        <p class="greet-sub" style="margin-bottom:1rem">Scripture names what pulls a soul into pieces. Where are you fractured right now?</p>
+        <div class="linked-verse" style="margin-bottom:1.1rem">
+          <div class="lv-ref">Psalm 86:11</div>
+          <div class="lv-text">"Teach me your way, O LORD, that I may walk in your truth; unite my heart to fear your name."</div>
+        </div>
+        <div id="examine-cards"></div>
+      </div>
+      <div id="examine-session" style="display:none">
+        <div class="exercise-track" id="examine-track"></div>
+        <div class="session-stage" id="examine-stage"></div>
+      </div>
+    </div>
+
   </div>
 </div>
 
 <script src="content/verses.js"></script>
 <script src="content/assertions.js"></script>
+<script src="content/fractures.js"></script>
 <script src="content/index.js"></script>
 <script src="app.js"></script>
 <script>
