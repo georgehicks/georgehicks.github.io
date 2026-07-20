@@ -1535,6 +1535,8 @@
     var list = document.getElementById("renew-list");
     if (actions) actions.style.display = formOpen ? "none" : "";
     if (list) list.style.display = formOpen ? "none" : "";
+    var homeBtn = document.getElementById("renew-home");
+    if (homeBtn) homeBtn.textContent = (formOpen && renewFormState.fromTemplates) ? "← Templates" : "← Home";
   }
 
   function findRenewTrigger(id) {
@@ -1668,7 +1670,13 @@
   }
 
   function closeRenewForm() {
+    var fromTemplates = renewFormState && renewFormState.fromTemplates;
     renewFormState = null;
+    if (fromTemplates) {
+      showView("renew-templates");
+      renderRenewTemplateBrowser();
+      return;
+    }
     renderRenewForm();
   }
 
@@ -1784,7 +1792,8 @@
       oldReaction: t.oldReaction || "",
       response: "",
       assertionId: assertionId,
-      note: ""
+      note: "",
+      fromTemplates: true
     };
     showView("renew");
     renderRenewList();
@@ -2284,7 +2293,15 @@
       showView("renew");
       renderRenewList();
     });
-    document.getElementById("renew-home").addEventListener("click", goHome);
+    document.getElementById("renew-home").addEventListener("click", function () {
+      if (renewFormState && renewFormState.fromTemplates) {
+        renewFormState = null;
+        showView("renew-templates");
+        renderRenewTemplateBrowser();
+        return;
+      }
+      goHome();
+    });
     document.getElementById("btn-renew-practice").addEventListener("click", startRenewPractice);
     document.getElementById("btn-new-renew-trigger").addEventListener("click", openNewRenewForm);
     document.getElementById("btn-browse-renew-templates").addEventListener("click", openRenewTemplateBrowser);
