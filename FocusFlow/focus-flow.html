@@ -180,7 +180,9 @@
     .today-dot { width:17px; height:17px; border-radius:50%; flex-shrink:0; display:flex; align-items:center; justify-content:center; font-size:0.68rem; font-weight:700; color:#0f1117; }
     .today-dot.p1 { background:#00ffcc; } .today-dot.p2 { background:#ffcc00; } .today-dot.p3 { background:#ff8866; }
     .today-row .tparent { color:#566; }
-    .today-row .t-txt { flex:1; min-width:0; }
+    .today-row .t-txt { flex:1; min-width:0; cursor:pointer; border-radius:4px; transition:color 0.15s ease, background 0.15s ease; }
+    .today-row .t-txt:hover { background:#1e2436; }
+    .today-row .t-txt.added-flash { color:#00ffcc; }
     .today-done { margin-left:auto; background:none; border:1px solid #2a3350; color:#6a7a55; border-radius:6px; font-size:0.8rem; cursor:pointer; padding:1px 8px; flex-shrink:0; }
     .today-done:hover { color:#4caf50; border-color:#3a5a30; }
 
@@ -950,10 +952,32 @@
         ? '<div class="today-empty">No items picked yet — use the Pick tab to set priorities.</div>'
         : picked.map(it => {
             const parent = it.isStep && it.parent ? `<span class="tparent">${escapeHtml(it.parent)} ▸ </span>` : '';
-            return `<div class="today-row"><span class="today-dot p${it.prio}">${it.prio}</span><span class="t-txt">${parent}${escapeHtml(it.text)}</span><button class="today-done" title="Mark done" onclick="markItemDone(${it.lineIndex})">✓</button></div>`;
+            return `<div class="today-row"><span class="today-dot p${it.prio}">${it.prio}</span><span class="t-txt" data-line="${it.lineIndex}" title="Log into the current time slot" onclick="addToCurrentSlot(${it.lineIndex})">${parent}${escapeHtml(it.text)}</span><button class="today-done" title="Mark done" onclick="markItemDone(${it.lineIndex})">✓</button></div>`;
           }).join('');
       ['today-summary', 'focus-today-summary'].forEach(id => {
         const el = document.getElementById(id); if (el) el.innerHTML = html;
+      });
+    }
+
+    // Tap a Today item's name to log it into the current time slot, without
+    // stealing focus or switching tabs — a quick "I'm doing this right now".
+    function addToCurrentSlot(lineIndex) {
+      const it = pickedItems().find(i => i.lineIndex === lineIndex);
+      if (!it) return;
+      const blockMin = currentBlockMinutes();
+      const key = `block_${todayKey()}_${blockMin}`;
+      const parts = (storage.get(key) || '').split(',').map(s => s.trim()).filter(Boolean);
+      if (!parts.includes(it.text)) {
+        parts.push(it.text);
+        const newVal = parts.join(', ');
+        storage.set(key, newVal);
+        const input = document.getElementById(`block-input-${blockMin}`);
+        if (input) input.value = newVal;
+      }
+      buzz();
+      document.querySelectorAll(`.t-txt[data-line="${lineIndex}"]`).forEach(el => {
+        el.classList.add('added-flash');
+        setTimeout(() => el.classList.remove('added-flash'), 500);
       });
     }
 
