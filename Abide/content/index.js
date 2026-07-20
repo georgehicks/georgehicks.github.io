@@ -11,6 +11,9 @@
   if (!window.AbideFractures || !window.AbideFractures.FRACTURES) {
     console.error("[Abide] No fractures loaded. Include content/fractures.js before content/index.js.");
   }
+  if (!window.AbideTriggers || !window.AbideTriggers.TRIGGER_TEMPLATES) {
+    console.error("[Abide] No triggers loaded. Include content/triggers.js before content/index.js.");
+  }
 
   window.AbideContent = {
     verses: window.AbideVerses,
@@ -22,6 +25,9 @@
     FEEL_PRESETS: (window.AbideAssertions && window.AbideAssertions.FEEL_PRESETS) || [],
     BELIEF_PRESETS: (window.AbideAssertions && window.AbideAssertions.BELIEF_PRESETS) || [],
     fractures: window.AbideFractures,
-    FRACTURES: (window.AbideFractures && window.AbideFractures.FRACTURES) || []
+    FRACTURES: (window.AbideFractures && window.AbideFractures.FRACTURES) || [],
+    triggers: window.AbideTriggers,
+    TRIGGER_CATEGORIES: (window.AbideTriggers && window.AbideTriggers.TRIGGER_CATEGORIES) || [],
+    TRIGGER_TEMPLATES: (window.AbideTriggers && window.AbideTriggers.TRIGGER_TEMPLATES) || []
   };
 })();

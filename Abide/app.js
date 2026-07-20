@@ -21,7 +21,11 @@
       fractureLog: [],
       realignSessions: [],
       realignStreak: 0,
-      lastRealignDate: null
+      lastRealignDate: null,
+      triggers: [],
+      rehearsalLog: [],
+      renewStreak: 0,
+      lastRenewDate: null
     };
   }
 
@@ -36,7 +40,9 @@
           tagLog: Array.isArray(parsed.tagLog) ? parsed.tagLog : [],
           identityLog: Array.isArray(parsed.identityLog) ? parsed.identityLog : [],
           fractureLog: Array.isArray(parsed.fractureLog) ? parsed.fractureLog : [],
-          realignSessions: Array.isArray(parsed.realignSessions) ? parsed.realignSessions : []
+          realignSessions: Array.isArray(parsed.realignSessions) ? parsed.realignSessions : [],
+          triggers: Array.isArray(parsed.triggers) ? parsed.triggers : [],
+          rehearsalLog: Array.isArray(parsed.rehearsalLog) ? parsed.rehearsalLog : []
         });
       }
     } catch (e) {}
@@ -58,6 +64,9 @@
       state.fractureLog = (state.fractureLog || []).filter(function (t) {
         return new Date(t.ts).getTime() >= cutoff;
       });
+      state.rehearsalLog = (state.rehearsalLog || []).filter(function (r) {
+        return new Date(r.ts).getTime() >= cutoff;
+      });
       if (state.realignSessions.length > 90) {
         state.realignSessions = state.realignSessions.slice(-90);
       }
@@ -74,6 +83,12 @@
   var FEEL_PRESETS = (window.AbideAssertions && window.AbideAssertions.FEEL_PRESETS) || [];
   var BELIEF_PRESETS = (window.AbideAssertions && window.AbideAssertions.BELIEF_PRESETS) || [];
   var FRACTURES = (window.AbideFractures && window.AbideFractures.FRACTURES) || [];
+  var TRIGGER_CATEGORIES = (window.AbideTriggers && window.AbideTriggers.TRIGGER_CATEGORIES) || [];
+  var TRIGGER_TEMPLATES = (window.AbideTriggers && window.AbideTriggers.TRIGGER_TEMPLATES) || [];
+
+  function uid() {
+    return Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
+  }
 
   /* ───────────── customizable assertion ladder ───────────── */
   var LS_LADDER_KEY = "abide-custom-ladder-v1";
@@ -340,10 +355,23 @@
     return id;
   }
 
+  function findAssertionById(id) {
+    for (var i = 0; i < ASSERTIONS.length; i++) {
+      if (ASSERTIONS[i].id === id) return ASSERTIONS[i];
+    }
+    return null;
+  }
+
+  var STREAK_KEYS = {
+    realign: { date: "lastRealignDate", streak: "realignStreak" },
+    challenge: { date: "lastChallengeDate", streak: "challengeStreak" },
+    renew: { date: "lastRenewDate", streak: "renewStreak" }
+  };
+
   function bumpStreak(kind) {
-    // kind: 'realign' | 'challenge'
-    var keyDate = kind === "realign" ? "lastRealignDate" : "lastChallengeDate";
-    var keyStreak = kind === "realign" ? "realignStreak" : "challengeStreak";
+    // kind: 'realign' | 'challenge' | 'renew'
+    var keyDate = STREAK_KEYS[kind].date;
+    var keyStreak = STREAK_KEYS[kind].streak;
     var today = todayStr();
     var prev = state[keyDate];
     if (prev === today) {
@@ -412,7 +440,7 @@
   var challenge = null;
   var realign = null;
   var examine = null;
-  var activeSession = null; // 'challenge' | 'realign' | 'examine'
+  var activeSession = null; // 'challenge' | 'realign' | 'examine' | 'renew-practice'
 
   function showView(name) {
     var views = document.querySelectorAll(".view");
@@ -422,7 +450,8 @@
     var inSession =
       (name === "challenge" && challenge && !challenge.done) ||
       (name === "realign" && realign && !realign.done) ||
-      (name === "examine" && examine && !examine.done);
+      (name === "examine" && examine && !examine.done) ||
+      (name === "renew-practice" && renewPractice && !renewPractice.done);
     document.getElementById("topbar").classList.toggle("in-session", !!inSession);
     activeSession = inSession ? name : null;
   }
@@ -446,11 +475,21 @@
       "Ref ↔ text · " + ROUND_SIZE + " cards · both directions";
     document.getElementById("realign-cta-meta").textContent =
       ASSERTIONS.length + " steps · confess · tag · identity";
+    document.getElementById("renew-cta-meta").textContent =
+      state.triggers.length + (state.triggers.length === 1 ? " situation saved" : " situations saved");
+
+    var renewPracticeMeta = document.getElementById("renew-practice-cta-meta");
+    if (renewPracticeMeta) {
+      renewPracticeMeta.textContent = state.triggers.length
+        ? "Rehearse " + Math.min(RENEW_ROUND_SIZE, state.triggers.length) + " · self-report after"
+        : "Add a situation first";
+    }
 
     var streakRow = document.getElementById("streak-row");
     var streakItems = [];
     if (state.realignStreak > 0) streakItems.push('<div class="streak-item"><div class="streak-lbl">Abide</div><div class="streak-val">' + state.realignStreak + '</div></div>');
     if (state.challengeStreak > 0) streakItems.push('<div class="streak-item"><div class="streak-lbl">Match</div><div class="streak-val">' + state.challengeStreak + '</div></div>');
+    if (state.renewStreak > 0) streakItems.push('<div class="streak-item"><div class="streak-lbl">Renew</div><div class="streak-val">' + state.renewStreak + '</div></div>');
     streakRow.innerHTML = streakItems.join("");
     streakRow.style.display = streakItems.length ? "flex" : "none";
 
@@ -1477,6 +1516,424 @@
     }
   }
 
+  /* ───────────── renew: pre-decide your response, with God ─────────────
+    trigger = { id, situation, oldReaction, response, assertionId, note, createdAt }
+    renewFormState = { editingId } or { editingId: null, situation, oldReaction, response, assertionId, note }
+    renewPractice = { queue: [triggerId], index, phase: 'rehearse'|'report', results: [{triggerId, selfReport}], done }
+  */
+  var renewFormState = null;
+  var renewTemplateCategoryFilter = "all";
+  var renewPractice = null;
+  var RENEW_ROUND_SIZE = 5;
+
+  function findRenewTrigger(id) {
+    for (var i = 0; i < state.triggers.length; i++) {
+      if (state.triggers[i].id === id) return state.triggers[i];
+    }
+    return null;
+  }
+
+  function statsForRenewTrigger(id, windowOnly) {
+    var used = 0, reactedOld = 0, notComeUp = 0, total = 0;
+    state.rehearsalLog.forEach(function (entry) {
+      if (windowOnly && !inWindow(entry.ts)) return;
+      (entry.results || []).forEach(function (r) {
+        if (r.triggerId !== id) return;
+        total++;
+        if (r.selfReport === "used") used++;
+        else if (r.selfReport === "reacted-old") reactedOld++;
+        else if (r.selfReport === "not-come-up") notComeUp++;
+      });
+    });
+    return { used: used, reactedOld: reactedOld, notComeUp: notComeUp, total: total };
+  }
+
+  function renderRenewList() {
+    document.getElementById("renew-count").textContent =
+      state.triggers.length + (state.triggers.length === 1 ? " situation" : " situations");
+
+    var listEl = document.getElementById("renew-list");
+    if (!state.triggers.length) {
+      listEl.innerHTML = '<p class="empty-note">No situations yet — write your own, or browse templates for a common one to start from.</p>';
+      return;
+    }
+
+    var sorted = state.triggers.slice().sort(function (a, b) {
+      return (b.createdAt || "").localeCompare(a.createdAt || "");
+    });
+
+    var out = "";
+    sorted.forEach(function (t) {
+      var s = statsForRenewTrigger(t.id, false);
+      var pills = s.total === 0
+        ? '<span class="none-pill">not rehearsed yet</span>'
+        : '<span class="hit-pill">' + s.used + " used</span><span class=\"miss-pill\">" + s.reactedOld + " old way</span>";
+      var a = findAssertionById(t.assertionId);
+      out +=
+        '<article class="trigger-card">' +
+          '<div class="trigger-situation">When ' + escapeHtml(t.situation) + "</div>" +
+          (t.oldReaction ? '<div class="trigger-field"><div class="field-label">Used to</div><div class="trigger-field-text muted">' + escapeHtml(t.oldReaction) + "</div></div>" : "") +
+          '<div class="trigger-field"><div class="field-label">With God, I will instead</div><div class="trigger-field-text">' + escapeHtml(t.response) + "</div></div>" +
+          '<div class="trigger-anchor"><div class="field-label">Standing on</div>' +
+            (a ? '<p class="trigger-assertion">"' + escapeHtml(a.text) + '"</p>' : "") +
+          "</div>" +
+          (t.note ? '<p class="trigger-note">"' + escapeHtml(t.note) + '"</p>' : "") +
+          '<div class="verse-stats" style="margin-top:0.75rem">' + pills + "</div>" +
+          '<div class="card-actions">' +
+            '<button type="button" class="link-btn" data-edit-renew="' + t.id + '">Edit</button>' +
+            '<button type="button" class="link-btn" data-delete-renew="' + t.id + '">Delete</button>' +
+          "</div>" +
+        "</article>";
+    });
+    listEl.innerHTML = out;
+  }
+
+  function renderRenewForm() {
+    var wrap = document.getElementById("renew-form-wrap");
+    if (!renewFormState) {
+      wrap.style.display = "none";
+      wrap.innerHTML = "";
+      return;
+    }
+    wrap.style.display = "block";
+    var editing = renewFormState.editingId ? findRenewTrigger(renewFormState.editingId) : null;
+
+    var situationVal = editing ? editing.situation : (renewFormState.situation || "");
+    var oldVal = editing ? (editing.oldReaction || "") : (renewFormState.oldReaction || "");
+    var respVal = editing ? editing.response : (renewFormState.response || "");
+    var noteVal = editing ? (editing.note || "") : (renewFormState.note || "");
+    var assertionVal = editing ? editing.assertionId : (renewFormState.assertionId || "");
+
+    var ladder = ASSERTIONS.filter(function (a) { return a.special !== "identity"; });
+    var options = ladder.map(function (a) {
+      var sel = a.id === assertionVal ? " selected" : "";
+      return '<option value="' + escapeHtml(a.id) + '"' + sel + ">" + escapeHtml(truncate(a.text, 60)) + "</option>";
+    }).join("");
+
+    wrap.innerHTML =
+      '<div class="note-card"><strong>' + (editing ? "Edit situation" : "New situation") + "</strong> — pre-decide your response in a calm moment.</div>" +
+      '<p class="field-label">When… (the situation)</p>' +
+      '<input class="text-input" id="rf-situation" placeholder="e.g. someone criticizes my work" value="' + escapeHtml(situationVal) + '" />' +
+      '<p class="field-label">What I tend to do (optional)</p>' +
+      '<input class="text-input" id="rf-old" placeholder="e.g. I get defensive and shut down" value="' + escapeHtml(oldVal) + '" />' +
+      '<p class="field-label">…with God, I will instead</p>' +
+      '<textarea class="text-area" id="rf-response" placeholder="e.g. take a breath, say thank you, and ask a clarifying question">' + escapeHtml(respVal) + "</textarea>" +
+      '<p class="field-label">Standing on</p>' +
+      '<select class="text-input" id="rf-assertion">' + options + "</select>" +
+      '<p class="field-label">In my own words (optional)</p>' +
+      '<textarea class="text-area" id="rf-note" placeholder="Optional — a truer thought in your own words">' + escapeHtml(noteVal) + "</textarea>" +
+      '<button type="button" class="continue-btn" id="rf-save">' + (editing ? "Save changes" : "Add situation") + "</button>" +
+      '<button type="button" class="continue-btn secondary" id="rf-cancel" style="margin-top:0.5rem">Cancel</button>';
+  }
+
+  function openNewRenewForm() {
+    var ladder = ASSERTIONS.filter(function (a) { return a.special !== "identity"; });
+    renewFormState = {
+      editingId: null, situation: "", oldReaction: "", response: "",
+      assertionId: ladder.length ? ladder[0].id : "", note: ""
+    };
+    renderRenewForm();
+    window.scrollTo(0, 0);
+  }
+
+  function openEditRenewForm(id) {
+    renewFormState = { editingId: id };
+    renderRenewForm();
+  }
+
+  function closeRenewForm() {
+    renewFormState = null;
+    renderRenewForm();
+  }
+
+  function saveRenewForm() {
+    var situationEl = document.getElementById("rf-situation");
+    var responseEl = document.getElementById("rf-response");
+    var assertionEl = document.getElementById("rf-assertion");
+    var sit = situationEl.value.trim();
+    var resp = responseEl.value.trim();
+    var assertionId = assertionEl.value;
+    if (!sit) { situationEl.style.borderColor = "var(--rust)"; situationEl.focus(); return; }
+    if (!resp) { responseEl.style.borderColor = "var(--rust)"; responseEl.focus(); return; }
+
+    var oldReaction = document.getElementById("rf-old").value.trim();
+    var note = document.getElementById("rf-note").value.trim();
+
+    if (renewFormState.editingId) {
+      var t = findRenewTrigger(renewFormState.editingId);
+      if (t) {
+        t.situation = sit;
+        t.oldReaction = oldReaction;
+        t.response = resp;
+        t.assertionId = assertionId;
+        t.note = note;
+      }
+    } else {
+      state.triggers.push({
+        id: uid(),
+        situation: sit,
+        oldReaction: oldReaction,
+        response: resp,
+        assertionId: assertionId,
+        note: note,
+        createdAt: new Date().toISOString()
+      });
+    }
+    saveState();
+    renewFormState = null;
+    renderRenewForm();
+    renderRenewList();
+    renderHome();
+  }
+
+  function deleteRenewTrigger(id) {
+    if (!confirm("Delete this situation? Its rehearsal history will remain in patterns as (deleted).")) return;
+    state.triggers = state.triggers.filter(function (x) { return x.id !== id; });
+    saveState();
+    renderRenewList();
+    renderHome();
+  }
+
+  /* ───────────── renew: template browser ───────────── */
+  function openRenewTemplateBrowser() {
+    renewTemplateCategoryFilter = "all";
+    showView("renew-templates");
+    renderRenewTemplateBrowser();
+  }
+
+  function renderRenewTemplateBrowser() {
+    var chipsEl = document.getElementById("renew-template-category-chips");
+    var chipsHtml = '<button type="button" class="chip' + (renewTemplateCategoryFilter === "all" ? " active" : "") +
+      '" data-renew-template-cat="all">All<span class="cnt">' + TRIGGER_TEMPLATES.length + "</span></button>";
+    TRIGGER_CATEGORIES.forEach(function (c) {
+      var n = TRIGGER_TEMPLATES.filter(function (t) { return t.category === c.id; }).length;
+      chipsHtml += '<button type="button" class="chip' + (renewTemplateCategoryFilter === c.id ? " active" : "") +
+        '" data-renew-template-cat="' + c.id + '">' + escapeHtml(c.label) + '<span class="cnt">' + n + "</span></button>";
+    });
+    chipsEl.innerHTML = chipsHtml;
+
+    var list = renewTemplateCategoryFilter === "all"
+      ? TRIGGER_TEMPLATES
+      : TRIGGER_TEMPLATES.filter(function (t) { return t.category === renewTemplateCategoryFilter; });
+    document.getElementById("renew-templates-count").textContent = list.length + (list.length === 1 ? " template" : " templates");
+
+    var listEl = document.getElementById("renew-template-list");
+    listEl.innerHTML = list.map(function (t) {
+      var cat = TRIGGER_CATEGORIES.filter(function (c) { return c.id === t.category; })[0];
+      var a = findAssertionById(t.assertionId);
+      return (
+        '<button type="button" class="template-card" data-renew-template="' + escapeHtml(t.id) + '">' +
+          '<div class="template-category">' + escapeHtml(cat ? cat.label : "") + "</div>" +
+          '<div class="template-situation">When ' + escapeHtml(t.situation) + "</div>" +
+          '<div class="template-preview">' + (a ? "Standing on: " + escapeHtml(a.text) : "") + "</div>" +
+        "</button>"
+      );
+    }).join("");
+  }
+
+  function useRenewTemplate(id) {
+    var t = TRIGGER_TEMPLATES.filter(function (x) { return x.id === id; })[0];
+    if (!t) return;
+    var ladder = ASSERTIONS.filter(function (a) { return a.special !== "identity"; });
+    var assertionId = findAssertionById(t.assertionId) ? t.assertionId : (ladder.length ? ladder[0].id : "");
+    renewFormState = {
+      editingId: null,
+      situation: t.situation,
+      oldReaction: t.oldReaction || "",
+      response: "",
+      assertionId: assertionId,
+      note: ""
+    };
+    showView("renew");
+    renderRenewList();
+    renderRenewForm();
+    window.scrollTo(0, 0);
+  }
+
+  /* ───────────── renew: practice session ───────────── */
+  function weightRenewTrigger(t) {
+    var s = statsForRenewTrigger(t.id, false);
+    if (s.total === 0) return 5;
+    if (s.reactedOld > s.used) return 4;
+    if (s.reactedOld > 0) return 3;
+    return 1;
+  }
+
+  function pickRenewRound(count) {
+    var weighted = [];
+    for (var i = 0; i < state.triggers.length; i++) {
+      var w = weightRenewTrigger(state.triggers[i]);
+      for (var k = 0; k < w; k++) weighted.push(state.triggers[i]);
+    }
+    weighted = shuffle(weighted);
+    var picked = [];
+    var seen = {};
+    for (var j = 0; j < weighted.length && picked.length < count; j++) {
+      if (seen[weighted[j].id]) continue;
+      seen[weighted[j].id] = true;
+      picked.push(weighted[j]);
+    }
+    return picked;
+  }
+
+  function startRenewPractice() {
+    if (!state.triggers.length) return;
+    var picked = pickRenewRound(Math.min(RENEW_ROUND_SIZE, state.triggers.length));
+    renewPractice = {
+      queue: picked.map(function (t) { return t.id; }),
+      index: 0,
+      phase: "rehearse",
+      results: [],
+      done: false
+    };
+    showView("renew-practice");
+    renderRenewPractice();
+  }
+
+  function renderRenewPracticeTrack() {
+    var track = document.getElementById("renew-practice-track");
+    if (!renewPractice) { track.innerHTML = ""; return; }
+    var html = "";
+    for (var i = 0; i < renewPractice.queue.length; i++) {
+      var cls = "";
+      var res = renewPractice.results[i];
+      if (res) {
+        if (res.selfReport === "used") cls = "done";
+        else if (res.selfReport === "reacted-old") cls = "miss";
+      } else if (i === renewPractice.index && !renewPractice.done) {
+        cls = "now";
+      }
+      html += "<span class=\"" + cls + "\"></span>";
+    }
+    track.innerHTML = html;
+  }
+
+  function renderRenewPractice() {
+    var stage = document.getElementById("renew-practice-stage");
+    if (!renewPractice) return;
+    renderRenewPracticeTrack();
+
+    if (renewPractice.done) {
+      stage.innerHTML = renderRenewPracticeSummary();
+      bindRenewPracticeSummary();
+      return;
+    }
+
+    var t = findRenewTrigger(renewPractice.queue[renewPractice.index]);
+    if (!t) {
+      advanceRenewPractice("not-come-up");
+      return;
+    }
+
+    stage.innerHTML = renewPractice.phase === "rehearse" ? renderRenewRehearseStep(t) : renderRenewReportStep(t);
+  }
+
+  function renderRenewRehearseStep(t) {
+    var a = findAssertionById(t.assertionId);
+    return (
+      '<div class="step-tag">Rehearse · ' + (renewPractice.index + 1) + " / " + renewPractice.queue.length + "</div>" +
+      '<div class="prompt-card">' +
+        '<p class="stage-instruction" style="margin-bottom:0.5rem">When…</p>' +
+        '<p class="prompt-text">' + escapeHtml(t.situation) + "</p>" +
+        '<p class="stage-instruction" style="margin:0.9rem 0 0.4rem">…with God, I will</p>' +
+        '<p class="assertion-text" style="font-size:1.15rem">' + escapeHtml(t.response) + "</p>" +
+        (a
+          ? '<p class="stage-instruction" style="margin:0.9rem 0 0.3rem">Standing on</p>' +
+            '<p class="trigger-assertion">"' + escapeHtml(a.text) + '"</p>' +
+            linkedVerseHtml(a.id)
+          : "") +
+        (t.note ? '<p class="trigger-note" style="margin-top:0.6rem">"' + escapeHtml(t.note) + '"</p>' : "") +
+      "</div>" +
+      '<p class="stage-instruction">Picture the moment. See yourself responding this way, with Him.</p>' +
+      '<button type="button" class="continue-btn" data-rpa="rehearsed">I’ve pictured it — continue</button>'
+    );
+  }
+
+  function renderRenewReportStep(t) {
+    return (
+      '<div class="step-tag">Since last time</div>' +
+      '<div class="prompt-card"><p class="assertion-text" style="font-size:1.05rem">When ' + escapeHtml(t.situation) + "…</p></div>" +
+      '<p class="stage-instruction">Did this come up — and what happened?</p>' +
+      '<div class="gate-row">' +
+        '<button type="button" class="gate-btn primary" data-rpa="report-used">Used the new response</button>' +
+        '<button type="button" class="gate-btn" data-rpa="report-old">Reacted the old way</button>' +
+        '<button type="button" class="gate-btn soft" data-rpa="report-none">Didn’t come up</button>' +
+      "</div>"
+    );
+  }
+
+  function advanceRenewPractice(forcedReport) {
+    if (forcedReport) {
+      renewPractice.results.push({ triggerId: renewPractice.queue[renewPractice.index], selfReport: forcedReport });
+    }
+    if (renewPractice.index >= renewPractice.queue.length - 1) {
+      finishRenewPractice();
+      return;
+    }
+    renewPractice.index++;
+    renewPractice.phase = "rehearse";
+    renderRenewPractice();
+  }
+
+  function finishRenewPractice() {
+    renewPractice.done = true;
+    state.rehearsalLog.push({
+      ts: new Date().toISOString(),
+      date: todayStr(),
+      results: renewPractice.results.slice()
+    });
+    bumpStreak("renew");
+    saveState();
+    document.getElementById("topbar").classList.remove("in-session");
+    renderRenewPractice();
+    renderHome();
+  }
+
+  function renderRenewPracticeSummary() {
+    var used = 0, reactedOld = 0, notComeUp = 0;
+    renewPractice.results.forEach(function (r) {
+      if (r.selfReport === "used") used++;
+      else if (r.selfReport === "reacted-old") reactedOld++;
+      else notComeUp++;
+    });
+    var total = renewPractice.results.length;
+    return (
+      '<div class="summary">' +
+        '<div class="summary-big">' + used + "/" + total + "</div>" +
+        '<div class="summary-sub">used the new response · streak ' + (state.renewStreak || 0) + "</div>" +
+        '<div class="stat-row">' +
+          '<div class="stat-card"><div class="stat-num">' + used + '</div><div class="stat-lbl">Used it</div></div>' +
+          '<div class="stat-card"><div class="stat-num">' + reactedOld + '</div><div class="stat-lbl">Old way</div></div>' +
+          '<div class="stat-card"><div class="stat-num">' + notComeUp + '</div><div class="stat-lbl">Didn’t come up</div></div>' +
+        "</div>" +
+        '<button type="button" class="cta-btn" id="rps-again" style="margin-top:1.2rem">Rehearse again</button>' +
+        '<button type="button" class="link-btn" id="rps-list" style="display:block;margin:1rem auto 0">My situations</button>' +
+        '<button type="button" class="link-btn" id="rps-home" style="display:block;margin:0.5rem auto 0">← Home</button>' +
+      "</div>"
+    );
+  }
+
+  function bindRenewPracticeSummary() {
+    var again = document.getElementById("rps-again");
+    var list = document.getElementById("rps-list");
+    var home = document.getElementById("rps-home");
+    if (again) again.onclick = startRenewPractice;
+    if (list) list.onclick = function () { renewPractice = null; showView("renew"); renderRenewList(); };
+    if (home) home.onclick = goHome;
+  }
+
+  function onRenewPracticeAction(action) {
+    if (!renewPractice || renewPractice.done) return;
+    if (action === "rehearsed") {
+      renewPractice.phase = "report";
+      renderRenewPractice();
+      return;
+    }
+    if (action === "report-used") { advanceRenewPractice("used"); return; }
+    if (action === "report-old") { advanceRenewPractice("reacted-old"); return; }
+    if (action === "report-none") { advanceRenewPractice("not-come-up"); return; }
+  }
+
   /* ───────────── patterns ───────────── */
   function renderBarList(items, maxN, colorClass) {
     if (!items.length) return '<p class="empty-note">Nothing captured yet in the last ' + WINDOW_DAYS + " days.</p>";
@@ -1531,6 +1988,14 @@
 
     var g = globalStats30();
 
+    var renewMostRehearsed = state.triggers.map(function (t) {
+      return { text: truncate(t.situation, 40), n: statsForRenewTrigger(t.id, true).total };
+    }).filter(function (x) { return x.n > 0; }).sort(function (a, b) { return b.n - a.n; });
+
+    var renewMostOld = state.triggers.map(function (t) {
+      return { text: truncate(t.situation, 40), n: statsForRenewTrigger(t.id, true).reactedOld };
+    }).filter(function (x) { return x.n > 0; }).sort(function (a, b) { return b.n - a.n; });
+
     body.innerHTML =
       '<div class="stat-row" style="margin-bottom:1rem">' +
         '<div class="stat-card"><div class="stat-num">' + sessions30 + '</div><div class="stat-lbl">Realign · 30d</div></div>' +
@@ -1549,6 +2014,12 @@
 
       '<div class="section-label">Where the soul fractures</div>' +
       '<div class="pattern-card">' + renderBarList(fractures, null, "rust") + "</div>" +
+
+      '<div class="section-label">Most rehearsed situations</div>' +
+      '<div class="pattern-card">' + renderBarList(renewMostRehearsed) + "</div>" +
+
+      '<div class="section-label">Reacted the old way most</div>' +
+      '<div class="pattern-card">' + renderBarList(renewMostOld, null, "rust") + "</div>" +
 
       '<div class="section-label">Who God says I am</div>' +
       '<div class="pattern-card">' + idHtml + "</div>" +
@@ -1598,6 +2069,8 @@
     challenge = null;
     realign = null;
     examine = null;
+    renewFormState = null;
+    renewPractice = null;
     showView("home");
     renderHome();
   }
@@ -1612,10 +2085,14 @@
     } else if (activeSession === "examine" && examine && !examine.done) {
       if (!confirm("Leave this examine session? It will not be saved.")) return;
       examine = null;
+    } else if (activeSession === "renew-practice" && renewPractice && !renewPractice.done) {
+      if (!confirm("Leave this rehearsal session? Progress so far will not be saved.")) return;
+      renewPractice = null;
     } else {
       challenge = null;
       realign = null;
       examine = null;
+      renewPractice = null;
     }
     document.getElementById("topbar").classList.remove("in-session");
     goHome();
@@ -1760,6 +2237,50 @@
       if (!t.classList || !t.classList.contains("setup-item-text")) return;
       editAssertionText(t.getAttribute("data-id"), t.value);
     });
+
+    document.getElementById("btn-renew").addEventListener("click", function () {
+      showView("renew");
+      renderRenewList();
+    });
+    document.getElementById("renew-home").addEventListener("click", goHome);
+    document.getElementById("btn-renew-practice").addEventListener("click", startRenewPractice);
+    document.getElementById("btn-new-renew-trigger").addEventListener("click", openNewRenewForm);
+    document.getElementById("btn-browse-renew-templates").addEventListener("click", openRenewTemplateBrowser);
+    document.getElementById("renew-templates-home").addEventListener("click", function () {
+      showView("renew");
+      renderRenewList();
+    });
+
+    document.getElementById("renew-template-category-chips").addEventListener("click", function (e) {
+      var chip = e.target.closest("[data-renew-template-cat]");
+      if (!chip) return;
+      renewTemplateCategoryFilter = chip.getAttribute("data-renew-template-cat");
+      renderRenewTemplateBrowser();
+    });
+
+    document.getElementById("renew-template-list").addEventListener("click", function (e) {
+      var card = e.target.closest("[data-renew-template]");
+      if (!card) return;
+      useRenewTemplate(card.getAttribute("data-renew-template"));
+    });
+
+    document.getElementById("renew-form-wrap").addEventListener("click", function (e) {
+      if (e.target.id === "rf-save") { saveRenewForm(); return; }
+      if (e.target.id === "rf-cancel") { closeRenewForm(); return; }
+    });
+
+    document.getElementById("renew-list").addEventListener("click", function (e) {
+      var editBtn = e.target.closest("[data-edit-renew]");
+      if (editBtn) { openEditRenewForm(editBtn.getAttribute("data-edit-renew")); window.scrollTo(0, 0); return; }
+      var delBtn = e.target.closest("[data-delete-renew]");
+      if (delBtn) { deleteRenewTrigger(delBtn.getAttribute("data-delete-renew")); return; }
+    });
+
+    document.getElementById("renew-practice-stage").addEventListener("click", function (e) {
+      var t = e.target.closest("[data-rpa]");
+      if (!t) return;
+      onRenewPracticeAction(t.getAttribute("data-rpa"));
+    });
   }
 
   /* ───────────── init ───────────── */
@@ -1769,4 +2290,5 @@
 
   if (!V.length) console.error("[Abide] Verses not loaded.");
   if (!ASSERTIONS.length) console.error("[Abide] Assertions not loaded.");
+  if (!TRIGGER_TEMPLATES.length) console.error("[Abide] Trigger templates not loaded.");
 })();
