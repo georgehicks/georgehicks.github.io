@@ -11,8 +11,6 @@
   var PRACTICE_ROUND_SIZE = 5;
 
   /* ───────────── state ───────────── */
-  var EXAMPLES_VERSION = 1;
-
   function defaultState() {
     return {
       theme: null,
@@ -21,8 +19,7 @@
       habits: [],
       habitLog: [],
       rehearsalStreak: 0,
-      lastRehearsalDate: null,
-      examplesVersion: 0
+      lastRehearsalDate: null
     };
   }
 
@@ -33,8 +30,7 @@
       triggers: Array.isArray(parsed.triggers) ? parsed.triggers : [],
       rehearsalLog: Array.isArray(parsed.rehearsalLog) ? parsed.rehearsalLog : [],
       habits: Array.isArray(parsed.habits) ? parsed.habits : [],
-      habitLog: Array.isArray(parsed.habitLog) ? parsed.habitLog : [],
-      examplesVersion: typeof parsed.examplesVersion === "number" ? parsed.examplesVersion : 0
+      habitLog: Array.isArray(parsed.habitLog) ? parsed.habitLog : []
     });
   }
 
@@ -71,59 +67,31 @@
   var state = loadState();
 
   /* ───────────── content ───────────── */
-  var TRIGGER_PRESETS = (window.RewireContent && window.RewireContent.TRIGGER_PRESETS) || [];
-  var EXAMPLE_TRIGGERS = (window.RewireContent && window.RewireContent.EXAMPLE_TRIGGERS) || [];
+  var TEMPLATE_CATEGORIES = (window.RewireContent && window.RewireContent.TEMPLATE_CATEGORIES) || [];
+  var TRIGGER_TEMPLATES = (window.RewireContent && window.RewireContent.TRIGGER_TEMPLATES) || [];
   var EXAMPLE_HABITS = (window.RewireContent && window.RewireContent.EXAMPLE_HABITS) || [];
 
-  /* ───────────── starter examples ───────────── */
-  function exampleTriggerIds() {
-    return EXAMPLE_TRIGGERS.map(function (t) { return t.id; });
-  }
-
+  /* ───────────── starter habit ideas ─────────────
+     Triggers use the full template registry (browsed, not auto-seeded — see
+     openTemplateBrowser). Habits keep this lighter "starter ideas" pattern
+     since there are only a handful and they're opt-in via a link, never
+     auto-inserted into the user's real list. */
   function exampleHabitIds() {
     return EXAMPLE_HABITS.map(function (h) { return h.id; });
-  }
-
-  function isExampleTrigger(t) {
-    return !!(t && (t.example || exampleTriggerIds().indexOf(t.id) >= 0));
   }
 
   function isExampleHabit(h) {
     return !!(h && (h.example || exampleHabitIds().indexOf(h.id) >= 0));
   }
 
-  function countExampleTriggers() {
-    return state.triggers.filter(isExampleTrigger).length;
-  }
-
   function countExampleHabits() {
     return state.habits.filter(isExampleHabit).length;
-  }
-
-  function missingExampleTriggers() {
-    var have = {};
-    state.triggers.forEach(function (t) { have[t.id] = true; });
-    return EXAMPLE_TRIGGERS.filter(function (t) { return !have[t.id]; });
   }
 
   function missingExampleHabits() {
     var have = {};
     state.habits.forEach(function (h) { have[h.id] = true; });
     return EXAMPLE_HABITS.filter(function (h) { return !have[h.id]; });
-  }
-
-  function buildExampleTrigger(ex) {
-    return {
-      id: ex.id,
-      label: ex.label || ex.situation,
-      situation: ex.situation,
-      oldReaction: ex.oldReaction || "",
-      response: ex.response,
-      reframe: ex.reframe || "",
-      tags: ex.tags ? ex.tags.slice() : [],
-      example: true,
-      createdAt: "2020-01-01T00:00:00.000Z"
-    };
   }
 
   function buildExampleHabit(ex) {
@@ -136,31 +104,12 @@
     };
   }
 
-  /** Auto-seed once when the library is still empty (first open). */
-  function ensureExamplesSeeded() {
-    if (state.examplesVersion >= EXAMPLES_VERSION) return;
-    var empty = !state.triggers.length && !state.habits.length;
-    if (empty && (EXAMPLE_TRIGGERS.length || EXAMPLE_HABITS.length)) {
-      installMissingExamples(true, true);
-    }
-    state.examplesVersion = EXAMPLES_VERSION;
-    saveState();
-  }
-
-  function installMissingExamples(doTriggers, doHabits) {
+  function installMissingExampleHabits() {
     var added = 0;
-    if (doTriggers) {
-      missingExampleTriggers().forEach(function (ex) {
-        state.triggers.push(buildExampleTrigger(ex));
-        added++;
-      });
-    }
-    if (doHabits) {
-      missingExampleHabits().forEach(function (ex) {
-        state.habits.push(buildExampleHabit(ex));
-        added++;
-      });
-    }
+    missingExampleHabits().forEach(function (ex) {
+      state.habits.push(buildExampleHabit(ex));
+      added++;
+    });
     return added;
   }
 
@@ -366,7 +315,7 @@
   }
 
   /* ───────────── view state ───────────── */
-  var triggerFormState = null; // { editingId, presetId, situation }
+  var triggerFormState = null; // { editingId } or { editingId: null, situation, oldReaction, response, reframe }
   var habitFormOpen = false;
   var practice = null;
   var activeSession = null; // 'practice'
@@ -423,33 +372,17 @@
   }
 
   /* ───────────── triggers view ───────────── */
-  function presetTagsFor(presetId) {
-    return presetId ? [presetId] : [];
-  }
-
-  function renderExamplesBar(kind) {
-    var missingT = missingExampleTriggers().length;
+  function renderHabitExamplesBar() {
     var missingH = missingExampleHabits().length;
-    var hasExT = countExampleTriggers() > 0;
     var hasExH = countExampleHabits() > 0;
     var parts = [];
 
-    if (kind === "triggers") {
-      if (hasExT) {
-        parts.push('<span>Starter examples included — edit to make them yours, or delete any you don’t want.</span>');
-        parts.push('<button type="button" class="link-btn" data-examples-action="remove-triggers">Remove all examples</button>');
-      }
-      if (missingT > 0) {
-        parts.push('<button type="button" class="link-btn" data-examples-action="add-triggers">Add starter examples</button>');
-      }
-    } else if (kind === "habits") {
-      if (hasExH) {
-        parts.push('<span>Starter habits included — delete any you don’t want.</span>');
-        parts.push('<button type="button" class="link-btn" data-examples-action="remove-habits">Remove example habits</button>');
-      }
-      if (missingH > 0) {
-        parts.push('<button type="button" class="link-btn" data-examples-action="add-habits">Add starter habits</button>');
-      }
+    if (hasExH) {
+      parts.push('<span>Starter habits included — delete any you don’t want.</span>');
+      parts.push('<button type="button" class="link-btn" data-examples-action="remove-habits">Remove example habits</button>');
+    }
+    if (missingH > 0) {
+      parts.push('<button type="button" class="link-btn" data-examples-action="add-habits">Add starter habits</button>');
     }
 
     if (!parts.length) return "";
@@ -461,36 +394,29 @@
       state.triggers.length + (state.triggers.length === 1 ? " trigger" : " triggers");
 
     var listEl = document.getElementById("trigger-list");
-    var bar = renderExamplesBar("triggers");
 
     if (!state.triggers.length) {
-      listEl.innerHTML = bar +
-        '<p class="empty-note">No triggers yet — add one above, or load starter examples to see how a full response looks.</p>';
+      listEl.innerHTML = '<p class="empty-note">No triggers yet — write your own, or browse templates for a common situation to start from.</p>';
       return;
     }
 
     var sorted = state.triggers.slice().sort(function (a, b) {
-      // Examples first (stable), then newest user cards
-      var ae = isExampleTrigger(a) ? 0 : 1;
-      var be = isExampleTrigger(b) ? 0 : 1;
-      if (ae !== be) return ae - be;
       return (b.createdAt || "").localeCompare(a.createdAt || "");
     });
 
-    var out = bar;
+    var out = "";
     sorted.forEach(function (t) {
       var s = statsForTrigger(t.id, false);
       var pills = s.total === 0
         ? '<span class="none-pill">not rehearsed yet</span>'
         : '<span class="hit-pill">' + s.used + " used</span><span class=\"miss-pill\">" + s.reactedOld + " old way</span>";
-      if (isExampleTrigger(t)) pills = '<span class="example-pill">Example</span>' + pills;
       out +=
         '<article class="trigger-card">' +
-          '<div class="trigger-card-head"><div class="trigger-situation">When ' + escapeHtml(t.situation) + '</div></div>' +
-          (t.oldReaction ? '<div class="trigger-old"><span class="field-tag">Used to</span> ' + escapeHtml(t.oldReaction) + "</div>" : "") +
-          '<div class="trigger-response"><span class="field-tag">I will</span> ' + escapeHtml(t.response) + "</div>" +
+          '<div class="trigger-situation">When ' + escapeHtml(t.situation) + "</div>" +
+          (t.oldReaction ? '<div class="trigger-field"><div class="field-label">Used to</div><div class="trigger-field-text muted">' + escapeHtml(t.oldReaction) + "</div></div>" : "") +
+          '<div class="trigger-field"><div class="field-label">I will instead</div><div class="trigger-field-text">' + escapeHtml(t.response) + "</div></div>" +
           (t.reframe ? '<p class="trigger-reframe">"' + escapeHtml(t.reframe) + '"</p>' : "") +
-          '<div class="verse-stats">' + pills + "</div>" +
+          '<div class="verse-stats" style="margin-top:0.75rem">' + pills + "</div>" +
           '<div class="card-actions">' +
             '<button type="button" class="link-btn" data-edit="' + t.id + '">Edit</button>' +
             '<button type="button" class="link-btn" data-delete="' + t.id + '">Delete</button>' +
@@ -510,19 +436,13 @@
     wrap.style.display = "block";
     var editing = triggerFormState.editingId ? findTrigger(triggerFormState.editingId) : null;
 
-    var presetChips = TRIGGER_PRESETS.map(function (p) {
-      var active = triggerFormState.presetId === p.id ? " active" : "";
-      return '<button type="button" class="chip' + active + '" data-preset="' + p.id + '">' + escapeHtml(p.label) + "</button>";
-    }).join("");
-
     var situationVal = editing ? editing.situation : (triggerFormState.situation || "");
-    var oldVal = editing ? (editing.oldReaction || "") : "";
-    var respVal = editing ? editing.response : "";
-    var reframeVal = editing ? (editing.reframe || "") : "";
+    var oldVal = editing ? (editing.oldReaction || "") : (triggerFormState.oldReaction || "");
+    var respVal = editing ? editing.response : (triggerFormState.response || "");
+    var reframeVal = editing ? (editing.reframe || "") : (triggerFormState.reframe || "");
 
     wrap.innerHTML =
       '<div class="note-card"><strong>' + (editing ? "Edit trigger" : "New trigger") + "</strong> — pre-decide your response in a calm moment.</div>" +
-      (editing ? "" : '<p class="field-label">Start from a common one (optional)</p><div class="chip-row" id="trigger-preset-chips">' + presetChips + "</div>") +
       '<p class="field-label">When… (the trigger)</p>' +
       '<input class="text-input" id="tf-situation" placeholder="e.g. someone criticizes my work" value="' + escapeHtml(situationVal) + '" />' +
       '<p class="field-label">What I tend to do (optional)</p>' +
@@ -536,12 +456,13 @@
   }
 
   function openNewTriggerForm() {
-    triggerFormState = { editingId: null, presetId: null, situation: "" };
+    triggerFormState = { editingId: null, situation: "", oldReaction: "", response: "", reframe: "" };
     renderTriggerForm();
+    window.scrollTo(0, 0);
   }
 
   function openEditTriggerForm(id) {
-    triggerFormState = { editingId: id, presetId: null, situation: "" };
+    triggerFormState = { editingId: id };
     renderTriggerForm();
   }
 
@@ -569,8 +490,6 @@
         t.response = resp;
         t.reframe = reframe;
         t.label = sit;
-        // Editing an example makes it yours
-        if (t.example) t.example = false;
       }
     } else {
       state.triggers.push({
@@ -580,8 +499,7 @@
         oldReaction: oldReaction,
         response: resp,
         reframe: reframe,
-        tags: presetTagsFor(triggerFormState.presetId),
-        example: false,
+        tags: [],
         createdAt: new Date().toISOString()
       });
     }
@@ -593,40 +511,72 @@
   }
 
   function deleteTrigger(id) {
-    var t = findTrigger(id);
-    var msg = isExampleTrigger(t)
-      ? "Remove this starter example?"
-      : "Delete this trigger? Its rehearsal history will remain in your patterns as (deleted trigger).";
-    if (!confirm(msg)) return;
+    if (!confirm("Delete this trigger? Its rehearsal history will remain in your patterns as (deleted trigger).")) return;
     state.triggers = state.triggers.filter(function (x) { return x.id !== id; });
     saveState();
     renderTriggers();
     renderHome();
   }
 
+  /* ───────────── template browser ───────────── */
+  var templateCategoryFilter = "all";
+
+  function openTemplateBrowser() {
+    templateCategoryFilter = "all";
+    showView("templates");
+    renderTemplateBrowser();
+  }
+
+  function renderTemplateBrowser() {
+    var chipsEl = document.getElementById("template-category-chips");
+    var chipsHtml = '<button type="button" class="chip' + (templateCategoryFilter === "all" ? " active" : "") +
+      '" data-template-cat="all">All<span class="cnt">' + TRIGGER_TEMPLATES.length + "</span></button>";
+    TEMPLATE_CATEGORIES.forEach(function (c) {
+      var n = TRIGGER_TEMPLATES.filter(function (t) { return t.category === c.id; }).length;
+      chipsHtml += '<button type="button" class="chip' + (templateCategoryFilter === c.id ? " active" : "") +
+        '" data-template-cat="' + c.id + '">' + escapeHtml(c.label) + '<span class="cnt">' + n + "</span></button>";
+    });
+    chipsEl.innerHTML = chipsHtml;
+
+    var list = templateCategoryFilter === "all"
+      ? TRIGGER_TEMPLATES
+      : TRIGGER_TEMPLATES.filter(function (t) { return t.category === templateCategoryFilter; });
+    document.getElementById("templates-count").textContent = list.length + (list.length === 1 ? " template" : " templates");
+
+    var listEl = document.getElementById("template-list");
+    listEl.innerHTML = list.map(function (t) {
+      var cat = TEMPLATE_CATEGORIES.filter(function (c) { return c.id === t.category; })[0];
+      return (
+        '<button type="button" class="template-card" data-template="' + escapeHtml(t.id) + '">' +
+          '<div class="template-category">' + escapeHtml(cat ? cat.label : "") + "</div>" +
+          '<div class="template-situation">When ' + escapeHtml(t.situation) + "</div>" +
+          '<div class="template-preview">' + escapeHtml(truncate(t.response, 90)) + "</div>" +
+        "</button>"
+      );
+    }).join("");
+  }
+
+  function useTemplate(id) {
+    var t = TRIGGER_TEMPLATES.filter(function (x) { return x.id === id; })[0];
+    if (!t) return;
+    triggerFormState = {
+      editingId: null,
+      situation: t.situation,
+      oldReaction: t.oldReaction || "",
+      response: t.response,
+      reframe: t.reframe || ""
+    };
+    showView("triggers");
+    renderTriggers();
+    renderTriggerForm();
+    window.scrollTo(0, 0);
+  }
+
   function onExamplesAction(action) {
-    if (action === "add-triggers") {
-      installMissingExamples(true, false);
-      saveState();
-      renderTriggers();
-      renderHome();
-      return;
-    }
     if (action === "add-habits") {
-      installMissingExamples(false, true);
+      installMissingExampleHabits();
       saveState();
       renderHabits();
-      renderHome();
-      return;
-    }
-    if (action === "remove-triggers") {
-      if (!confirm("Remove all starter example triggers? Your own triggers stay.")) return;
-      var exT = exampleTriggerIds();
-      state.triggers = state.triggers.filter(function (t) {
-        return !t.example && exT.indexOf(t.id) < 0;
-      });
-      saveState();
-      renderTriggers();
       renderHome();
       return;
     }
@@ -837,7 +787,7 @@
       state.habits.length + (state.habits.length === 1 ? " habit" : " habits");
 
     var listEl = document.getElementById("habit-list");
-    var bar = renderExamplesBar("habits");
+    var bar = renderHabitExamplesBar();
 
     if (!state.habits.length) {
       listEl.innerHTML = bar +
@@ -1033,26 +983,31 @@
 
     document.getElementById("btn-new-trigger").addEventListener("click", openNewTriggerForm);
     document.getElementById("btn-new-habit").addEventListener("click", openNewHabitForm);
+    document.getElementById("btn-browse-templates").addEventListener("click", openTemplateBrowser);
+    document.getElementById("templates-home").addEventListener("click", function () {
+      showView("triggers");
+      renderTriggers();
+    });
+
+    document.getElementById("template-category-chips").addEventListener("click", function (e) {
+      var chip = e.target.closest("[data-template-cat]");
+      if (!chip) return;
+      templateCategoryFilter = chip.getAttribute("data-template-cat");
+      renderTemplateBrowser();
+    });
+
+    document.getElementById("template-list").addEventListener("click", function (e) {
+      var card = e.target.closest("[data-template]");
+      if (!card) return;
+      useTemplate(card.getAttribute("data-template"));
+    });
 
     document.getElementById("trigger-form-wrap").addEventListener("click", function (e) {
-      var preset = e.target.closest("[data-preset]");
-      if (preset) {
-        var id = preset.getAttribute("data-preset");
-        var p = TRIGGER_PRESETS.filter(function (x) { return x.id === id; })[0];
-        if (p) {
-          triggerFormState.presetId = id;
-          triggerFormState.situation = p.situation;
-          renderTriggerForm();
-        }
-        return;
-      }
       if (e.target.id === "tf-save") { saveTriggerForm(); return; }
       if (e.target.id === "tf-cancel") { closeTriggerForm(); return; }
     });
 
     document.getElementById("trigger-list").addEventListener("click", function (e) {
-      var exAct = e.target.closest("[data-examples-action]");
-      if (exAct) { onExamplesAction(exAct.getAttribute("data-examples-action")); return; }
       var editBtn = e.target.closest("[data-edit]");
       if (editBtn) { openEditTriggerForm(editBtn.getAttribute("data-edit")); window.scrollTo(0, 0); return; }
       var delBtn = e.target.closest("[data-delete]");
@@ -1086,10 +1041,9 @@
   }
 
   /* ───────────── init ───────────── */
-  ensureExamplesSeeded();
   applyTheme();
   bind();
   renderHome();
 
-  if (!TRIGGER_PRESETS.length) console.error("[Rewire] Presets not loaded.");
+  if (!TRIGGER_TEMPLATES.length) console.error("[Rewire] Templates not loaded.");
 })();

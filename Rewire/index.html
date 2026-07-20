@@ -124,23 +124,37 @@
     border-radius: 999px; padding: 0.35rem 0.7rem; font-size: 0.78rem;
   }
   .chip.active { background: var(--clay); color: #201205; border-color: var(--clay); font-weight: 600; }
+  .chip .cnt { font-family: var(--font-mono); font-size: 0.7rem; opacity: 0.85; margin-left: 0.2rem; }
 
   .trigger-card, .pattern-card {
     background: var(--surface); border: 1px solid var(--border); border-radius: 14px;
     padding: 0.95rem 1rem; margin-bottom: 0.65rem;
   }
-  .trigger-card-head { margin-bottom: 0.4rem; }
-  .trigger-situation { font-family: var(--font-display); font-size: 1.02rem; color: var(--clay-strong); line-height: 1.4; }
-  .trigger-old { font-size: 0.85rem; color: var(--ink-muted); margin-bottom: 0.4rem; }
-  .trigger-response { font-size: 0.92rem; color: var(--ink); margin-bottom: 0.4rem; line-height: 1.45; }
+  .trigger-situation { font-family: var(--font-display); font-size: 1.05rem; color: var(--clay-strong); line-height: 1.4; margin-bottom: 0.75rem; }
+  .trigger-field { margin-bottom: 0.6rem; }
+  .trigger-field:last-of-type { margin-bottom: 0; }
+  .trigger-field .field-label { margin: 0 0 0.2rem; }
+  .trigger-field-text { font-size: 0.92rem; line-height: 1.45; color: var(--ink); }
+  .trigger-field-text.muted { color: var(--ink-muted); }
   .trigger-reframe {
-    font-family: var(--font-display); font-style: italic; font-size: 0.86rem; line-height: 1.45;
-    color: var(--ink-muted); margin-bottom: 0.55rem;
+    font-family: var(--font-display); font-style: italic; font-size: 0.88rem; line-height: 1.5;
+    color: var(--ink-muted); margin: 0.75rem 0 0; padding-top: 0.65rem; border-top: 1px solid var(--border);
   }
   .field-tag {
     font-family: var(--font-mono); font-size: 0.65rem; letter-spacing: 0.06em; text-transform: uppercase;
     color: var(--ink-faint);
   }
+  .template-card {
+    display: block; width: 100%; text-align: left; cursor: pointer;
+    background: var(--surface); border: 1px solid var(--border); border-radius: 12px;
+    padding: 0.8rem 0.9rem; margin-bottom: 0.55rem;
+  }
+  .template-category {
+    font-family: var(--font-mono); font-size: 0.62rem; letter-spacing: 0.06em; text-transform: uppercase;
+    color: var(--ink-faint); margin-bottom: 0.3rem;
+  }
+  .template-situation { font-size: 0.94rem; font-weight: 600; color: var(--ink); line-height: 1.4; margin-bottom: 0.25rem; }
+  .template-preview { font-size: 0.82rem; color: var(--ink-muted); line-height: 1.4; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .verse-stats { display: flex; align-items: center; gap: 0.55rem; flex-wrap: wrap; margin-bottom: 0.5rem; }
   .hit-pill, .miss-pill, .none-pill {
     font-family: var(--font-mono); font-size: 0.7rem; font-variant-numeric: tabular-nums;
@@ -339,15 +353,34 @@
         <span class="browse-meta" id="triggers-count"></span>
       </div>
       <h1 class="greet" style="font-size:1.4rem;margin-bottom:0.85rem">My triggers</h1>
-      <button class="cta" id="btn-new-trigger" type="button" style="margin-bottom:1rem">
+      <button class="cta" id="btn-new-trigger" type="button" style="margin-bottom:0.6rem">
         <div>
           <div class="cta-title">+ New trigger</div>
-          <div class="cta-meta">Pre-decide your response, calmly</div>
+          <div class="cta-meta">Write your own from scratch</div>
+        </div>
+        <div class="cta-arrow">→</div>
+      </button>
+      <button class="cta secondary" id="btn-browse-templates" type="button" style="margin-bottom:1rem">
+        <div>
+          <div class="cta-title">Browse templates</div>
+          <div class="cta-meta" id="templates-cta-meta">Start from a common situation</div>
         </div>
         <div class="cta-arrow">→</div>
       </button>
       <div id="trigger-form-wrap" style="display:none"></div>
       <div id="trigger-list"></div>
+    </div>
+
+    <!-- TEMPLATES -->
+    <div class="view" data-view="templates">
+      <div class="browse-toolbar">
+        <button class="link-btn" id="templates-home" type="button">← Triggers</button>
+        <span class="browse-meta" id="templates-count"></span>
+      </div>
+      <h1 class="greet" style="font-size:1.4rem;margin-bottom:0.5rem">Templates</h1>
+      <p class="greet-sub" style="margin-bottom:1rem">Pick one that's close, then make it yours.</p>
+      <div class="chip-row" id="template-category-chips"></div>
+      <div id="template-list"></div>
     </div>
 
     <!-- PRACTICE -->

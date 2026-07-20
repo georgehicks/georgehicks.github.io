@@ -2,15 +2,15 @@
  * Rewire content registry — load after presets.js
  */
 (function () {
-  if (!window.RewirePresets || !window.RewirePresets.TRIGGER_PRESETS) {
+  if (!window.RewirePresets || !window.RewirePresets.TRIGGER_TEMPLATES) {
     console.error("[Rewire] No presets loaded. Include content/presets.js before content/index.js.");
   }
 
   var p = window.RewirePresets || {};
   window.RewireContent = {
     presets: p,
-    TRIGGER_PRESETS: p.TRIGGER_PRESETS || [],
-    EXAMPLE_TRIGGERS: p.EXAMPLE_TRIGGERS || [],
+    TEMPLATE_CATEGORIES: p.TEMPLATE_CATEGORIES || [],
+    TRIGGER_TEMPLATES: p.TRIGGER_TEMPLATES || [],
     EXAMPLE_HABITS: p.EXAMPLE_HABITS || []
   };
 })();
