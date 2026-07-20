@@ -1584,8 +1584,10 @@
         '<article class="trigger-card' + (expanded ? " expanded" : "") + '">' +
           '<button type="button" class="trigger-card-head" data-toggle-renew="' + t.id + '">' +
             '<div class="trigger-card-head-text">' +
-              '<div class="trigger-situation" style="margin-bottom:0">When ' + escapeHtml(t.situation) + "</div>" +
-              (expanded ? "" : '<div class="trigger-preview">' + escapeHtml(t.response) + "</div>") +
+              (expanded ?
+                '<div class="trigger-situation" style="margin-bottom:0">When ' + escapeHtml(t.situation) + "</div>" :
+                '<div class="trigger-summary-when">When ' + escapeHtml(t.situation) + "</div>" +
+                '<div class="trigger-summary-resp">' + escapeHtml(t.response) + "</div>") +
             "</div>" +
             '<span class="trigger-card-chevron">›</span>' +
           "</button>" +

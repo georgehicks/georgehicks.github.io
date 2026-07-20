@@ -130,6 +130,25 @@
     background: var(--surface); border: 1px solid var(--border); border-radius: 14px;
     padding: 0.95rem 1rem; margin-bottom: 0.65rem;
   }
+  .trigger-card-head {
+    display: flex; align-items: flex-start; justify-content: space-between; gap: 0.6rem;
+    width: 100%; background: none; border: none; padding: 0; text-align: left; cursor: pointer;
+  }
+  .trigger-card-head-text { flex: 1; min-width: 0; }
+  .trigger-card-chevron {
+    flex-shrink: 0; color: var(--ink-faint); font-size: 0.85rem; margin-top: 0.2rem;
+    transition: transform 0.15s ease;
+  }
+  .trigger-card.expanded .trigger-card-chevron { transform: rotate(90deg); }
+  .trigger-summary-when {
+    font-size: 0.86rem; font-weight: 600; color: var(--clay-strong); line-height: 1.4;
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
+  .trigger-summary-resp {
+    font-size: 0.86rem; color: var(--ink-muted); line-height: 1.4; margin-top: 0.15rem;
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
+  .trigger-card-body { margin-top: 0.75rem; }
   .trigger-situation { font-family: var(--font-display); font-size: 1.05rem; color: var(--clay-strong); line-height: 1.4; margin-bottom: 0.75rem; }
   .trigger-field { margin-bottom: 0.6rem; }
   .trigger-field:last-of-type { margin-bottom: 0; }

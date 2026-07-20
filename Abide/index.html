@@ -333,8 +333,12 @@
     transition: transform 0.15s ease;
   }
   .trigger-card.expanded .trigger-card-chevron { transform: rotate(90deg); }
-  .trigger-preview {
-    font-size: 0.86rem; color: var(--ink-muted); line-height: 1.4; margin-top: 0.3rem;
+  .trigger-summary-when {
+    font-size: 0.86rem; font-weight: 600; color: var(--brass-strong); line-height: 1.4;
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
+  .trigger-summary-resp {
+    font-size: 0.86rem; color: var(--ink-muted); line-height: 1.4; margin-top: 0.15rem;
     overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
   }
   .trigger-card-body { margin-top: 0.75rem; }

@@ -316,6 +316,7 @@
 
   /* ───────────── view state ───────────── */
   var triggerFormState = null; // { editingId } or { editingId: null, situation, oldReaction, response, reframe }
+  var triggerExpandedIds = {};
   var habitFormOpen = false;
   var practice = null;
   var activeSession = null; // 'practice'
@@ -410,17 +411,30 @@
       var pills = s.total === 0
         ? '<span class="none-pill">not rehearsed yet</span>'
         : '<span class="hit-pill">' + s.used + " used</span><span class=\"miss-pill\">" + s.reactedOld + " old way</span>";
+      var expanded = !!triggerExpandedIds[t.id];
       out +=
-        '<article class="trigger-card">' +
-          '<div class="trigger-situation">When ' + escapeHtml(t.situation) + "</div>" +
-          (t.oldReaction ? '<div class="trigger-field"><div class="field-label">Used to</div><div class="trigger-field-text muted">' + escapeHtml(t.oldReaction) + "</div></div>" : "") +
-          '<div class="trigger-field"><div class="field-label">I will instead</div><div class="trigger-field-text">' + escapeHtml(t.response) + "</div></div>" +
-          (t.reframe ? '<p class="trigger-reframe">"' + escapeHtml(t.reframe) + '"</p>' : "") +
-          '<div class="verse-stats" style="margin-top:0.75rem">' + pills + "</div>" +
-          '<div class="card-actions">' +
-            '<button type="button" class="link-btn" data-edit="' + t.id + '">Edit</button>' +
-            '<button type="button" class="link-btn" data-delete="' + t.id + '">Delete</button>' +
-          "</div>" +
+        '<article class="trigger-card' + (expanded ? " expanded" : "") + '">' +
+          '<button type="button" class="trigger-card-head" data-toggle-trigger="' + t.id + '">' +
+            '<div class="trigger-card-head-text">' +
+              (expanded ?
+                '<div class="trigger-situation" style="margin-bottom:0">When ' + escapeHtml(t.situation) + "</div>" :
+                '<div class="trigger-summary-when">When ' + escapeHtml(t.situation) + "</div>" +
+                '<div class="trigger-summary-resp">' + escapeHtml(t.response) + "</div>") +
+            "</div>" +
+            '<span class="trigger-card-chevron">›</span>' +
+          "</button>" +
+          (expanded ?
+            '<div class="trigger-card-body">' +
+              (t.oldReaction ? '<div class="trigger-field"><div class="field-label">Used to</div><div class="trigger-field-text muted">' + escapeHtml(t.oldReaction) + "</div></div>" : "") +
+              '<div class="trigger-field"><div class="field-label">I will instead</div><div class="trigger-field-text">' + escapeHtml(t.response) + "</div></div>" +
+              (t.reframe ? '<p class="trigger-reframe">"' + escapeHtml(t.reframe) + '"</p>' : "") +
+              '<div class="verse-stats" style="margin-top:0.75rem">' + pills + "</div>" +
+              '<div class="card-actions">' +
+                '<button type="button" class="link-btn" data-edit="' + t.id + '">Edit</button>' +
+                '<button type="button" class="link-btn" data-delete="' + t.id + '">Delete</button>' +
+              "</div>" +
+            "</div>"
+          : "") +
         "</article>";
     });
     listEl.innerHTML = out;
@@ -1012,6 +1026,13 @@
       if (editBtn) { openEditTriggerForm(editBtn.getAttribute("data-edit")); window.scrollTo(0, 0); return; }
       var delBtn = e.target.closest("[data-delete]");
       if (delBtn) { deleteTrigger(delBtn.getAttribute("data-delete")); return; }
+      var toggleBtn = e.target.closest("[data-toggle-trigger]");
+      if (toggleBtn) {
+        var id = toggleBtn.getAttribute("data-toggle-trigger");
+        triggerExpandedIds[id] = !triggerExpandedIds[id];
+        renderTriggers();
+        return;
+      }
     });
 
     document.getElementById("habit-form-wrap").addEventListener("click", function (e) {
