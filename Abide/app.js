@@ -1523,6 +1523,8 @@
   */
   var renewFormState = null;
   var renewTemplateCategoryFilter = "all";
+  var renewTemplateFractureFilter = "all";
+  var renewTemplateGroupBy = "category"; // 'category' | 'fracture'
   var renewPractice = null;
   var renewExpandedIds = {};
   var RENEW_ROUND_SIZE = 5;
@@ -1721,33 +1723,49 @@
   /* ───────────── renew: template browser ───────────── */
   function openRenewTemplateBrowser() {
     renewTemplateCategoryFilter = "all";
+    renewTemplateFractureFilter = "all";
+    renewTemplateGroupBy = "category";
     showView("renew-templates");
     renderRenewTemplateBrowser();
   }
 
   function renderRenewTemplateBrowser() {
-    var chipsEl = document.getElementById("renew-template-category-chips");
-    var chipsHtml = '<button type="button" class="chip' + (renewTemplateCategoryFilter === "all" ? " active" : "") +
-      '" data-renew-template-cat="all">All<span class="cnt">' + TRIGGER_TEMPLATES.length + "</span></button>";
-    TRIGGER_CATEGORIES.forEach(function (c) {
-      var n = TRIGGER_TEMPLATES.filter(function (t) { return t.category === c.id; }).length;
-      chipsHtml += '<button type="button" class="chip' + (renewTemplateCategoryFilter === c.id ? " active" : "") +
-        '" data-renew-template-cat="' + c.id + '">' + escapeHtml(c.label) + '<span class="cnt">' + n + "</span></button>";
+    var byFracture = renewTemplateGroupBy === "fracture";
+
+    var groupChipsEl = document.getElementById("renew-template-group-chips");
+    groupChipsEl.innerHTML =
+      '<button type="button" class="chip' + (!byFracture ? " active" : "") + '" data-renew-template-group="category">By situation</button>' +
+      '<button type="button" class="chip' + (byFracture ? " active" : "") + '" data-renew-template-group="fracture">By struggle</button>';
+
+    var chipsEl = document.getElementById("renew-template-filter-chips");
+    var activeFilter = byFracture ? renewTemplateFractureFilter : renewTemplateCategoryFilter;
+    var dims = byFracture ? FRACTURES : TRIGGER_CATEGORIES;
+    var dataAttr = byFracture ? "data-renew-template-fracture" : "data-renew-template-cat";
+    var chipsHtml = '<button type="button" class="chip' + (activeFilter === "all" ? " active" : "") +
+      '" ' + dataAttr + '="all">All<span class="cnt">' + TRIGGER_TEMPLATES.length + "</span></button>";
+    dims.forEach(function (d) {
+      var n = TRIGGER_TEMPLATES.filter(function (t) {
+        return byFracture ? t.fractureId === d.id : t.category === d.id;
+      }).length;
+      chipsHtml += '<button type="button" class="chip' + (activeFilter === d.id ? " active" : "") +
+        '" ' + dataAttr + '="' + d.id + '">' + escapeHtml(d.label) + '<span class="cnt">' + n + "</span></button>";
     });
     chipsEl.innerHTML = chipsHtml;
 
-    var list = renewTemplateCategoryFilter === "all"
+    var list = activeFilter === "all"
       ? TRIGGER_TEMPLATES
-      : TRIGGER_TEMPLATES.filter(function (t) { return t.category === renewTemplateCategoryFilter; });
+      : TRIGGER_TEMPLATES.filter(function (t) { return byFracture ? t.fractureId === activeFilter : t.category === activeFilter; });
     document.getElementById("renew-templates-count").textContent = list.length + (list.length === 1 ? " template" : " templates");
 
     var listEl = document.getElementById("renew-template-list");
     listEl.innerHTML = list.map(function (t) {
-      var cat = TRIGGER_CATEGORIES.filter(function (c) { return c.id === t.category; })[0];
+      var tag = byFracture
+        ? FRACTURES.filter(function (f) { return f.id === t.fractureId; })[0]
+        : TRIGGER_CATEGORIES.filter(function (c) { return c.id === t.category; })[0];
       var a = findAssertionById(t.assertionId);
       return (
         '<button type="button" class="template-card" data-renew-template="' + escapeHtml(t.id) + '">' +
-          '<div class="template-category">' + escapeHtml(cat ? cat.label : "") + "</div>" +
+          '<div class="template-category">' + escapeHtml(tag ? tag.label : "") + "</div>" +
           '<div class="template-situation">When ' + escapeHtml(t.situation) + "</div>" +
           '<div class="template-preview">' + (a ? "Standing on: " + escapeHtml(a.text) : "") + "</div>" +
         "</button>"
@@ -2275,11 +2293,20 @@
       renderRenewList();
     });
 
-    document.getElementById("renew-template-category-chips").addEventListener("click", function (e) {
-      var chip = e.target.closest("[data-renew-template-cat]");
-      if (!chip) return;
-      renewTemplateCategoryFilter = chip.getAttribute("data-renew-template-cat");
+    document.getElementById("renew-template-group-chips").addEventListener("click", function (e) {
+      var groupBtn = e.target.closest("[data-renew-template-group]");
+      if (!groupBtn) return;
+      renewTemplateGroupBy = groupBtn.getAttribute("data-renew-template-group");
+      renewTemplateCategoryFilter = "all";
+      renewTemplateFractureFilter = "all";
       renderRenewTemplateBrowser();
+    });
+
+    document.getElementById("renew-template-filter-chips").addEventListener("click", function (e) {
+      var catChip = e.target.closest("[data-renew-template-cat]");
+      if (catChip) { renewTemplateCategoryFilter = catChip.getAttribute("data-renew-template-cat"); renderRenewTemplateBrowser(); return; }
+      var fracChip = e.target.closest("[data-renew-template-fracture]");
+      if (fracChip) { renewTemplateFractureFilter = fracChip.getAttribute("data-renew-template-fracture"); renderRenewTemplateBrowser(); return; }
     });
 
     document.getElementById("renew-template-list").addEventListener("click", function (e) {

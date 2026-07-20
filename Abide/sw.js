@@ -1,4 +1,4 @@
-const CACHE = 'abide-v10';
+const CACHE = 'abide-v11';
 const ASSETS = [
   './index.html',
   './app.js',
