@@ -1003,47 +1003,60 @@
       return (Date.now() - cl.lastCompletedAt) >= cl.frequencyHours * 3600000;
     }
 
+    // Each materialized instance gets its own "Label #N" line, N counting up
+    // within a single day — so repeat rounds (Check-In especially) stay visibly
+    // distinct in the deliverables text instead of colliding under one name.
+    function checklistLabelPrefix(cl) { return cl.label + ' #'; }
+
+    // Matches a numbered round ("Check-In #2") plus, for compatibility with
+    // anything already materialized before per-day numbering existed, the bare
+    // label with no number at all.
+    function checklistTextMatches(text, cl) {
+      return text === cl.label || text.indexOf(checklistLabelPrefix(cl)) === 0;
+    }
+
     function isChecklistPendingInDeliverables(cl, delivText) {
-      return parseDeliverables(delivText).some(it => !it.isStep && it.text === cl.label && !it.done);
+      return parseDeliverables(delivText).some(it => !it.isStep && checklistTextMatches(it.text, cl) && !it.done);
     }
 
-    function checklistBlockText(cl) {
+    function checklistBlockText(cl, roundLabel) {
       const prefix = cl.parallel ? '--' : '-';   // parallel: any order · sequential (default): one at a time
-      return cl.label + '\n' + cl.items.map(t => prefix + ' ' + t).join('\n');
+      return roundLabel + '\n' + cl.items.map(t => prefix + ' ' + t).join('\n');
     }
 
-    // Strip a checklist's existing block (parent + its steps) out of deliverables
-    // text, if one's there — always a leftover completed round at the point this
-    // gets called, since a still-pending one would have blocked re-adding. Without
-    // this, completed rounds pile up under the same label forever, and worse, the
-    // stale duplicate confuses anything that matches steps to a parent by label.
-    function removeChecklistBlock(cl, text) {
-      const items = parseDeliverables(text);
-      const parent = items.find(it => !it.isStep && it.text === cl.label);
-      if (!parent) return text;
-      const removeSet = new Set([parent.lineIndex]);
-      items.forEach(it => { if (it.isStep && it.parent === cl.label) removeSet.add(it.lineIndex); });
-      return text.split('\n').filter((_, idx) => !removeSet.has(idx)).join('\n');
+    // Bump this checklist's round counter for today (resetting it if the day has
+    // turned over since its last use) and persist it, returning "Label #N".
+    function claimNextChecklistRound(cl) {
+      const checklists = getChecklists();
+      const fresh = checklists.find(c => c.id === cl.id) || cl;
+      const today = todayKey();
+      if (fresh.roundDay !== today) { fresh.roundDay = today; fresh.roundCount = 0; }
+      fresh.roundCount = (fresh.roundCount || 0) + 1;
+      saveChecklists(checklists);
+      return checklistLabelPrefix(cl) + fresh.roundCount;
     }
 
-    // A completed round leaves its priority sitting in todayPicks under the same
-    // key a fresh round will reuse — without clearing it, re-picking cycles from
-    // wherever the old round left off (or deletes it outright if it was at max).
-    function clearChecklistPicks(cl) {
+    // A completed round leaves its priority sitting in todayPicks under its own
+    // round label — without clearing it, that key just lingers unused (each new
+    // round gets a fresh number, so there's no collision, but no reason to keep it).
+    function clearChecklistPicks(roundLabel) {
       const picks = getPicks();
       let changed = false;
       Object.keys(picks).forEach(k => {
-        if (k === cl.label || k.indexOf(cl.label + ' ▸ ') === 0) { delete picks[k]; changed = true; }
+        if (k === roundLabel || k.indexOf(roundLabel + ' ▸ ') === 0) { delete picks[k]; changed = true; }
       });
       if (changed) savePicks(picks);
     }
 
+    // Materialize a fresh, uniquely-numbered round of this checklist into
+    // deliverables, returning its round label ("Check-In #2") for picking.
     function addChecklistToDeliverables(cl) {
+      const roundLabel = claimNextChecklistRound(cl);
       let text = getDeliverablesText();
-      text = removeChecklistBlock(cl, text);
-      text = (text.trim() ? text.replace(/\n+$/, '') + '\n' : '') + checklistBlockText(cl);
+      text = (text.trim() ? text.replace(/\n+$/, '') + '\n' : '') + checklistBlockText(cl, roundLabel);
       storage.set('deliverables', text);
       document.querySelectorAll('textarea.sync-notes[data-key="deliverables"]').forEach(el => el.value = text);
+      return roundLabel;
     }
 
     // autoRenew checklists (Check-In by default) never show as a manual Pick
@@ -1057,8 +1070,15 @@
     // Tapping a due checklist in Pick is what actually adds it to today's plan —
     // materialize it into the deliverables text, then pick it like anything else.
     function pickDueChecklist(cl) {
-      if (!isChecklistPendingInDeliverables(cl, getDeliverablesText())) addChecklistToDeliverables(cl);
-      cyclePriority(cl.label);
+      const text = getDeliverablesText();
+      let roundLabel;
+      if (!isChecklistPendingInDeliverables(cl, text)) {
+        roundLabel = addChecklistToDeliverables(cl);
+      } else {
+        const pending = parseDeliverables(text).find(it => !it.isStep && checklistTextMatches(it.text, cl) && !it.done);
+        roundLabel = pending ? pending.text : cl.label;
+      }
+      cyclePriority(roundLabel);
     }
 
     // For every due autoRenew checklist not already sitting in today's plan,
@@ -1067,28 +1087,30 @@
       const checklists = getChecklists();
       const due = checklists.filter(cl => cl.autoRenew && cl.frequencyHours && checklistDue(cl) && !isChecklistPendingInDeliverables(cl, getDeliverablesText()));
       if (!due.length) return;
-      due.forEach(cl => addChecklistToDeliverables(cl));
       const picks = getPicks();
-      due.forEach(cl => { if (!picks[cl.label]) picks[cl.label] = 1; });
+      due.forEach(cl => {
+        const roundLabel = addChecklistToDeliverables(cl);
+        if (!picks[roundLabel]) picks[roundLabel] = 1;
+      });
       savePicks(picks);
       renderPick(); renderToday();
     }
 
-    // Any deliverable line whose text matches a checklist's own label, once all of
-    // its steps are done, auto-completes and reschedules that checklist.
+    // Any undone deliverable line matching a checklist's round-label prefix,
+    // once all of its steps are done, auto-completes and reschedules it.
     function checkChecklistCompletion() {
       const checklists = getChecklists();
       if (!checklists.length) return;
       const items = parseDeliverables(getDeliverablesText());
       let changed = false;
       checklists.forEach(cl => {
-        const parent = items.find(it => !it.isStep && it.text === cl.label && !it.done);
+        const parent = items.find(it => !it.isStep && checklistTextMatches(it.text, cl) && !it.done);
         if (!parent) return;
-        const steps = items.filter(it => it.isStep && it.parent === cl.label);
+        const steps = items.filter(it => it.isStep && it.parent === parent.text);
         if (steps.length && steps.every(s => s.done)) {
           markLineDoneByIndex(parent.lineIndex);
           cl.lastCompletedAt = Date.now();
-          clearChecklistPicks(cl);
+          clearChecklistPicks(parent.text);
           changed = true;
         }
       });
