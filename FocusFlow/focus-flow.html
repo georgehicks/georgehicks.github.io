@@ -12,7 +12,7 @@
   <title>Focus Flow</title>
   <style>
     *, *::before, *::after { box-sizing: border-box; }
-    :root { --primary: #00ffcc; --bg: #0f1117; --card: #1a1f2e; }
+    :root { --primary: #00ffcc; --primary-dim: #4a9488; --bg: #0f1117; --card: #1a1f2e; }
     body {
       font-family: system-ui, -apple-system, sans-serif;
       background: var(--bg); color: #ddd;
@@ -22,17 +22,18 @@
     .top-header { display: flex; gap: 10px; margin-bottom: 10px; align-items: flex-start; }
     .calendar { flex: 1; background: var(--card); border-radius: 10px; padding: 4px 5px;
                 font-size: 0.76rem; height: 140px; overflow: hidden; box-sizing: border-box; }
-    .calendar-header { text-align: center; font-weight: 600; margin-bottom: 2px; color: var(--primary); font-size: 0.8rem; }
+    .calendar-header { text-align: center; font-weight: 600; margin-bottom: 2px; color: var(--primary-dim); font-size: 0.8rem; }
     .calendar-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 1px; text-align: center; }
     .calendar-grid div { padding: 2px 1px; border-radius: 3px; }
     .calendar-grid .header { color: #555; font-size: 0.62rem; }
-    .calendar-grid .today { background: var(--primary); color: #000; font-weight: bold; }
+    .calendar-grid .today { background: rgba(0,255,204,0.16); color: var(--primary-dim); font-weight: 600; }
 
     .clock-container { width: 140px; height: 140px; flex-shrink: 0; }
+    #hour-arc { filter: drop-shadow(0 0 3px rgba(0,255,204,0.4)); }
 
     .tabs { display: flex; background: #252b3d; border-radius: 6px; padding: 3px; margin-bottom: 8px; }
     .tab { flex: 1; padding: 4px; text-align: center; border-radius: 4px; cursor: pointer; font-size: 0.82rem; font-weight: 500; }
-    .tab.active { background: var(--card); color: var(--primary); }
+    .tab.active { background: var(--card); color: var(--primary-dim); }
 
     .section { background: var(--card); border-radius: 12px; padding: 12px; margin-bottom: 12px; }
 
@@ -50,28 +51,34 @@
       display: flex; align-items: center; padding: 5px 12px; margin-bottom: 2px;
       background: #1a1f30; border-radius: 6px; font-size: 0.88rem; cursor: pointer;
       transition: all 0.2s; line-height: 1.1; position: relative;
+      opacity: 0.78;
     }
-    .time-block:hover { background: #222840; }
-    .time-block.past { opacity: 0.45; cursor: default; }
+    .time-block:hover { background: #222840; opacity: 1; }
+    .time-block.past { opacity: 0.4; cursor: default; }
 
     /* Future magnified 10m blocks */
     .time-block.magnified {
-      background: #212840 !important;
+      background: #1a2032 !important;
       border: none;
+      opacity: 0.72;
     }
-    .time-block.magnified .time-label { color: #6878a8; }
-    .time-block.magnified .block-input { color: #7888b0; }
-    .time-block.magnified .block-input::placeholder { color: #485070; }
+    .time-block.magnified .time-label { color: #566486; }
+    .time-block.magnified .block-input { color: #647098; }
+    .time-block.magnified .block-input::placeholder { color: #3a4258; }
+    .time-block.magnified:hover { opacity: 0.92; }
 
-    /* Current 10m block — the hero */
+    /* Current 10m block — the hero: bigger, brighter, glowing so it reads
+       as the one thing worth looking at against the dimmed rest of the timeline. */
     .time-block.magnified.current {
-      background: #252e44 !important;
-      border: 2px solid var(--primary);
-      padding: 10px 12px 18px;
+      background: #2b3552 !important;
+      border: 3px solid var(--primary);
+      padding: 13px 14px 20px;
+      opacity: 1;
+      box-shadow: 0 0 0 1px rgba(0,255,204,0.15), 0 0 22px rgba(0,255,204,0.35);
     }
-    .time-block.magnified.current .time-label { font-size: 1rem; color: var(--primary); font-weight: 600; }
-    .time-block.magnified.current .block-input { font-size: 1rem; color: #ddd; }
-    .time-block.magnified.current .block-input::placeholder { color: #4a6070; }
+    .time-block.magnified.current .time-label { font-size: 1.15rem; color: var(--primary); font-weight: 700; }
+    .time-block.magnified.current .block-input { font-size: 1.08rem; color: #fff; }
+    .time-block.magnified.current .block-input::placeholder { color: #5a7590; }
 
     /* New current slot — blink a ring around it for its first 10s to announce itself.
        Uses outline (not border-color) so it isn't fought over by the hour-target !important rules. */
@@ -112,7 +119,7 @@
     .notes-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 0; }
     .notes-tabs { display: flex; gap: 2px; }
     .notes-tab { padding: 3px 12px; border-radius: 5px 5px 0 0; cursor: pointer; font-size: 0.8rem; color: #557; background: #111620; border: 1px solid #252b40; border-bottom: none; }
-    .notes-tab.active { background: #151a28; color: var(--primary); }
+    .notes-tab.active { background: #151a28; color: var(--primary-dim); }
     .export-btn { background: none; border: none; color: #445; font-size: 1.2rem; cursor: pointer; padding: 0 2px; line-height: 1; }
     .export-btn:hover { color: #aaa; }
 
@@ -199,6 +206,16 @@
     .today-row .t-txt { flex:1; min-width:0; cursor:pointer; border-radius:4px; transition:color 0.15s ease, background 0.15s ease; }
     .today-row .t-txt:hover { background:#1e2436; }
     .today-row .t-txt.added-flash { color:#00ffcc; }
+
+    /* Compact Today (Focus tab, under the live timeline) — muted so it doesn't
+       out-compete the current time slot's highlight for attention. */
+    .today-summary.compact { opacity:0.7; transition: opacity 0.2s ease; }
+    .today-summary.compact:hover, .today-summary.compact:focus-within { opacity:1; }
+    .today-summary.compact .today-dot { background:transparent; border:1.5px solid currentColor; color:inherit; }
+    .today-summary.compact .today-dot.p1 { color:#357c70; }
+    .today-summary.compact .today-dot.p2 { color:#8a7a34; }
+    .today-summary.compact .today-dot.p3 { color:#8c5c42; }
+    .today-summary.compact .today-row .t-txt { color:#707c93; }
     .today-done { margin-left:auto; background:none; border:1px solid #2a3350; color:#6a7a55; border-radius:6px; font-size:0.8rem; cursor:pointer; padding:1px 8px; flex-shrink:0; }
     .today-done:hover { color:#4caf50; border-color:#3a5a30; }
 
@@ -225,11 +242,12 @@
     <div class="clock-container">
       <svg id="analog-clock" viewBox="0 0 140 140" xmlns="http://www.w3.org/2000/svg">
         <circle cx="70" cy="70" r="62" fill="none" stroke="#333" stroke-width="10"/>
+        <path id="hour-arc" fill="none" stroke="#4a9488" stroke-width="10" stroke-linecap="round"/>
         <g id="clock-marks"></g>
-        <line id="hour-hand" x1="70" y1="70" x2="70" y2="42" stroke="#ddd" stroke-width="6" stroke-linecap="round"/>
-        <line id="minute-hand" x1="70" y1="70" x2="70" y2="28" stroke="#00ffcc" stroke-width="4" stroke-linecap="round"/>
-        <line id="second-hand" x1="70" y1="70" x2="70" y2="22" stroke="#ff4444" stroke-width="2" stroke-linecap="round"/>
-        <circle cx="70" cy="70" r="5" fill="#ddd"/>
+        <line id="hour-hand" x1="70" y1="70" x2="70" y2="42" stroke="#aab" stroke-width="6" stroke-linecap="round"/>
+        <line id="minute-hand" x1="70" y1="70" x2="70" y2="28" stroke="#5a9a90" stroke-width="4" stroke-linecap="round"/>
+        <line id="second-hand" x1="70" y1="70" x2="70" y2="22" stroke="#a05050" stroke-width="2" stroke-linecap="round"/>
+        <circle cx="70" cy="70" r="5" fill="#aab"/>
       </svg>
     </div>
   </div>
@@ -1823,6 +1841,21 @@
       }
     }
 
+    // Point on the clock face at `angleDeg` (0 = 12 o'clock, clockwise), for drawing the hour arc.
+    function clockPoint(radius, angleDeg) {
+      const rad = (angleDeg - 90) * Math.PI / 180;
+      return { x: 70 + radius * Math.cos(rad), y: 70 + radius * Math.sin(rad) };
+    }
+
+    // Highlight the 30° wedge the hour hand is currently sweeping through.
+    function updateHourArc(hours) {
+      const startAngle = (hours % 12) * 30;
+      const endAngle = startAngle + 30;
+      const start = clockPoint(62, endAngle);
+      const end = clockPoint(62, startAngle);
+      document.getElementById('hour-arc').setAttribute('d', `M ${start.x} ${start.y} A 62 62 0 0 0 ${end.x} ${end.y}`);
+    }
+
     function updateAnalogClock() {
       const now = new Date();
       const seconds = now.getSeconds();
@@ -1836,6 +1869,7 @@
       document.getElementById('second-hand').setAttribute('transform', `rotate(${secondDeg} 70 70)`);
       document.getElementById('minute-hand').setAttribute('transform', `rotate(${minuteDeg} 70 70)`);
       document.getElementById('hour-hand').setAttribute('transform', `rotate(${hourDeg} 70 70)`);
+      updateHourArc(hours);
     }
 
     function initClockMarks() {
