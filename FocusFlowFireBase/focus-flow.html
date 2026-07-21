@@ -267,7 +267,7 @@
           <button type="button" class="deliv-ctl" id="deliv-raw-btn" onclick="toggleDelivRaw()">Raw</button>
         </div>
         <div id="deliv-list" class="deliv-list"></div>
-        <textarea id="deliverables-notes" class="notes sync-notes" data-key="deliverables" placeholder="One deliverable per line.&#10;Indent its steps with a leading - dash:&#10;Ship the report&#10;- draft outline&#10;- pull numbers" style="display:none; min-height:max(300px, calc(100dvh - 300px));"></textarea>
+        <textarea id="deliverables-notes" class="notes sync-notes" data-key="deliverables" placeholder="One deliverable per line.&#10;Indent its steps below it:&#10;- one at a time (only next shows) · -- any order&#10;Ship the report&#10;- draft outline&#10;- pull numbers&#10;-- get feedback from Sam" style="display:none; min-height:max(300px, calc(100dvh - 300px));"></textarea>
       </div>
       <div id="plan-pick" class="subpanel" style="display:none;">
         <div id="pick-list" class="pick-list"></div>
@@ -931,7 +931,10 @@
       return (el && el.value) || storage.get('deliverables') || '';
     }
 
-    // Each non-dash line is a deliverable; following lines starting with "-" are its steps.
+    // Each non-dash line is a deliverable; following lines starting with "-" are its
+    // steps. A single "-" is a sequential step (done one at a time — only the next
+    // undone one is actionable); "--" is a parallel step (order doesn't matter, so
+    // every undone one is actionable at once). See collapseSequentialNextAction.
     function parseDeliverables(text) {
       const items = [];
       (text || '').split('\n').forEach((line, idx) => {
@@ -941,16 +944,32 @@
         const body = raw.replace(/\s+DONE$/, '').trim();
         if (!body) return;
         if (body[0] === '-' || body[0] === '+') {
+          const prefix = body.match(/^[-+]+/)[0];
+          const kind = prefix.replace(/\+/g, '').length >= 2 ? 'parallel' : 'sequential';
           const stepText = body.replace(/^[-+]+\s*/, '').trim();
           if (!stepText) return;
           const parent = [...items].reverse().find(i => !i.isStep);
-          items.push({ text: stepText, isStep: true, parent: parent ? parent.text : null,
+          items.push({ text: stepText, isStep: true, kind, parent: parent ? parent.text : null,
                        key: (parent ? parent.text + ' ▸ ' : '') + stepText, done: done || body[0] === '+', lineIndex: idx });
         } else {
           items.push({ text: body, isStep: false, parent: null, key: body, done, lineIndex: idx });
         }
       });
       return items;
+    }
+
+    // Within one parent, only the first undone sequential step is actionable right
+    // now; later sequential siblings stay hidden until it's done. Parallel steps
+    // («--») and parent lines always pass through untouched.
+    function collapseSequentialNextAction(items) {
+      const claimed = {};
+      return items.filter(it => {
+        if (!it.isStep || it.kind !== 'sequential') return true;
+        const pkey = it.parent || '';
+        if (claimed[pkey]) return false;
+        claimed[pkey] = true;
+        return true;
+      });
     }
 
     function getPicks() { return storage.get('todayPicks') || {}; }
@@ -971,7 +990,7 @@
       renderDelivList();   // keep the Deliverables list view in step with every data change
       const host = document.getElementById('pick-list');
       if (!host) return;
-      const items = parseDeliverables(getDeliverablesText()).filter(it => !it.done);
+      const items = collapseSequentialNextAction(parseDeliverables(getDeliverablesText()).filter(it => !it.done));
       const picks = getPicks();
       host.innerHTML = '';
       if (items.length === 0) {
@@ -996,11 +1015,23 @@
     }
 
     function pickedItems() {
-      const items = parseDeliverables(getDeliverablesText());
       const picks = getPicks();
+      let items = parseDeliverables(getDeliverablesText())
+        .filter(it => !it.done)
+        .map((it, i) => ({ ...it, prio: picks[it.key], order: i }));
+      items = collapseSequentialNextAction(items);
+
+      // A picked deliverable automatically surfaces its steps too, even if they
+      // weren't individually prioritized: every parallel step (order doesn't
+      // matter, so all of them are actionable) plus the one sequential step
+      // that's next (collapseSequentialNextAction already narrowed that to just
+      // one). Inherits the parent's priority so it sorts and colors alongside it.
+      const pickedParentPrio = {};
+      items.forEach(it => { if (!it.isStep && it.prio) pickedParentPrio[it.text] = it.prio; });
+
       return items
-        .map((it, i) => ({ ...it, prio: picks[it.key], order: i }))
-        .filter(it => it.prio && !it.done);
+        .filter(it => it.prio || (it.isStep && pickedParentPrio[it.parent]))
+        .map(it => it.prio ? it : { ...it, prio: pickedParentPrio[it.parent], auto: true });
     }
 
     function renderToday() {
