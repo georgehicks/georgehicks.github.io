@@ -289,6 +289,7 @@
       </div>
       <div id="plan-deliverables" class="subpanel">
         <div class="deliv-controls">
+          <button type="button" class="deliv-ctl" onclick="delivClearDone()">Clear done</button>
           <button type="button" class="deliv-ctl" onclick="delivAppend()">+ Add</button>
           <button type="button" class="deliv-ctl" id="deliv-raw-btn" onclick="toggleDelivRaw()">Raw</button>
         </div>
@@ -1662,6 +1663,15 @@
       lines.splice(idx, 1);
       delivSelected = -1;
       celebrate(rect); buzz();
+      writeDeliverablesLines(lines);
+      renderDelivList();
+    }
+
+    // Bulk-remove every line marked done (DONE header or completed step) — the
+    // per-row ✗ Delete already does this one at a time, this just does it for all.
+    function delivClearDone() {
+      const lines = delivLines().filter(line => !delivClassify(line).includes('done'));
+      delivSelected = -1; delivEditing = -1;
       writeDeliverablesLines(lines);
       renderDelivList();
     }
