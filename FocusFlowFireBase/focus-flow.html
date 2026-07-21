@@ -995,8 +995,8 @@
     // any time, rather than only once some interval has elapsed.
     const DEFAULT_CHECKLISTS = [
       {
-        id: 'checkin', label: 'Check-In', frequencyHours: 4,
-        items: ['Breathe and connect', 'Any concerns to capture or let go', 'What matters most for the rest of today']
+        id: 'checkin', label: 'Check-In', frequencyHours: 4, autoRenew: true,
+        items: ['Breathe and connect', 'Surrender worst cases', 'Accept best possibilities', 'What matters most for the rest of today']
       },
       {
         id: 'weekly', label: 'Weekly planning', frequencyHours: 168,
@@ -1036,21 +1036,66 @@
       return cl.label + '\n' + cl.items.map(t => prefix + ' ' + t).join('\n');
     }
 
+    // Strip a checklist's existing block (parent + its steps) out of deliverables
+    // text, if one's there — always a leftover completed round at the point this
+    // gets called, since a still-pending one would have blocked re-adding. Without
+    // this, completed rounds pile up under the same label forever, and worse, the
+    // stale duplicate confuses anything that matches steps to a parent by label.
+    function removeChecklistBlock(cl, text) {
+      const items = parseDeliverables(text);
+      const parent = items.find(it => !it.isStep && it.text === cl.label);
+      if (!parent) return text;
+      const removeSet = new Set([parent.lineIndex]);
+      items.forEach(it => { if (it.isStep && it.parent === cl.label) removeSet.add(it.lineIndex); });
+      return text.split('\n').filter((_, idx) => !removeSet.has(idx)).join('\n');
+    }
+
+    // A completed round leaves its priority sitting in todayPicks under the same
+    // key a fresh round will reuse — without clearing it, re-picking cycles from
+    // wherever the old round left off (or deletes it outright if it was at max).
+    function clearChecklistPicks(cl) {
+      const picks = getPicks();
+      let changed = false;
+      Object.keys(picks).forEach(k => {
+        if (k === cl.label || k.indexOf(cl.label + ' ▸ ') === 0) { delete picks[k]; changed = true; }
+      });
+      if (changed) savePicks(picks);
+    }
+
+    function addChecklistToDeliverables(cl) {
+      let text = getDeliverablesText();
+      text = removeChecklistBlock(cl, text);
+      text = (text.trim() ? text.replace(/\n+$/, '') + '\n' : '') + checklistBlockText(cl);
+      storage.set('deliverables', text);
+      document.querySelectorAll('textarea.sync-notes[data-key="deliverables"]').forEach(el => el.value = text);
+    }
+
+    // autoRenew checklists (Check-In by default) never show as a manual Pick
+    // option — they're handled by applyAutoRenewChecklists instead, so opting in
+    // once means never having to re-pick them again.
     function dueChecklistOptions() {
       const text = getDeliverablesText();
-      return getChecklists().filter(cl => checklistDue(cl) && !isChecklistPendingInDeliverables(cl, text));
+      return getChecklists().filter(cl => !cl.autoRenew && checklistDue(cl) && !isChecklistPendingInDeliverables(cl, text));
     }
 
     // Tapping a due checklist in Pick is what actually adds it to today's plan —
     // materialize it into the deliverables text, then pick it like anything else.
     function pickDueChecklist(cl) {
-      const text = getDeliverablesText();
-      if (!isChecklistPendingInDeliverables(cl, text)) {
-        const newText = (text.trim() ? text.replace(/\n+$/, '') + '\n' : '') + checklistBlockText(cl);
-        storage.set('deliverables', newText);
-        document.querySelectorAll('textarea.sync-notes[data-key="deliverables"]').forEach(el => el.value = newText);
-      }
+      if (!isChecklistPendingInDeliverables(cl, getDeliverablesText())) addChecklistToDeliverables(cl);
       cyclePriority(cl.label);
+    }
+
+    // For every due autoRenew checklist not already sitting in today's plan,
+    // materialize and pick it automatically — no Pick-tap required.
+    function applyAutoRenewChecklists() {
+      const checklists = getChecklists();
+      const due = checklists.filter(cl => cl.autoRenew && cl.frequencyHours && checklistDue(cl) && !isChecklistPendingInDeliverables(cl, getDeliverablesText()));
+      if (!due.length) return;
+      due.forEach(cl => addChecklistToDeliverables(cl));
+      const picks = getPicks();
+      due.forEach(cl => { if (!picks[cl.label]) picks[cl.label] = 1; });
+      savePicks(picks);
+      renderPick(); renderToday();
     }
 
     // Any deliverable line whose text matches a checklist's own label, once all of
@@ -1067,6 +1112,7 @@
         if (steps.length && steps.every(s => s.done)) {
           markLineDoneByIndex(parent.lineIndex);
           cl.lastCompletedAt = Date.now();
+          clearChecklistPicks(cl);
           changed = true;
         }
       });
@@ -1087,7 +1133,7 @@
     let checklistFormState = null; // { editingId } or { editingId: null, label, items, frequencyHours, parallel }
 
     function openNewChecklistForm() {
-      checklistFormState = { editingId: null, label: '', items: '', frequencyHours: '', parallel: false };
+      checklistFormState = { editingId: null, label: '', items: '', frequencyHours: '', parallel: false, autoRenew: false };
       renderChecklistForm();
     }
 
@@ -1096,7 +1142,7 @@
       if (!cl) return;
       checklistFormState = {
         editingId: id, label: cl.label, items: cl.items.join('\n'),
-        frequencyHours: cl.frequencyHours || '', parallel: !!cl.parallel
+        frequencyHours: cl.frequencyHours || '', parallel: !!cl.parallel, autoRenew: !!cl.autoRenew
       };
       renderChecklistForm();
     }
@@ -1145,12 +1191,20 @@
             '<button type="button" id="lf-kind-seq" class="time-pill' + (!s.parallel ? ' active' : '') + '">One at a time</button>' +
             '<button type="button" id="lf-kind-par" class="time-pill' + (s.parallel ? ' active' : '') + '">Any order</button>' +
           '</div>' +
+          (freqVal !== '' ?
+            '<div class="time-pills">' +
+              '<button type="button" id="lf-renew-off" class="time-pill' + (!s.autoRenew ? ' active' : '') + '">Ask each time</button>' +
+              '<button type="button" id="lf-renew-on" class="time-pill' + (s.autoRenew ? ' active' : '') + '">Auto-renew</button>' +
+            '</div>'
+          : '') +
           '<button type="button" class="plan-btn" id="lf-save" style="width:100%;">' + (s.editingId ? 'Save changes' : 'Add list') + '</button>' +
           '<button type="button" class="plan-btn" id="lf-cancel" style="width:100%; background:#333; color:#ccd;">Cancel</button>' +
         '</div>';
 
       document.getElementById('lf-frequency').addEventListener('change', e => {
-        document.getElementById('lf-custom-hours').style.display = e.target.value === 'custom' ? 'block' : 'none';
+        syncChecklistFormState();
+        checklistFormState.frequencyHours = e.target.value === 'custom' ? '1' : e.target.value;
+        renderChecklistForm();
       });
       document.getElementById('lf-kind-seq').addEventListener('click', () => {
         syncChecklistFormState(); checklistFormState.parallel = false; renderChecklistForm();
@@ -1158,6 +1212,10 @@
       document.getElementById('lf-kind-par').addEventListener('click', () => {
         syncChecklistFormState(); checklistFormState.parallel = true; renderChecklistForm();
       });
+      const renewOff = document.getElementById('lf-renew-off');
+      const renewOn = document.getElementById('lf-renew-on');
+      if (renewOff) renewOff.addEventListener('click', () => { syncChecklistFormState(); checklistFormState.autoRenew = false; renderChecklistForm(); });
+      if (renewOn) renewOn.addEventListener('click', () => { syncChecklistFormState(); checklistFormState.autoRenew = true; renderChecklistForm(); });
       document.getElementById('lf-save').addEventListener('click', saveChecklistForm);
       document.getElementById('lf-cancel').addEventListener('click', closeChecklistForm);
     }
@@ -1179,15 +1237,16 @@
       } else if (freqEl.value !== '') {
         frequencyHours = parseInt(freqEl.value, 10);
       }
+      const autoRenew = frequencyHours ? !!checklistFormState.autoRenew : false;   // meaningless without a cadence
 
       const checklists = getChecklists();
       if (checklistFormState.editingId) {
         const cl = checklists.find(c => c.id === checklistFormState.editingId);
-        if (cl) { cl.label = label; cl.items = itemLines; cl.frequencyHours = frequencyHours; cl.parallel = checklistFormState.parallel; }
+        if (cl) { cl.label = label; cl.items = itemLines; cl.frequencyHours = frequencyHours; cl.parallel = checklistFormState.parallel; cl.autoRenew = autoRenew; }
       } else {
         checklists.push({
           id: 'cl_' + Date.now().toString(36), label, items: itemLines,
-          frequencyHours, parallel: checklistFormState.parallel, lastCompletedAt: null
+          frequencyHours, parallel: checklistFormState.parallel, autoRenew, lastCompletedAt: null
         });
       }
       saveChecklists(checklists);
@@ -1215,11 +1274,13 @@
       const delivText = getDeliverablesText();
       host.innerHTML = checklists.map(cl => {
         const pendingNow = isChecklistPendingInDeliverables(cl, delivText);
-        const status = pendingNow ? 'In today’s plan' : (checklistDue(cl) ? 'Available to add' : 'Not due yet');
+        const status = pendingNow ? 'In today’s plan'
+          : cl.autoRenew ? (checklistDue(cl) ? 'Auto-renewing now' : 'Auto-renews when next due')
+          : (checklistDue(cl) ? 'Available to add' : 'Not due yet');
         return (
           '<div class="checklist-card">' +
             '<div class="checklist-card-label">' + escapeHtml(cl.label) + '</div>' +
-            '<div class="checklist-card-meta">' + escapeHtml(describeFrequency(cl.frequencyHours)) + ' · ' + cl.items.length + ' item' + (cl.items.length === 1 ? '' : 's') + ' · ' + (cl.parallel ? 'any order' : 'one at a time') + '</div>' +
+            '<div class="checklist-card-meta">' + escapeHtml(describeFrequency(cl.frequencyHours)) + ' · ' + cl.items.length + ' item' + (cl.items.length === 1 ? '' : 's') + ' · ' + (cl.parallel ? 'any order' : 'one at a time') + (cl.autoRenew ? ' · auto-renews' : '') + '</div>' +
             '<div class="checklist-card-status">' + escapeHtml(status) + '</div>' +
             '<div class="deliv-menu">' +
               '<button type="button" class="deliv-menu-btn edit" data-edit-checklist="' + escapeHtml(cl.id) + '">✎ Edit</button>' +
@@ -2123,10 +2184,11 @@
     });
 
 initSyncedNotes();
+applyAutoRenewChecklists();
 renderPick();
 renderToday();
 renderLists();
-setInterval(renderPick, 60000);   // catch a checklist becoming due while Pick sits open
+setInterval(() => { applyAutoRenewChecklists(); renderPick(); }, 60000);   // catch a checklist becoming due while the app sits open
 
     // ===== Cloud Sync engine =====
     // Mirrors all localStorage keys into one Firestore doc at /users/{uid}.
