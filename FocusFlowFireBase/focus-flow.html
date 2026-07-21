@@ -120,7 +120,7 @@
     .deliv-controls { display: flex; justify-content: flex-end; gap: 6px; margin-top: 10px; margin-bottom: 6px; }
     .deliv-ctl { background: #1a2030; border: 1px solid #2a3555; color: #8ab4f8; border-radius: 7px; padding: 5px 12px; font-size: 0.78rem; font-family: inherit; cursor: pointer; -webkit-tap-highlight-color: transparent; }
     .deliv-ctl.active { color: var(--primary); border-color: rgba(0,255,204,0.4); }
-    .deliv-list { min-height: max(300px, calc(100dvh - 300px)); }
+    .deliv-list { min-height: 40px; }
     .deliv-row { padding: 10px; border-radius: 8px; margin-bottom: 2px; font-size: 0.92rem; color: #ccd; background: #151a28; border: 1px solid transparent; cursor: pointer; overflow-wrap: anywhere; white-space: pre-wrap; -webkit-tap-highlight-color: transparent; }
     .deliv-row.header { background: transparent; font-weight: 600; color: #dde; margin-top: 4px; }
     .deliv-row.task { margin-left: 10px; }
@@ -142,6 +142,11 @@
     .deliv-edit-row input { flex: 1; min-width: 0; background: #10141f; border: 1px solid var(--primary); border-radius: 8px; color: #dde; font-family: inherit; font-size: 0.92rem; padding: 10px; outline: none; }
     .deliv-nav-btn { width: 40px; flex-shrink: 0; border-radius: 8px; border: 1px solid #2a3555; background: #1a2030; color: #8ab4f8; font-size: 1rem; cursor: pointer; -webkit-tap-highlight-color: transparent; }
     .deliv-nav-btn:active { transform: scale(0.94); }
+    .checklist-card { background:#151a28; border:1px solid #252b40; border-radius:8px; padding:10px 12px; margin-bottom:8px; }
+    .checklist-card-label { font-size:0.95rem; font-weight:600; color:#dde; margin-bottom:3px; }
+    .checklist-card-meta { font-size:0.76rem; color:#7a8aa8; margin-bottom:2px; }
+    .checklist-card-status { font-size:0.74rem; color:#566; margin-bottom:8px; }
+    .checklist-card .deliv-menu { margin-left:0; padding:0; }
 
     .celebrate-burst { position: fixed; left: 50%; bottom: 90px; width: 0; height: 0; z-index: 60; pointer-events: none; }
     .celebrate-particle {
@@ -179,6 +184,9 @@
     .prio-badge.p1 { border-color:#00ffcc; color:#00ffcc; background:rgba(0,255,204,0.12); }
     .prio-badge.p2 { border-color:#ffcc00; color:#ffcc00; background:rgba(255,204,0,0.12); }
     .prio-badge.p3 { border-color:#ff8866; color:#ff8866; background:rgba(255,136,102,0.12); }
+    .pick-item.due-checklist { padding-bottom:8px; margin-bottom:4px; border-bottom:1px dashed #252b40; }
+    .pick-item.due-checklist .prio-badge { border-style:dashed; }
+    .due-tag { font-size:0.62rem; color:#8ab4f8; border:1px solid #2a3555; background:#1a2030; border-radius:5px; padding:1px 5px; margin-left:4px; }
     .pick-empty, .today-empty { color:#556; font-size:0.85rem; padding:8px 2px; }
 
     /* Today summary (read-only) */
@@ -235,15 +243,15 @@
 
   <!-- PLAN TAB -->
   <div id="panel-plan" class="section">
-    <!-- Plan sub-tabs: Cal / Deliverables / Pick / Today / Notes -->
+    <!-- Plan sub-tabs: Cal / Deliverables / Pick / Lists / Today -->
     <div style="margin-top:0;">
       <div class="notes-header">
         <div class="notes-tabs">
           <span class="notes-tab" data-target="plan-cal">Cal</span>
           <span class="notes-tab active" data-target="plan-deliverables">Deliverables</span>
           <span class="notes-tab" data-target="plan-pick">Pick</span>
+          <span class="notes-tab" data-target="plan-lists">Lists</span>
           <span class="notes-tab" data-target="plan-today">Today</span>
-          <span class="notes-tab" data-target="plan-notes">Notes</span>
         </div>
         <button class="export-btn" onclick="exportData()" title="Export today's data">📤</button>
       </div>
@@ -267,16 +275,19 @@
           <button type="button" class="deliv-ctl" id="deliv-raw-btn" onclick="toggleDelivRaw()">Raw</button>
         </div>
         <div id="deliv-list" class="deliv-list"></div>
-        <textarea id="deliverables-notes" class="notes sync-notes" data-key="deliverables" placeholder="One deliverable per line.&#10;Indent its steps below it:&#10;- one at a time (only next shows) · -- any order&#10;Ship the report&#10;- draft outline&#10;- pull numbers&#10;-- get feedback from Sam" style="display:none; min-height:max(300px, calc(100dvh - 300px));"></textarea>
+        <textarea id="deliverables-notes" class="notes sync-notes" data-key="deliverables" placeholder="One deliverable per line.&#10;Indent its steps below it:&#10;- one at a time (only next shows) · -- any order&#10;Ship the report&#10;- draft outline&#10;- pull numbers&#10;-- get feedback from Sam" style="display:none; min-height:200px;"></textarea>
+        <textarea id="daily-notes" class="notes sync-notes" data-key="dailyNotes" placeholder="Quick notes…" style="margin-top:10px; min-height:90px;"></textarea>
       </div>
       <div id="plan-pick" class="subpanel" style="display:none;">
         <div id="pick-list" class="pick-list"></div>
       </div>
+      <div id="plan-lists" class="subpanel" style="display:none;">
+        <button type="button" class="plan-btn" id="btn-new-checklist" style="margin-bottom:8px;">+ New list</button>
+        <div id="checklist-form-wrap" style="display:none; margin-bottom:10px;"></div>
+        <div id="checklist-cards"></div>
+      </div>
       <div id="plan-today" class="subpanel" style="display:none;">
         <div id="today-summary" class="today-summary"></div>
-      </div>
-      <div id="plan-notes" class="subpanel" style="display:none;">
-        <textarea id="daily-notes" class="notes sync-notes" data-key="dailyNotes" placeholder="Quick notes, brain dump, loose thoughts…" style="min-height:max(300px, calc(100dvh - 260px));"></textarea>
       </div>
     </div>
   </div>
@@ -972,6 +983,253 @@
       });
     }
 
+    // ---- Recurring checklists (Check-In / Weekly / Monthly / one-off lists) ----
+    // Checklists live in their own template list, never mixed into the deliverables
+    // text. Once one is due it shows up as an extra option in Pick — not yet part
+    // of your plan — and only tapping it there materializes it as an ordinary
+    // deliverable (its items as steps), which is when it starts riding the normal
+    // Pick/Today/tray/next-action machinery. Finishing all its steps auto-completes
+    // it and reschedules it back into template-only limbo.
+    // A checklist with no frequencyHours has no cadence at all — it's a standing,
+    // non-routine list (e.g. Travel prep) that's always offered as a Pick option,
+    // any time, rather than only once some interval has elapsed.
+    const DEFAULT_CHECKLISTS = [
+      {
+        id: 'checkin', label: 'Check-In', frequencyHours: 4,
+        items: ['Breathe and connect', 'Any concerns to capture or let go', 'What matters most for the rest of today']
+      },
+      {
+        id: 'weekly', label: 'Weekly planning', frequencyHours: 168,
+        items: ['Clear inboxes and notes', 'Review the week ahead', 'Review each open deliverable’s status', 'Pick next actions', 'Someday/maybe sweep']
+      },
+      {
+        id: 'monthly', label: 'Monthly review', frequencyHours: 720,
+        items: ['Review progress on goals', 'What’s working, what’s not', 'Anything to drop', 'Look ahead at the calendar']
+      },
+      {
+        id: 'travel', label: 'Travel prep', frequencyHours: null, parallel: true,
+        items: ['Check weather and pack accordingly', 'Charge devices and pack chargers', 'Confirm tickets and reservations', 'Pack ID and travel documents', 'Set out-of-office and delegate anything urgent']
+      }
+    ];
+
+    function getChecklists() {
+      let cls = storage.get('checklists');
+      if (!cls) {
+        cls = DEFAULT_CHECKLISTS.map(c => ({ ...c, lastCompletedAt: null }));
+        storage.set('checklists', cls);
+      }
+      return cls;
+    }
+
+    function checklistDue(cl) {
+      if (!cl.frequencyHours) return true;   // no cadence — a non-routine list (e.g. Travel) is always available
+      if (!cl.lastCompletedAt) return true;
+      return (Date.now() - cl.lastCompletedAt) >= cl.frequencyHours * 3600000;
+    }
+
+    function isChecklistPendingInDeliverables(cl, delivText) {
+      return parseDeliverables(delivText).some(it => !it.isStep && it.text === cl.label && !it.done);
+    }
+
+    function checklistBlockText(cl) {
+      const prefix = cl.parallel ? '--' : '-';   // parallel: any order · sequential (default): one at a time
+      return cl.label + '\n' + cl.items.map(t => prefix + ' ' + t).join('\n');
+    }
+
+    function dueChecklistOptions() {
+      const text = getDeliverablesText();
+      return getChecklists().filter(cl => checklistDue(cl) && !isChecklistPendingInDeliverables(cl, text));
+    }
+
+    // Tapping a due checklist in Pick is what actually adds it to today's plan —
+    // materialize it into the deliverables text, then pick it like anything else.
+    function pickDueChecklist(cl) {
+      const text = getDeliverablesText();
+      if (!isChecklistPendingInDeliverables(cl, text)) {
+        const newText = (text.trim() ? text.replace(/\n+$/, '') + '\n' : '') + checklistBlockText(cl);
+        storage.set('deliverables', newText);
+        document.querySelectorAll('textarea.sync-notes[data-key="deliverables"]').forEach(el => el.value = newText);
+      }
+      cyclePriority(cl.label);
+    }
+
+    // Any deliverable line whose text matches a checklist's own label, once all of
+    // its steps are done, auto-completes and reschedules that checklist.
+    function checkChecklistCompletion() {
+      const checklists = getChecklists();
+      if (!checklists.length) return;
+      const items = parseDeliverables(getDeliverablesText());
+      let changed = false;
+      checklists.forEach(cl => {
+        const parent = items.find(it => !it.isStep && it.text === cl.label && !it.done);
+        if (!parent) return;
+        const steps = items.filter(it => it.isStep && it.parent === cl.label);
+        if (steps.length && steps.every(s => s.done)) {
+          markLineDoneByIndex(parent.lineIndex);
+          cl.lastCompletedAt = Date.now();
+          changed = true;
+        }
+      });
+      if (changed) { storage.set('checklists', checklists); renderPick(); renderToday(); }
+    }
+
+    // ---- Lists tab: view/create/edit/delete checklist templates ----
+    function saveChecklists(list) { storage.set('checklists', list); }
+
+    function describeFrequency(hours) {
+      if (!hours) return 'No schedule — always available';
+      if (hours % 720 === 0) return hours === 720 ? 'Monthly' : (hours / 720) + ' months';
+      if (hours % 168 === 0) return hours === 168 ? 'Weekly' : (hours / 168) + ' weeks';
+      if (hours % 24 === 0) return hours === 24 ? 'Daily' : (hours / 24) + ' days';
+      return 'Every ' + hours + 'h';
+    }
+
+    let checklistFormState = null; // { editingId } or { editingId: null, label, items, frequencyHours, parallel }
+
+    function openNewChecklistForm() {
+      checklistFormState = { editingId: null, label: '', items: '', frequencyHours: '', parallel: false };
+      renderChecklistForm();
+    }
+
+    function openEditChecklistForm(id) {
+      const cl = getChecklists().find(c => c.id === id);
+      if (!cl) return;
+      checklistFormState = {
+        editingId: id, label: cl.label, items: cl.items.join('\n'),
+        frequencyHours: cl.frequencyHours || '', parallel: !!cl.parallel
+      };
+      renderChecklistForm();
+    }
+
+    function closeChecklistForm() {
+      checklistFormState = null;
+      renderChecklistForm();
+    }
+
+    // Pull whatever's currently typed into the label/items/frequency fields back
+    // into checklistFormState before a pill click triggers a re-render, so nothing
+    // typed or selected is lost.
+    function syncChecklistFormState() {
+      if (!checklistFormState) return;
+      const labelEl = document.getElementById('lf-label');
+      const itemsEl = document.getElementById('lf-items');
+      const freqEl = document.getElementById('lf-frequency');
+      const customEl = document.getElementById('lf-custom-hours');
+      if (labelEl) checklistFormState.label = labelEl.value;
+      if (itemsEl) checklistFormState.items = itemsEl.value;
+      if (freqEl) checklistFormState.frequencyHours = freqEl.value === 'custom' ? (customEl ? customEl.value : '') : freqEl.value;
+    }
+
+    function renderChecklistForm() {
+      const wrap = document.getElementById('checklist-form-wrap');
+      if (!wrap) return;
+      if (!checklistFormState) { wrap.style.display = 'none'; wrap.innerHTML = ''; return; }
+      wrap.style.display = 'block';
+      const s = checklistFormState;
+      const presets = ['4', '24', '168', '720'];
+      const freqVal = s.frequencyHours === '' ? '' : (presets.includes(String(s.frequencyHours)) ? String(s.frequencyHours) : 'custom');
+      wrap.innerHTML =
+        '<div class="plan-form">' +
+          '<input type="text" class="plan-input" id="lf-label" placeholder="List name" value="' + escapeHtml(s.label) + '">' +
+          '<textarea class="notes" id="lf-items" placeholder="One item per line" style="min-height:100px;">' + escapeHtml(s.items) + '</textarea>' +
+          '<select class="plan-input" id="lf-frequency">' +
+            '<option value=""' + (freqVal === '' ? ' selected' : '') + '>No schedule — always available</option>' +
+            '<option value="4"' + (freqVal === '4' ? ' selected' : '') + '>Every 4 hours</option>' +
+            '<option value="24"' + (freqVal === '24' ? ' selected' : '') + '>Daily</option>' +
+            '<option value="168"' + (freqVal === '168' ? ' selected' : '') + '>Weekly</option>' +
+            '<option value="720"' + (freqVal === '720' ? ' selected' : '') + '>Monthly</option>' +
+            '<option value="custom"' + (freqVal === 'custom' ? ' selected' : '') + '>Custom…</option>' +
+          '</select>' +
+          '<input type="number" min="1" class="plan-input" id="lf-custom-hours" placeholder="Hours" style="display:' + (freqVal === 'custom' ? 'block' : 'none') + '" value="' + (freqVal === 'custom' ? escapeHtml(String(s.frequencyHours)) : '') + '">' +
+          '<div class="time-pills">' +
+            '<button type="button" id="lf-kind-seq" class="time-pill' + (!s.parallel ? ' active' : '') + '">One at a time</button>' +
+            '<button type="button" id="lf-kind-par" class="time-pill' + (s.parallel ? ' active' : '') + '">Any order</button>' +
+          '</div>' +
+          '<button type="button" class="plan-btn" id="lf-save" style="width:100%;">' + (s.editingId ? 'Save changes' : 'Add list') + '</button>' +
+          '<button type="button" class="plan-btn" id="lf-cancel" style="width:100%; background:#333; color:#ccd;">Cancel</button>' +
+        '</div>';
+
+      document.getElementById('lf-frequency').addEventListener('change', e => {
+        document.getElementById('lf-custom-hours').style.display = e.target.value === 'custom' ? 'block' : 'none';
+      });
+      document.getElementById('lf-kind-seq').addEventListener('click', () => {
+        syncChecklistFormState(); checklistFormState.parallel = false; renderChecklistForm();
+      });
+      document.getElementById('lf-kind-par').addEventListener('click', () => {
+        syncChecklistFormState(); checklistFormState.parallel = true; renderChecklistForm();
+      });
+      document.getElementById('lf-save').addEventListener('click', saveChecklistForm);
+      document.getElementById('lf-cancel').addEventListener('click', closeChecklistForm);
+    }
+
+    function saveChecklistForm() {
+      const labelEl = document.getElementById('lf-label');
+      const itemsEl = document.getElementById('lf-items');
+      const freqEl = document.getElementById('lf-frequency');
+      const customEl = document.getElementById('lf-custom-hours');
+      const label = labelEl.value.trim();
+      const itemLines = itemsEl.value.split('\n').map(s => s.trim()).filter(Boolean);
+      if (!label) { labelEl.style.borderColor = '#ff6b6b'; labelEl.focus(); return; }
+      if (!itemLines.length) { itemsEl.style.borderColor = '#ff6b6b'; itemsEl.focus(); return; }
+
+      let frequencyHours = null;
+      if (freqEl.value === 'custom') {
+        const n = parseInt(customEl.value, 10);
+        frequencyHours = n > 0 ? n : null;
+      } else if (freqEl.value !== '') {
+        frequencyHours = parseInt(freqEl.value, 10);
+      }
+
+      const checklists = getChecklists();
+      if (checklistFormState.editingId) {
+        const cl = checklists.find(c => c.id === checklistFormState.editingId);
+        if (cl) { cl.label = label; cl.items = itemLines; cl.frequencyHours = frequencyHours; cl.parallel = checklistFormState.parallel; }
+      } else {
+        checklists.push({
+          id: 'cl_' + Date.now().toString(36), label, items: itemLines,
+          frequencyHours, parallel: checklistFormState.parallel, lastCompletedAt: null
+        });
+      }
+      saveChecklists(checklists);
+      checklistFormState = null;
+      renderChecklistForm();
+      renderLists();
+      renderPick();
+    }
+
+    function deleteChecklist(id) {
+      if (!confirm('Delete this list? This only removes the template — anything already added to your deliverables stays.')) return;
+      saveChecklists(getChecklists().filter(c => c.id !== id));
+      renderLists();
+      renderPick();
+    }
+
+    function renderLists() {
+      const host = document.getElementById('checklist-cards');
+      if (!host) return;
+      const checklists = getChecklists();
+      if (!checklists.length) {
+        host.innerHTML = '<div class="pick-empty">No lists yet — tap + New list to create one.</div>';
+        return;
+      }
+      const delivText = getDeliverablesText();
+      host.innerHTML = checklists.map(cl => {
+        const pendingNow = isChecklistPendingInDeliverables(cl, delivText);
+        const status = pendingNow ? 'In today’s plan' : (checklistDue(cl) ? 'Available to add' : 'Not due yet');
+        return (
+          '<div class="checklist-card">' +
+            '<div class="checklist-card-label">' + escapeHtml(cl.label) + '</div>' +
+            '<div class="checklist-card-meta">' + escapeHtml(describeFrequency(cl.frequencyHours)) + ' · ' + cl.items.length + ' item' + (cl.items.length === 1 ? '' : 's') + ' · ' + (cl.parallel ? 'any order' : 'one at a time') + '</div>' +
+            '<div class="checklist-card-status">' + escapeHtml(status) + '</div>' +
+            '<div class="deliv-menu">' +
+              '<button type="button" class="deliv-menu-btn edit" data-edit-checklist="' + escapeHtml(cl.id) + '">✎ Edit</button>' +
+              '<button type="button" class="deliv-menu-btn delete" data-delete-checklist="' + escapeHtml(cl.id) + '">✗ Delete</button>' +
+            '</div>' +
+          '</div>'
+        );
+      }).join('');
+    }
+
     function getPicks() { return storage.get('todayPicks') || {}; }
     function savePicks(p) { storage.set('todayPicks', p); }
     function getMRU() { return storage.get('trayMRU') || []; }
@@ -992,11 +1250,25 @@
       if (!host) return;
       const items = collapseSequentialNextAction(parseDeliverables(getDeliverablesText()).filter(it => !it.done));
       const picks = getPicks();
+      const dueChecklists = dueChecklistOptions();
       host.innerHTML = '';
-      if (items.length === 0) {
+      if (items.length === 0 && dueChecklists.length === 0) {
         host.innerHTML = '<div class="pick-empty">Add deliverables first — one per line, steps indented with a leading dash.</div>';
         return;
       }
+      dueChecklists.forEach(cl => {
+        const row = document.createElement('div');
+        row.className = 'pick-item due-checklist';
+        const badge = document.createElement('div');
+        badge.className = 'prio-badge';
+        badge.title = 'Tap to add to today’s plan';
+        badge.addEventListener('click', () => pickDueChecklist(cl));
+        const txt = document.createElement('div');
+        txt.className = 'ptext';
+        txt.innerHTML = escapeHtml(cl.label) + ' <span class="due-tag">' + (cl.frequencyHours ? 'due' : 'list') + '</span>';
+        row.appendChild(badge); row.appendChild(txt);
+        host.appendChild(row);
+      });
       items.forEach(it => {
         const row = document.createElement('div');
         row.className = 'pick-item' + (it.isStep ? ' step' : '');
@@ -1069,8 +1341,8 @@
       });
     }
 
-    // Mark a Today item done: append " DONE" to its Deliverables line (hides it from Pick/Today)
-    function markItemDone(lineIndex) {
+    // Append " DONE" to a Deliverables line by index (hides it from Pick/Today).
+    function markLineDoneByIndex(lineIndex) {
       const lines = getDeliverablesText().split('\n');
       if (lineIndex < 0 || lineIndex >= lines.length) return;
       if (!/\s+DONE$/.test(lines[lineIndex].trim())) {
@@ -1079,6 +1351,12 @@
       const newText = lines.join('\n');
       storage.set('deliverables', newText);
       document.querySelectorAll('textarea.sync-notes[data-key="deliverables"]').forEach(el => el.value = newText);
+    }
+
+    // Mark a Today item done, then check whether that completes a checklist.
+    function markItemDone(lineIndex) {
+      markLineDoneByIndex(lineIndex);
+      checkChecklistCompletion();
       renderPick(); renderToday();
     }
 
@@ -1253,6 +1531,7 @@
       else if (!/\s+DONE$/.test(t)) lines[idx] = lines[idx].replace(/\s*$/, '') + ' DONE';
       delivSelected = -1;
       writeDeliverablesLines(lines);
+      checkChecklistCompletion();
       renderDelivList();
       celebrate(rect); buzz();
     }
@@ -1824,9 +2103,18 @@
             if (p) p.style.display = id === tab.dataset.target ? '' : 'none';
           });
           if (tab.dataset.target === 'plan-pick') renderPick();
+          if (tab.dataset.target === 'plan-lists') { closeChecklistForm(); renderLists(); }
           if (tab.dataset.target === 'plan-today' || tab.dataset.target === 'focus-today') renderToday();
         });
       });
+    });
+
+    document.getElementById('btn-new-checklist').addEventListener('click', openNewChecklistForm);
+    document.getElementById('checklist-cards').addEventListener('click', e => {
+      const editBtn = e.target.closest('[data-edit-checklist]');
+      if (editBtn) { openEditChecklistForm(editBtn.getAttribute('data-edit-checklist')); return; }
+      const delBtn = e.target.closest('[data-delete-checklist]');
+      if (delBtn) { deleteChecklist(delBtn.getAttribute('data-delete-checklist')); }
     });
 
     // Re-render pick/today views live as deliverables text changes
@@ -1837,6 +2125,8 @@
 initSyncedNotes();
 renderPick();
 renderToday();
+renderLists();
+setInterval(renderPick, 60000);   // catch a checklist becoming due while Pick sits open
 
     // ===== Cloud Sync engine =====
     // Mirrors all localStorage keys into one Firestore doc at /users/{uid}.
