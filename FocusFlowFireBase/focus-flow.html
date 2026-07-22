@@ -80,13 +80,29 @@
     .time-block.magnified.current .block-input { font-size: 1.08rem; color: #fff; }
     .time-block.magnified.current .block-input::placeholder { color: #5a7590; }
 
-    /* New current slot — blink a ring around it for its first 10s to announce itself.
-       Uses outline (not border-color) so it isn't fought over by the hour-target !important rules. */
-    @keyframes slot-blink-outline { 0%, 100% { outline-color: var(--primary); } 50% { outline-color: transparent; } }
-    .time-block.magnified.current.slot-blink {
-      outline: 2px solid var(--primary); outline-offset: 2px;
-      animation: slot-blink-outline 0.9s ease-in-out infinite;
+    /* Current slot, while still empty — a bright segment continuously sweeps
+       around the border (conic-gradient ring, masked down to just the border
+       band) instead of a static on/off blink, so it keeps nudging you to log
+       something without ever looking "finished". The sweep is animated via a
+       registered custom property (angle), not `transform: rotate()` — masking
+       a rotating-transform element renders correctly at rest but produces a
+       diagonal rendering artifact mid-rotation in this engine. */
+    .time-block.magnified.current.slot-blink { border-color: transparent; }
+    .time-block.magnified.current.hour-target.slot-blink { border-color: transparent !important; }
+    @property --spin-deg { syntax: '<angle>'; inherits: false; initial-value: 0deg; }
+    .time-block.magnified.current.slot-blink::before {
+      content: '';
+      position: absolute; inset: -3px;
+      border-radius: 9px; padding: 3px;
+      background: conic-gradient(from var(--spin-deg), var(--primary) 0deg, transparent 100deg, var(--primary) 200deg, transparent 300deg, var(--primary) 360deg);
+      -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+      -webkit-mask-composite: xor;
+      mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+      mask-composite: exclude;
+      animation: spin-border 1.2s linear infinite;
+      pointer-events: none;
     }
+    @keyframes spin-border { to { --spin-deg: 360deg; } }
 
     /* Past magnified blocks — faded but still readable */
     .time-block.magnified.past { background: #171b28 !important; opacity: 0.4; border-color: transparent !important; }
