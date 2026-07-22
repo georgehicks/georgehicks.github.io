@@ -705,12 +705,6 @@
       container.scrollTop = Math.max(0, top - offset);
     }
 
-    // Blink the current slot's border for its first 10s, so a new time slot
-    // announces itself — unless you're already typing in it.
-    let lastCurrentBlockSeen = null;
-    let blinkBlockMinutes = null;
-    let blinkTimer = null;
-
     function buildFocusTimeline() {
       const container = document.getElementById('focus-timeline');
       const notesSection = document.getElementById('focus-notes-section');
@@ -730,18 +724,6 @@
 
       const curBlock = currentBlockMinutes();
       const today = todayKey();
-
-      if (curBlock !== lastCurrentBlockSeen) {
-        lastCurrentBlockSeen = curBlock;
-        blinkBlockMinutes = curBlock;
-        clearTimeout(blinkTimer);
-        blinkTimer = setTimeout(() => {
-          blinkBlockMinutes = null;
-          const blinkInput = document.getElementById(`block-input-${curBlock}`);
-          const blinkBlock = blinkInput && blinkInput.closest('.time-block');
-          if (blinkBlock) blinkBlock.classList.remove('slot-blink');
-        }, 10000);
-      }
 
       for (let h = startHour; h < endHour; h++) {
         const hourMinutes = h * 60;
@@ -835,10 +817,7 @@
 
           const block = document.createElement('div');
           block.className = 'time-block magnified';
-          if (isCurrent) {
-            block.classList.add('current');
-            if (blinkBlockMinutes === blockMinutes) block.classList.add('slot-blink');
-          }
+          if (isCurrent) block.classList.add('current');
           if (isPast)                           block.classList.add('past');
           if (m === 60 - interval && !isPast)   block.classList.add('hour-target');
 
@@ -868,16 +847,20 @@
           const hourGoal = m === 60 - interval ? (storage.get(`hourGoal_${today}_${hourMinutes}`) || '') : '';
           input.placeholder = m === 50 ? (hourGoal || 'did you hit it?') : 'what are you doing?';
           input.value = storage.get(storageKey) || '';
-          input.addEventListener('input', () => storage.set(storageKey, input.value));
-          input.addEventListener('focus', () => {
-            showTray(input);
-            if (blinkBlockMinutes === blockMinutes) { blinkBlockMinutes = null; clearTimeout(blinkTimer); }
-            block.classList.remove('slot-blink');
+          // The current slot blinks while it's empty, nudging you to log
+          // something — pauses while you're actively typing in it.
+          const refreshBlink = () => {
+            if (!isCurrent) return;
+            block.classList.toggle('slot-blink', document.activeElement !== input && !input.value.trim());
+          };
+          input.addEventListener('input', () => { storage.set(storageKey, input.value); refreshBlink(); });
+          input.addEventListener('focus', () => { showTray(input); refreshBlink(); });
+          input.addEventListener('blur', () => {
+            refreshBlink();
+            setTimeout(() => block.querySelectorAll('.tray').forEach(t => t.remove()), 200);
           });
-          input.addEventListener('blur', () => setTimeout(() => {
-            block.querySelectorAll('.tray').forEach(t => t.remove());
-          }, 200));
           block.appendChild(input);
+          refreshBlink();
 
           // Progress bar on current block only
           if (isCurrent) {
