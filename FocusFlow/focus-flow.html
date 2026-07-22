@@ -873,7 +873,12 @@
           input.addEventListener('focus', () => { showTray(input); refreshBlink(); });
           input.addEventListener('blur', () => {
             refreshBlink();
-            setTimeout(() => block.querySelectorAll('.tray').forEach(t => t.remove()), 200);
+            // A tray-chip tap can blur-then-refocus the input in one gesture (seen
+            // on iOS) — only clear the tray if it's still actually unfocused once
+            // this fires, so a chip click doesn't wipe out its own re-shown tray.
+            setTimeout(() => {
+              if (document.activeElement !== input) block.querySelectorAll('.tray').forEach(t => t.remove());
+            }, 200);
           });
           block.appendChild(input);
           refreshBlink();
