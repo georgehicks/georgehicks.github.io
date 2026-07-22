@@ -1,4 +1,4 @@
-const CACHE = 'focusflow-v46';
+const CACHE = 'focusflow-v47';
 const ASSETS = ['./focus-flow.html', './manifest.json', './icon.svg'];
 
 self.addEventListener('install', e => {

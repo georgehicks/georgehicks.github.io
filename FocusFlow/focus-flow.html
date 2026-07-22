@@ -1748,13 +1748,14 @@
       const tray = document.createElement('div');
       tray.className = 'tray';
 
+      // Picking a tray item logs it and closes the tray — only one thing gets
+      // worked in a slot at a time; adding a second means tapping the slot again.
       const appendText = (text, key) => {
         const cur = input.value.trim();
         input.value = cur ? cur + ', ' + text : text;
         input.dispatchEvent(new Event('input'));
         if (key) { const mru = getMRU().filter(k => k !== key); mru.unshift(key); saveMRU(mru); }
-        input.focus();
-        showTray(input);
+        block.querySelectorAll('.tray').forEach(t => t.remove());
       };
 
       // "Same as last slot" first — unless that text is already a today-item chip
