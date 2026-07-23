@@ -127,11 +127,22 @@
     .progress-bar { height: 100%; background: linear-gradient(90deg, #00ffcc, #ffcc00); width: 100%; transition: width 1s linear; }
 
     .time-label { width: 78px; color: #7080a0; font-size: 0.85rem; flex-shrink: 0; }
-    .block-input { flex: 1; background: transparent; border: none; color: #8090b0; font-size: 0.9rem; outline: none; }
+    .block-input { display: none; flex: 1; background: transparent; border: none; color: #8090b0; font-size: 0.9rem; outline: none; }
+    .time-block.editing .block-input { display: block; }
+    .time-block.editing .block-display { display: none; }
+    /* Tap-to-decide display for a slot — no keyboard until Edit is chosen */
+    .block-display { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; cursor: pointer; color: #8090b0; font-size: 0.9rem; }
+    .time-block.magnified .block-display { color: #647098; }
+    .time-block.magnified .block-display.empty { color: #3a4258; }
+    .time-block.magnified.current .block-display { font-size: 1.08rem; color: #fff; }
+    .time-block.magnified.current .block-display.empty { color: #5a7590; }
+    .tray-chip.tray-edit { color: #ffd580; border-color: rgba(255,213,128,0.4); }
     .magnified-window { border: 2px solid rgba(0,255,204,0.5); border-radius: 10px; padding: 3px; margin-bottom: 6px; background: rgba(0,255,204,0.04); }
 
     /* Main notes section */
     .notes { min-height: 80px; resize: vertical; width: 100%; background: #151a28; border: 1px solid #252b40; border-radius: 0 6px 6px 6px; color: #ccd; font-family: inherit; font-size: 0.88rem; padding: 8px 10px; outline: none; }
+    /* Focus tab — small always-visible scratchpad below the timeline, no tab needed */
+    .focus-notes-fixed { min-height: 46px; margin-top: 10px; border-radius: 6px; }
     .notes-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 0; }
     .notes-tabs { display: flex; gap: 2px; }
     .notes-tab { padding: 3px 12px; border-radius: 5px 5px 0 0; cursor: pointer; font-size: 0.8rem; color: #557; background: #111620; border: 1px solid #252b40; border-bottom: none; }
@@ -212,9 +223,8 @@
     .due-tag { font-size:0.62rem; color:#8ab4f8; border:1px solid #2a3555; background:#1a2030; border-radius:5px; padding:1px 5px; margin-left:4px; }
     .pick-empty, .today-empty { color:#556; font-size:0.85rem; padding:8px 2px; }
 
-    /* Today summary (read-only) */
+    /* Today summary (Plan tab, read-only) */
     .today-summary { background:#151a28; border:1px solid #252b40; border-radius:0 6px 6px 6px; padding:10px 12px; min-height:max(300px, calc(100dvh - 260px)); }
-    .today-summary.compact { min-height:0; padding:8px 10px; }
     .today-row { display:flex; align-items:center; gap:8px; padding:3px 0; font-size:0.9rem; }
     .today-dot { width:17px; height:17px; border-radius:50%; flex-shrink:0; display:flex; align-items:center; justify-content:center; font-size:0.68rem; font-weight:700; color:#0f1117; }
     .today-dot.p1 { background:#00ffcc; } .today-dot.p2 { background:#ffcc00; } .today-dot.p3 { background:#ff8866; }
@@ -222,16 +232,6 @@
     .today-row .t-txt { flex:1; min-width:0; cursor:pointer; border-radius:4px; transition:color 0.15s ease, background 0.15s ease; }
     .today-row .t-txt:hover { background:#1e2436; }
     .today-row .t-txt.added-flash { color:#00ffcc; }
-
-    /* Compact Today (Focus tab, under the live timeline) — muted so it doesn't
-       out-compete the current time slot's highlight for attention. */
-    .today-summary.compact { opacity:0.7; transition: opacity 0.2s ease; }
-    .today-summary.compact:hover, .today-summary.compact:focus-within { opacity:1; }
-    .today-summary.compact .today-dot { background:transparent; border:1.5px solid currentColor; color:inherit; }
-    .today-summary.compact .today-dot.p1 { color:#357c70; }
-    .today-summary.compact .today-dot.p2 { color:#8a7a34; }
-    .today-summary.compact .today-dot.p3 { color:#8c5c42; }
-    .today-summary.compact .today-row .t-txt { color:#707c93; }
     .today-done { margin-left:auto; background:none; border:1px solid #2a3350; color:#6a7a55; border-radius:6px; font-size:0.8rem; cursor:pointer; padding:1px 8px; flex-shrink:0; }
     .today-done:hover { color:#4caf50; border-color:#3a5a30; }
 
@@ -330,20 +330,7 @@
   <!-- FOCUS TAB -->
   <div id="panel-focus" class="section" style="display:none;">
     <div id="focus-timeline" class="timeline"></div>
-    <div id="focus-notes-section" style="margin-top:10px;">
-      <div class="notes-header">
-        <div class="notes-tabs">
-          <span class="notes-tab active" data-target="focus-today">Today</span>
-          <span class="notes-tab" data-target="focus-notes">Notes</span>
-        </div>
-      </div>
-      <div id="focus-today" class="subpanel">
-        <div id="focus-today-summary" class="today-summary compact"></div>
-      </div>
-      <div id="focus-notes" class="subpanel" style="display:none;">
-        <textarea id="focus-daily-notes" class="notes sync-notes" data-key="dailyNotes" placeholder="Quick notes, brain dump…" style="min-height:120px;"></textarea>
-      </div>
-    </div>
+    <textarea id="focus-daily-notes" class="notes sync-notes focus-notes-fixed" data-key="dailyNotes" placeholder="Quick notes, brain dump…"></textarea>
   </div>
 
   <!-- SETTINGS TAB -->
@@ -735,16 +722,41 @@
       container.scrollTop = Math.max(0, top - offset);
     }
 
+    // Keep a slot's tappable display in sync with its (hidden-until-edit) input.
+    function syncBlockDisplay(input) {
+      const block = input.closest('.time-block');
+      const display = block && block.querySelector('.block-display');
+      if (!display) return;
+      const val = input.value.trim();
+      display.textContent = val || input.placeholder;
+      display.classList.toggle('empty', !val);
+    }
+
+    // The current slot blinks while it's empty, nudging you to log something —
+    // pauses while its tray is open or you're actively typing in it.
+    function refreshSlotBlink(block) {
+      if (!block.classList.contains('current')) return;
+      const input = block.querySelector('.block-input');
+      if (!input) return;
+      const trayOpen = !!block.querySelector('.tray');
+      block.classList.toggle('slot-blink', !trayOpen && document.activeElement !== input && !input.value.trim());
+    }
+
+    // Close any open slot tray when a click lands outside its own block — lets a
+    // tap on the (non-input) display open the tray without a focus/blur pair to
+    // hang the close logic off of.
+    document.addEventListener('click', e => {
+      document.querySelectorAll('.time-block.magnified > .tray').forEach(tray => {
+        const block = tray.parentElement;
+        if (block.contains(e.target)) return;
+        tray.remove();
+        refreshSlotBlink(block);
+      });
+    });
+
     function buildFocusTimeline() {
       const container = document.getElementById('focus-timeline');
-      const notesSection = document.getElementById('focus-notes-section');
-      // If the user is typing in the docked notes, remember focus+caret so reparenting doesn't drop it
-      const ae = document.activeElement;
-      const keepFocus = notesSection && ae && notesSection.contains(ae)
-        ? { el: ae, s: ae.selectionStart, e: ae.selectionEnd } : null;
-      if (notesSection) document.getElementById('panel-focus').appendChild(notesSection); // park safely before clearing
       container.innerHTML = '';
-      let magWindow = null;
 
       const now = new Date();
       const nowMinutes = now.getHours() * 60 + now.getMinutes();
@@ -793,7 +805,7 @@
           storage.set(hourGoalKey, goalInput.value);
           // Live-update the :50 block placeholder
           const targetInput = document.getElementById(`block-input-${hourMinutes + 50}`);
-          if (targetInput) targetInput.placeholder = goalInput.value || 'did you hit it?';
+          if (targetInput) { targetInput.placeholder = goalInput.value || 'did you hit it?'; syncBlockDisplay(targetInput); }
         });
         hourBlock.appendChild(goalInput);
 
@@ -868,7 +880,9 @@
             });
           }
 
-          // Note input — persisted per block per day
+          // Note input — persisted per block per day. Shown as a tappable
+          // display by default (tap opens the pick tray, no keyboard); only
+          // the tray's Edit button turns this into a real focused input.
           const storageKey = `block_${today}_${blockMinutes}`;
           const input = document.createElement('input');
           input.type = 'text';
@@ -877,25 +891,23 @@
           const hourGoal = m === 60 - interval ? (storage.get(`hourGoal_${today}_${hourMinutes}`) || '') : '';
           input.placeholder = m === 50 ? (hourGoal || 'did you hit it?') : 'what are you doing?';
           input.value = storage.get(storageKey) || '';
-          // The current slot blinks while it's empty, nudging you to log
-          // something — pauses while you're actively typing in it.
-          const refreshBlink = () => {
-            if (!isCurrent) return;
-            block.classList.toggle('slot-blink', document.activeElement !== input && !input.value.trim());
-          };
-          input.addEventListener('input', () => { storage.set(storageKey, input.value); refreshBlink(); });
-          input.addEventListener('focus', () => { showTray(input); refreshBlink(); });
-          input.addEventListener('blur', () => {
-            refreshBlink();
-            // A tray-chip tap can blur-then-refocus the input in one gesture (seen
-            // on iOS) — only clear the tray if it's still actually unfocused once
-            // this fires, so a chip click doesn't wipe out its own re-shown tray.
-            setTimeout(() => {
-              if (document.activeElement !== input) block.querySelectorAll('.tray').forEach(t => t.remove());
-            }, 200);
+
+          const display = document.createElement('div');
+          display.className = 'block-display';
+          display.addEventListener('click', () => {
+            if (block.querySelector('.tray')) block.querySelectorAll('.tray').forEach(t => t.remove());
+            else showTray(input);
+            refreshSlotBlink(block);
           });
+
+          input.addEventListener('input', () => { storage.set(storageKey, input.value); syncBlockDisplay(input); refreshSlotBlink(block); });
+          input.addEventListener('blur', () => { block.classList.remove('editing'); syncBlockDisplay(input); refreshSlotBlink(block); });
+          input.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === 'Escape') input.blur(); });
+
+          block.appendChild(display);
           block.appendChild(input);
-          refreshBlink();
+          syncBlockDisplay(input);
+          refreshSlotBlink(block);
 
           // Progress bar on current block only
           if (isCurrent) {
@@ -910,14 +922,11 @@
           winWrapper.appendChild(block);
         }
 
-        if (winWrapper.children.length > 0) { container.appendChild(winWrapper); magWindow = winWrapper; }
+        if (winWrapper.children.length > 0) { container.appendChild(winWrapper); }
       }
-      // Dock the Today/Notes panel to the footer of the magnified hour so it stays in view
-      if (notesSection) (magWindow || container).appendChild(notesSection);
-      if (keepFocus) { keepFocus.el.focus({ preventScroll: true }); try { keepFocus.el.setSelectionRange(keepFocus.s, keepFocus.e); } catch (_) {} }
       // Re-center the current block in the timeline on each (re)build, unless editing inside it
-      const ae2 = document.activeElement;
-      if (!(ae2 && container.contains(ae2) && (ae2.tagName === 'INPUT' || ae2.tagName === 'TEXTAREA'))) scrollCurrentBlockIntoView();
+      const ae = document.activeElement;
+      if (!(ae && container.contains(ae) && (ae.tagName === 'INPUT' || ae.tagName === 'TEXTAREA'))) scrollCurrentBlockIntoView();
       start10MinProgressBar();
     }
 
@@ -1410,9 +1419,8 @@
             const parent = it.isStep && it.parent ? `<span class="tparent">${escapeHtml(it.parent)} ▸ </span>` : '';
             return `<div class="today-row"><span class="today-dot p${it.prio}">${it.prio}</span><span class="t-txt" data-line="${it.lineIndex}" title="Log into the current time slot" onclick="addToCurrentSlot(${it.lineIndex})">${parent}${escapeHtml(it.text)}</span><button class="today-done" title="Mark done" onclick="markItemDone(${it.lineIndex})">✓</button></div>`;
           }).join('');
-      ['today-summary', 'focus-today-summary'].forEach(id => {
-        const el = document.getElementById(id); if (el) el.innerHTML = html;
-      });
+      const el = document.getElementById('today-summary');
+      if (el) el.innerHTML = html;
     }
 
     // Tap a Today item's name to log it into the current time slot, without
@@ -1428,7 +1436,7 @@
         const newVal = parts.join(', ');
         storage.set(key, newVal);
         const input = document.getElementById(`block-input-${blockMin}`);
-        if (input) input.value = newVal;
+        if (input) { input.value = newVal; syncBlockDisplay(input); refreshSlotBlink(input.closest('.time-block')); }
       }
       buzz();
       document.querySelectorAll(`.t-txt[data-line="${lineIndex}"]`).forEach(el => {
@@ -1770,9 +1778,24 @@
         input.dispatchEvent(new Event('input'));
         if (key) { const mru = getMRU().filter(k => k !== key); mru.unshift(key); saveMRU(mru); }
         block.querySelectorAll('.tray').forEach(t => t.remove());
+        refreshSlotBlink(block);
       };
 
-      // "Same as last slot" first — unless that text is already a today-item chip
+      // Edit is the only thing allowed to focus the real input (and so raise the
+      // keyboard) — picking from the tray never does.
+      const editBtn = document.createElement('button');
+      editBtn.type = 'button';
+      editBtn.className = 'tray-chip tray-edit';
+      editBtn.textContent = '✎ Edit';
+      editBtn.addEventListener('mousedown', e => e.preventDefault());
+      editBtn.addEventListener('click', () => {
+        block.querySelectorAll('.tray').forEach(t => t.remove());
+        block.classList.add('editing');
+        input.focus();
+      });
+      tray.appendChild(editBtn);
+
+      // "Same as last slot" — unless that text is already a today-item chip
       if (last && !items.some(it => it.text === last)) {
         const chip = document.createElement('span');
         chip.className = 'tray-chip same';
@@ -1789,12 +1812,12 @@
         chip.title = it.text;
         const label = it.text.length > 22 ? it.text.slice(0, 21) + '…' : it.text;
         chip.innerHTML = `<span class="tc-dot p${it.prio}"></span>${escapeHtml(label)}`;
-        chip.addEventListener('mousedown', e => e.preventDefault()); // keep input focused
+        chip.addEventListener('mousedown', e => e.preventDefault());
         chip.addEventListener('click', () => appendText(it.text, it.key));
         tray.appendChild(chip);
       });
 
-      if (tray.children.length) block.appendChild(tray);
+      block.appendChild(tray);
     }
 
     function currentBlockMinutes() {
@@ -2226,7 +2249,7 @@
           });
           if (tab.dataset.target === 'plan-pick') renderPick();
           if (tab.dataset.target === 'plan-lists') { closeChecklistForm(); renderLists(); }
-          if (tab.dataset.target === 'plan-today' || tab.dataset.target === 'focus-today') renderToday();
+          if (tab.dataset.target === 'plan-today') renderToday();
         });
       });
     });
