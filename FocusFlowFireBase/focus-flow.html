@@ -136,13 +136,10 @@
     .time-block.magnified .block-display.empty { color: #3a4258; }
     .time-block.magnified.current .block-display { font-size: 1.08rem; color: #fff; }
     .time-block.magnified.current .block-display.empty { color: #5a7590; }
-    .tray-chip.tray-edit { color: #ffd580; border-color: rgba(255,213,128,0.4); }
     .magnified-window { border: 2px solid rgba(0,255,204,0.5); border-radius: 10px; padding: 3px; margin-bottom: 6px; background: rgba(0,255,204,0.04); }
 
     /* Main notes section */
     .notes { min-height: 80px; resize: vertical; width: 100%; background: #151a28; border: 1px solid #252b40; border-radius: 0 6px 6px 6px; color: #ccd; font-family: inherit; font-size: 0.88rem; padding: 8px 10px; outline: none; }
-    /* Focus tab — small always-visible scratchpad below the timeline, no tab needed */
-    .focus-notes-fixed { min-height: 46px; margin-top: 10px; border-radius: 6px; }
     .notes-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 0; }
     .notes-tabs { display: flex; gap: 2px; }
     .notes-tab { padding: 3px 12px; border-radius: 5px 5px 0 0; cursor: pointer; font-size: 0.8rem; color: #557; background: #111620; border: 1px solid #252b40; border-bottom: none; }
@@ -245,6 +242,17 @@
     .tray-chip.same { background:#243047; border-color:#3a4a70; color:#cfe0ff; }
     .tray-chip.logged { border-style:dashed; color:#8898b8; }
 
+    /* Tray tabs — Today / Upcoming / Notes, decided-mode content */
+    .tray-tabs { width:100%; display:flex; align-items:center; gap:12px; padding-bottom:5px; margin-bottom:2px; border-bottom:1px solid #2a3350; }
+    .tray-tab { font-size:0.74rem; color:#6878a0; cursor:pointer; padding:2px 0; }
+    .tray-tab.active { color:var(--primary); font-weight:600; border-bottom:2px solid var(--primary); }
+    .tray-edit-inline { margin-left:auto; background:none; border:1px solid rgba(255,213,128,0.4); color:#ffd580; border-radius:8px; padding:2px 9px; font-size:0.74rem; font-family:inherit; cursor:pointer; }
+    .tray-panel { width:100%; display:flex; flex-wrap:wrap; gap:5px; }
+    .tray-panel.tray-upcoming-panel { max-height:220px; overflow-y:auto; display:block; }
+    .tray-panel-hidden { display:none !important; }
+    .tray-empty { color:#556; font-size:0.78rem; padding:2px 0; }
+    .tray-notes { min-height:70px; width:100%; }
+
     /* Cal tab — next 14 days summary */
     .upcoming-header { font-size:0.78rem; color:#7a8aa8; margin:16px 0 4px; text-transform:uppercase; letter-spacing:0.04em; }
     .upcoming-days { display:flex; flex-direction:column; }
@@ -346,7 +354,6 @@
   <!-- FOCUS TAB -->
   <div id="panel-focus" class="section" style="display:none;">
     <div id="focus-timeline" class="timeline"></div>
-    <textarea id="focus-daily-notes" class="notes sync-notes focus-notes-fixed" data-key="dailyNotes" placeholder="Quick notes, brain dump…"></textarea>
   </div>
 
   <!-- SETTINGS TAB -->
@@ -578,15 +585,14 @@
       return results;
     }
 
-    function renderUpcomingDays() {
-      const host = document.getElementById('upcoming-days');
-      if (!host) return;
+    // Shared 14-day list builder — used by both the Cal tab's standing summary
+    // and the Focus-tab tray's Upcoming tab, so there's one rendering to keep in sync.
+    function buildUpcomingDaysList(host) {
       const events = storage.get('upcoming14') || [];
       const byDate = {};
       events.forEach(e => { (byDate[e.dateKey] = byDate[e.dateKey] || []).push(e); });
       const DOW = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
       const today = todayKey();
-      host.innerHTML = '';
       const start = new Date(); start.setHours(0, 0, 0, 0);
       for (let i = 0; i < 14; i++) {
         const d = new Date(start); d.setDate(d.getDate() + i);
@@ -627,6 +633,13 @@
         }
         host.appendChild(row);
       }
+    }
+
+    function renderUpcomingDays() {
+      const host = document.getElementById('upcoming-days');
+      if (!host) return;
+      host.innerHTML = '';
+      buildUpcomingDaysList(host);
     }
 
     async function pullCalendar() {
@@ -1931,11 +1944,26 @@
         refreshSlotBlink(block);
       };
 
-      // Edit is the only thing allowed to focus the real input (and so raise the
-      // keyboard) — picking from the tray never does.
+      // Tabs row: Today (default) / Upcoming / Notes, plus Edit — the only
+      // thing allowed to focus the real input (and so raise the keyboard).
+      const tabsRow = document.createElement('div');
+      tabsRow.className = 'tray-tabs';
+      const panels = {};
+      ['Today', 'Upcoming', 'Notes'].forEach((name, i) => {
+        const tabEl = document.createElement('span');
+        tabEl.className = 'tray-tab' + (i === 0 ? ' active' : '');
+        tabEl.textContent = name;
+        tabEl.addEventListener('mousedown', e => e.preventDefault());
+        tabEl.addEventListener('click', () => {
+          tabsRow.querySelectorAll('.tray-tab').forEach(t => t.classList.remove('active'));
+          tabEl.classList.add('active');
+          Object.entries(panels).forEach(([k, el]) => el.classList.toggle('tray-panel-hidden', k !== name));
+        });
+        tabsRow.appendChild(tabEl);
+      });
       const editBtn = document.createElement('button');
       editBtn.type = 'button';
-      editBtn.className = 'tray-chip tray-edit';
+      editBtn.className = 'tray-edit-inline';
       editBtn.textContent = '✎ Edit';
       editBtn.addEventListener('mousedown', e => e.preventDefault());
       editBtn.addEventListener('click', () => {
@@ -1943,7 +1971,13 @@
         block.classList.add('editing');
         input.focus();
       });
-      tray.appendChild(editBtn);
+      tabsRow.appendChild(editBtn);
+      tray.appendChild(tabsRow);
+
+      // Today panel — pick chips
+      const todayPanel = document.createElement('div');
+      todayPanel.className = 'tray-panel';
+      panels.Today = todayPanel;
 
       // "Same as last slot" — unless that text is already a today-item chip
       if (last && !items.some(it => it.text === last)) {
@@ -1953,7 +1987,7 @@
         chip.innerHTML = '↻ ' + escapeHtml(last.length > 20 ? last.slice(0, 19) + '…' : last);
         chip.addEventListener('mousedown', e => e.preventDefault());
         chip.addEventListener('click', () => appendText(last, null));
-        tray.appendChild(chip);
+        todayPanel.appendChild(chip);
       }
 
       items.forEach(it => {
@@ -1964,7 +1998,7 @@
         chip.innerHTML = `<span class="tc-dot p${it.prio}"></span>${escapeHtml(label)}`;
         chip.addEventListener('mousedown', e => e.preventDefault());
         chip.addEventListener('click', () => appendText(it.text, it.key));
-        tray.appendChild(chip);
+        todayPanel.appendChild(chip);
       });
 
       // Free-form text typed into other slots today, so it can be picked again
@@ -1979,8 +2013,42 @@
           chip.textContent = text.length > 22 ? text.slice(0, 21) + '…' : text;
           chip.addEventListener('mousedown', e => e.preventDefault());
           chip.addEventListener('click', () => appendText(text, null));
-          tray.appendChild(chip);
+          todayPanel.appendChild(chip);
         });
+
+      if (!todayPanel.children.length) {
+        const empty = document.createElement('div');
+        empty.className = 'tray-empty';
+        empty.textContent = 'Nothing picked yet — use Pick to set priorities.';
+        todayPanel.appendChild(empty);
+      }
+      tray.appendChild(todayPanel);
+
+      // Upcoming panel — the same 14-day summary as the Cal tab, read-only
+      const upcomingPanel = document.createElement('div');
+      upcomingPanel.className = 'tray-panel tray-upcoming-panel tray-panel-hidden';
+      panels.Upcoming = upcomingPanel;
+      buildUpcomingDaysList(upcomingPanel);
+      tray.appendChild(upcomingPanel);
+
+      // Notes panel — the daily scratchpad, editable right here
+      const notesPanel = document.createElement('div');
+      notesPanel.className = 'tray-panel tray-panel-hidden';
+      panels.Notes = notesPanel;
+      const notesArea = document.createElement('textarea');
+      notesArea.className = 'notes sync-notes tray-notes';
+      notesArea.dataset.key = 'dailyNotes';
+      notesArea.placeholder = 'Quick notes, brain dump…';
+      notesArea.value = storage.get('dailyNotes') || '';
+      notesArea.addEventListener('input', () => {
+        checkpointNotes('dailyNotes', storage.get('dailyNotes') || '', notesArea.value);
+        storage.set('dailyNotes', notesArea.value);
+        document.querySelectorAll('textarea.sync-notes[data-key="dailyNotes"]').forEach(other => {
+          if (other !== notesArea) other.value = notesArea.value;
+        });
+      });
+      notesPanel.appendChild(notesArea);
+      tray.appendChild(notesPanel);
 
       block.appendChild(tray);
     }
