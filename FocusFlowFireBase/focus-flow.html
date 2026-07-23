@@ -243,6 +243,7 @@
     .tray-chip .tc-dot { display:inline-block; width:7px; height:7px; border-radius:50%; margin-right:5px; vertical-align:middle; }
     .tray-chip .tc-dot.p1{background:#00ffcc;} .tray-chip .tc-dot.p2{background:#ffcc00;} .tray-chip .tc-dot.p3{background:#ff8866;}
     .tray-chip.same { background:#243047; border-color:#3a4a70; color:#cfe0ff; }
+    .tray-chip.logged { border-style:dashed; color:#8898b8; }
 
     /* Cal tab — next 14 days summary */
     .upcoming-header { font-size:0.78rem; color:#7a8aa8; margin:16px 0 4px; text-transform:uppercase; letter-spacing:0.04em; }
@@ -1887,6 +1888,27 @@
       return best ? best.text : null;
     }
 
+    // Distinct things already typed into OTHER slots today, most-recent first —
+    // so free-form text you type once (via Edit) resurfaces as a pick chip
+    // instead of needing to be retyped if you work it again later in the day.
+    function todaysLoggedTexts(excludeBlockMinutes) {
+      const today = todayKey();
+      const seen = new Map(); // text -> most recent block minute logged
+      for (let i = 0; i < localStorage.length; i++) {
+        const k = localStorage.key(i);
+        const m = k && k.match(/^block_(.+)_(\d+)$/);
+        if (!m || m[1] !== today) continue;
+        const mins = parseInt(m[2]);
+        if (mins === excludeBlockMinutes) continue;
+        const raw = storage.get(k);
+        if (!raw) continue;
+        String(raw).split(',').map(s => s.trim()).filter(Boolean).forEach(text => {
+          if (seen.get(text) === undefined || mins > seen.get(text)) seen.set(text, mins);
+        });
+      }
+      return [...seen.entries()].sort((a, b) => b[1] - a[1]).map(([text]) => text);
+    }
+
     function showTray(input) {
       const block = input.closest('.time-block');
       if (!block) return;
@@ -1944,6 +1966,21 @@
         chip.addEventListener('click', () => appendText(it.text, it.key));
         tray.appendChild(chip);
       });
+
+      // Free-form text typed into other slots today, so it can be picked again
+      // here instead of retyped — capped so a busy day doesn't flood the tray.
+      todaysLoggedTexts(blockMin)
+        .filter(text => text !== last && !items.some(it => it.text === text))
+        .slice(0, 6)
+        .forEach(text => {
+          const chip = document.createElement('span');
+          chip.className = 'tray-chip logged';
+          chip.title = 'Logged earlier today: ' + text;
+          chip.textContent = text.length > 22 ? text.slice(0, 21) + '…' : text;
+          chip.addEventListener('mousedown', e => e.preventDefault());
+          chip.addEventListener('click', () => appendText(text, null));
+          tray.appendChild(chip);
+        });
 
       block.appendChild(tray);
     }
