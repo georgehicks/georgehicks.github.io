@@ -471,8 +471,22 @@
     // ---- Calendar import (ICS) ----
     function icsStatus(m) { const el = document.getElementById('ics-status'); if (el) el.textContent = m; }
 
+    // The feed embeds its own VTIMEZONE block(s) defining the UTC-offset rules
+    // for whatever named zone its organizer's calendar uses. ICAL.js can't
+    // resolve a TZID-qualified DTSTART to the right instant unless that zone is
+    // registered first — unregistered, it silently misreads the offset, which
+    // shows up as events landing on the wrong hour or even the wrong day
+    // (worse the further the organizer's zone is from the viewer's, so mixing
+    // calendars from people in different timezones makes it look inconsistent).
+    function registerIcsTimezones(comp) {
+      comp.getAllSubcomponents('vtimezone').forEach(vt => {
+        try { ICAL.TimezoneService.register(vt); } catch (e) {}
+      });
+    }
+
     function parseTodayEvents(icsText) {
       const comp = new ICAL.Component(ICAL.parse(icsText));
+      registerIcsTimezones(comp);
       const now = new Date();
       const dayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
       const dayEnd = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1);
