@@ -254,6 +254,7 @@
     .upcoming-day-row.is-today .upcoming-date { color:var(--primary); }
     .upcoming-none { font-size:0.76rem; color:#3f4863; margin-top:2px; }
     .upcoming-event { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size:0.78rem; color:#8a98b8; padding:3px 0 3px 10px; overflow-wrap:anywhere; }
+    .upcoming-event.upcoming-recurring { color:#66738f; font-style:italic; }
     .upcoming-event-time { color:#5f7a9a; margin-right:8px; }
 
   </style>
@@ -551,10 +552,10 @@
     function parseRangeEvents(icsText, rangeStart, rangeEnd) {
       const comp = new ICAL.Component(ICAL.parse(icsText));
       const results = [];
-      const add = (startJs, summary, uid) => {
+      const add = (startJs, summary, uid, recurring) => {
         if (startJs < rangeStart || startJs >= rangeEnd) return;
         const dateKey = `${startJs.getFullYear()}-${String(startJs.getMonth() + 1).padStart(2, '0')}-${String(startJs.getDate()).padStart(2, '0')}`;
-        results.push({ uid, dateKey, startMin: startJs.getHours() * 60 + startJs.getMinutes(), text: summary || '(busy)' });
+        results.push({ uid, dateKey, startMin: startJs.getHours() * 60 + startJs.getMinutes(), text: summary || '(busy)', recurring });
       };
       comp.getAllSubcomponents('vevent').forEach(ve => {
         const event = new ICAL.Event(ve);
@@ -565,10 +566,10 @@
           while ((next = it.next()) && guard++ < 5000) {
             const startJs = next.toJSDate();
             if (startJs >= rangeEnd) break;
-            add(startJs, event.summary, (event.uid || 'e') + '_' + next.toUnixTime());
+            add(startJs, event.summary, (event.uid || 'e') + '_' + next.toUnixTime(), true);
           }
         } else {
-          add(event.startDate.toJSDate(), event.summary, event.uid || ('e' + Math.random().toString(36).slice(2)));
+          add(event.startDate.toJSDate(), event.summary, event.uid || ('e' + Math.random().toString(36).slice(2)), false);
         }
       });
       return results;
@@ -597,7 +598,9 @@
         row.appendChild(dateEl);
 
         if (dayEvents.length) {
-          dayEvents.forEach(e => {
+          const oneOff = dayEvents.filter(e => !e.recurring);
+          const recurring = dayEvents.filter(e => e.recurring);
+          oneOff.forEach(e => {
             const evEl = document.createElement('div');
             evEl.className = 'upcoming-event';
             const timeEl = document.createElement('span');
@@ -607,6 +610,12 @@
             evEl.appendChild(document.createTextNode(e.text));
             row.appendChild(evEl);
           });
+          if (recurring.length) {
+            const recEl = document.createElement('div');
+            recEl.className = 'upcoming-event upcoming-recurring';
+            recEl.textContent = [...new Set(recurring.map(e => e.text))].join(', ');
+            row.appendChild(recEl);
+          }
         } else {
           const noneEl = document.createElement('div');
           noneEl.className = 'upcoming-none';
