@@ -247,10 +247,14 @@
     /* Cal tab — next 14 days summary */
     .upcoming-header { font-size:0.78rem; color:#7a8aa8; margin:16px 0 4px; text-transform:uppercase; letter-spacing:0.04em; }
     .upcoming-days { display:flex; flex-direction:column; }
-    .upcoming-day-row { font-size:0.76rem; color:#8a98b8; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; padding:3px 2px; border-bottom:1px solid #1c2233; white-space:pre-wrap; overflow-wrap:anywhere; }
-    .upcoming-day-row.empty { color:#454e68; }
-    .upcoming-day-row.is-today { color:#dde; font-weight:600; }
+    .upcoming-day-row { padding:8px 2px; border-bottom:1px solid #1c2233; }
     .upcoming-day-row:last-child { border-bottom:none; }
+    .upcoming-date { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size:0.92rem; font-weight:700; color:#c4cee4; letter-spacing:0.02em; }
+    .upcoming-day-row.empty .upcoming-date { color:#4a5470; font-weight:600; }
+    .upcoming-day-row.is-today .upcoming-date { color:var(--primary); }
+    .upcoming-none { font-size:0.76rem; color:#3f4863; margin-top:2px; }
+    .upcoming-event { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size:0.78rem; color:#8a98b8; padding:3px 0 3px 10px; overflow-wrap:anywhere; }
+    .upcoming-event-time { color:#5f7a9a; margin-right:8px; }
 
   </style>
 </head>
@@ -584,12 +588,31 @@
         const d = new Date(start); d.setDate(d.getDate() + i);
         const dateKey = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
         const dayEvents = (byDate[dateKey] || []).slice().sort((a, b) => a.startMin - b.startMin);
-        const summary = dayEvents.length
-          ? dayEvents.map(e => `${String(Math.floor(e.startMin / 60)).padStart(2, '0')} ${e.text}`).join(', ')
-          : '—';
         const row = document.createElement('div');
         row.className = 'upcoming-day-row' + (dayEvents.length ? '' : ' empty') + (dateKey === today ? ' is-today' : '');
-        row.textContent = `${d.getFullYear()} ${String(d.getMonth() + 1).padStart(2, '0')} ${String(d.getDate()).padStart(2, '0')} ${DOW[d.getDay()]} - ${summary}`;
+
+        const dateEl = document.createElement('div');
+        dateEl.className = 'upcoming-date';
+        dateEl.textContent = `${d.getFullYear()} ${String(d.getMonth() + 1).padStart(2, '0')} ${String(d.getDate()).padStart(2, '0')} ${DOW[d.getDay()]}`;
+        row.appendChild(dateEl);
+
+        if (dayEvents.length) {
+          dayEvents.forEach(e => {
+            const evEl = document.createElement('div');
+            evEl.className = 'upcoming-event';
+            const timeEl = document.createElement('span');
+            timeEl.className = 'upcoming-event-time';
+            timeEl.textContent = String(Math.floor(e.startMin / 60)).padStart(2, '0');
+            evEl.appendChild(timeEl);
+            evEl.appendChild(document.createTextNode(e.text));
+            row.appendChild(evEl);
+          });
+        } else {
+          const noneEl = document.createElement('div');
+          noneEl.className = 'upcoming-none';
+          noneEl.textContent = '—';
+          row.appendChild(noneEl);
+        }
         host.appendChild(row);
       }
     }
