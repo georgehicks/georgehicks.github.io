@@ -244,6 +244,14 @@
     .tray-chip .tc-dot.p1{background:#00ffcc;} .tray-chip .tc-dot.p2{background:#ffcc00;} .tray-chip .tc-dot.p3{background:#ff8866;}
     .tray-chip.same { background:#243047; border-color:#3a4a70; color:#cfe0ff; }
 
+    /* Cal tab — next 14 days summary */
+    .upcoming-header { font-size:0.78rem; color:#7a8aa8; margin:16px 0 4px; text-transform:uppercase; letter-spacing:0.04em; }
+    .upcoming-days { display:flex; flex-direction:column; }
+    .upcoming-day-row { font-size:0.76rem; color:#8a98b8; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; padding:3px 2px; border-bottom:1px solid #1c2233; white-space:pre-wrap; overflow-wrap:anywhere; }
+    .upcoming-day-row.empty { color:#454e68; }
+    .upcoming-day-row.is-today { color:#dde; font-weight:600; }
+    .upcoming-day-row:last-child { border-bottom:none; }
+
   </style>
 </head>
 <body>
@@ -302,6 +310,8 @@
           <button onclick="addAppointment()" class="plan-btn" style="width:100%;">+ Add Appointment</button>
         </div>
         <div id="appointment-list"></div>
+        <div class="upcoming-header">Next 14 Days</div>
+        <div id="upcoming-days" class="upcoming-days"></div>
       </div>
       <div id="plan-deliverables" class="subpanel">
         <div class="deliv-controls">
@@ -531,18 +541,75 @@
       return results;
     }
 
+    // Like parseTodayEvents, but groups occurrences whose *start* falls within
+    // [rangeStart, rangeEnd) by calendar day — feeds the 14-day summary instead
+    // of today's minute-precision timeline.
+    function parseRangeEvents(icsText, rangeStart, rangeEnd) {
+      const comp = new ICAL.Component(ICAL.parse(icsText));
+      const results = [];
+      const add = (startJs, summary, uid) => {
+        if (startJs < rangeStart || startJs >= rangeEnd) return;
+        const dateKey = `${startJs.getFullYear()}-${String(startJs.getMonth() + 1).padStart(2, '0')}-${String(startJs.getDate()).padStart(2, '0')}`;
+        results.push({ uid, dateKey, startMin: startJs.getHours() * 60 + startJs.getMinutes(), text: summary || '(busy)' });
+      };
+      comp.getAllSubcomponents('vevent').forEach(ve => {
+        const event = new ICAL.Event(ve);
+        if (event.startDate && event.startDate.isDate) return;    // skip all-day
+        if (event.isRecurring()) {
+          const it = event.iterator();
+          let next, guard = 0;
+          while ((next = it.next()) && guard++ < 5000) {
+            const startJs = next.toJSDate();
+            if (startJs >= rangeEnd) break;
+            add(startJs, event.summary, (event.uid || 'e') + '_' + next.toUnixTime());
+          }
+        } else {
+          add(event.startDate.toJSDate(), event.summary, event.uid || ('e' + Math.random().toString(36).slice(2)));
+        }
+      });
+      return results;
+    }
+
+    function renderUpcomingDays() {
+      const host = document.getElementById('upcoming-days');
+      if (!host) return;
+      const events = storage.get('upcoming14') || [];
+      const byDate = {};
+      events.forEach(e => { (byDate[e.dateKey] = byDate[e.dateKey] || []).push(e); });
+      const DOW = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+      const today = todayKey();
+      host.innerHTML = '';
+      const start = new Date(); start.setHours(0, 0, 0, 0);
+      for (let i = 0; i < 14; i++) {
+        const d = new Date(start); d.setDate(d.getDate() + i);
+        const dateKey = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+        const dayEvents = (byDate[dateKey] || []).slice().sort((a, b) => a.startMin - b.startMin);
+        const summary = dayEvents.length
+          ? dayEvents.map(e => `${String(Math.floor(e.startMin / 60)).padStart(2, '0')} ${e.text}`).join(', ')
+          : '—';
+        const row = document.createElement('div');
+        row.className = 'upcoming-day-row' + (dayEvents.length ? '' : ' empty') + (dateKey === today ? ' is-today' : '');
+        row.textContent = `${d.getFullYear()} ${String(d.getMonth() + 1).padStart(2, '0')} ${String(d.getDate()).padStart(2, '0')} ${DOW[d.getDay()]} - ${summary}`;
+        host.appendChild(row);
+      }
+    }
+
     async function pullCalendar() {
       const urls = (document.getElementById('ics-url')?.value || '').split('\n').map(s => s.trim()).filter(Boolean);
       const proxy = (document.getElementById('ics-proxy')?.value || '').trim();
       if (!urls.length) return icsStatus('Enter at least one calendar .ics URL.');
       if (typeof ICAL === 'undefined') return icsStatus('Calendar library still loading — try again in a moment.');
       icsStatus('Fetching…');
-      let all = [], ok = 0, failed = 0;
+      const rangeStart = new Date(); rangeStart.setHours(0, 0, 0, 0);
+      const rangeEnd = new Date(rangeStart); rangeEnd.setDate(rangeEnd.getDate() + 14);
+      let all = [], allRange = [], ok = 0, failed = 0;
       for (const url of urls) {
         try {
           const res = await fetch(proxy ? proxy + encodeURIComponent(url) : url);
           if (!res.ok) throw new Error('HTTP ' + res.status);
-          all = all.concat(parseTodayEvents(await res.text()));
+          const text = await res.text();
+          all = all.concat(parseTodayEvents(text));
+          allRange = allRange.concat(parseRangeEvents(text, rangeStart, rangeEnd));
           ok++;
         } catch (e) { failed++; }
       }
@@ -553,6 +620,10 @@
       appointments = appointments.filter(a => a.source !== 'ics');     // refresh imported, keep manual
       merged.forEach((ev, i) => appointments.push({ id: 'ics_' + i + '_' + ev.uid, startMinutes: ev.start, endMinutes: ev.end, text: ev.text, source: 'ics' }));
       saveAppointments();
+      const seenR = new Set();
+      const mergedRange = allRange.filter(ev => { const k = ev.dateKey + '|' + ev.startMin + '|' + ev.text; if (seenR.has(k)) return false; seenR.add(k); return true; });
+      storage.set('upcoming14', mergedRange);
+      renderUpcomingDays();
       renderPlanList();
       if (typeof renderTimePicker === 'function') renderTimePicker();
       if (document.getElementById('panel-focus').style.display !== 'none') buildFocusTimeline();
@@ -2157,6 +2228,7 @@
 
     // Init
     renderPlanList();
+    renderUpcomingDays();
     renderTimePicker();
     buildMiniCalendar();
     initClockMarks();
@@ -2322,6 +2394,7 @@ setInterval(() => { applyAutoRenewChecklists(); renderPick(); }, 60000);   // ca
     function refreshFromStorage(skipFocusRebuild) {
       appointments = storage.get('appointments') || [];
       renderPlanList();
+      renderUpcomingDays();
       document.querySelectorAll('textarea.sync-notes').forEach(el => {
         if (el !== document.activeElement) el.value = storage.get(el.dataset.key) || '';
       });
