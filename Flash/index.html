@@ -641,23 +641,11 @@
       input.focus();
       if (inputFocused) f._startedAt = Date.now();
     } else if (drill.uiMode === 'learn') {
-      // Study pass: one button only, showing the correct answer. First tap
-      // reveals it, second tap advances — no distractors, nothing to get wrong.
+      // Study pass: reveal the answer, then choose to see this same fact
+      // again (as many times as it takes to stick) or move to the next one.
       input.style.display = 'none';
-      choicesGrid.classList.add('single-col');
-      choicesGrid.innerHTML = '<button class="choice-btn" type="button">Show answer</button>';
       choicesGrid.style.display = 'grid';
-      var learnBtn = choicesGrid.querySelector('.choice-btn');
-      learnBtn.addEventListener('click', function () {
-        if (learnBtn.classList.contains('correct')) {
-          drill.results.push({ correct: true, ms: 0 });
-          drill.idx++;
-          renderDrillCard();
-        } else {
-          learnBtn.textContent = f.answer;
-          learnBtn.classList.add('correct');
-        }
-      });
+      showLearnReveal(f, choicesGrid);
     } else {
       // Fixed-tier lessons: multiple choice, no keyboard involved.
       input.style.display = 'none';
@@ -672,6 +660,25 @@
       });
       f._startedAt = Date.now();
     }
+  }
+
+  function showLearnReveal(f, choicesGrid) {
+    choicesGrid.classList.add('single-col');
+    choicesGrid.innerHTML = '<button class="choice-btn" type="button">Show answer</button>';
+    var revealBtn = choicesGrid.querySelector('.choice-btn');
+    revealBtn.addEventListener('click', function () {
+      if (!f._counted) { f._counted = true; drill.results.push({ correct: true, ms: 0 }); updateDrillProgress(); }
+      document.getElementById('feedback').innerHTML = '<span class="fb-ok">' + f.answer + '</span>';
+      choicesGrid.classList.remove('single-col');
+      choicesGrid.innerHTML =
+        '<button class="choice-btn" type="button" id="learn-again-btn">Repeat</button>' +
+        '<button class="choice-btn" type="button" id="learn-next-btn">Next →</button>';
+      document.getElementById('learn-again-btn').addEventListener('click', function () {
+        document.getElementById('feedback').innerHTML = '';
+        showLearnReveal(f, choicesGrid);
+      });
+      document.getElementById('learn-next-btn').addEventListener('click', function () { drill.idx++; renderDrillCard(); });
+    });
   }
 
   function initDrillInput() {
@@ -908,12 +915,12 @@
           '<span class="ladder-status ' + status + '">' + statusIcon(status) + '</span>' +
           '<span class="ladder-label">' + t.label + '</span>' +
           '<span class="ladder-meta">' + meta + '</span></div>';
+        html += '<div class="ladder-actions">' +
+          '<button class="ladder-btn" data-tier="' + t.id + '" data-action="learn" type="button">Learn</button>';
         if (status !== 'locked') {
-          html += '<div class="ladder-actions">' +
-            '<button class="ladder-btn" data-tier="' + t.id + '" data-action="learn" type="button">Learn</button>' +
-            '<button class="ladder-btn primary" data-tier="' + t.id + '" data-action="drill" type="button">Drill →</button>' +
-            '</div>';
+          html += '<button class="ladder-btn primary" data-tier="' + t.id + '" data-action="drill" type="button">Drill →</button>';
         }
+        html += '</div>';
         html += '</div>';
       });
       html += '</div>';
