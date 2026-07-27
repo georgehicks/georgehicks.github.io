@@ -25,7 +25,10 @@
       triggers: [],
       rehearsalLog: [],
       renewStreak: 0,
-      lastRenewDate: null
+      lastRenewDate: null,
+      frontLog: [],
+      frontsStreak: 0,
+      lastFrontsDate: null
     };
   }
 
@@ -42,7 +45,8 @@
           fractureLog: Array.isArray(parsed.fractureLog) ? parsed.fractureLog : [],
           realignSessions: Array.isArray(parsed.realignSessions) ? parsed.realignSessions : [],
           triggers: Array.isArray(parsed.triggers) ? parsed.triggers : [],
-          rehearsalLog: Array.isArray(parsed.rehearsalLog) ? parsed.rehearsalLog : []
+          rehearsalLog: Array.isArray(parsed.rehearsalLog) ? parsed.rehearsalLog : [],
+          frontLog: Array.isArray(parsed.frontLog) ? parsed.frontLog : []
         });
       }
     } catch (e) {}
@@ -70,6 +74,7 @@
       if (state.realignSessions.length > 90) {
         state.realignSessions = state.realignSessions.slice(-90);
       }
+      // frontLog is intentionally never pruned — these are long-term plans, not a rolling window.
       localStorage.setItem(LS_KEY, JSON.stringify(state));
     } catch (e) {}
   }
@@ -186,6 +191,85 @@
     ASSERTIONS = computeAssertions();
     renderSetup();
     renderHome();
+  }
+
+  /* ───────────── customizable fronts (long-term plans) ───────────── */
+  var LS_FRONTS_KEY = "abide-fronts-v1";
+  var DEFAULT_FRONTS = (window.AbideFronts && window.AbideFronts.DEFAULT_FRONTS) || [];
+
+  function loadFronts() {
+    try {
+      var raw = localStorage.getItem(LS_FRONTS_KEY);
+      if (raw) {
+        var parsed = JSON.parse(raw);
+        if (Array.isArray(parsed) && parsed.length) return parsed;
+      }
+    } catch (e) {}
+    return DEFAULT_FRONTS.map(function (f) {
+      return { id: f.id, label: f.label, framing: f.framing };
+    });
+  }
+
+  function saveFronts() {
+    try { localStorage.setItem(LS_FRONTS_KEY, JSON.stringify(FRONTS)); } catch (e) {}
+  }
+
+  var FRONTS = loadFronts();
+
+  function findFront(id) {
+    for (var i = 0; i < FRONTS.length; i++) {
+      if (FRONTS[i].id === id) return FRONTS[i];
+    }
+    return null;
+  }
+
+  function addFront(label, framing) {
+    var existingIds = FRONTS.map(function (f) { return f.id; });
+    var id = uniqueId(slugify(label), existingIds);
+    FRONTS.push({ id: id, label: label, framing: framing || "" });
+    saveFronts();
+  }
+
+  function removeFront(id) {
+    FRONTS = FRONTS.filter(function (f) { return f.id !== id; });
+    saveFronts();
+  }
+
+  function moveFront(id, dir) {
+    var idx = -1;
+    for (var i = 0; i < FRONTS.length; i++) {
+      if (FRONTS[i].id === id) { idx = i; break; }
+    }
+    if (idx === -1) return;
+    var newIdx = idx + dir;
+    if (newIdx < 0 || newIdx >= FRONTS.length) return;
+    var tmp = FRONTS[idx];
+    FRONTS[idx] = FRONTS[newIdx];
+    FRONTS[newIdx] = tmp;
+    saveFronts();
+  }
+
+  function editFrontField(id, field, value) {
+    var f = findFront(id);
+    if (!f) return;
+    if (field === "label") f.label = value;
+    else if (field === "framing") f.framing = value;
+    saveFronts();
+  }
+
+  function resetFronts() {
+    FRONTS = DEFAULT_FRONTS.map(function (f) {
+      return { id: f.id, label: f.label, framing: f.framing };
+    });
+    try { localStorage.removeItem(LS_FRONTS_KEY); } catch (e) {}
+    renderFrontsSetup();
+    renderFrontsHub();
+    renderHome();
+  }
+
+  function entriesForFront(frontId) {
+    return (state.frontLog || []).filter(function (e) { return e.frontId === frontId; })
+      .sort(function (a, b) { return (b.ts || "").localeCompare(a.ts || ""); });
   }
 
   function groupName(id) {
@@ -365,7 +449,8 @@
   var STREAK_KEYS = {
     realign: { date: "lastRealignDate", streak: "realignStreak" },
     challenge: { date: "lastChallengeDate", streak: "challengeStreak" },
-    renew: { date: "lastRenewDate", streak: "renewStreak" }
+    renew: { date: "lastRenewDate", streak: "renewStreak" },
+    fronts: { date: "lastFrontsDate", streak: "frontsStreak" }
   };
 
   function bumpStreak(kind) {
@@ -440,7 +525,8 @@
   var challenge = null;
   var realign = null;
   var examine = null;
-  var activeSession = null; // 'challenge' | 'realign' | 'examine' | 'renew-practice'
+  var frontsSession = null;
+  var activeSession = null; // 'challenge' | 'realign' | 'examine' | 'renew-practice' | 'fronts-session'
 
   function showView(name) {
     var views = document.querySelectorAll(".view");
@@ -451,7 +537,8 @@
       (name === "challenge" && challenge && !challenge.done) ||
       (name === "realign" && realign && !realign.done) ||
       (name === "examine" && examine && !examine.done) ||
-      (name === "renew-practice" && renewPractice && !renewPractice.done);
+      (name === "renew-practice" && renewPractice && !renewPractice.done) ||
+      (name === "fronts-session" && frontsSession && !frontsSession.done);
     document.getElementById("topbar").classList.toggle("in-session", !!inSession);
     activeSession = inSession ? name : null;
   }
@@ -478,6 +565,14 @@
     document.getElementById("renew-cta-meta").textContent =
       state.triggers.length + (state.triggers.length === 1 ? " situation saved" : " situations saved");
 
+    var frontsMeta = document.getElementById("fronts-cta-meta");
+    if (frontsMeta) {
+      var frontsCaptured = (state.frontLog || []).length;
+      frontsMeta.textContent = FRONTS.length
+        ? FRONTS.length + (FRONTS.length === 1 ? " front · " : " fronts · ") + frontsCaptured + " captured"
+        : "Add a front to begin";
+    }
+
     var renewPracticeMeta = document.getElementById("renew-practice-cta-meta");
     if (renewPracticeMeta) {
       renewPracticeMeta.textContent = state.triggers.length
@@ -490,6 +585,7 @@
     if (state.realignStreak > 0) streakItems.push('<div class="streak-item"><div class="streak-lbl">Abide</div><div class="streak-val">' + state.realignStreak + '</div></div>');
     if (state.challengeStreak > 0) streakItems.push('<div class="streak-item"><div class="streak-lbl">Match</div><div class="streak-val">' + state.challengeStreak + '</div></div>');
     if (state.renewStreak > 0) streakItems.push('<div class="streak-item"><div class="streak-lbl">Renew</div><div class="streak-val">' + state.renewStreak + '</div></div>');
+    if (state.frontsStreak > 0) streakItems.push('<div class="streak-item"><div class="streak-lbl">Fronts</div><div class="streak-val">' + state.frontsStreak + '</div></div>');
     streakRow.innerHTML = streakItems.join("");
     streakRow.style.display = streakItems.length ? "flex" : "none";
 
@@ -1516,6 +1612,320 @@
     }
   }
 
+  /* ───────────── fronts: long-term plans, held before Him ─────────────
+    Weekly deep dive over customizable "fronts" (Work, Finances, Relationships,
+    Health, Future Horizon, or whatever the user defines). Walks the prayer
+    process — name fears, ask what to know, ask what to do, then check
+    sowing-to-Spirit-vs-flesh / perch — and saves what was received.
+    Entries in state.frontLog are never pruned by time (see saveState()).
+
+    frontsSession = {
+      queue: [frontId,...], index, phase: 'fears'|'know'|'do'|'sowing',
+      draft: { fears, know, do, sowing, perch },
+      captured: [entry,...], done, isDeepDive
+    }
+  */
+  var frontsExpandedIds = {};
+
+  function frontMeta(front) {
+    var entries = entriesForFront(front.id);
+    if (!entries.length) return "Not yet captured";
+    return entries.length + (entries.length === 1 ? " entry" : " entries") + " · last " + entries[0].date;
+  }
+
+  function renderFrontEntry(entry) {
+    var sowPill = entry.sowing
+      ? '<span class="' + (entry.sowing === "spirit" ? "hit-pill" : "miss-pill") + '" style="margin-left:0.4rem">' +
+        (entry.sowing === "spirit" ? "Resting" : "Perch noted") + "</span>"
+      : "";
+    return (
+      '<div class="note-card" style="text-align:left">' +
+        '<div class="field-label" style="margin-top:0">' + escapeHtml(entry.date) + sowPill + "</div>" +
+        (entry.fears ? '<div class="trigger-field"><div class="field-label">Feared</div><div class="trigger-field-text muted">' + escapeHtml(entry.fears) + "</div></div>" : "") +
+        (entry.know ? '<div class="trigger-field"><div class="field-label">To know</div><div class="trigger-field-text">' + escapeHtml(entry.know) + "</div></div>" : "") +
+        (entry.do ? '<div class="trigger-field"><div class="field-label">To do</div><div class="trigger-field-text">' + escapeHtml(entry.do) + "</div></div>" : "") +
+        (entry.perch ? '<p class="trigger-note">"' + escapeHtml(entry.perch) + '"</p>' : "") +
+        '<div class="card-actions"><button type="button" class="link-btn" data-delete-front-entry="' + escapeHtml(entry.id) + '">Delete</button></div>' +
+      "</div>"
+    );
+  }
+
+  function renderFrontBody(front, entries) {
+    var html = '<div class="trigger-card-body"><p class="trigger-field-text muted">' + escapeHtml(front.framing || "") + "</p>";
+    html += entries.length
+      ? entries.map(renderFrontEntry).join("")
+      : '<p class="empty-note">No entries yet.</p>';
+    html += "</div>";
+    return html;
+  }
+
+  function renderFrontsHub() {
+    document.getElementById("fronts-count").textContent =
+      FRONTS.length + (FRONTS.length === 1 ? " front" : " fronts");
+    document.getElementById("fronts-deep-dive-meta").textContent =
+      FRONTS.length ? "Every front, in order · " + FRONTS.length + " total" : "Add a front to begin";
+
+    var listEl = document.getElementById("fronts-list");
+    if (!FRONTS.length) {
+      listEl.innerHTML = '<p class="empty-note">No fronts yet — customize below to add one.</p>';
+      return;
+    }
+
+    var out = "";
+    FRONTS.forEach(function (front) {
+      var expanded = !!frontsExpandedIds[front.id];
+      var entries = entriesForFront(front.id);
+      out +=
+        '<article class="trigger-card' + (expanded ? " expanded" : "") + '">' +
+          '<button type="button" class="trigger-card-head" data-toggle-front="' + escapeHtml(front.id) + '">' +
+            '<div class="trigger-card-head-text">' +
+              '<div class="trigger-summary-when">' + escapeHtml(front.label) + "</div>" +
+              '<div class="trigger-summary-resp">' + escapeHtml(frontMeta(front)) + "</div>" +
+            "</div>" +
+            '<span class="trigger-card-chevron">›</span>' +
+          "</button>" +
+          '<div class="card-actions" style="margin-top:0.5rem">' +
+            '<button type="button" class="link-btn" data-capture-front="' + escapeHtml(front.id) + '">Capture</button>' +
+          "</div>" +
+          (expanded ? renderFrontBody(front, entries) : "") +
+        "</article>";
+    });
+    listEl.innerHTML = out;
+  }
+
+  function deleteFrontEntry(id) {
+    if (!confirm("Delete this entry?")) return;
+    state.frontLog = state.frontLog.filter(function (e) { return e.id !== id; });
+    saveState();
+    renderFrontsHub();
+  }
+
+  function startFrontsCapture(frontId) {
+    frontsSession = {
+      queue: [frontId],
+      index: 0,
+      phase: "fears",
+      draft: { fears: "", know: "", do: "", sowing: null, perch: "" },
+      captured: [],
+      done: false,
+      isDeepDive: false
+    };
+    showView("fronts-session");
+    renderFrontsSession();
+  }
+
+  function startFrontsDeepDive() {
+    if (!FRONTS.length) return;
+    frontsSession = {
+      queue: FRONTS.map(function (f) { return f.id; }),
+      index: 0,
+      phase: "fears",
+      draft: { fears: "", know: "", do: "", sowing: null, perch: "" },
+      captured: [],
+      done: false,
+      isDeepDive: true
+    };
+    showView("fronts-session");
+    renderFrontsSession();
+  }
+
+  function renderFrontsSessionTrack() {
+    var track = document.getElementById("fronts-session-track");
+    if (!frontsSession) { track.innerHTML = ""; return; }
+    var html = "";
+    for (var i = 0; i < frontsSession.queue.length; i++) {
+      var cls = "";
+      if (i < frontsSession.index || (frontsSession.done && i <= frontsSession.index)) cls = "done";
+      else if (i === frontsSession.index && !frontsSession.done) cls = "now";
+      html += "<span class=\"" + cls + "\"></span>";
+    }
+    track.innerHTML = html;
+  }
+
+  function renderFrontsSession() {
+    var stage = document.getElementById("fronts-session-stage");
+    if (!frontsSession) return;
+    renderFrontsSessionTrack();
+
+    if (frontsSession.done) {
+      stage.innerHTML = renderFrontsSessionSummary();
+      bindFrontsSessionSummary();
+      return;
+    }
+
+    var front = findFront(frontsSession.queue[frontsSession.index]);
+    if (!front) { advanceFrontsSession(); return; }
+    stage.innerHTML = renderFrontPhase(front);
+  }
+
+  function renderFrontPhase(front) {
+    var head =
+      '<div class="step-tag">' +
+        (frontsSession.isDeepDive ? "Front " + (frontsSession.index + 1) + " / " + frontsSession.queue.length + " · " : "Capture · ") +
+        escapeHtml(front.label) +
+      "</div>" +
+      '<div class="prompt-card"><p class="stage-instruction" style="margin:0">' + escapeHtml(front.framing || "") + "</p></div>";
+
+    var d = frontsSession.draft;
+    if (frontsSession.phase === "fears") {
+      return head +
+        '<p class="field-label">Lord, what am I afraid of in this situation?</p>' +
+        '<textarea class="text-area" id="front-fears" placeholder="Name it, then release it… (optional)">' + escapeHtml(d.fears) + "</textarea>" +
+        '<button type="button" class="continue-btn" data-fa="fears-next">Named — continue</button>';
+    }
+    if (frontsSession.phase === "know") {
+      return head +
+        '<p class="field-label">God, what do You want me to know about this?</p>' +
+        '<textarea class="text-area" id="front-know" placeholder="Wait quietly, then write what comes…">' + escapeHtml(d.know) + "</textarea>" +
+        '<button type="button" class="continue-btn" data-fa="know-next">Continue</button>';
+    }
+    if (frontsSession.phase === "do") {
+      return head +
+        '<p class="field-label">God, what do You want me to do?</p>' +
+        '<textarea class="text-area" id="front-do" placeholder="What is He asking of you here?">' + escapeHtml(d.do) + "</textarea>" +
+        '<button type="button" class="continue-btn" data-fa="do-next">Continue</button>';
+    }
+    // sowing
+    return head +
+      '<p class="stage-instruction">Is this sowing to the Spirit or to the flesh? Does it build a private perch of security, or does it keep you resting in Him?</p>' +
+      '<textarea class="text-area" id="front-perch" placeholder="Optional — what did you notice?">' + escapeHtml(d.perch) + "</textarea>" +
+      '<div class="gate-row">' +
+        '<button type="button" class="gate-btn primary" data-fa="sow-spirit">Resting in the Vine</button>' +
+        '<button type="button" class="gate-btn soft" data-fa="sow-flesh">Found a perch</button>' +
+      "</div>";
+  }
+
+  function commitFrontEntry() {
+    var d = frontsSession.draft;
+    var entry = {
+      id: uid(),
+      frontId: frontsSession.queue[frontsSession.index],
+      ts: new Date().toISOString(),
+      date: todayStr(),
+      fears: (d.fears || "").trim(),
+      know: (d.know || "").trim(),
+      do: (d.do || "").trim(),
+      sowing: d.sowing,
+      perch: (d.perch || "").trim()
+    };
+    state.frontLog.push(entry);
+    frontsSession.captured.push(entry);
+    saveState();
+  }
+
+  function advanceFrontsSession() {
+    if (frontsSession.index >= frontsSession.queue.length - 1) {
+      finishFrontsSession();
+      return;
+    }
+    frontsSession.index++;
+    frontsSession.phase = "fears";
+    frontsSession.draft = { fears: "", know: "", do: "", sowing: null, perch: "" };
+    renderFrontsSession();
+  }
+
+  function finishFrontsSession() {
+    frontsSession.done = true;
+    bumpStreak("fronts");
+    saveState();
+    document.getElementById("topbar").classList.remove("in-session");
+    renderFrontsSession();
+    renderHome();
+  }
+
+  function onFrontAction(action) {
+    if (!frontsSession || frontsSession.done) return;
+    if (action === "fears-next") {
+      var f = document.getElementById("front-fears");
+      if (f) frontsSession.draft.fears = f.value;
+      frontsSession.phase = "know";
+      renderFrontsSession();
+      return;
+    }
+    if (action === "know-next") {
+      var k = document.getElementById("front-know");
+      if (k) frontsSession.draft.know = k.value;
+      frontsSession.phase = "do";
+      renderFrontsSession();
+      return;
+    }
+    if (action === "do-next") {
+      var dn = document.getElementById("front-do");
+      if (dn) frontsSession.draft.do = dn.value;
+      frontsSession.phase = "sowing";
+      renderFrontsSession();
+      return;
+    }
+    if (action === "sow-spirit" || action === "sow-flesh") {
+      var p = document.getElementById("front-perch");
+      if (p) frontsSession.draft.perch = p.value;
+      frontsSession.draft.sowing = action === "sow-spirit" ? "spirit" : "flesh";
+      commitFrontEntry();
+      advanceFrontsSession();
+      return;
+    }
+  }
+
+  function renderFrontsSessionSummary() {
+    var n = frontsSession.captured.length;
+    var spirit = frontsSession.captured.filter(function (e) { return e.sowing === "spirit"; }).length;
+    var flesh = n - spirit;
+    var receivedLines = frontsSession.captured.map(function (e) {
+      var f = findFront(e.frontId);
+      var label = escapeHtml(f ? f.label : e.frontId);
+      return e.know ? label + ": " + escapeHtml(truncate(e.know, 60)) : label;
+    }).join("<br>");
+
+    return (
+      '<div class="summary">' +
+        '<div class="summary-big">' + n + "</div>" +
+        '<div class="summary-sub">front' + (n === 1 ? "" : "s") + " captured · " + spirit + " resting · " + flesh + " perch noted</div>" +
+        (n
+          ? '<div class="note-card" style="text-align:left"><strong>What you received</strong><br>' + receivedLines + "</div>"
+          : "") +
+        '<button type="button" class="cta-btn" id="fs-fronts">See fronts</button>' +
+        '<button type="button" class="link-btn" id="fs-home" style="display:block;margin:1rem auto 0">← Home</button>' +
+      "</div>"
+    );
+  }
+
+  function bindFrontsSessionSummary() {
+    var f = document.getElementById("fs-fronts");
+    var h = document.getElementById("fs-home");
+    if (f) f.onclick = function () { frontsSession = null; showView("fronts"); renderFrontsHub(); };
+    if (h) h.onclick = goHome;
+  }
+
+  /* ───────────── fronts: customize ───────────── */
+  function renderFrontsSetup() {
+    var listEl = document.getElementById("fronts-setup-list");
+    document.getElementById("fronts-setup-count").textContent =
+      FRONTS.length + (FRONTS.length === 1 ? " front" : " fronts");
+
+    if (!FRONTS.length) {
+      listEl.innerHTML = '<p class="empty-note">No fronts — add one below.</p>';
+      return;
+    }
+
+    var out = "";
+    for (var i = 0; i < FRONTS.length; i++) {
+      var f = FRONTS[i];
+      out +=
+        '<div class="setup-item">' +
+          '<div class="setup-item-main">' +
+            '<input class="setup-item-text" data-field="label" data-id="' + escapeHtml(f.id) + '" style="margin-bottom:0.4rem;font-weight:600" value="' + escapeHtml(f.label) + '" />' +
+            '<textarea class="setup-item-text" data-field="framing" data-id="' + escapeHtml(f.id) + '" rows="2">' + escapeHtml(f.framing || "") + "</textarea>" +
+          "</div>" +
+          '<div class="setup-item-actions">' +
+            '<button type="button" class="setup-mini-btn" data-fact="up" data-id="' + escapeHtml(f.id) + '"' + (i === 0 ? " disabled" : "") + ' aria-label="Move up">↑</button>' +
+            '<button type="button" class="setup-mini-btn" data-fact="down" data-id="' + escapeHtml(f.id) + '"' + (i === FRONTS.length - 1 ? " disabled" : "") + ' aria-label="Move down">↓</button>' +
+            '<button type="button" class="setup-mini-btn danger" data-fact="del" data-id="' + escapeHtml(f.id) + '" aria-label="Remove">✕</button>' +
+          "</div>" +
+        "</div>";
+    }
+    listEl.innerHTML = out;
+  }
+
   /* ───────────── renew: pre-decide your response, with God ─────────────
     trigger = { id, situation, oldReaction, response, assertionId, note, createdAt }
     renewFormState = { editingId } or { editingId: null, situation, oldReaction, response, assertionId, note }
@@ -2122,6 +2532,7 @@
     examine = null;
     renewFormState = null;
     renewPractice = null;
+    frontsSession = null;
     showView("home");
     renderHome();
   }
@@ -2139,11 +2550,15 @@
     } else if (activeSession === "renew-practice" && renewPractice && !renewPractice.done) {
       if (!confirm("Leave this rehearsal session? Progress so far will not be saved.")) return;
       renewPractice = null;
+    } else if (activeSession === "fronts-session" && frontsSession && !frontsSession.done) {
+      if (!confirm("Leave this session? Fronts already captured are saved; the one in progress is not.")) return;
+      frontsSession = null;
     } else {
       challenge = null;
       realign = null;
       examine = null;
       renewPractice = null;
+      frontsSession = null;
     }
     document.getElementById("topbar").classList.remove("in-session");
     goHome();
@@ -2356,6 +2771,77 @@
       if (!t) return;
       onRenewPracticeAction(t.getAttribute("data-rpa"));
     });
+
+    document.getElementById("btn-fronts").addEventListener("click", function () {
+      showView("fronts");
+      renderFrontsHub();
+    });
+    document.getElementById("fronts-home").addEventListener("click", goHome);
+    document.getElementById("btn-fronts-deep-dive").addEventListener("click", startFrontsDeepDive);
+    document.getElementById("fronts-customize-link").addEventListener("click", function () {
+      showView("fronts-setup");
+      renderFrontsSetup();
+    });
+    document.getElementById("fronts-list").addEventListener("click", function (e) {
+      var toggleBtn = e.target.closest("[data-toggle-front]");
+      if (toggleBtn) {
+        var id = toggleBtn.getAttribute("data-toggle-front");
+        frontsExpandedIds[id] = !frontsExpandedIds[id];
+        renderFrontsHub();
+        return;
+      }
+      var capBtn = e.target.closest("[data-capture-front]");
+      if (capBtn) { startFrontsCapture(capBtn.getAttribute("data-capture-front")); return; }
+      var delBtn = e.target.closest("[data-delete-front-entry]");
+      if (delBtn) { deleteFrontEntry(delBtn.getAttribute("data-delete-front-entry")); return; }
+    });
+    document.getElementById("fronts-session-stage").addEventListener("click", function (e) {
+      var t = e.target.closest("[data-fa]");
+      if (!t) return;
+      onFrontAction(t.getAttribute("data-fa"));
+    });
+
+    document.getElementById("fronts-setup-home").addEventListener("click", function () {
+      showView("fronts");
+      renderFrontsHub();
+    });
+    document.getElementById("fronts-reset-btn").addEventListener("click", function () {
+      if (!confirm("Reset fronts to the defaults? Your customizations will be lost. Captured entries remain.")) return;
+      resetFronts();
+    });
+    document.getElementById("fronts-add-btn").addEventListener("click", function () {
+      var labelInput = document.getElementById("fronts-new-label");
+      var framingInput = document.getElementById("fronts-new-framing");
+      var label = labelInput.value.trim();
+      if (!label) return;
+      addFront(label, framingInput.value.trim());
+      labelInput.value = "";
+      framingInput.value = "";
+      renderFrontsSetup();
+      renderFrontsHub();
+      renderHome();
+    });
+    document.getElementById("fronts-setup-list").addEventListener("click", function (e) {
+      var btn = e.target.closest("[data-fact]");
+      if (!btn) return;
+      var id = btn.getAttribute("data-id");
+      var act = btn.getAttribute("data-fact");
+      if (act === "up") moveFront(id, -1);
+      else if (act === "down") moveFront(id, 1);
+      else if (act === "del") {
+        if (!confirm("Remove this front? Its captured entries will remain in storage but won't show here.")) return;
+        removeFront(id);
+      }
+      renderFrontsSetup();
+      renderFrontsHub();
+      renderHome();
+    });
+    document.getElementById("fronts-setup-list").addEventListener("focusout", function (e) {
+      var t = e.target;
+      if (!t.classList || !t.classList.contains("setup-item-text")) return;
+      editFrontField(t.getAttribute("data-id"), t.getAttribute("data-field"), t.value);
+      renderFrontsHub();
+    });
   }
 
   /* ───────────── init ───────────── */
@@ -2366,4 +2852,5 @@
   if (!V.length) console.error("[Abide] Verses not loaded.");
   if (!ASSERTIONS.length) console.error("[Abide] Assertions not loaded.");
   if (!TRIGGER_TEMPLATES.length) console.error("[Abide] Trigger templates not loaded.");
+  if (!DEFAULT_FRONTS.length) console.error("[Abide] Fronts not loaded.");
 })();

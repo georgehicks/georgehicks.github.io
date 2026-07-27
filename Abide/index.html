@@ -240,9 +240,9 @@
   }
   .text-input, .text-area {
     width: 100%; background: var(--surface-2); border: 1px solid var(--border); border-radius: 12px;
-    padding: 0.75rem 0.85rem; color: var(--ink); font-size: 0.95rem;
+    padding: 0.75rem 0.85rem; color: var(--ink); font-size: 1rem;
   }
-  .text-area { min-height: 5.5rem; resize: vertical; line-height: 1.45; }
+  .text-area { min-height: 6rem; resize: vertical; line-height: 1.5; }
   .text-input:focus, .text-area:focus { border-color: var(--brass); outline: none; }
 
   .linked-verse {
@@ -293,8 +293,8 @@
   }
   .setup-item-text {
     width: 100%; background: var(--surface-2); border: 1px solid var(--border); border-radius: 10px;
-    padding: 0.55rem 0.65rem; color: var(--ink); font-size: 0.88rem; line-height: 1.4;
-    min-height: 2.6rem; resize: vertical;
+    padding: 0.55rem 0.65rem; color: var(--ink); font-size: 1rem; line-height: 1.4;
+    min-height: 2.75rem; resize: vertical;
   }
   .setup-item-text:focus { border-color: var(--brass); outline: none; }
   .setup-item-actions { display: flex; flex-direction: column; gap: 0.3rem; }
@@ -416,6 +416,14 @@
         <div>
           <div class="cta-title">Renew</div>
           <div class="cta-meta" id="renew-cta-meta">Pre-decide your response, with God</div>
+        </div>
+        <div class="cta-arrow">→</div>
+      </button>
+
+      <button class="cta secondary" id="btn-fronts" type="button">
+        <div>
+          <div class="cta-title">Fronts</div>
+          <div class="cta-meta" id="fronts-cta-meta">Long-term plans, held before Him</div>
         </div>
         <div class="cta-arrow">→</div>
       </button>
@@ -586,6 +594,49 @@
       <div class="session-stage" id="renew-practice-stage"></div>
     </div>
 
+    <!-- FRONTS: long-term plans, held before Him -->
+    <div class="view" data-view="fronts">
+      <div class="browse-toolbar">
+        <button class="link-btn" id="fronts-home" type="button">← Home</button>
+        <span class="browse-meta" id="fronts-count"></span>
+      </div>
+      <h1 class="greet" style="font-size:1.4rem;margin-bottom:0.5rem">Fronts</h1>
+      <p class="greet-sub" style="margin-bottom:1rem">Long-term plans, held before Him. Capture what you receive as you go through each front.</p>
+      <button class="cta" id="btn-fronts-deep-dive" type="button" style="margin-bottom:1rem">
+        <div>
+          <div class="cta-title">Weekly deep dive</div>
+          <div class="cta-meta" id="fronts-deep-dive-meta">Every front, in order</div>
+        </div>
+        <div class="cta-arrow">→</div>
+      </button>
+      <div id="fronts-list"></div>
+      <button class="link-btn" id="fronts-customize-link" type="button" style="display:block;margin:0.85rem 0 0">Customize fronts →</button>
+    </div>
+
+    <!-- FRONTS SESSION -->
+    <div class="view" data-view="fronts-session">
+      <div class="exercise-track" id="fronts-session-track"></div>
+      <div class="session-stage" id="fronts-session-stage"></div>
+    </div>
+
+    <!-- FRONTS SETUP -->
+    <div class="view" data-view="fronts-setup">
+      <div class="browse-toolbar">
+        <button class="link-btn" id="fronts-setup-home" type="button">← Fronts</button>
+        <span class="browse-meta" id="fronts-setup-count"></span>
+      </div>
+      <h1 class="greet" style="font-size:1.4rem;margin-bottom:0.5rem">Customize fronts</h1>
+      <p class="greet-sub" style="margin-bottom:1rem">Edit, reorder, add, or remove the categories you walk through. Changes save automatically.</p>
+      <div id="fronts-setup-list"></div>
+      <div class="section-label">Add a front</div>
+      <div class="setup-add-card">
+        <input class="text-input" id="fronts-new-label" placeholder="Front label (e.g. Ministry)" style="margin-bottom:0.5rem" />
+        <textarea class="text-area" id="fronts-new-framing" placeholder="What this front covers (optional)"></textarea>
+        <button type="button" class="continue-btn" id="fronts-add-btn" style="margin-top:0.5rem">Add front</button>
+      </div>
+      <button type="button" class="continue-btn secondary" id="fronts-reset-btn" style="margin-top:1.5rem">Reset to defaults</button>
+    </div>
+
   </div>
 </div>
 
@@ -593,6 +644,7 @@
 <script src="content/assertions.js"></script>
 <script src="content/fractures.js"></script>
 <script src="content/triggers.js"></script>
+<script src="content/fronts.js"></script>
 <script src="content/index.js"></script>
 <script src="app.js"></script>
 <script>

@@ -14,6 +14,9 @@
   if (!window.AbideTriggers || !window.AbideTriggers.TRIGGER_TEMPLATES) {
     console.error("[Abide] No triggers loaded. Include content/triggers.js before content/index.js.");
   }
+  if (!window.AbideFronts || !window.AbideFronts.DEFAULT_FRONTS) {
+    console.error("[Abide] No fronts loaded. Include content/fronts.js before content/index.js.");
+  }
 
   window.AbideContent = {
     verses: window.AbideVerses,
@@ -28,6 +31,8 @@
     FRACTURES: (window.AbideFractures && window.AbideFractures.FRACTURES) || [],
     triggers: window.AbideTriggers,
     TRIGGER_CATEGORIES: (window.AbideTriggers && window.AbideTriggers.TRIGGER_CATEGORIES) || [],
-    TRIGGER_TEMPLATES: (window.AbideTriggers && window.AbideTriggers.TRIGGER_TEMPLATES) || []
+    TRIGGER_TEMPLATES: (window.AbideTriggers && window.AbideTriggers.TRIGGER_TEMPLATES) || [],
+    fronts: window.AbideFronts,
+    DEFAULT_FRONTS: (window.AbideFronts && window.AbideFronts.DEFAULT_FRONTS) || []
   };
 })();
