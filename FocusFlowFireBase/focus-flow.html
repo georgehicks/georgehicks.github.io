@@ -220,13 +220,20 @@
     .due-tag { font-size:0.62rem; color:#8ab4f8; border:1px solid #2a3555; background:#1a2030; border-radius:5px; padding:1px 5px; margin-left:4px; }
     .pick-empty, .today-empty { color:#556; font-size:0.85rem; padding:8px 2px; }
 
-    /* Day Notes tab — a type-ahead note per day, auto-injected into Deliverables on its day */
+    /* Day Notes tab — calendar info + a type-ahead note per day, note auto-injected into Deliverables on its day */
     .daynote-hint { color:#7a8aa8; font-size:0.78rem; padding:2px 2px 10px; line-height:1.4; }
-    .daynotes-list { display:flex; flex-direction:column; gap:6px; }
-    .daynote-row { display:flex; align-items:center; gap:8px; }
-    .daynote-label { width:78px; flex-shrink:0; font-size:0.78rem; color:#8898b8; }
-    .daynote-added { font-size:0.68rem; color:#00ffcc; flex-shrink:0; }
-    .daynote-input { flex:1; min-width:0; background:#151a28; border:1px solid #252b40; border-radius:6px; color:#ccd; font-family:inherit; font-size:0.85rem; padding:7px 9px; outline:none; }
+    .daynotes-list { display:flex; flex-direction:column; }
+    .daynote-row { display:flex; flex-direction:column; gap:5px; padding:9px 2px; border-bottom:1px solid #1c2233; }
+    .daynote-row:last-child { border-bottom:none; }
+    .daynote-headrow { display:flex; align-items:center; gap:8px; }
+    .daynote-label { font-size:0.82rem; font-weight:700; color:#c4cee4; }
+    .daynote-row.is-today .daynote-label { color:var(--primary); }
+    .daynote-added { font-size:0.68rem; color:#00ffcc; margin-left:auto; flex-shrink:0; }
+    .daynote-events { display:flex; flex-direction:column; gap:1px; padding-left:1px; }
+    .daynote-event { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size:0.76rem; color:#8a98b8; overflow-wrap:anywhere; }
+    .daynote-event.daynote-recurring { color:#66738f; font-style:italic; }
+    .daynote-event-time { color:#5f7a9a; margin-right:6px; }
+    .daynote-input { width:100%; box-sizing:border-box; background:#151a28; border:1px solid #252b40; border-radius:6px; color:#ccd; font-family:inherit; font-size:0.85rem; padding:7px 9px; outline:none; }
     .daynote-input:focus { border-color:var(--primary); }
 
     /* Today summary (Plan tab, read-only) */
@@ -338,7 +345,7 @@
         <div id="upcoming-days" class="upcoming-days"></div>
       </div>
       <div id="plan-daynotes" class="subpanel" style="display:none;">
-        <div class="daynote-hint">A note for any of the next 14 days — when that day arrives, it's auto-added to the top of Deliverables as a "*" entry.</div>
+        <div class="daynote-hint">Calendar info and a note for each of the next 14 days — when that day arrives, the note is auto-added to the top of Deliverables as a "*" entry.</div>
         <div id="daynotes-list" class="daynotes-list"></div>
       </div>
       <div id="plan-deliverables" class="subpanel">
@@ -686,6 +693,7 @@
       const mergedRange = allRange.filter(ev => { const k = ev.dateKey + '|' + ev.startMin + '|' + ev.text; if (seenR.has(k)) return false; seenR.add(k); return true; });
       storage.set('upcoming14', mergedRange);
       renderUpcomingDays();
+      renderDayNotes();
       renderPlanList();
       if (typeof renderTimePicker === 'function') renderTimePicker();
       if (document.getElementById('panel-focus').style.display !== 'none') buildFocusTimeline();
@@ -1215,6 +1223,34 @@
       renderPick(); renderToday();
     }
 
+    // Calendar events (from the ICS 14-day pull) landing on one date, earliest first.
+    function dayEventsFor(dateKey) {
+      const events = storage.get('upcoming14') || [];
+      return events.filter(e => e.dateKey === dateKey).sort((a, b) => a.startMin - b.startMin);
+    }
+
+    function appendDayEvents(container, dayEvents) {
+      if (!dayEvents.length) return;
+      const oneOff = dayEvents.filter(e => !e.recurring);
+      const recurring = dayEvents.filter(e => e.recurring);
+      oneOff.forEach(e => {
+        const evEl = document.createElement('div');
+        evEl.className = 'daynote-event';
+        const timeEl = document.createElement('span');
+        timeEl.className = 'daynote-event-time';
+        timeEl.textContent = String(Math.floor(e.startMin / 60)).padStart(2, '0');
+        evEl.appendChild(timeEl);
+        evEl.appendChild(document.createTextNode(e.text));
+        container.appendChild(evEl);
+      });
+      if (recurring.length) {
+        const recEl = document.createElement('div');
+        recEl.className = 'daynote-event daynote-recurring';
+        recEl.textContent = [...new Set(recurring.map(e => e.text))].join(', ');
+        container.appendChild(recEl);
+      }
+    }
+
     function renderDayNotes() {
       const host = document.getElementById('daynotes-list');
       if (!host) return;
@@ -1226,17 +1262,30 @@
       for (let i = 0; i < 14; i++) {
         const key = dateKeyFromOffset(i);
         const row = document.createElement('div');
-        row.className = 'daynote-row';
+        row.className = 'daynote-row' + (key === today ? ' is-today' : '');
+
+        const headRow = document.createElement('div');
+        headRow.className = 'daynote-headrow';
         const label = document.createElement('span');
         label.className = 'daynote-label';
         label.textContent = formatDayLabel(i, key);
-        row.appendChild(label);
+        headRow.appendChild(label);
         if (key === today && injected[today]) {
           const badge = document.createElement('span');
           badge.className = 'daynote-added';
           badge.textContent = '✓ added';
-          row.appendChild(badge);
+          headRow.appendChild(badge);
         }
+        row.appendChild(headRow);
+
+        const dayEvents = dayEventsFor(key);
+        if (dayEvents.length) {
+          const eventsWrap = document.createElement('div');
+          eventsWrap.className = 'daynote-events';
+          appendDayEvents(eventsWrap, dayEvents);
+          row.appendChild(eventsWrap);
+        }
+
         const input = document.createElement('input');
         input.type = 'text';
         input.className = 'daynote-input';
