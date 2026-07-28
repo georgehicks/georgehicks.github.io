@@ -145,7 +145,8 @@
     .notes-tab { padding: 7px 11px; border-radius: 5px 5px 0 0; cursor: pointer; color: #557; background: #111620; border: 1px solid #252b40; border-bottom: none; display: flex; align-items: center; justify-content: center; }
     .notes-tab svg { width: 19px; height: 19px; display: block; }
     .notes-tab.active { background: #151a28; color: var(--primary-dim); border-color: rgba(0,255,204,0.4); box-shadow: inset 0 -2px 0 var(--primary-dim); }
-    .export-btn { background: none; border: none; color: #445; font-size: 1.2rem; cursor: pointer; padding: 0 2px; line-height: 1; }
+    .export-btn { background: none; border: none; color: #445; cursor: pointer; padding: 0 2px; line-height: 1; display: flex; align-items: center; }
+    .export-btn svg { width: 19px; height: 19px; display: block; }
     .export-btn:hover { color: #aaa; }
 
     /* Deliverables list view — tap a line for its action menu; Raw toggles the plain textarea */
@@ -327,7 +328,7 @@
           <span class="notes-tab" data-target="plan-lists" title="Lists"><svg viewBox="0 0 256 256" fill="currentColor"><path d="M80,64a8,8,0,0,1,8-8H216a8,8,0,0,1,0,16H88A8,8,0,0,1,80,64Zm136,56H88a8,8,0,0,0,0,16H216a8,8,0,0,0,0-16Zm0,64H88a8,8,0,0,0,0,16H216a8,8,0,0,0,0-16ZM44,52A12,12,0,1,0,56,64,12,12,0,0,0,44,52Zm0,64a12,12,0,1,0,12,12A12,12,0,0,0,44,116Zm0,64a12,12,0,1,0,12,12A12,12,0,0,0,44,180Z"/></svg></span>
           <span class="notes-tab" data-target="plan-today" title="Today"><svg viewBox="0 0 256 256" fill="currentColor"><path d="M120,40V16a8,8,0,0,1,16,0V40a8,8,0,0,1-16,0Zm72,88a64,64,0,1,1-64-64A64.07,64.07,0,0,1,192,128Zm-16,0a48,48,0,1,0-48,48A48.05,48.05,0,0,0,176,128ZM58.34,69.66A8,8,0,0,0,69.66,58.34l-16-16A8,8,0,0,0,42.34,53.66Zm0,116.68-16,16a8,8,0,0,0,11.32,11.32l16-16a8,8,0,0,0-11.32-11.32ZM192,72a8,8,0,0,0,5.66-2.34l16-16a8,8,0,0,0-11.32-11.32l-16,16A8,8,0,0,0,192,72Zm5.66,114.34a8,8,0,0,0-11.32,11.32l16,16a8,8,0,0,0,11.32-11.32ZM48,128a8,8,0,0,0-8-8H16a8,8,0,0,0,0,16H40A8,8,0,0,0,48,128Zm80,80a8,8,0,0,0-8,8v24a8,8,0,0,0,16,0V216A8,8,0,0,0,128,208Zm112-88H216a8,8,0,0,0,0,16h24a8,8,0,0,0,0-16Z"/></svg></span>
         </div>
-        <button class="export-btn" onclick="exportData()" title="Export today's data">📤</button>
+        <button class="export-btn" onclick="exportData()" title="Export today's data"><svg viewBox="0 0 256 256" fill="currentColor"><path d="M216,112v96a16,16,0,0,1-16,16H56a16,16,0,0,1-16-16V112A16,16,0,0,1,56,96H80a8,8,0,0,1,0,16H56v96H200V112H176a8,8,0,0,1,0-16h24A16,16,0,0,1,216,112ZM93.66,69.66,120,43.31V136a8,8,0,0,0,16,0V43.31l26.34,26.35a8,8,0,0,0,11.32-11.32l-40-40a8,8,0,0,0-11.32,0l-40,40A8,8,0,0,0,93.66,69.66Z"/></svg></button>
       </div>
       <div id="plan-cal" class="subpanel" style="display:none;">
         <div class="plan-form">
@@ -1255,6 +1256,7 @@
     function renderDayNotes() {
       const host = document.getElementById('daynotes-list');
       if (!host) return;
+      if (host.contains(document.activeElement)) return;   // never clobber an in-progress edit
       pruneDayEntries();
       const entries = getDayEntries();
       const injected = getInjectedDayEntries();
@@ -2241,6 +2243,7 @@
       document.getElementById('panel-focus').style.display = n === 1 ? 'block' : 'none';
       document.getElementById('panel-settings').style.display = n === 2 ? 'block' : 'none';
       if (n === 1) { windowStartMinutes = getCurrentWindowStart(); buildFocusTimeline(); renderToday(); }
+      else if (progressBarInterval) { clearInterval(progressBarInterval); progressBarInterval = null; }
       if (n === 2) renderRecoverList();
     }
 
@@ -2709,12 +2712,14 @@ setInterval(() => { applyAutoRenewChecklists(); applyDueDayEntries(); renderPick
       const isTextarea = active && active.tagName === 'TEXTAREA' && active.dataset && active.dataset.key;
       const isBlockInput = active && active.classList && active.classList.contains('block-input');
       const activeBlockKey = isBlockInput ? `block_${todayKey()}_${active.id.replace('block-input-','')}` : null;
+      const isDayNoteInput = active && active.classList && active.classList.contains('daynote-input');
       _fbApplyingRemote = true;
       let nonPresenceChanged = false;
       Object.keys(data).forEach(k => {
         if (k.startsWith('__local_')) return;               // never accept device-private keys
         if (isTextarea && active.dataset.key === k) return; // don't clobber active edit
         if (k === activeBlockKey) return;
+        if (isDayNoteInput && k === 'dayEntries') return;    // don't clobber an in-progress day note
         if (!k.startsWith('device_') && localStorage.getItem(k) !== data[k]) nonPresenceChanged = true;
         localStorage.setItem(k, data[k]);
       });
