@@ -382,6 +382,7 @@
       </div>
       <div class="topbar-right">
         <button class="link-btn" id="patterns-link" type="button">Patterns</button>
+        <button class="link-btn" id="backup-link" type="button">Backup</button>
         <button class="icon-btn" id="theme-toggle" type="button" aria-label="Toggle theme">◐</button>
       </div>
       <button class="link-btn exit-link" id="exit-session-btn" type="button">Exit</button>
@@ -635,6 +636,35 @@
         <button type="button" class="continue-btn" id="fronts-add-btn" style="margin-top:0.5rem">Add front</button>
       </div>
       <button type="button" class="continue-btn secondary" id="fronts-reset-btn" style="margin-top:1.5rem">Reset to defaults</button>
+    </div>
+
+    <!-- BACKUP: export / import everything as one JSON file -->
+    <div class="view" data-view="backup">
+      <div class="browse-toolbar">
+        <button class="link-btn" id="backup-home" type="button">← Home</button>
+        <span class="browse-meta">Export &amp; import</span>
+      </div>
+      <h1 class="greet" style="font-size:1.4rem;margin-bottom:0.5rem">Backup</h1>
+      <p class="greet-sub" style="margin-bottom:1rem">Everything you've captured lives only in this browser. Export a copy now and then, or restore from one.</p>
+
+      <button class="cta" id="backup-export-btn" type="button" style="margin-bottom:0.75rem">
+        <div>
+          <div class="cta-title">Export as JSON</div>
+          <div class="cta-meta">Verses, realignment, examine, renew, fronts, and your customizations</div>
+        </div>
+        <div class="cta-arrow">→</div>
+      </button>
+
+      <button class="cta secondary" id="backup-import-btn" type="button">
+        <div>
+          <div class="cta-title">Import from file</div>
+          <div class="cta-meta">Replaces all data on this device</div>
+        </div>
+        <div class="cta-arrow">→</div>
+      </button>
+      <input type="file" accept="application/json,.json" id="backup-import-input" style="display:none" />
+
+      <p class="feedback" id="backup-status" style="margin-top:1rem;text-align:left;min-height:0"></p>
     </div>
 
   </div>

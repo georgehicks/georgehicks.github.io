@@ -4,82 +4,127 @@
 (function () {
   "use strict";
 
-  var LS_KEY = "abide-state-v1";
   var ROUND_SIZE = 10;
   var WINDOW_DAYS = 30;
+  var PRUNE_WINDOW_MS = 120 * 864e5;
 
-  /* ───────────── state ───────────── */
-  function defaultState() {
-    return {
-      theme: null,
-      attempts: [],
-      challengeStreak: 0,
-      lastChallengeDate: null,
-      totalChallengeRounds: 0,
-      tagLog: [],
-      identityLog: [],
-      fractureLog: [],
-      realignSessions: [],
-      realignStreak: 0,
-      lastRealignDate: null,
-      triggers: [],
-      rehearsalLog: [],
-      renewStreak: 0,
-      lastRenewDate: null,
-      frontLog: [],
-      frontsStreak: 0,
-      lastFrontsDate: null
+  /* ───────────── storage: one localStorage key per domain ─────────────
+    Each "store" below persists independently, so an action in one part of
+    the app (e.g. a verse-match answer) never rewrites data owned by
+    another part (e.g. fronts). A one-time migration folds the old single
+    "abide-state-v1" blob into these before it's removed.
+  */
+  var LEGACY_STATE_KEY = "abide-state-v1";
+  var legacyBlob = (function () {
+    try {
+      var raw = localStorage.getItem(LEGACY_STATE_KEY);
+      return raw ? JSON.parse(raw) : null;
+    } catch (e) { return null; }
+  })();
+
+  function createStore(key, defaults) {
+    var data = null;
+    try {
+      var raw = localStorage.getItem(key);
+      if (raw) data = JSON.parse(raw);
+    } catch (e) {}
+    var migrated = false;
+    if (!data) {
+      if (legacyBlob) { data = legacyBlob; migrated = true; }
+      else data = {};
+    }
+    var out = {};
+    Object.keys(defaults).forEach(function (field) {
+      var d = defaults[field];
+      var v = data[field];
+      out[field] = Array.isArray(d) ? (Array.isArray(v) ? v.slice() : d.slice()) : (v !== undefined ? v : d);
+    });
+    var store = {
+      data: out,
+      save: function () {
+        try { localStorage.setItem(key, JSON.stringify(store.data)); } catch (e) {}
+      }
     };
+    if (migrated) store.save();
+    return store;
   }
 
-  function loadState() {
-    try {
-      var raw = localStorage.getItem(LS_KEY);
-      if (raw) {
-        var parsed = JSON.parse(raw);
-        var d = defaultState();
-        return Object.assign(d, parsed, {
-          attempts: Array.isArray(parsed.attempts) ? parsed.attempts : [],
-          tagLog: Array.isArray(parsed.tagLog) ? parsed.tagLog : [],
-          identityLog: Array.isArray(parsed.identityLog) ? parsed.identityLog : [],
-          fractureLog: Array.isArray(parsed.fractureLog) ? parsed.fractureLog : [],
-          realignSessions: Array.isArray(parsed.realignSessions) ? parsed.realignSessions : [],
-          triggers: Array.isArray(parsed.triggers) ? parsed.triggers : [],
-          rehearsalLog: Array.isArray(parsed.rehearsalLog) ? parsed.rehearsalLog : [],
-          frontLog: Array.isArray(parsed.frontLog) ? parsed.frontLog : []
-        });
-      }
-    } catch (e) {}
-    return defaultState();
+  function pruneByCutoff(arr) {
+    var cutoff = Date.now() - PRUNE_WINDOW_MS;
+    return (arr || []).filter(function (item) { return new Date(item.ts).getTime() >= cutoff; });
   }
 
-  function saveState() {
-    try {
-      var cutoff = Date.now() - 120 * 864e5;
-      state.attempts = (state.attempts || []).filter(function (a) {
-        return new Date(a.ts).getTime() >= cutoff;
-      });
-      state.tagLog = (state.tagLog || []).filter(function (t) {
-        return new Date(t.ts).getTime() >= cutoff;
-      });
-      state.identityLog = (state.identityLog || []).filter(function (t) {
-        return new Date(t.ts).getTime() >= cutoff;
-      });
-      state.fractureLog = (state.fractureLog || []).filter(function (t) {
-        return new Date(t.ts).getTime() >= cutoff;
-      });
-      state.rehearsalLog = (state.rehearsalLog || []).filter(function (r) {
-        return new Date(r.ts).getTime() >= cutoff;
-      });
-      if (state.realignSessions.length > 90) {
-        state.realignSessions = state.realignSessions.slice(-90);
-      }
-      // frontLog is intentionally never pruned — these are long-term plans, not a rolling window.
-      localStorage.setItem(LS_KEY, JSON.stringify(state));
-    } catch (e) {}
+  var prefsStore = createStore("abide-prefs-v1", { theme: null });
+  var verseMatchStore = createStore("abide-versematch-v1", {
+    attempts: [], challengeStreak: 0, lastChallengeDate: null, totalChallengeRounds: 0
+  });
+  var realignStore = createStore("abide-realign-v1", {
+    realignSessions: [], realignStreak: 0, lastRealignDate: null, tagLog: [], identityLog: []
+  });
+  var fracturesStore = createStore("abide-fractures-v1", { fractureLog: [] });
+  var renewStore = createStore("abide-renew-v1", {
+    triggers: [], rehearsalLog: [], renewStreak: 0, lastRenewDate: null
+  });
+  var frontsLogStore = createStore("abide-fronts-log-v1", {
+    frontLog: [], frontsStreak: 0, lastFrontsDate: null
+  });
+
+  if (legacyBlob) {
+    try { localStorage.removeItem(LEGACY_STATE_KEY); } catch (e) {}
   }
 
-  var state = loadState();
+  function savePrefs() { prefsStore.save(); }
+
+  function saveVerseMatch() {
+    verseMatchStore.data.attempts = pruneByCutoff(verseMatchStore.data.attempts);
+    verseMatchStore.save();
+  }
+
+  function saveRealign() {
+    realignStore.data.tagLog = pruneByCutoff(realignStore.data.tagLog);
+    realignStore.data.identityLog = pruneByCutoff(realignStore.data.identityLog);
+    if (realignStore.data.realignSessions.length > 90) {
+      realignStore.data.realignSessions = realignStore.data.realignSessions.slice(-90);
+    }
+    realignStore.save();
+  }
+
+  function saveFractures() {
+    fracturesStore.data.fractureLog = pruneByCutoff(fracturesStore.data.fractureLog);
+    fracturesStore.save();
+  }
+
+  function saveRenew() {
+    renewStore.data.rehearsalLog = pruneByCutoff(renewStore.data.rehearsalLog);
+    renewStore.save();
+  }
+
+  function saveFrontsLog() {
+    // frontLog is intentionally never pruned — these are long-term plans, not a rolling window.
+    frontsLogStore.save();
+  }
+
+  /* `state` reads/writes proxy straight through to each field's owning
+     store, so the rest of the app can keep using state.attempts,
+     state.theme, etc. exactly as before — only the persistence granularity
+     changed. */
+  var state = {};
+  [
+    { store: prefsStore, fields: ["theme"] },
+    { store: verseMatchStore, fields: ["attempts", "challengeStreak", "lastChallengeDate", "totalChallengeRounds"] },
+    { store: realignStore, fields: ["realignSessions", "realignStreak", "lastRealignDate", "tagLog", "identityLog"] },
+    { store: fracturesStore, fields: ["fractureLog"] },
+    { store: renewStore, fields: ["triggers", "rehearsalLog", "renewStreak", "lastRenewDate"] },
+    { store: frontsLogStore, fields: ["frontLog", "frontsStreak", "lastFrontsDate"] }
+  ].forEach(function (group) {
+    group.fields.forEach(function (field) {
+      Object.defineProperty(state, field, {
+        get: function () { return group.store.data[field]; },
+        set: function (v) { group.store.data[field] = v; },
+        enumerable: true
+      });
+    });
+  });
 
   /* ───────────── content ───────────── */
   var V = (window.AbideVerses && window.AbideVerses.VERSES) || [];
@@ -365,7 +410,7 @@
       correct: !!correct,
       ts: new Date().toISOString()
     });
-    saveState();
+    saveVerseMatch();
   }
 
   /* ───────────── realign / tag / identity stats ───────────── */
@@ -516,7 +561,7 @@
     } else {
       state.theme = cur === "dark" ? "light" : "dark";
     }
-    saveState();
+    savePrefs();
     applyTheme();
   }
 
@@ -811,7 +856,7 @@
     challenge.done = true;
     bumpStreak("challenge");
     state.totalChallengeRounds += 1;
-    saveState();
+    saveVerseMatch();
     document.getElementById("topbar").classList.remove("in-session");
     renderChallengeSummary();
   }
@@ -1225,7 +1270,7 @@
       identity: realign.identityPicked.slice()
     });
     bumpStreak("realign");
-    saveState();
+    saveRealign();
     document.getElementById("topbar").classList.remove("in-session");
     renderRealign();
   }
@@ -1289,7 +1334,8 @@
     }
     if (action === "tag-next") {
       commitTagsForCurrent();
-      saveState();
+      saveRealign();
+            saveFractures();
       nextAssertion();
       return;
     }
@@ -1551,7 +1597,7 @@
       note: note,
       ts: new Date().toISOString()
     });
-    saveState();
+    saveFractures();
     document.getElementById("topbar").classList.remove("in-session");
     renderExamine();
   }
@@ -1617,7 +1663,7 @@
     Health, Future Horizon, or whatever the user defines). Walks the prayer
     process — name fears, ask what to know, ask what to do, then check
     sowing-to-Spirit-vs-flesh / perch — and saves what was received.
-    Entries in state.frontLog are never pruned by time (see saveState()).
+    Entries in state.frontLog are never pruned by time (see saveFrontsLog()).
 
     frontsSession = {
       queue: [frontId,...], index, phase: 'fears'|'know'|'do'|'sowing',
@@ -1696,7 +1742,7 @@
   function deleteFrontEntry(id) {
     if (!confirm("Delete this entry?")) return;
     state.frontLog = state.frontLog.filter(function (e) { return e.id !== id; });
-    saveState();
+    saveFrontsLog();
     renderFrontsHub();
   }
 
@@ -1810,7 +1856,7 @@
     };
     state.frontLog.push(entry);
     frontsSession.captured.push(entry);
-    saveState();
+    saveFrontsLog();
   }
 
   function advanceFrontsSession() {
@@ -1827,7 +1873,7 @@
   function finishFrontsSession() {
     frontsSession.done = true;
     bumpStreak("fronts");
-    saveState();
+    saveFrontsLog();
     document.getElementById("topbar").classList.remove("in-session");
     renderFrontsSession();
     renderHome();
@@ -1924,6 +1970,86 @@
         "</div>";
     }
     listEl.innerHTML = out;
+  }
+
+  /* ───────────── backup: export / import everything as one JSON file ─────────────
+    Each domain still saves to its own localStorage key (see the stores
+    above), but a backup needs all of it merged into one portable file,
+    and restoring needs to fan it back out to those same keys.
+  */
+  function buildBackupPayload() {
+    return {
+      app: "abide",
+      version: 1,
+      exportedAt: new Date().toISOString(),
+      prefs: prefsStore.data,
+      verseMatch: verseMatchStore.data,
+      realign: realignStore.data,
+      fractures: fracturesStore.data,
+      renew: renewStore.data,
+      frontsLog: frontsLogStore.data,
+      frontCategories: FRONTS,
+      assertionLadder: customLadder
+    };
+  }
+
+  function exportBackup() {
+    var payload = buildBackupPayload();
+    var filename = "abide-backup-" + todayStr() + ".json";
+    var blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement("a");
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    setTimeout(function () { URL.revokeObjectURL(url); }, 1000);
+    showBackupStatus("Exported " + filename, false);
+  }
+
+  function applyBackupPayload(payload) {
+    if (payload.prefs) { Object.assign(prefsStore.data, payload.prefs); savePrefs(); }
+    if (payload.verseMatch) { Object.assign(verseMatchStore.data, payload.verseMatch); saveVerseMatch(); }
+    if (payload.realign) { Object.assign(realignStore.data, payload.realign); saveRealign(); }
+    if (payload.fractures) { Object.assign(fracturesStore.data, payload.fractures); saveFractures(); }
+    if (payload.renew) { Object.assign(renewStore.data, payload.renew); saveRenew(); }
+    if (payload.frontsLog) { Object.assign(frontsLogStore.data, payload.frontsLog); saveFrontsLog(); }
+    if (Array.isArray(payload.frontCategories)) {
+      FRONTS = payload.frontCategories;
+      saveFronts();
+    }
+    if (Object.prototype.hasOwnProperty.call(payload, "assertionLadder")) {
+      customLadder = payload.assertionLadder;
+      if (customLadder) saveCustomLadder(customLadder);
+      else { try { localStorage.removeItem(LS_LADDER_KEY); } catch (e) {} }
+      ASSERTIONS = computeAssertions();
+    }
+  }
+
+  function showBackupStatus(msg, isError) {
+    var el = document.getElementById("backup-status");
+    if (!el) return;
+    el.innerHTML = '<span class="' + (isError ? "fb-bad" : "fb-ok") + '">' + escapeHtml(msg) + "</span>";
+  }
+
+  function handleImportFile(file) {
+    var reader = new FileReader();
+    reader.onload = function () {
+      var payload;
+      try { payload = JSON.parse(reader.result); }
+      catch (e) { showBackupStatus("That file isn't valid JSON.", true); return; }
+      if (!payload || payload.app !== "abide") {
+        showBackupStatus("That doesn't look like an Abide backup file.", true);
+        return;
+      }
+      if (!confirm("Import this backup? It will replace all current data on this device.")) return;
+      applyBackupPayload(payload);
+      showBackupStatus("Imported — reloading…", false);
+      setTimeout(function () { window.location.reload(); }, 500);
+    };
+    reader.onerror = function () { showBackupStatus("Couldn't read that file.", true); };
+    reader.readAsText(file);
   }
 
   /* ───────────── renew: pre-decide your response, with God ─────────────
@@ -2123,7 +2249,7 @@
         createdAt: new Date().toISOString()
       });
     }
-    saveState();
+    saveRenew();
     renewFormState = null;
     renderRenewForm();
     renderRenewList();
@@ -2133,7 +2259,7 @@
   function deleteRenewTrigger(id) {
     if (!confirm("Delete this situation? Its rehearsal history will remain in patterns as (deleted).")) return;
     state.triggers = state.triggers.filter(function (x) { return x.id !== id; });
-    saveState();
+    saveRenew();
     renderRenewList();
     renderHome();
   }
@@ -2344,7 +2470,7 @@
       results: renewPractice.results.slice()
     });
     bumpStreak("renew");
-    saveState();
+    saveRenew();
     document.getElementById("topbar").classList.remove("in-session");
     renderRenewPractice();
     renderHome();
@@ -2841,6 +2967,21 @@
       if (!t.classList || !t.classList.contains("setup-item-text")) return;
       editFrontField(t.getAttribute("data-id"), t.getAttribute("data-field"), t.value);
       renderFrontsHub();
+    });
+
+    document.getElementById("backup-link").addEventListener("click", function () {
+      showView("backup");
+      document.getElementById("backup-status").textContent = "";
+    });
+    document.getElementById("backup-home").addEventListener("click", goHome);
+    document.getElementById("backup-export-btn").addEventListener("click", exportBackup);
+    document.getElementById("backup-import-btn").addEventListener("click", function () {
+      document.getElementById("backup-import-input").click();
+    });
+    document.getElementById("backup-import-input").addEventListener("change", function (e) {
+      var file = e.target.files && e.target.files[0];
+      if (file) handleImportFile(file);
+      e.target.value = "";
     });
   }
 
