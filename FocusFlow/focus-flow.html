@@ -142,8 +142,8 @@
     .notes { min-height: 80px; resize: vertical; width: 100%; background: #151a28; border: 1px solid #252b40; border-radius: 0 6px 6px 6px; color: #ccd; font-family: inherit; font-size: 0.88rem; padding: 8px 10px; outline: none; }
     .notes-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 0; }
     .notes-tabs { display: flex; gap: 2px; }
-    .notes-tab { padding: 3px 12px; border-radius: 5px 5px 0 0; cursor: pointer; font-size: 0.8rem; color: #557; background: #111620; border: 1px solid #252b40; border-bottom: none; }
-    .notes-tab.active { background: #151a28; color: var(--primary-dim); }
+    .notes-tab { padding: 5px 11px; border-radius: 5px 5px 0 0; cursor: pointer; font-size: 1.05rem; line-height: 1; color: #557; background: #111620; border: 1px solid #252b40; border-bottom: none; }
+    .notes-tab.active { background: #151a28; color: var(--primary-dim); border-color: rgba(0,255,204,0.4); box-shadow: inset 0 -2px 0 var(--primary-dim); }
     .export-btn { background: none; border: none; color: #445; font-size: 1.2rem; cursor: pointer; padding: 0 2px; line-height: 1; }
     .export-btn:hover { color: #aaa; }
 
@@ -220,6 +220,15 @@
     .due-tag { font-size:0.62rem; color:#8ab4f8; border:1px solid #2a3555; background:#1a2030; border-radius:5px; padding:1px 5px; margin-left:4px; }
     .pick-empty, .today-empty { color:#556; font-size:0.85rem; padding:8px 2px; }
 
+    /* Day Notes tab — a type-ahead note per day, auto-injected into Deliverables on its day */
+    .daynote-hint { color:#7a8aa8; font-size:0.78rem; padding:2px 2px 10px; line-height:1.4; }
+    .daynotes-list { display:flex; flex-direction:column; gap:6px; }
+    .daynote-row { display:flex; align-items:center; gap:8px; }
+    .daynote-label { width:78px; flex-shrink:0; font-size:0.78rem; color:#8898b8; }
+    .daynote-added { font-size:0.68rem; color:#00ffcc; flex-shrink:0; }
+    .daynote-input { flex:1; min-width:0; background:#151a28; border:1px solid #252b40; border-radius:6px; color:#ccd; font-family:inherit; font-size:0.85rem; padding:7px 9px; outline:none; }
+    .daynote-input:focus { border-color:var(--primary); }
+
     /* Today summary (Plan tab, read-only) */
     .today-summary { background:#151a28; border:1px solid #252b40; border-radius:0 6px 6px 6px; padding:10px 12px; min-height:max(300px, calc(100dvh - 260px)); }
     .today-row { display:flex; align-items:center; gap:8px; padding:3px 0; font-size:0.9rem; }
@@ -286,15 +295,16 @@
 
   <!-- PLAN TAB -->
   <div id="panel-plan" class="section">
-    <!-- Plan sub-tabs: Cal / Deliverables / Pick / Lists / Today -->
+    <!-- Plan sub-tabs: Cal / Day Notes / Deliverables / Pick / Lists / Today — icons so all 6 fit on one row -->
     <div style="margin-top:0;">
       <div class="notes-header">
         <div class="notes-tabs">
-          <span class="notes-tab" data-target="plan-cal">Cal</span>
-          <span class="notes-tab active" data-target="plan-deliverables">Deliverables</span>
-          <span class="notes-tab" data-target="plan-pick">Pick</span>
-          <span class="notes-tab" data-target="plan-lists">Lists</span>
-          <span class="notes-tab" data-target="plan-today">Today</span>
+          <span class="notes-tab" data-target="plan-cal" title="Cal">📅</span>
+          <span class="notes-tab" data-target="plan-daynotes" title="Day Notes">📝</span>
+          <span class="notes-tab active" data-target="plan-deliverables" title="Deliverables">✅</span>
+          <span class="notes-tab" data-target="plan-pick" title="Pick">🎯</span>
+          <span class="notes-tab" data-target="plan-lists" title="Lists">📋</span>
+          <span class="notes-tab" data-target="plan-today" title="Today">☀️</span>
         </div>
         <button class="export-btn" onclick="exportData()" title="Export today's data">📤</button>
       </div>
@@ -311,6 +321,10 @@
           <button onclick="addAppointment()" class="plan-btn" style="width:100%;">+ Add Appointment</button>
         </div>
         <div id="appointment-list"></div>
+      </div>
+      <div id="plan-daynotes" class="subpanel" style="display:none;">
+        <div class="daynote-hint">A note for any of the next 14 days — when that day arrives, it's auto-added to the top of Deliverables as a "*" entry.</div>
+        <div id="daynotes-list" class="daynotes-list"></div>
       </div>
       <div id="plan-deliverables" class="subpanel">
         <div class="deliv-controls">
@@ -1011,6 +1025,100 @@
         claimed[pkey] = true;
         return true;
       });
+    }
+
+    // ---- Day Notes tab: a type-ahead note per day, auto-injected into deliverables
+    // on its day — keyed by date (YYYY-MM-DD) so it survives independent of any
+    // single day's deliverables text. Injected once per date (tracked separately)
+    // so it doesn't keep reappearing if the deliverables line is later edited away.
+    function getDayEntries() { return storage.get('dayEntries') || {}; }
+    function saveDayEntries(v) { storage.set('dayEntries', v); }
+    function getInjectedDayEntries() { return storage.get('dayEntriesInjected') || {}; }
+    function saveInjectedDayEntries(v) { storage.set('dayEntriesInjected', v); }
+
+    function dateKeyFromOffset(offset) {
+      const d = new Date();
+      d.setDate(d.getDate() + offset);
+      return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+    }
+
+    function formatDayLabel(offset, dateKey) {
+      if (offset === 0) return 'Today';
+      if (offset === 1) return 'Tomorrow';
+      const [y, m, d] = dateKey.split('-').map(Number);
+      return new Date(y, m - 1, d).toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' });
+    }
+
+    // Drop entries/injected-flags for dates that have already passed, so storage
+    // doesn't grow forever (string comparison works since dates are YYYY-MM-DD).
+    function pruneDayEntries() {
+      const today = todayKey();
+      const entries = getDayEntries();
+      const injected = getInjectedDayEntries();
+      let changedEntries = false, changedInjected = false;
+      Object.keys(entries).forEach(k => { if (k < today) { delete entries[k]; changedEntries = true; } });
+      Object.keys(injected).forEach(k => { if (k < today) { delete injected[k]; changedInjected = true; } });
+      if (changedEntries) saveDayEntries(entries);
+      if (changedInjected) saveInjectedDayEntries(injected);
+    }
+
+    // Once today's date has a note and hasn't been injected yet, prepend it to
+    // deliverables as a "* " line — a plain, non-step, non-task deliverable line,
+    // so it just shows up at the top like anything else typed there.
+    function applyDueDayEntries() {
+      pruneDayEntries();
+      const today = todayKey();
+      const text = (getDayEntries()[today] || '').trim();
+      if (!text) return;
+      const injected = getInjectedDayEntries();
+      if (injected[today]) return;
+      let delivText = getDeliverablesText();
+      delivText = '* ' + text + (delivText.trim() ? '\n' + delivText : '');
+      storage.set('deliverables', delivText);
+      document.querySelectorAll('textarea.sync-notes[data-key="deliverables"]').forEach(el => el.value = delivText);
+      injected[today] = true;
+      saveInjectedDayEntries(injected);
+      renderPick(); renderToday();
+    }
+
+    function renderDayNotes() {
+      const host = document.getElementById('daynotes-list');
+      if (!host) return;
+      pruneDayEntries();
+      const entries = getDayEntries();
+      const injected = getInjectedDayEntries();
+      const today = todayKey();
+      host.innerHTML = '';
+      for (let i = 0; i < 14; i++) {
+        const key = dateKeyFromOffset(i);
+        const row = document.createElement('div');
+        row.className = 'daynote-row';
+        const label = document.createElement('span');
+        label.className = 'daynote-label';
+        label.textContent = formatDayLabel(i, key);
+        row.appendChild(label);
+        if (key === today && injected[today]) {
+          const badge = document.createElement('span');
+          badge.className = 'daynote-added';
+          badge.textContent = '✓ added';
+          row.appendChild(badge);
+        }
+        const input = document.createElement('input');
+        input.type = 'text';
+        input.className = 'daynote-input';
+        input.placeholder = 'Note for this day…';
+        input.value = entries[key] || '';
+        input.addEventListener('input', () => {
+          const all = getDayEntries();
+          if (input.value.trim()) all[key] = input.value; else delete all[key];
+          saveDayEntries(all);
+        });
+        input.addEventListener('blur', () => {
+          if (key === todayKey()) { applyDueDayEntries(); renderDayNotes(); }
+        });
+        row.appendChild(input);
+        host.appendChild(row);
+      }
     }
 
     // ---- Recurring checklists (Check-In / Weekly / Monthly / one-off lists) ----
@@ -2368,6 +2476,7 @@
           if (tab.dataset.target === 'plan-pick') renderPick();
           if (tab.dataset.target === 'plan-lists') { closeChecklistForm(); renderLists(); }
           if (tab.dataset.target === 'plan-today') renderToday();
+          if (tab.dataset.target === 'plan-daynotes') renderDayNotes();
         });
       });
     });
@@ -2387,10 +2496,11 @@
 
 initSyncedNotes();
 applyAutoRenewChecklists();
+applyDueDayEntries();
 renderPick();
 renderToday();
 renderLists();
-setInterval(() => { applyAutoRenewChecklists(); renderPick(); }, 60000);   // catch a checklist becoming due while the app sits open
+setInterval(() => { applyAutoRenewChecklists(); applyDueDayEntries(); renderPick(); }, 60000);   // catch a checklist or day-entry becoming due while the app sits open
   </script>
 </body>
 </html>
