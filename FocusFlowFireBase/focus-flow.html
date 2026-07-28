@@ -142,7 +142,8 @@
     .notes { min-height: 80px; resize: vertical; width: 100%; background: #151a28; border: 1px solid #252b40; border-radius: 0 6px 6px 6px; color: #ccd; font-family: inherit; font-size: 0.88rem; padding: 8px 10px; outline: none; }
     .notes-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 0; }
     .notes-tabs { display: flex; gap: 2px; }
-    .notes-tab { padding: 5px 11px; border-radius: 5px 5px 0 0; cursor: pointer; font-size: 1.05rem; line-height: 1; color: #557; background: #111620; border: 1px solid #252b40; border-bottom: none; }
+    .notes-tab { padding: 7px 11px; border-radius: 5px 5px 0 0; cursor: pointer; color: #557; background: #111620; border: 1px solid #252b40; border-bottom: none; display: flex; align-items: center; justify-content: center; }
+    .notes-tab svg { width: 19px; height: 19px; display: block; }
     .notes-tab.active { background: #151a28; color: var(--primary-dim); border-color: rgba(0,255,204,0.4); box-shadow: inset 0 -2px 0 var(--primary-dim); }
     .export-btn { background: none; border: none; color: #445; font-size: 1.2rem; cursor: pointer; padding: 0 2px; line-height: 1; }
     .export-btn:hover { color: #aaa; }
@@ -319,12 +320,12 @@
     <div style="margin-top:0;">
       <div class="notes-header">
         <div class="notes-tabs">
-          <span class="notes-tab" data-target="plan-cal" title="Cal">📅</span>
-          <span class="notes-tab" data-target="plan-daynotes" title="Day Notes">📝</span>
-          <span class="notes-tab active" data-target="plan-deliverables" title="Deliverables">✅</span>
-          <span class="notes-tab" data-target="plan-pick" title="Pick">🎯</span>
-          <span class="notes-tab" data-target="plan-lists" title="Lists">📋</span>
-          <span class="notes-tab" data-target="plan-today" title="Today">☀️</span>
+          <span class="notes-tab" data-target="plan-cal" title="Cal"><svg viewBox="0 0 256 256" fill="currentColor"><path d="M208,32H184V24a8,8,0,0,0-16,0v8H88V24a8,8,0,0,0-16,0v8H48A16,16,0,0,0,32,48V208a16,16,0,0,0,16,16H208a16,16,0,0,0,16-16V48A16,16,0,0,0,208,32ZM72,48v8a8,8,0,0,0,16,0V48h80v8a8,8,0,0,0,16,0V48h24V80H48V48ZM208,208H48V96H208V208Z"/></svg></span>
+          <span class="notes-tab" data-target="plan-daynotes" title="Day Notes"><svg viewBox="0 0 256 256" fill="currentColor"><path d="M229.66,58.34l-32-32a8,8,0,0,0-11.32,0l-96,96A8,8,0,0,0,88,128v32a8,8,0,0,0,8,8h32a8,8,0,0,0,5.66-2.34l96-96A8,8,0,0,0,229.66,58.34ZM124.69,152H104V131.31l64-64L188.69,88ZM200,76.69,179.31,56,192,43.31,212.69,64ZM224,128v80a16,16,0,0,1-16,16H48a16,16,0,0,1-16-16V48A16,16,0,0,1,48,32h80a8,8,0,0,1,0,16H48V208H208V128a8,8,0,0,1,16,0Z"/></svg></span>
+          <span class="notes-tab active" data-target="plan-deliverables" title="Deliverables"><svg viewBox="0 0 256 256" fill="currentColor"><path d="M173.66,98.34a8,8,0,0,1,0,11.32l-56,56a8,8,0,0,1-11.32,0l-24-24a8,8,0,0,1,11.32-11.32L112,148.69l50.34-50.35A8,8,0,0,1,173.66,98.34ZM224,48V208a16,16,0,0,1-16,16H48a16,16,0,0,1-16-16V48A16,16,0,0,1,48,32H208A16,16,0,0,1,224,48ZM208,208V48H48V208H208Z"/></svg></span>
+          <span class="notes-tab" data-target="plan-pick" title="Pick"><svg viewBox="0 0 256 256" fill="currentColor"><path d="M221.87,83.16A104.1,104.1,0,1,1,195.67,49l22.67-22.68a8,8,0,0,1,11.32,11.32l-96,96a8,8,0,0,1-11.32-11.32l27.72-27.72a40,40,0,1,0,17.87,31.09,8,8,0,1,1,16-.9,56,56,0,1,1-22.38-41.65L184.3,60.39a87.88,87.88,0,1,0,23.13,29.67,8,8,0,0,1,14.44-6.9Z"/></svg></span>
+          <span class="notes-tab" data-target="plan-lists" title="Lists"><svg viewBox="0 0 256 256" fill="currentColor"><path d="M80,64a8,8,0,0,1,8-8H216a8,8,0,0,1,0,16H88A8,8,0,0,1,80,64Zm136,56H88a8,8,0,0,0,0,16H216a8,8,0,0,0,0-16Zm0,64H88a8,8,0,0,0,0,16H216a8,8,0,0,0,0-16ZM44,52A12,12,0,1,0,56,64,12,12,0,0,0,44,52Zm0,64a12,12,0,1,0,12,12A12,12,0,0,0,44,116Zm0,64a12,12,0,1,0,12,12A12,12,0,0,0,44,180Z"/></svg></span>
+          <span class="notes-tab" data-target="plan-today" title="Today"><svg viewBox="0 0 256 256" fill="currentColor"><path d="M120,40V16a8,8,0,0,1,16,0V40a8,8,0,0,1-16,0Zm72,88a64,64,0,1,1-64-64A64.07,64.07,0,0,1,192,128Zm-16,0a48,48,0,1,0-48,48A48.05,48.05,0,0,0,176,128ZM58.34,69.66A8,8,0,0,0,69.66,58.34l-16-16A8,8,0,0,0,42.34,53.66Zm0,116.68-16,16a8,8,0,0,0,11.32,11.32l16-16a8,8,0,0,0-11.32-11.32ZM192,72a8,8,0,0,0,5.66-2.34l16-16a8,8,0,0,0-11.32-11.32l-16,16A8,8,0,0,0,192,72Zm5.66,114.34a8,8,0,0,0-11.32,11.32l16,16a8,8,0,0,0,11.32-11.32ZM48,128a8,8,0,0,0-8-8H16a8,8,0,0,0,0,16H40A8,8,0,0,0,48,128Zm80,80a8,8,0,0,0-8,8v24a8,8,0,0,0,16,0V216A8,8,0,0,0,128,208Zm112-88H216a8,8,0,0,0,0,16h24a8,8,0,0,0,0-16Z"/></svg></span>
         </div>
         <button class="export-btn" onclick="exportData()" title="Export today's data">📤</button>
       </div>
