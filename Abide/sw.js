@@ -1,6 +1,6 @@
 // Keep the version suffix in sync with APP_VERSION in app.js (shown at the
 // bottom of the app) so a stale cache is easy to spot.
-const CACHE = 'abide-v14';
+const CACHE = 'abide-v15';
 const ASSETS = [
   './index.html',
   './app.js',

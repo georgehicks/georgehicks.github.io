@@ -6,7 +6,7 @@
 
   // Bump alongside CACHE in sw.js whenever app.js/index.html/sw.js change —
   // shown at the bottom of the app so a stale service-worker cache is obvious.
-  var APP_VERSION = "v14";
+  var APP_VERSION = "v15";
   var ROUND_SIZE = 10;
   var WINDOW_DAYS = 30;
   var PRUNE_WINDOW_MS = 120 * 864e5;
