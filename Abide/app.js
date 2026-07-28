@@ -4,6 +4,9 @@
 (function () {
   "use strict";
 
+  // Bump alongside CACHE in sw.js whenever app.js/index.html/sw.js change —
+  // shown at the bottom of the app so a stale service-worker cache is obvious.
+  var APP_VERSION = "v14";
   var ROUND_SIZE = 10;
   var WINDOW_DAYS = 30;
   var PRUNE_WINDOW_MS = 120 * 864e5;
@@ -2989,6 +2992,8 @@
   applyTheme();
   bind();
   renderHome();
+  var buildTagEl = document.getElementById("build-tag");
+  if (buildTagEl) buildTagEl.textContent = APP_VERSION;
 
   if (!V.length) console.error("[Abide] Verses not loaded.");
   if (!ASSERTIONS.length) console.error("[Abide] Assertions not loaded.");
