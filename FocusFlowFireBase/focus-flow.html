@@ -2722,13 +2722,22 @@ setInterval(() => { applyAutoRenewChecklists(); applyDueDayEntries(); renderPick
 
 // Shows the active service-worker cache name in Settings — the SW deletes every
 // other cache on activate, so whatever's left in Cache Storage is the running version.
-if ('caches' in window) {
+// On a first-ever visit the SW's install (which populates the cache) can still be
+// in flight when this runs, so wait for it to finish activating first — with a
+// timeout fallback for browsers with no SW support or a registration that stalls.
+function showCacheVersion() {
+  if (!('caches' in window)) return;
   caches.keys().then(keys => {
     const el = document.getElementById('cache-version');
     if (!el) return;
     const name = keys.find(k => k.startsWith('focusflowfb-v'));
     el.textContent = name ? `cache: ${name}` : 'cache: (none — offline mode unavailable)';
   });
+}
+if ('serviceWorker' in navigator) {
+  Promise.race([navigator.serviceWorker.ready, new Promise(r => setTimeout(r, 5000))]).then(showCacheVersion);
+} else {
+  showCacheVersion();
 }
 
     // ===== Cloud Sync engine =====
