@@ -171,6 +171,12 @@
     .deliv-menu-btn.edit { color: #ffd580; border-color: rgba(255,213,128,0.4); }
     .deliv-menu-btn.newtask { color: #8ab4f8; border-color: rgba(138,180,248,0.4); }
     .deliv-menu-btn.delete { color: #ff8a80; border-color: rgba(255,138,128,0.4); }
+    .deliv-menu-btn.complete.confirming { display: flex; align-items: center; justify-content: center; gap: 14px; padding: 8px 2px; }
+    .deliv-confirm-icon { display: inline-flex; padding: 2px; border-radius: 6px; }
+    .deliv-confirm-icon svg { width: 19px; height: 19px; display: block; }
+    .deliv-confirm-icon.yes { color: #00ffcc; }
+    .deliv-confirm-icon.no { color: #ff8a80; }
+    .deliv-confirm-icon:active { transform: scale(0.9); }
     .deliv-edit-row { margin: 2px 0 2px 10px; display: flex; gap: 5px; }
     .deliv-edit-row input { flex: 1; min-width: 0; background: #10141f; border: 1px solid var(--primary); border-radius: 8px; color: #dde; font-family: inherit; font-size: 0.92rem; padding: 10px; outline: none; }
     .deliv-nav-btn { width: 40px; flex-shrink: 0; border-radius: 8px; border: 1px solid #2a3555; background: #1a2030; color: #8ab4f8; font-size: 1rem; cursor: pointer; -webkit-tap-highlight-color: transparent; }
@@ -1760,6 +1766,40 @@
       });
     }
 
+    // The Done button arms on first tap (swapping its label for a check/cancel
+    // icon pair) and only actually completes the line on the confirming tap —
+    // a lightweight guard against fat-fingering something done by accident.
+    function buildDoneConfirmButton(idx) {
+      const b = document.createElement('button');
+      b.type = 'button';
+      b.className = 'deliv-menu-btn complete';
+      b.textContent = '✓ Done';
+      const disarm = () => {
+        b.classList.remove('confirming');
+        b.innerHTML = '';
+        b.textContent = '✓ Done';
+      };
+      b.addEventListener('click', e => {
+        e.stopPropagation();
+        if (b.classList.contains('confirming')) return;   // mid-confirm taps land on the icons, not here
+        b.classList.add('confirming');
+        b.innerHTML = '';
+        const yes = document.createElement('span');
+        yes.className = 'deliv-confirm-icon yes';
+        yes.title = 'Confirm done';
+        yes.innerHTML = '<svg viewBox="0 0 256 256" fill="currentColor"><path d="M229.66,77.66l-128,128a8,8,0,0,1-11.32,0l-56-56a8,8,0,0,1,11.32-11.32L96,188.69,218.34,66.34a8,8,0,0,1,11.32,11.32Z"/></svg>';
+        yes.addEventListener('click', e2 => { e2.stopPropagation(); delivComplete(idx, b.getBoundingClientRect()); });
+        const no = document.createElement('span');
+        no.className = 'deliv-confirm-icon no';
+        no.title = 'Cancel';
+        no.innerHTML = '<svg viewBox="0 0 256 256" fill="currentColor"><path d="M205.66,194.34a8,8,0,0,1-11.32,11.32L128,139.31,61.66,205.66a8,8,0,0,1-11.32-11.32L116.69,128,50.34,61.66A8,8,0,0,1,61.66,50.34L128,116.69l66.34-66.35a8,8,0,0,1,11.32,11.32L139.31,128Z"/></svg>';
+        no.addEventListener('click', e2 => { e2.stopPropagation(); disarm(); });
+        b.appendChild(yes);
+        b.appendChild(no);
+      });
+      return b;
+    }
+
     function buildDelivMenu(line, idx) {
       const menu = document.createElement('div');
       menu.className = 'deliv-menu';
@@ -1772,7 +1812,7 @@
         menu.appendChild(b);
       };
       if (isDone) btn('complete', '↺ Reopen', () => delivReopen(idx));
-      else btn('complete', '✓ Done', () => delivComplete(idx, menu.getBoundingClientRect()));
+      else menu.appendChild(buildDoneConfirmButton(idx));
       btn('edit', '✎ Edit', () => delivEditStart(idx));
       btn('newtask', '+ Task', () => delivInsertBelow(idx));
       btn('delete', '✗ Delete', () => delivDelete(idx, menu.getBoundingClientRect()));
