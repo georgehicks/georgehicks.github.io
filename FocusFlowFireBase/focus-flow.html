@@ -37,7 +37,21 @@
 
     .section { background: var(--card); border-radius: 12px; padding: 12px; margin-bottom: 12px; }
 
-    .timeline { height: calc(100dvh - 250px); min-height: 320px; overflow-y: auto; overflow-x: hidden; scroll-behavior: smooth; }
+    .timeline { height: calc(100dvh - 288px); min-height: 300px; overflow-y: auto; overflow-x: hidden; scroll-behavior: smooth; }
+
+    /* Focus timeline hour navigation — the only way to reach a past hour's
+       per-slot chip picker for backfilling, since the wheel listener is
+       desktop-only and touch devices have no other way to shift the window. */
+    .focus-hour-nav { display: flex; align-items: center; gap: 6px; padding: 0 0 8px; }
+    .focus-hour-nav-btn { background: #1a2030; border: 1px solid #2a3555; color: #8ab4f8; border-radius: 8px; width: 34px; height: 34px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; cursor: pointer; -webkit-tap-highlight-color: transparent; }
+    .focus-hour-nav-btn svg { width: 16px; height: 16px; }
+    .focus-hour-nav-btn:disabled { opacity: 0.3; cursor: default; }
+    .focus-hour-nav-btn:active:not(:disabled) { transform: scale(0.94); }
+    .focus-hour-label { flex: 1; text-align: center; font-size: 0.84rem; font-weight: 600; color: #aeb8d8; }
+    .focus-hour-label.browsing { color: var(--primary-dim); }
+    .focus-hour-now-btn { background: none; border: 1px solid rgba(0,255,204,0.4); color: var(--primary-dim); border-radius: 8px; padding: 0 12px; height: 34px; font-size: 0.78rem; font-family: inherit; cursor: pointer; flex-shrink: 0; -webkit-tap-highlight-color: transparent; visibility: hidden; }
+    .focus-hour-now-btn.browsing { visibility: visible; }
+    .focus-hour-now-btn:active { transform: scale(0.96); }
 
     /* Refined, subtle scrollbars */
     .timeline, .notes, .pick-list, .today-summary { scrollbar-width: thin; scrollbar-color: rgba(120,140,180,0.28) transparent; }
@@ -388,6 +402,12 @@
       <span class="notes-tab" data-target="focus-view-plan" title="Plan"><svg viewBox="0 0 256 256" fill="currentColor"><path d="M120,40V16a8,8,0,0,1,16,0V40a8,8,0,0,1-16,0Zm72,88a64,64,0,1,1-64-64A64.07,64.07,0,0,1,192,128Zm-16,0a48,48,0,1,0-48,48A48.05,48.05,0,0,0,176,128ZM58.34,69.66A8,8,0,0,0,69.66,58.34l-16-16A8,8,0,0,0,42.34,53.66Zm0,116.68-16,16a8,8,0,0,0,11.32,11.32l16-16a8,8,0,0,0-11.32-11.32ZM192,72a8,8,0,0,0,5.66-2.34l16-16a8,8,0,0,0-11.32-11.32l-16,16A8,8,0,0,0,192,72Zm5.66,114.34a8,8,0,0,0-11.32,11.32l16,16a8,8,0,0,0,11.32-11.32ZM48,128a8,8,0,0,0-8-8H16a8,8,0,0,0,0,16H40A8,8,0,0,0,48,128Zm80,80a8,8,0,0,0-8,8v24a8,8,0,0,0,16,0V216A8,8,0,0,0,128,208Zm112-88H216a8,8,0,0,0,0,16h24a8,8,0,0,0,0-16Z"/></svg></span>
     </div>
     <div id="focus-view-timeline">
+      <div class="focus-hour-nav">
+        <button type="button" id="focus-hour-prev" class="focus-hour-nav-btn" title="Previous hour"><svg viewBox="0 0 256 256" fill="currentColor"><path d="M165.66,202.34a8,8,0,0,1-11.32,11.32l-80-80a8,8,0,0,1,0-11.32l80-80a8,8,0,0,1,11.32,11.32L91.31,128Z"/></svg></button>
+        <span id="focus-hour-label" class="focus-hour-label"></span>
+        <button type="button" id="focus-hour-next" class="focus-hour-nav-btn" title="Next hour"><svg viewBox="0 0 256 256" fill="currentColor"><path d="M181.66,133.66l-80,80a8,8,0,0,1-11.32-11.32L164.69,128,90.34,53.66a8,8,0,0,1,11.32-11.32l80,80A8,8,0,0,1,181.66,133.66Z"/></svg></button>
+        <button type="button" id="focus-hour-now" class="focus-hour-now-btn" title="Jump to now">Now</button>
+      </div>
       <div id="focus-timeline" class="timeline"></div>
     </div>
     <div id="focus-view-plan" style="display:none;">
@@ -898,6 +918,38 @@
 
     // FOCUS TAB
     let windowStartMinutes = getCurrentWindowStart();
+    // True once the user has deliberately stepped away from the live hour (via
+    // the nav buttons or the wheel listener) — while true, background ticks
+    // (autoTrack) leave the window alone instead of yanking it back to "now"
+    // every time the real current block advances, so browsing back to backfill
+    // a past hour isn't fighting the auto-follow.
+    let manualHourNav = false;
+
+    function focusHourNav(deltaHours) {
+      windowStartMinutes = Math.max(startHour * 60, Math.min((endHour - 1) * 60, windowStartMinutes + deltaHours * 60));
+      manualHourNav = windowStartMinutes !== getCurrentWindowStart();
+      buildFocusTimeline();
+    }
+
+    function focusHourNow() {
+      windowStartMinutes = getCurrentWindowStart();
+      manualHourNav = false;
+      buildFocusTimeline();
+    }
+
+    function updateFocusHourNav() {
+      const prevBtn = document.getElementById('focus-hour-prev');
+      const nextBtn = document.getElementById('focus-hour-next');
+      const label = document.getElementById('focus-hour-label');
+      const nowBtn = document.getElementById('focus-hour-now');
+      if (!prevBtn || !nextBtn || !label || !nowBtn) return;
+      prevBtn.disabled = windowStartMinutes <= startHour * 60;
+      nextBtn.disabled = windowStartMinutes >= (endHour - 1) * 60;
+      label.textContent = `${formatAMPM(windowStartMinutes)} – ${formatAMPM(windowStartMinutes + 60)}`;
+      const browsing = windowStartMinutes !== getCurrentWindowStart();
+      label.classList.toggle('browsing', browsing);
+      nowBtn.classList.toggle('browsing', browsing);
+    }
 
     function scrollCurrentBlockIntoView() {
       const container = document.getElementById('focus-timeline');
@@ -1124,6 +1176,7 @@
       // Re-center the current block in the timeline on each (re)build, unless editing inside it
       if (!isEditingFocusTimeline()) scrollCurrentBlockIntoView();
       start10MinProgressBar();
+      updateFocusHourNav();
     }
 
     function start10MinProgressBar() {
@@ -2343,6 +2396,7 @@
       if (block !== lastTrackedBlock) {
         if (isEditingFocusTimeline()) return;   // retry next tick rather than rebuilding mid-edit
         lastTrackedBlock = block;
+        if (manualHourNav) return;   // leave a manually-browsed-away hour alone; don't yank the view back
         // Only snap the window if the new current block has moved outside what's visible
         const visible = block >= windowStartMinutes && block < windowStartMinutes + 60;
         if (!visible) windowStartMinutes = getCurrentWindowStart();
@@ -2356,7 +2410,7 @@
       document.getElementById('panel-plan').style.display = n === 0 ? 'block' : 'none';
       document.getElementById('panel-focus').style.display = n === 1 ? 'block' : 'none';
       document.getElementById('panel-settings').style.display = n === 2 ? 'block' : 'none';
-      if (n === 1) { windowStartMinutes = getCurrentWindowStart(); buildFocusTimeline(); renderToday(); }
+      if (n === 1) { windowStartMinutes = getCurrentWindowStart(); manualHourNav = false; buildFocusTimeline(); renderToday(); }
       else if (progressBarInterval) { clearInterval(progressBarInterval); progressBarInterval = null; }
       if (n === 2) renderRecoverList();
     }
@@ -2367,6 +2421,7 @@
         e.preventDefault();
         const delta = e.deltaY > 0 ? 60 : -60;
         windowStartMinutes = Math.max(startHour * 60, Math.min((endHour - 1) * 60, windowStartMinutes + delta));
+        manualHourNav = windowStartMinutes !== getCurrentWindowStart();
         buildFocusTimeline();
       });
     }
@@ -2759,6 +2814,9 @@
     setInterval(updateAnalogClock, 1000);
     updateAnalogClock();
     addWheelListener();
+    document.getElementById('focus-hour-prev')?.addEventListener('click', () => focusHourNav(-1));
+    document.getElementById('focus-hour-next')?.addEventListener('click', () => focusHourNav(1));
+    document.getElementById('focus-hour-now')?.addEventListener('click', focusHourNow);
 
     setInterval(autoTrack, 10000);
     setInterval(checkNotifications, 15000);
