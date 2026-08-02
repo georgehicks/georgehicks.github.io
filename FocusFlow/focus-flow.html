@@ -37,19 +37,22 @@
 
     .section { background: var(--card); border-radius: 12px; padding: 12px; margin-bottom: 12px; }
 
-    .timeline { height: calc(100dvh - 288px); min-height: 300px; overflow-y: auto; overflow-x: hidden; scroll-behavior: smooth; }
+    .timeline { height: calc(100dvh - 252px); min-height: 320px; overflow-y: auto; overflow-x: hidden; scroll-behavior: smooth; }
 
-    /* Focus timeline hour navigation — the only way to reach a past hour's
-       per-slot chip picker for backfilling, since the wheel listener is
-       desktop-only and touch devices have no other way to shift the window. */
-    .focus-hour-nav { display: flex; align-items: center; gap: 6px; padding: 0 0 8px; }
-    .focus-hour-nav-btn { background: #1a2030; border: 1px solid #2a3555; color: #8ab4f8; border-radius: 8px; width: 34px; height: 34px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; cursor: pointer; -webkit-tap-highlight-color: transparent; }
-    .focus-hour-nav-btn svg { width: 16px; height: 16px; }
+    /* Focus header — sub-tabs and hour navigation share one row. The nav is
+       the only way to reach a past hour's per-slot chip picker for
+       backfilling, since the wheel listener is desktop-only and touch
+       devices have no other way to shift the window. */
+    .focus-header { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
+    .focus-header .notes-tabs { flex-shrink: 0; }
+    .focus-hour-nav { display: flex; align-items: center; gap: 4px; flex: 1; min-width: 0; }
+    .focus-hour-nav-btn { background: #1a2030; border: 1px solid #2a3555; color: #8ab4f8; border-radius: 8px; width: 28px; height: 28px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; cursor: pointer; -webkit-tap-highlight-color: transparent; }
+    .focus-hour-nav-btn svg { width: 14px; height: 14px; }
     .focus-hour-nav-btn:disabled { opacity: 0.3; cursor: default; }
     .focus-hour-nav-btn:active:not(:disabled) { transform: scale(0.94); }
-    .focus-hour-label { flex: 1; text-align: center; font-size: 0.84rem; font-weight: 600; color: #aeb8d8; }
+    .focus-hour-label { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; text-align: center; font-size: 0.76rem; font-weight: 600; color: #aeb8d8; }
     .focus-hour-label.browsing { color: var(--primary-dim); }
-    .focus-hour-now-btn { background: none; border: 1px solid rgba(0,255,204,0.4); color: var(--primary-dim); border-radius: 8px; padding: 0 12px; height: 34px; font-size: 0.78rem; font-family: inherit; cursor: pointer; flex-shrink: 0; -webkit-tap-highlight-color: transparent; visibility: hidden; }
+    .focus-hour-now-btn { background: none; border: 1px solid rgba(0,255,204,0.4); color: var(--primary-dim); border-radius: 8px; padding: 0 9px; height: 28px; font-size: 0.72rem; font-family: inherit; cursor: pointer; flex-shrink: 0; -webkit-tap-highlight-color: transparent; visibility: hidden; }
     .focus-hour-now-btn.browsing { visibility: visible; }
     .focus-hour-now-btn:active { transform: scale(0.96); }
 
@@ -382,17 +385,19 @@
 
   <!-- FOCUS TAB -->
   <div id="panel-focus" class="section" style="display:none;">
-    <div class="notes-tabs" style="margin-bottom:6px;">
-      <span class="notes-tab active" data-target="focus-view-timeline" title="Timeline"><svg viewBox="0 0 256 256" fill="currentColor"><path d="M128,24A104,104,0,1,0,232,128,104.11,104.11,0,0,0,128,24Zm0,192a88,88,0,1,1,88-88A88.1,88.1,0,0,1,128,216Zm64-88a8,8,0,0,1-8,8H128a8,8,0,0,1-8-8V72a8,8,0,0,1,16,0v48h48A8,8,0,0,1,192,128Z"/></svg></span>
-      <span class="notes-tab" data-target="focus-view-plan" title="Plan"><svg viewBox="0 0 256 256" fill="currentColor"><path d="M120,40V16a8,8,0,0,1,16,0V40a8,8,0,0,1-16,0Zm72,88a64,64,0,1,1-64-64A64.07,64.07,0,0,1,192,128Zm-16,0a48,48,0,1,0-48,48A48.05,48.05,0,0,0,176,128ZM58.34,69.66A8,8,0,0,0,69.66,58.34l-16-16A8,8,0,0,0,42.34,53.66Zm0,116.68-16,16a8,8,0,0,0,11.32,11.32l16-16a8,8,0,0,0-11.32-11.32ZM192,72a8,8,0,0,0,5.66-2.34l16-16a8,8,0,0,0-11.32-11.32l-16,16A8,8,0,0,0,192,72Zm5.66,114.34a8,8,0,0,0-11.32,11.32l16,16a8,8,0,0,0,11.32-11.32ZM48,128a8,8,0,0,0-8-8H16a8,8,0,0,0,0,16H40A8,8,0,0,0,48,128Zm80,80a8,8,0,0,0-8,8v24a8,8,0,0,0,16,0V216A8,8,0,0,0,128,208Zm112-88H216a8,8,0,0,0,0,16h24a8,8,0,0,0,0-16Z"/></svg></span>
-    </div>
-    <div id="focus-view-timeline">
-      <div class="focus-hour-nav">
+    <div class="focus-header">
+      <div class="notes-tabs">
+        <span class="notes-tab active" data-target="focus-view-timeline" title="Timeline"><svg viewBox="0 0 256 256" fill="currentColor"><path d="M128,24A104,104,0,1,0,232,128,104.11,104.11,0,0,0,128,24Zm0,192a88,88,0,1,1,88-88A88.1,88.1,0,0,1,128,216Zm64-88a8,8,0,0,1-8,8H128a8,8,0,0,1-8-8V72a8,8,0,0,1,16,0v48h48A8,8,0,0,1,192,128Z"/></svg></span>
+        <span class="notes-tab" data-target="focus-view-plan" title="Plan"><svg viewBox="0 0 256 256" fill="currentColor"><path d="M120,40V16a8,8,0,0,1,16,0V40a8,8,0,0,1-16,0Zm72,88a64,64,0,1,1-64-64A64.07,64.07,0,0,1,192,128Zm-16,0a48,48,0,1,0-48,48A48.05,48.05,0,0,0,176,128ZM58.34,69.66A8,8,0,0,0,69.66,58.34l-16-16A8,8,0,0,0,42.34,53.66Zm0,116.68-16,16a8,8,0,0,0,11.32,11.32l16-16a8,8,0,0,0-11.32-11.32ZM192,72a8,8,0,0,0,5.66-2.34l16-16a8,8,0,0,0-11.32-11.32l-16,16A8,8,0,0,0,192,72Zm5.66,114.34a8,8,0,0,0-11.32,11.32l16,16a8,8,0,0,0,11.32-11.32ZM48,128a8,8,0,0,0-8-8H16a8,8,0,0,0,0,16H40A8,8,0,0,0,48,128Zm80,80a8,8,0,0,0-8,8v24a8,8,0,0,0,16,0V216A8,8,0,0,0,128,208Zm112-88H216a8,8,0,0,0,0,16h24a8,8,0,0,0,0-16Z"/></svg></span>
+      </div>
+      <div id="focus-hour-nav" class="focus-hour-nav">
         <button type="button" id="focus-hour-prev" class="focus-hour-nav-btn" title="Previous hour"><svg viewBox="0 0 256 256" fill="currentColor"><path d="M165.66,202.34a8,8,0,0,1-11.32,11.32l-80-80a8,8,0,0,1,0-11.32l80-80a8,8,0,0,1,11.32,11.32L91.31,128Z"/></svg></button>
         <span id="focus-hour-label" class="focus-hour-label"></span>
         <button type="button" id="focus-hour-next" class="focus-hour-nav-btn" title="Next hour"><svg viewBox="0 0 256 256" fill="currentColor"><path d="M181.66,133.66l-80,80a8,8,0,0,1-11.32-11.32L164.69,128,90.34,53.66a8,8,0,0,1,11.32-11.32l80,80A8,8,0,0,1,181.66,133.66Z"/></svg></button>
         <button type="button" id="focus-hour-now" class="focus-hour-now-btn" title="Jump to now">Now</button>
       </div>
+    </div>
+    <div id="focus-view-timeline">
       <div id="focus-timeline" class="timeline"></div>
     </div>
     <div id="focus-view-plan" style="display:none;">
@@ -2812,6 +2817,10 @@
           if (tab.dataset.target === 'plan-lists') { closeChecklistForm(); renderLists(); }
           if (tab.dataset.target === 'plan-today') renderToday();
           if (tab.dataset.target === 'plan-daynotes') renderDayNotes();
+          if (tab.dataset.target === 'focus-view-plan' || tab.dataset.target === 'focus-view-timeline') {
+            const hourNav = document.getElementById('focus-hour-nav');
+            if (hourNav) hourNav.style.display = tab.dataset.target === 'focus-view-timeline' ? '' : 'none';
+          }
           if (tab.dataset.target === 'focus-view-plan') renderToday();
         });
       });
