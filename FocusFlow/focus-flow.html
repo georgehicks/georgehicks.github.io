@@ -259,6 +259,7 @@
     .tray-chip .tc-dot.p1{background:#00ffcc;} .tray-chip .tc-dot.p2{background:#ffcc00;} .tray-chip .tc-dot.p3{background:#ff8866;}
     .tray-chip.same { background:#243047; border-color:#3a4a70; color:#cfe0ff; }
     .tray-chip.logged { border-style:dashed; color:#8898b8; }
+    .tray-chip .tc-time { margin-left:6px; font-size:0.68rem; color:#7a8aa8; font-variant-numeric:tabular-nums; }
 
     /* Tray tabs — Today / Upcoming / Notes, decided-mode content */
     .tray-tabs { width:100%; display:flex; align-items:center; gap:12px; padding-bottom:5px; margin-bottom:2px; border-bottom:1px solid #2a3350; }
@@ -432,6 +433,7 @@
     <div style="margin-top:20px; padding-top:16px; border-top:1px solid #252b3d;">
       <button onclick="navigator.serviceWorker.getRegistration().then(r => r ? r.update().then(() => location.reload()) : location.reload())" style="width:100%; padding:10px; background:#1a2030; color:#8899cc; border:1px solid #2a3555; border-radius:8px; cursor:pointer;">↺ Refresh App</button>
     </div>
+    <div id="cache-version" style="margin-top:14px; text-align:center; color:#445; font-size:0.72rem; font-family:ui-monospace,SFMono-Regular,Menlo,monospace;"></div>
   </div>
 
 
@@ -823,6 +825,15 @@
       });
     });
 
+    // True while the user has a goal/slot input inside the timeline focused —
+    // background ticks (autoTrack, the 10-min progress-bar rollover) check this
+    // before rebuilding so they never yank focus out from under an in-progress edit.
+    function isEditingFocusTimeline() {
+      const container = document.getElementById('focus-timeline');
+      const ae = document.activeElement;
+      return !!(container && ae && container.contains(ae) && (ae.tagName === 'INPUT' || ae.tagName === 'TEXTAREA'));
+    }
+
     function buildFocusTimeline() {
       const container = document.getElementById('focus-timeline');
       container.innerHTML = '';
@@ -994,8 +1005,7 @@
         if (winWrapper.children.length > 0) { container.appendChild(winWrapper); }
       }
       // Re-center the current block in the timeline on each (re)build, unless editing inside it
-      const ae = document.activeElement;
-      if (!(ae && container.contains(ae) && (ae.tagName === 'INPUT' || ae.tagName === 'TEXTAREA'))) scrollCurrentBlockIntoView();
+      if (!isEditingFocusTimeline()) scrollCurrentBlockIntoView();
       start10MinProgressBar();
     }
 
@@ -1011,6 +1021,7 @@
       progressBarInterval = setInterval(() => {
         remaining--;
         if (remaining <= 0) {
+          if (isEditingFocusTimeline()) { remaining = 1; return; }   // retry each second until the edit is done
           clearInterval(progressBarInterval);
           buildFocusTimeline(); // advance to next block
           return;
@@ -1985,6 +1996,30 @@
       return [...seen.entries()].sort((a, b) => b[1] - a[1]).map(([text]) => text);
     }
 
+    // Total minutes logged against this exact text today, across every slot —
+    // shown on tray chips so time already spent can inform what to pick next.
+    function accruedMinutesToday(text) {
+      const today = todayKey();
+      const interval = getInterval();
+      let mins = 0;
+      for (let i = 0; i < localStorage.length; i++) {
+        const k = localStorage.key(i);
+        const m = k && k.match(/^block_(.+)_(\d+)$/);
+        if (!m || m[1] !== today) continue;
+        const raw = storage.get(k);
+        if (!raw) continue;
+        if (String(raw).split(',').map(s => s.trim()).includes(text)) mins += interval;
+      }
+      return mins;
+    }
+
+    function formatAccrued(mins) {
+      if (mins <= 0) return '';
+      if (mins < 60) return `${mins}m`;
+      const h = Math.floor(mins / 60), m = mins % 60;
+      return m ? `${h}h ${m}m` : `${h}h`;
+    }
+
     // Today's remaining appointments, relative to the slot being decided —
     // read-only browsing (not pickable like the Today tab's chips).
     function buildTrayUpcoming(host, blockMinutes) {
@@ -2061,12 +2096,24 @@
       todayPanel.className = 'tray-panel';
       panels.Today = todayPanel;
 
+      // Appends a "Xm"/"Xh Ym" badge for time already logged today, if any.
+      const appendAccruedBadge = (chip, text) => {
+        const mins = accruedMinutesToday(text);
+        if (!mins) return;
+        const timeEl = document.createElement('span');
+        timeEl.className = 'tc-time';
+        timeEl.textContent = formatAccrued(mins);
+        chip.appendChild(timeEl);
+        chip.title = (chip.title ? chip.title + ' — ' : '') + formatAccrued(mins) + ' today';
+      };
+
       // "Same as last slot" — unless that text is already a today-item chip
       if (last && !items.some(it => it.text === last)) {
         const chip = document.createElement('span');
         chip.className = 'tray-chip same';
         chip.title = 'Same as last: ' + last;
         chip.innerHTML = '↻ ' + escapeHtml(last.length > 20 ? last.slice(0, 19) + '…' : last);
+        appendAccruedBadge(chip, last);
         chip.addEventListener('mousedown', e => e.preventDefault());
         chip.addEventListener('click', () => appendText(last, null));
         todayPanel.appendChild(chip);
@@ -2078,6 +2125,7 @@
         chip.title = it.text;
         const label = it.text.length > 22 ? it.text.slice(0, 21) + '…' : it.text;
         chip.innerHTML = `<span class="tc-dot p${it.prio}"></span>${escapeHtml(label)}`;
+        appendAccruedBadge(chip, it.text);
         chip.addEventListener('mousedown', e => e.preventDefault());
         chip.addEventListener('click', () => appendText(it.text, it.key));
         todayPanel.appendChild(chip);
@@ -2092,7 +2140,8 @@
           const chip = document.createElement('span');
           chip.className = 'tray-chip logged';
           chip.title = 'Logged earlier today: ' + text;
-          chip.textContent = text.length > 22 ? text.slice(0, 21) + '…' : text;
+          chip.appendChild(document.createTextNode(text.length > 22 ? text.slice(0, 21) + '…' : text));
+          appendAccruedBadge(chip, text);
           chip.addEventListener('mousedown', e => e.preventDefault());
           chip.addEventListener('click', () => appendText(text, null));
           todayPanel.appendChild(chip);
@@ -2145,12 +2194,12 @@
 
     function autoTrack() {
       const block = currentBlockMinutes();
-      const blockChanged = block !== lastTrackedBlock;
-      lastTrackedBlock = block;
 
-      if (document.getElementById('panel-focus').style.display === 'none') return;
+      if (document.getElementById('panel-focus').style.display === 'none') { lastTrackedBlock = block; return; }
 
-      if (blockChanged) {
+      if (block !== lastTrackedBlock) {
+        if (isEditingFocusTimeline()) return;   // retry next tick rather than rebuilding mid-edit
+        lastTrackedBlock = block;
         // Only snap the window if the new current block has moved outside what's visible
         const visible = block >= windowStartMinutes && block < windowStartMinutes + 60;
         if (!visible) windowStartMinutes = getCurrentWindowStart();
@@ -2591,6 +2640,17 @@ renderPick();
 renderToday();
 renderLists();
 setInterval(() => { applyAutoRenewChecklists(); applyDueDayEntries(); renderPick(); }, 60000);   // catch a checklist or day-entry becoming due while the app sits open
+
+// Shows the active service-worker cache name in Settings — the SW deletes every
+// other cache on activate, so whatever's left in Cache Storage is the running version.
+if ('caches' in window) {
+  caches.keys().then(keys => {
+    const el = document.getElementById('cache-version');
+    if (!el) return;
+    const name = keys.find(k => k.startsWith('focusflow-v'));   // Cache Storage is origin-wide, so exclude focusflowfb-*
+    el.textContent = name ? `cache: ${name}` : 'cache: (none — offline mode unavailable)';
+  });
+}
   </script>
 </body>
 </html>
