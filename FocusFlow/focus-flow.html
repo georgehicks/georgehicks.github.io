@@ -355,14 +355,23 @@
         <div id="checklist-cards"></div>
       </div>
       <div id="plan-today" class="subpanel" style="display:none;">
-        <div id="today-summary" class="today-summary"></div>
+        <div class="today-summary"></div>
       </div>
     </div>
   </div>
 
   <!-- FOCUS TAB -->
   <div id="panel-focus" class="section" style="display:none;">
-    <div id="focus-timeline" class="timeline"></div>
+    <div class="notes-tabs" style="margin-bottom:6px;">
+      <span class="notes-tab active" data-target="focus-view-timeline" title="Timeline"><svg viewBox="0 0 256 256" fill="currentColor"><path d="M128,24A104,104,0,1,0,232,128,104.11,104.11,0,0,0,128,24Zm0,192a88,88,0,1,1,88-88A88.1,88.1,0,0,1,128,216Zm64-88a8,8,0,0,1-8,8H128a8,8,0,0,1-8-8V72a8,8,0,0,1,16,0v48h48A8,8,0,0,1,192,128Z"/></svg></span>
+      <span class="notes-tab" data-target="focus-view-plan" title="Plan"><svg viewBox="0 0 256 256" fill="currentColor"><path d="M120,40V16a8,8,0,0,1,16,0V40a8,8,0,0,1-16,0Zm72,88a64,64,0,1,1-64-64A64.07,64.07,0,0,1,192,128Zm-16,0a48,48,0,1,0-48,48A48.05,48.05,0,0,0,176,128ZM58.34,69.66A8,8,0,0,0,69.66,58.34l-16-16A8,8,0,0,0,42.34,53.66Zm0,116.68-16,16a8,8,0,0,0,11.32,11.32l16-16a8,8,0,0,0-11.32-11.32ZM192,72a8,8,0,0,0,5.66-2.34l16-16a8,8,0,0,0-11.32-11.32l-16,16A8,8,0,0,0,192,72Zm5.66,114.34a8,8,0,0,0-11.32,11.32l16,16a8,8,0,0,0,11.32-11.32ZM48,128a8,8,0,0,0-8-8H16a8,8,0,0,0,0,16H40A8,8,0,0,0,48,128Zm80,80a8,8,0,0,0-8,8v24a8,8,0,0,0,16,0V216A8,8,0,0,0,128,208Zm112-88H216a8,8,0,0,0,0,16h24a8,8,0,0,0,0-16Z"/></svg></span>
+    </div>
+    <div id="focus-view-timeline">
+      <div id="focus-timeline" class="timeline"></div>
+    </div>
+    <div id="focus-view-plan" style="display:none;">
+      <div class="today-summary"></div>
+    </div>
   </div>
 
   <!-- SETTINGS TAB -->
@@ -1635,8 +1644,7 @@
             const parent = it.isStep && it.parent ? `<span class="tparent">${escapeHtml(it.parent)} ▸ </span>` : '';
             return `<div class="today-row"><span class="today-dot p${it.prio}">${it.prio}</span><span class="t-txt" data-line="${it.lineIndex}" title="Log into the current time slot" onclick="addToCurrentSlot(${it.lineIndex})">${parent}${escapeHtml(it.text)}</span><button class="today-done" title="Mark done" onclick="markItemDone(${it.lineIndex})">✓</button></div>`;
           }).join('');
-      const el = document.getElementById('today-summary');
-      if (el) el.innerHTML = html;
+      document.querySelectorAll('.today-summary').forEach(el => el.innerHTML = html);
     }
 
     // Tap a Today item's name to log it into the current time slot, without
@@ -1661,13 +1669,27 @@
       });
     }
 
+    // Marks a line done in-place; if it's a parent (not a step), also marks every
+    // step directly under it done — finishing the parent finishes its steps too.
+    function markLineAndChildrenDone(lines, idx) {
+      if (idx < 0 || idx >= lines.length) return;
+      const t = lines[idx].trim();
+      if (t[0] === '-') {
+        lines[idx] = lines[idx].replace(/^(\s*)-/, '$1+');
+      } else if (!/\s+DONE$/.test(t)) {
+        lines[idx] = lines[idx].replace(/\s*$/, '') + ' DONE';
+        for (let i = idx + 1; i < lines.length; i++) {
+          const lt = lines[i].trim();
+          if (!lt || (lt[0] !== '-' && lt[0] !== '+')) break;   // spacer or next parent ends the block
+          if (lt[0] === '-') lines[i] = lines[i].replace(/^(\s*)-/, '$1+');
+        }
+      }
+    }
+
     // Append " DONE" to a Deliverables line by index (hides it from Pick/Today).
     function markLineDoneByIndex(lineIndex) {
       const lines = getDeliverablesText().split('\n');
-      if (lineIndex < 0 || lineIndex >= lines.length) return;
-      if (!/\s+DONE$/.test(lines[lineIndex].trim())) {
-        lines[lineIndex] = lines[lineIndex].replace(/\s+$/, '') + ' DONE';
-      }
+      markLineAndChildrenDone(lines, lineIndex);
       const newText = lines.join('\n');
       storage.set('deliverables', newText);
       document.querySelectorAll('textarea.sync-notes[data-key="deliverables"]').forEach(el => el.value = newText);
@@ -1846,9 +1868,7 @@
     function delivComplete(idx, rect) {
       const lines = delivLines();
       if (idx < 0 || idx >= lines.length) return;
-      const t = lines[idx].trim();
-      if (t[0] === '-') lines[idx] = lines[idx].replace(/^(\s*)-/, '$1+');
-      else if (!/\s+DONE$/.test(t)) lines[idx] = lines[idx].replace(/\s*$/, '') + ' DONE';
+      markLineAndChildrenDone(lines, idx);
       delivSelected = -1;
       writeDeliverablesLines(lines);
       checkChecklistCompletion();
@@ -2616,6 +2636,7 @@
           if (tab.dataset.target === 'plan-lists') { closeChecklistForm(); renderLists(); }
           if (tab.dataset.target === 'plan-today') renderToday();
           if (tab.dataset.target === 'plan-daynotes') renderDayNotes();
+          if (tab.dataset.target === 'focus-view-plan') renderToday();
         });
       });
     });
