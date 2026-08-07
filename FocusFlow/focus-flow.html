@@ -1069,7 +1069,16 @@
           });
 
           input.addEventListener('input', () => { storage.set(storageKey, input.value); syncBlockDisplay(input); refreshSlotBlink(block); });
-          input.addEventListener('blur', () => { block.classList.remove('editing'); syncBlockDisplay(input); refreshSlotBlink(block); });
+          input.addEventListener('blur', () => {
+            block.classList.remove('editing');
+            syncBlockDisplay(input);
+            refreshSlotBlink(block);
+            // Leaving the current slot's input empty (typed something, changed
+            // your mind, deleted it) means it's still undecided — bring the
+            // tray back rather than leaving it with no way to pick something
+            // until the block rebuilds on its own.
+            if (isCurrent && !input.value.trim() && !block.querySelector('.tray')) showTray(input);
+          });
           input.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === 'Escape') input.blur(); });
 
           block.appendChild(display);
