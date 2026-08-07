@@ -838,6 +838,12 @@
     // once per newly-current slot (from the clock advancing it) rather than on
     // every incidental rebuild of the same still-current block.
     let lastAutoOpenedBlock = -1;
+    // Timestamp of the tray most recently opened (manual tap or auto-open) —
+    // the click-outside-closer ignores clicks landing within a short grace
+    // window of that, since a tap that opens a tray (or a device's delayed/
+    // ghost click synthesized from the same touch) can otherwise bubble to
+    // that same document-level listener and close what it just opened.
+    let trayOpenedAt = 0;
 
     function focusHourNav(deltaHours) {
       windowStartMinutes = Math.max(startHour * 60, Math.min((endHour - 1) * 60, windowStartMinutes + deltaHours * 60));
@@ -898,8 +904,11 @@
 
     // Close any open slot tray when a click lands outside its own block — lets a
     // tap on the (non-input) display open the tray without a focus/blur pair to
-    // hang the close logic off of.
+    // hang the close logic off of. Skipped within a short grace window of the
+    // tray opening — some devices synthesize a second, delayed click from the
+    // same tap that opened it, which would otherwise immediately close it again.
     document.addEventListener('click', e => {
+      if (Date.now() - trayOpenedAt < 350) return;
       document.querySelectorAll('.time-block.magnified > .tray').forEach(tray => {
         const block = tray.parentElement;
         if (block.contains(e.target)) return;
@@ -2218,6 +2227,7 @@
     function showTray(input) {
       const block = input.closest('.time-block');
       if (!block) return;
+      trayOpenedAt = Date.now();
       block.querySelectorAll('.tray').forEach(t => t.remove());
       const items = trayItems();
       const blockMin = parseInt((input.id || '').replace('block-input-', '')) || 0;
