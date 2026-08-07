@@ -834,10 +834,6 @@
     // every time the real current block advances, so browsing back to backfill
     // a past hour isn't fighting the auto-follow.
     let manualHourNav = false;
-    // The current block most recently auto-opened, so the tray only pops open
-    // once per newly-current slot (from the clock advancing it) rather than on
-    // every incidental rebuild of the same still-current block.
-    let lastAutoOpenedBlock = -1;
     // Timestamp of the tray most recently opened (manual tap or auto-open) —
     // the click-outside-closer ignores clicks landing within a short grace
     // window of that, since a tap that opens a tray (or a device's delayed/
@@ -1101,26 +1097,25 @@
       start10MinProgressBar();
       updateFocusHourNav();
 
-      // The tray should already be open on a newly-current slot — not wait for
-      // a tap — and stay open until a selection is made (picking a chip, or
-      // typing, removes the tray itself). Only fires once per new slot; a
-      // slot the user has already logged something into, or already closed
-      // the tray on, isn't forced back open by unrelated rebuilds.
-      if (curBlock !== lastAutoOpenedBlock) {
-        lastAutoOpenedBlock = curBlock;
+      // The tray for the current slot should be open any time it's shown and
+      // still undecided — not just the first time that slot became current.
+      // Nothing has been chosen for it until a selection is made (picking a
+      // chip, or typing, removes the tray itself), so every rebuild — a tab
+      // switch, returning to a backgrounded app, landing back on the current
+      // hour — re-opens it rather than only the one moment it first became
+      // current.
+      setTimeout(() => {
         // Deferred: when this rebuild was itself triggered by a click (e.g.
         // tapping the Focus tab), that same click is still bubbling up to the
         // document-level "click outside a tray closes it" listener — opening
         // the tray synchronously here just gets it closed again by that same
         // event a moment later. Waiting a tick lets it finish first.
-        setTimeout(() => {
-          const curInput = document.getElementById(`block-input-${curBlock}`);
-          if (!curInput || curInput.value.trim()) return;
-          const block = curInput.closest('.time-block');
-          if (!block || block.classList.contains('editing') || block.querySelector('.tray') || document.activeElement === curInput) return;
-          showTray(curInput);
-        }, 0);
-      }
+        const curInput = document.getElementById(`block-input-${curBlock}`);
+        if (!curInput || curInput.value.trim()) return;
+        const block = curInput.closest('.time-block');
+        if (!block || block.classList.contains('editing') || block.querySelector('.tray') || document.activeElement === curInput) return;
+        showTray(curInput);
+      }, 0);
     }
 
     function start10MinProgressBar() {
