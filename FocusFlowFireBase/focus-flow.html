@@ -55,6 +55,7 @@
     .focus-hour-now-btn { background: none; border: 1px solid rgba(0,255,204,0.4); color: var(--primary-dim); border-radius: 8px; padding: 0 9px; height: 28px; font-size: 0.72rem; font-family: inherit; cursor: pointer; flex-shrink: 0; -webkit-tap-highlight-color: transparent; visibility: hidden; }
     .focus-hour-now-btn.browsing { visibility: visible; }
     .focus-hour-now-btn:active { transform: scale(0.96); }
+    #focus-music-mini-btn.playing { color: var(--primary); border-color: var(--primary); }
 
     /* Refined, subtle scrollbars */
     .timeline, .notes, .pick-list, .today-summary { scrollbar-width: thin; scrollbar-color: rgba(120,140,180,0.28) transparent; }
@@ -412,6 +413,7 @@
         <span id="focus-hour-label" class="focus-hour-label"></span>
         <button type="button" id="focus-hour-next" class="focus-hour-nav-btn" title="Next hour"><svg viewBox="0 0 256 256" fill="currentColor"><path d="M181.66,133.66l-80,80a8,8,0,0,1-11.32-11.32L164.69,128,90.34,53.66a8,8,0,0,1,11.32-11.32l80,80A8,8,0,0,1,181.66,133.66Z"/></svg></button>
         <button type="button" id="focus-hour-now" class="focus-hour-now-btn" title="Jump to now">Now</button>
+        <button type="button" id="focus-music-mini-btn" class="focus-hour-nav-btn music-toggle-btn" onclick="musicPlayer.toggle()" title="Play focus music">🎵</button>
       </div>
     </div>
     <div id="focus-view-timeline">
@@ -478,6 +480,12 @@
       <label style="display:block; margin-top:8px; font-size:0.85rem;"><input type="checkbox" id="ics-auto"> Auto-pull when the app opens</label>
       <button onclick="pullCalendar()" style="width:100%; margin-top:8px; padding:10px; background:#1a2030; color:#8ab4f8; border:1px solid #2a3555; border-radius:8px; cursor:pointer;">Pull appointments now</button>
       <div id="ics-status" style="color:#888; font-size:0.8rem; margin-top:6px;"></div>
+    </div>
+    <div style="margin-top:20px; padding-top:16px; border-top:1px solid #252b3d;">
+      <strong>Focus Music (YouTube)</strong>
+      <input id="music-playlist-url" type="text" placeholder="YouTube playlist URL (…?list=…)" style="width:100%; padding:8px; margin-top:6px; background:#252b3d; color:#ddd; border:1px solid #333; border-radius:6px;">
+      <label style="display:block; margin-top:8px; font-size:0.85rem;"><input type="checkbox" id="music-auto-pause" checked> Auto-pause while a slot is waiting for input</label>
+      <button id="focus-music-btn" class="music-toggle-btn" data-label="1" onclick="musicPlayer.toggle()" style="width:100%; margin-top:8px; padding:10px; background:#1a2030; color:#8ab4f8; border:1px solid #2a3555; border-radius:8px; cursor:pointer;">▶ Play Focus Music</button>
     </div>
     <div style="margin-top:20px; padding-top:16px; border-top:1px solid #252b3d;">
       <strong>Cloud Sync</strong><br>
@@ -2863,6 +2871,142 @@
         const a = storage.get('icsAuto'); if (a !== null) auto.checked = a;
         auto.addEventListener('change', () => storage.set('icsAuto', auto.checked));
         if (auto.checked && (storage.get('icsUrl') || '')) setTimeout(() => pullCalendar(), 1500);
+      }
+    })();
+
+    // ===== Focus Music (YouTube playlist) =====
+    // Plays a YouTube playlist in a hidden, minimal-size iframe. Auto-pauses
+    // while a slot's tray is open or you're typing into one — i.e. "waiting
+    // for input" — and resumes once you're done.
+    const musicPlayer = {
+      yt: null,
+      wantPlaying: false,
+      pausedForInput: false,
+      apiLoading: false,
+      pendingCb: null,
+
+      extractPlaylistId(url) {
+        const trimmed = (url || '').trim();
+        if (!trimmed) return null;
+        if (!trimmed.includes('://') && /^[A-Za-z0-9_-]{10,}$/.test(trimmed)) return trimmed;
+        try {
+          const list = new URL(trimmed).searchParams.get('list');
+          if (list) return list;
+        } catch (e) {}
+        return null;
+      },
+
+      ensureApi(cb) {
+        if (window.YT && window.YT.Player) { cb(); return; }
+        this.pendingCb = cb;
+        if (this.apiLoading) return;
+        this.apiLoading = true;
+        const prevReady = window.onYouTubeIframeAPIReady;
+        window.onYouTubeIframeAPIReady = () => {
+          if (typeof prevReady === 'function') prevReady();
+          if (this.pendingCb) { const fn = this.pendingCb; this.pendingCb = null; fn(); }
+        };
+        const s = document.createElement('script');
+        s.src = 'https://www.youtube.com/iframe_api';
+        document.head.appendChild(s);
+      },
+
+      // Drops the current player so the next Play picks up a newly-pasted URL.
+      reset() {
+        if (this.yt) { try { this.yt.destroy(); } catch (e) {} this.yt = null; }
+        this.wantPlaying = false;
+        this.pausedForInput = false;
+        this.updateButtons();
+      },
+
+      toggle() {
+        if (this.yt) {
+          this.wantPlaying = !this.wantPlaying;
+          this.pausedForInput = false;
+          this.wantPlaying ? this.yt.playVideo() : this.yt.pauseVideo();
+          this.updateButtons();
+          return;
+        }
+        const id = this.extractPlaylistId(storage.get('musicPlaylistUrl'));
+        if (!id) { alert('Add a YouTube playlist URL in Settings → Focus Music first.'); return; }
+        this.wantPlaying = true;
+        this.updateButtons();
+        this.ensureApi(() => this.createPlayer(id));
+      },
+
+      createPlayer(id) {
+        let host = document.getElementById('yt-music-player');
+        if (!host) {
+          host = document.createElement('div');
+          host.id = 'yt-music-player';
+          host.style.cssText = 'position:fixed; left:-9999px; top:-9999px; width:2px; height:2px; opacity:0.01; pointer-events:none;';
+          document.body.appendChild(host);
+        }
+        this.yt = new YT.Player(host, {
+          width: '2', height: '2',
+          playerVars: { listType: 'playlist', list: id, autoplay: 1, playsinline: 1, controls: 0 },
+          events: {
+            onReady: () => { if (this.wantPlaying) this.yt.playVideo(); },
+            onStateChange: () => this.updateButtons(),
+            onError: () => { this.wantPlaying = false; this.updateButtons(); }
+          }
+        });
+      },
+
+      pauseForInput() {
+        if (!this.yt || !this.wantPlaying || this.pausedForInput) return;
+        this.pausedForInput = true;
+        this.yt.pauseVideo();
+      },
+
+      resumeFromInput() {
+        if (!this.yt || !this.wantPlaying || !this.pausedForInput) return;
+        this.pausedForInput = false;
+        this.yt.playVideo();
+      },
+
+      updateButtons() {
+        document.querySelectorAll('.music-toggle-btn').forEach(btn => {
+          btn.classList.toggle('playing', !!this.wantPlaying);
+          btn.title = this.wantPlaying ? 'Pause focus music' : 'Play focus music';
+          if (btn.dataset.label) btn.textContent = (this.wantPlaying ? '⏸ Pause' : '▶ Play') + ' Focus Music';
+        });
+      }
+    };
+
+    function anyTrayOpen() { return !!document.querySelector('.time-block .tray'); }
+
+    function updateMusicPauseState() {
+      if (!musicPlayer.yt || !musicPlayer.wantPlaying) return;
+      if (storage.get('musicAutoPause') === false) { musicPlayer.resumeFromInput(); return; }
+      (anyTrayOpen() || isEditingFocusTimeline()) ? musicPlayer.pauseForInput() : musicPlayer.resumeFromInput();
+    }
+
+    // Watches the timeline for trays opening/closing anywhere in it, so every
+    // call site that creates or removes a tray is covered without editing each one.
+    (function() {
+      const timeline = document.getElementById('focus-timeline');
+      if (!timeline) return;
+      new MutationObserver(updateMusicPauseState).observe(timeline, { childList: true, subtree: true });
+    })();
+    document.addEventListener('focusin', updateMusicPauseState, true);
+    document.addEventListener('focusout', () => setTimeout(updateMusicPauseState, 0), true);
+
+    // Focus Music settings — persist playlist URL + auto-pause preference
+    (function() {
+      const url = document.getElementById('music-playlist-url');
+      const autoPause = document.getElementById('music-auto-pause');
+      if (url) {
+        url.value = storage.get('musicPlaylistUrl') || '';
+        url.addEventListener('change', () => {
+          storage.set('musicPlaylistUrl', url.value.trim());
+          musicPlayer.reset();
+        });
+      }
+      if (autoPause) {
+        const saved = storage.get('musicAutoPause');
+        if (saved !== null) autoPause.checked = saved;
+        autoPause.addEventListener('change', () => storage.set('musicAutoPause', autoPause.checked));
       }
     })();
 
