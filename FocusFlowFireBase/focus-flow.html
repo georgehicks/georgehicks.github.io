@@ -286,6 +286,10 @@
     .tray-chip.same { background:#243047; border-color:#3a4a70; color:#cfe0ff; }
     .tray-chip.logged { border-style:dashed; color:#8898b8; }
     .tray-chip .tc-time { margin-left:6px; font-size:0.68rem; color:#7a8aa8; font-variant-numeric:tabular-nums; }
+    .tray-chip .tc-done { margin-left:6px; background:none; border:1px solid #384164; color:#5a6a80; border-radius:5px; font-size:0.7rem; cursor:pointer; padding:0 5px; line-height:1.6; vertical-align:middle; }
+    .tray-chip .tc-done:hover { color:#4caf50; border-color:#3a5a30; }
+    .tray-chip .tc-done.confirming { display:inline-flex; align-items:center; gap:5px; padding:1px 5px; }
+    .tray-chip .tc-done.confirming .deliv-confirm-icon svg { width:12px; height:12px; }
 
     /* Tray tabs — Today / Upcoming / Notes, decided-mode content */
     .tray-tabs { width:100%; display:flex; align-items:center; gap:12px; padding-bottom:5px; margin-bottom:2px; border-bottom:1px solid #2a3350; }
@@ -1887,6 +1891,34 @@
       btn.appendChild(no);
     }
 
+    // Mirrors armTodayDone but lives on a slot tray's chip — confirming marks
+    // the deliverable done and rebuilds the tray so the chip drops out of it.
+    function armTrayDone(btn, lineIndex, input) {
+      if (btn.classList.contains('confirming')) return;
+      btn.classList.add('confirming');
+      btn.innerHTML = '';
+      const yes = document.createElement('span');
+      yes.className = 'deliv-confirm-icon yes';
+      yes.title = 'Confirm done';
+      yes.innerHTML = '<svg viewBox="0 0 256 256" fill="currentColor"><path d="M229.66,77.66l-128,128a8,8,0,0,1-11.32,0l-56-56a8,8,0,0,1,11.32-11.32L96,188.69,218.34,66.34a8,8,0,0,1,11.32,11.32Z"/></svg>';
+      yes.addEventListener('click', e => {
+        e.stopPropagation();
+        markItemDone(lineIndex);
+        if (document.body.contains(input)) showTray(input);
+      });
+      const no = document.createElement('span');
+      no.className = 'deliv-confirm-icon no';
+      no.title = 'Cancel';
+      no.innerHTML = '<svg viewBox="0 0 256 256" fill="currentColor"><path d="M205.66,194.34a8,8,0,0,1-11.32,11.32L128,139.31,61.66,205.66a8,8,0,0,1-11.32-11.32L116.69,128,50.34,61.66A8,8,0,0,1,61.66,50.34L128,116.69l66.34-66.35a8,8,0,0,1,11.32,11.32L139.31,128Z"/></svg>';
+      no.addEventListener('click', e => {
+        e.stopPropagation();
+        btn.classList.remove('confirming');
+        btn.textContent = '✓';
+      });
+      btn.appendChild(yes);
+      btn.appendChild(no);
+    }
+
     // Tap a Today item's name to log it into the current time slot, without
     // stealing focus or switching tabs — a quick "I'm doing this right now".
     function addToCurrentSlot(lineIndex) {
@@ -2404,6 +2436,16 @@
         appendAccruedBadge(chip, it.text);
         chip.addEventListener('mousedown', e => e.preventDefault());
         chip.addEventListener('click', () => appendText(it.text, it.key));
+        const doneBtn = document.createElement('button');
+        doneBtn.type = 'button';
+        doneBtn.className = 'tc-done';
+        doneBtn.title = 'Mark done';
+        doneBtn.textContent = '✓';
+        doneBtn.addEventListener('click', e => {
+          e.stopPropagation();
+          armTrayDone(doneBtn, it.lineIndex, input);
+        });
+        chip.appendChild(doneBtn);
         todayPanel.appendChild(chip);
       });
 
