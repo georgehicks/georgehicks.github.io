@@ -1,0 +1,754 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+<meta name="theme-color" content="#12151B" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+<title>Drift — A Noticing Exercise</title>
+<link rel="manifest" href="manifest.json" />
+<link rel="icon" href="icon.svg" type="image/svg+xml" />
+<link rel="apple-touch-icon" href="icon.svg" />
+<style>
+  :root {
+    --bg: #12151B; --surface: #1A1F28; --surface-2: #212734; --border: #2A3140;
+    --ink: #ECEAE3; --ink-muted: #8A93A3; --ink-faint: #4D5566;
+    --accent: #B9A6F0; --accent-strong: #C9BAF5; --glow: rgba(185,166,240,0.45);
+    --font-display: Georgia, "Iowan Old Style", "Palatino Linotype", "Book Antiqua", serif;
+    --font-body: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  }
+  @media (prefers-color-scheme: light) {
+    :root { --bg:#F4F1EA; --surface:#FFFFFF; --surface-2:#EDE8DC; --border:#DCD5C4;
+      --ink:#232019; --ink-muted:#7C7562; --ink-faint:#B3AA96;
+      --accent:#6C5CE0; --accent-strong:#5A4AD1; --glow:rgba(108,92,224,0.28); }
+  }
+  :root[data-theme="dark"] { --bg:#12151B; --surface:#1A1F28; --surface-2:#212734; --border:#2A3140;
+    --ink:#ECEAE3; --ink-muted:#8A93A3; --ink-faint:#4D5566;
+    --accent:#B9A6F0; --accent-strong:#C9BAF5; --glow:rgba(185,166,240,0.45); }
+  :root[data-theme="light"] { --bg:#F4F1EA; --surface:#FFFFFF; --surface-2:#EDE8DC; --border:#DCD5C4;
+    --ink:#232019; --ink-muted:#7C7562; --ink-faint:#B3AA96;
+    --accent:#6C5CE0; --accent-strong:#5A4AD1; --glow:rgba(108,92,224,0.28); }
+
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body { margin: 0; height: 100%; overscroll-behavior: none; }
+  body {
+    background: var(--bg); color: var(--ink); font-family: var(--font-body);
+    line-height: 1.5; font-size: 16px;
+  }
+  button { cursor: pointer; font-family: inherit; }
+  :focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+
+  .page {
+    height: 100dvh; height: 100vh; display: flex; flex-direction: column;
+    padding: calc(0.9rem + env(safe-area-inset-top,0px)) 0.9rem calc(0.9rem + env(safe-area-inset-bottom,0px));
+  }
+
+  .topbar { display: flex; align-items: center; justify-content: space-between; flex-shrink: 0; }
+  .wordmark { font-family: var(--font-display); font-size: 1.15rem; letter-spacing: 0.02em; color: var(--ink-muted); }
+  .topbar-actions { display: flex; gap: 0.6rem; }
+  .icon-btn {
+    background: var(--surface); border: 1px solid var(--border); border-radius: 8px;
+    width: 2.1rem; height: 2.1rem; display: flex; align-items: center; justify-content: center;
+    color: var(--ink-muted); font-size: 1rem;
+  }
+  .icon-btn:hover { color: var(--ink); }
+
+  .stage {
+    position: relative; flex: 1; min-height: 0; margin-top: 0.4rem; border-radius: 20px;
+    overflow: hidden;
+    background: radial-gradient(ellipse at 50% 38%, var(--surface) 0%, var(--bg) 72%);
+  }
+  .stage::after {
+    content: ""; position: absolute; inset: 0; background: var(--bg); opacity: 0;
+    transition: opacity 0.6s ease; pointer-events: none;
+  }
+  .stage.is-frozen::after { opacity: 0.22; }
+
+  .word {
+    position: absolute; left: 0; top: 0; background: none; border: none; padding: 0.3rem 0.5rem; margin: 0;
+    will-change: transform; touch-action: manipulation; z-index: 1;
+  }
+  .word.is-selected { z-index: 3; }
+  .word .label {
+    display: inline-block; white-space: nowrap; font-family: var(--font-display);
+    color: var(--ink-muted); font-weight: 400;
+    transition: transform 0.55s cubic-bezier(.2,.7,.3,1), color 0.4s ease, text-shadow 0.4s ease, font-weight 0.3s ease;
+  }
+  .word.is-dimmed { transition: opacity 0.55s ease, filter 0.55s ease; opacity: 0.2; filter: blur(0.3px); }
+  .word.is-selected .label {
+    color: var(--accent-strong); font-weight: 600; text-shadow: 0 0 30px var(--glow); transform: scale(1.24);
+  }
+  .word:focus-visible .label { outline: 2px solid var(--accent); outline-offset: 6px; border-radius: 4px; }
+
+  .hint {
+    flex-shrink: 0; text-align: center; margin: 0.9rem 0 0.1rem; font-size: 0.82rem;
+    color: var(--ink-faint); transition: opacity 0.4s ease; min-height: 1.2em;
+  }
+
+  .modal-backdrop {
+    position: fixed; inset: 0; background: rgba(0,0,0,0.5); display: flex; align-items: flex-end;
+    justify-content: center; z-index: 10; opacity: 0; pointer-events: none; transition: opacity 0.25s ease;
+  }
+  .modal-backdrop.open { opacity: 1; pointer-events: auto; }
+  @media (min-width: 640px) { .modal-backdrop { align-items: center; } }
+  .modal {
+    background: var(--surface); border: 1px solid var(--border); border-radius: 20px 20px 0 0;
+    width: 100%; max-width: 26rem; padding: 1.4rem 1.3rem calc(1.4rem + env(safe-area-inset-bottom,0px));
+    transform: translateY(12px); transition: transform 0.25s ease;
+  }
+  .modal-backdrop.open .modal { transform: translateY(0); }
+  @media (min-width: 640px) { .modal { border-radius: 20px; } }
+  .modal-title { font-family: var(--font-display); font-weight: 400; font-size: 1.15rem; margin: 0 0 0.9rem; }
+  .preset-row { display: flex; gap: 0.5rem; margin-bottom: 0.9rem; flex-wrap: wrap; }
+  .preset-btn {
+    background: var(--surface-2); border: 1px solid var(--border); color: var(--ink-muted);
+    border-radius: 999px; padding: 0.4rem 0.85rem; font-size: 0.8rem;
+  }
+  .preset-btn:hover { color: var(--ink); border-color: var(--accent); }
+  .words-textarea {
+    width: 100%; min-height: 11rem; resize: vertical; background: var(--surface-2); color: var(--ink);
+    border: 1px solid var(--border); border-radius: 12px; padding: 0.75rem 0.85rem; font-family: var(--font-body);
+    font-size: 0.92rem; line-height: 1.6;
+  }
+  .words-textarea:focus { border-color: var(--accent); }
+  .modal-hint { font-size: 0.76rem; color: var(--ink-faint); margin: 0.5rem 0 0; }
+  .scripture-credit { font-size: 0.68rem; line-height: 1.5; color: var(--ink-faint); margin: 1rem 0 0; padding-top: 0.8rem; border-top: 1px solid var(--border); }
+  .modal-actions { display: flex; justify-content: flex-end; gap: 0.6rem; margin-top: 1.1rem; }
+  .btn-secondary, .btn-primary {
+    border: none; border-radius: 10px; padding: 0.6rem 1.1rem; font-size: 0.88rem; font-weight: 600;
+  }
+  .btn-secondary { background: var(--surface-2); color: var(--ink-muted); border: 1px solid var(--border); }
+  .btn-primary { background: var(--accent); color: #1B1305; }
+  :root[data-theme="light"] .btn-primary, :root:not([data-theme="dark"]) .btn-primary { color: #17102E; }
+
+  .insight-tray {
+    position: fixed; left: 0; right: 0; bottom: 0; z-index: 6;
+    display: flex; justify-content: center; padding: 0 0.9rem; pointer-events: none;
+  }
+  .insight-tray-panel {
+    position: relative; width: 100%; max-width: 30rem;
+    background: var(--surface); border: 1px solid var(--border); border-bottom: none;
+    border-radius: 20px 20px 0 0; padding: 1.4rem 1.3rem calc(1.3rem + env(safe-area-inset-bottom,0px));
+    max-height: 64vh; overflow-y: auto; -webkit-overflow-scrolling: touch;
+    box-shadow: 0 -14px 44px rgba(0,0,0,0.24);
+    transform: translateY(106%); transition: transform 0.45s cubic-bezier(.2,.8,.25,1);
+    pointer-events: auto;
+  }
+  .insight-tray.open .insight-tray-panel { transform: translateY(0); }
+  .insight-close {
+    position: absolute; top: 1rem; right: 1rem;
+  }
+  .insight-word {
+    font-family: var(--font-display); font-size: 1.4rem; font-weight: 600;
+    color: var(--accent-strong); padding-right: 2.4rem;
+  }
+  .insight-scripture {
+    margin: 0.9rem 0 0; padding: 0.8rem 1rem; background: var(--surface-2);
+    border-left: 3px solid var(--accent); border-radius: 4px 10px 10px 4px;
+  }
+  .insight-scripture p {
+    margin: 0; font-family: var(--font-display); font-style: italic; font-size: 0.95rem; color: var(--ink);
+  }
+  .insight-scripture cite {
+    display: block; margin-top: 0.4rem; font-style: normal; font-size: 0.76rem; color: var(--ink-muted);
+  }
+  .insight-section { margin-top: 1.1rem; padding-left: 0.8rem; border-left: 2px solid var(--ink-faint); }
+  .insight-section.light { border-left-color: var(--accent); }
+  .insight-section h3 {
+    margin: 0 0 0.3rem; font-size: 0.7rem; letter-spacing: 0.08em; text-transform: uppercase;
+    color: var(--ink-faint); font-weight: 600;
+  }
+  .insight-section.light h3 { color: var(--accent); }
+  .insight-section p { margin: 0; font-size: 0.92rem; line-height: 1.55; color: var(--ink); }
+  .insight-fallback { margin: 0.9rem 0 0; font-size: 0.9rem; font-style: italic; color: var(--ink-muted); }
+
+  @media (prefers-reduced-motion: reduce) {
+    .word .label, .word.is-dimmed, .stage::after, .insight-tray-panel { transition-duration: 0.01ms; }
+  }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <div class="topbar">
+    <div class="wordmark">Drift</div>
+    <div class="topbar-actions">
+      <button class="icon-btn" id="edit-btn" type="button" aria-label="Edit words">✎</button>
+      <button class="icon-btn" id="theme-toggle" type="button" aria-label="Toggle theme">◐</button>
+    </div>
+  </div>
+
+  <div class="stage" id="stage"></div>
+
+  <p class="hint" id="hint"></p>
+
+</div>
+
+<div class="insight-tray" id="insight-tray" aria-hidden="true">
+  <div class="insight-tray-panel">
+    <button class="icon-btn insight-close" id="insight-close-btn" type="button" aria-label="Close">✕</button>
+    <div class="insight-word" id="insight-word"></div>
+    <blockquote class="insight-scripture" id="insight-scripture" style="display:none">
+      <p id="insight-scripture-text"></p>
+      <cite id="insight-scripture-ref"></cite>
+    </blockquote>
+    <div class="insight-section dark" id="insight-dark-section">
+      <h3>The twist</h3>
+      <p id="insight-dark-text"></p>
+    </div>
+    <div class="insight-section light" id="insight-light-section">
+      <h3>The invitation</h3>
+      <p id="insight-light-text"></p>
+    </div>
+    <p class="insight-fallback" id="insight-fallback" style="display:none">No notes yet for this word — sit with it a moment anyway.</p>
+  </div>
+</div>
+
+<div class="modal-backdrop" id="modal-backdrop">
+  <div class="modal" role="dialog" aria-modal="true" aria-label="Edit words">
+    <h2 class="modal-title">Edit the words</h2>
+    <div class="preset-row">
+      <button class="preset-btn" data-preset="identity" type="button">Identity</button>
+      <button class="preset-btn" data-preset="emotions" type="button">Emotions</button>
+      <button class="preset-btn" data-preset="needs" type="button">Needs</button>
+      <button class="preset-btn" data-preset="values" type="button">Values</button>
+    </div>
+    <textarea id="words-textarea" class="words-textarea" placeholder="One word per line" spellcheck="false"></textarea>
+    <p class="modal-hint">One word per line (or comma-separated). Up to 24.</p>
+    <div class="modal-actions">
+      <button class="btn-secondary" id="cancel-btn" type="button">Cancel</button>
+      <button class="btn-primary" id="save-btn" type="button">Save &amp; drift</button>
+    </div>
+    <p class="scripture-credit">Scripture quotations taken from the ESV® Bible (© 2001 Crossway), the Holy Bible, New International Version® NIV® (© 1973, 1978, 1980, 2011 Biblica, Inc.®), and the Holy Bible, New Living Translation (© 1996, 2004, 2015 Tyndale House Foundation). Used by permission. All rights reserved.</p>
+  </div>
+</div>
+
+<script>
+(function () {
+  "use strict";
+
+  var LS_WORDS = 'drift-words-v1';
+  var LS_THEME = 'drift-theme';
+
+  var PRESETS = {
+    emotions: ['Joyful','Angry','Grateful','Sad','Hopeful','Afraid','Calm','Ashamed','Peaceful','Guilty','Excited','Lonely','Loved','Overwhelmed','Content','Resentful'],
+    needs: ['Connection','Autonomy','Rest','Recognition','Clarity','Trust','Space','Purpose','Belonging','Control','Safety','Growth'],
+    values: ['Honesty','Courage','Balance','Freedom','Integrity','Creativity','Stability','Justice','Compassion','Loyalty','Ambition','Humility'],
+    identity: ['Chosen','Lost','Beloved','Condemned','Forgiven','Unworthy','Redeemed','Free','Rejected','Righteous','Orphaned','Powerful','Convicted','Strong','Jealous','Unforgiveness','Worry','Doubt','Fear','Shame','Despair','Pride','Divided','Hopeful','Whole']
+  };
+
+  var INSIGHTS = {
+    joyful: { scripture: { ref: "Nehemiah 8:10", text: "the joy of the Lord is your strength" },
+      dark: "Joy chased through pleasure, status, or applause burns out fast and always wants more.",
+      light: "Real joy isn't self-generated — it's found in God's presence, steady even when circumstances aren't." },
+    angry: { scripture: { ref: "Ephesians 4:26", text: "Be angry and do not sin; do not let the sun go down on your anger." },
+      dark: "Left unchecked, anger curdles into control, cruelty, or a grudge nursed in silence.",
+      light: "Anger can be a signal that something you love was threatened — bring it to God before it hardens." },
+    grateful: { scripture: { ref: "1 Thessalonians 5:18", text: "give thanks in all circumstances; for this is the will of God in Christ Jesus for you." },
+      dark: "Gratitude can be performed — a posture shown to others without ever being felt.",
+      light: "Real gratitude notices the Giver behind the gift, and it keeps you tethered to Him." },
+    sad: { scripture: { ref: "Psalm 34:18", text: "The Lord is near to the brokenhearted and saves the crushed in spirit." },
+      dark: "Sadness numbed or hidden becomes a wall between you and everyone around you.",
+      light: "Sadness brought honestly to God is met, not judged — He stays close to the brokenhearted." },
+    hopeful: { scripture: { ref: "Romans 15:13", text: "May the God of hope fill you with all joy and peace in believing." },
+      dark: "Hope pinned to one outcome you can't control will eventually break your heart.",
+      light: "Hope anchored in God doesn't need the outcome to arrive to already be steady." },
+    afraid: { scripture: { ref: "2 Timothy 1:7", text: "God gave us a spirit not of fear but of power and love and self-control." },
+      dark: "Left alone, fear narrates a future where you have to face everything by yourself.",
+      light: "Naming your fear to God is the first step out of it — you were never meant to face it alone." },
+    calm: { scripture: { ref: "John 14:27", text: "Peace I leave with you; my peace I give you… Do not let your hearts be troubled and do not be afraid." },
+      dark: "Calm can be a performance — staying composed to avoid feeling what's actually there.",
+      light: "Real calm isn't the absence of trouble; it's Christ's peace held steady in the middle of it." },
+    ashamed: { scripture: { ref: "Romans 10:11", text: "Everyone who believes in him will not be put to shame." },
+      dark: "Shame insists you, not just what you did, are the problem — so you hide.",
+      light: "Brought into the light, shame loses its grip; God's welcome doesn't wait for you to clean up first." },
+    peaceful: { scripture: { ref: "Philippians 4:7", text: "the peace of God, which surpasses all understanding, will guard your hearts and your minds in Christ Jesus." },
+      dark: "Peace can be counterfeited by avoidance — smoothing things over instead of facing them.",
+      light: "God's peace doesn't wait for resolution; it guards your heart while things are still unresolved." },
+    guilty: { scripture: { ref: "1 John 1:9", text: "If we confess our sins, he is faithful and just to forgive us our sins and to cleanse us from all unrighteousness." },
+      dark: "Guilt unaddressed festers into shame, or gets numbed until you stop hearing it at all.",
+      light: "Guilt that leads to honest confession is doing its job — it's meant to walk you back to God." },
+    excited: { scripture: { ref: "Psalm 16:11", text: "in your presence there is fullness of joy; at your right hand are pleasures forevermore." },
+      dark: "Excitement chased for its own sake becomes a craving for the next high.",
+      light: "Delight in what God has made or is doing is worship — let it point past itself to Him." },
+    lonely: { scripture: { ref: "Deuteronomy 31:6", text: "He will not leave you or forsake you." },
+      dark: "Loneliness can convince you that you're the only one, and that no one would understand.",
+      light: "Loneliness is an invitation to reach — toward God first, who has promised never to leave you." },
+    loved: { scripture: { ref: "1 John 4:19", text: "We love because he first loved us." },
+      dark: "\"Loved\" can get reduced to being needed or approved of — a love you must keep earning.",
+      light: "Before you did anything, you were loved. That love isn't performance-based, and it isn't going anywhere." },
+    overwhelmed: { scripture: { ref: "Psalm 61:2", text: "From the ends of the earth, I cry to you for help when my heart is overwhelmed. Lead me to the towering rock of safety." },
+      dark: "Overwhelm pushes you to grip tighter and carry more alone, until you burn out.",
+      light: "Overwhelm is permission to hand something off — you were never meant to carry it by yourself." },
+    content: { scripture: { ref: "Philippians 4:11", text: "I have learned, in whatever situation I am, to be content." },
+      dark: "Contentment can slide into complacency — settling instead of still hoping and growing.",
+      light: "Contentment learned in Christ isn't about having enough — it's about already having Him." },
+    resentful: { scripture: { ref: "Hebrews 12:15", text: "no 'root of bitterness' springs up and causes trouble, and by it many become defiled." },
+      dark: "Resentment keeps score. Left alone, it roots into a bitterness that poisons everything it touches.",
+      light: "Naming resentment honestly opens the door to forgive — not to excuse it, but to hand it over." },
+
+    connection: { scripture: { ref: "John 15:15", text: "No longer do I call you servants… but I have called you friends." },
+      dark: "Connection can slide into people-pleasing — becoming whoever keeps you from being left.",
+      light: "You were made for real connection, starting with a God who calls you friend, not just servant." },
+    autonomy: { scripture: { ref: "2 Corinthians 3:17", text: "where the Spirit of the Lord is, there is freedom." },
+      dark: "Autonomy can curdle into \"I don't need anyone\" — including God.",
+      light: "True freedom isn't answering to no one; it's finding that God's way is actually spacious." },
+    rest: { scripture: { ref: "Matthew 11:28", text: "Come to me, all who labor and are heavy laden, and I will give you rest." },
+      dark: "Rest can be used as an escape — numbing out instead of actually resting.",
+      light: "Real rest is received, not earned. Jesus offers it to the weary, not the deserving." },
+    recognition: { scripture: { ref: "Zephaniah 3:17", text: "he will rejoice over you with gladness… he will exult over you with loud singing." },
+      dark: "Chasing recognition can quietly reorder your life around being seen rather than being faithful.",
+      light: "You're already fully known and delighted in by God — that can loosen recognition's grip on you." },
+    clarity: { scripture: { ref: "Proverbs 3:5-6", text: "Trust in the Lord with all your heart, and do not lean on your own understanding." },
+      dark: "Demanding clarity before you'll move can become a way of refusing to trust.",
+      light: "You don't need the whole picture — just the next step, walked with the One who does." },
+    trust: { scripture: { ref: "Isaiah 26:3", text: "You will keep in perfect peace all who trust in you, all whose thoughts are fixed on you!" },
+      dark: "Trust broken enough times can calcify into control — trusting no one, including God.",
+      light: "Trust rebuilds in small steps — one honest risk that God is actually who He says He is." },
+    space: { scripture: { ref: "Mark 1:35", text: "he departed and went out to a desolate place, and there he prayed." },
+      dark: "Needing space can become a habit of withdrawal that quietly isolates you from everyone.",
+      light: "Even Jesus withdrew to be alone with the Father — space can be where you meet Him too." },
+    purpose: { scripture: { ref: "Ephesians 2:10", text: "we are his workmanship, created in Christ Jesus for good works." },
+      dark: "Purpose chased through achievement can become an identity you can never stop performing.",
+      light: "Your purpose was given before you earned it — you get to walk in it, not prove it." },
+    belonging: { scripture: { ref: "Ephesians 2:19", text: "you are fellow citizens with the saints and members of the household of God." },
+      dark: "The ache to belong can push you to shape-shift for whatever room you're standing in.",
+      light: "You already have a household — you belong to God's family before any group decides." },
+    control: { scripture: { ref: "Proverbs 16:9", text: "The heart of man plans his way, but the Lord establishes his steps." },
+      dark: "Gripping for control is often fear wearing a competent disguise.",
+      light: "Loosening your grip isn't losing — it's trusting the hands that are actually steady." },
+    safety: { scripture: { ref: "Psalm 91:1-2", text: "He who dwells in the shelter of the Most High will abide in the shadow of the Almighty." },
+      dark: "Chasing safety can shrink your life to only what feels certain — and certainty is never guaranteed.",
+      light: "Real safety was never about circumstances — it's a Person you can run to no matter what happens." },
+    growth: { scripture: { ref: "Philippians 1:6", text: "he who began a good work in you will bring it to completion." },
+      dark: "Growth measured only by output can become self-improvement that never invites God in.",
+      light: "You're not growing alone or under pressure — God is the one doing the finishing work." },
+
+    honesty: { scripture: { ref: "Ephesians 4:25", text: "having put away falsehood, let each one of you speak the truth with his neighbor." },
+      dark: "Honesty can be wielded as a weapon — \"just being honest\" used to wound.",
+      light: "Real honesty is truth spoken in love, first with God, who already sees everything anyway." },
+    courage: { scripture: { ref: "Joshua 1:9", text: "Be strong and courageous… for the Lord your God is with you wherever you go." },
+      dark: "Courage without wisdom can shade into recklessness, or into needing to prove something.",
+      light: "Real courage doesn't come from having no fear — it comes from not facing it alone." },
+    balance: { scripture: { ref: "Ecclesiastes 3:1", text: "For everything there is a season, and a time for every matter under heaven." },
+      dark: "The pursuit of balance can become another performance — a new standard to fail at.",
+      light: "God's rhythms of work and rest offer a balance you don't have to invent yourself." },
+    freedom: { scripture: { ref: "John 8:36", text: "if the Son sets you free, you will be free indeed." },
+      dark: "Freedom mistaken for having no limits usually ends up enslaving you to something else.",
+      light: "True freedom isn't the absence of limits — it's being free to become who you were made to be." },
+    integrity: { scripture: { ref: "Proverbs 11:3", text: "The integrity of the upright guides them." },
+      dark: "Integrity can become a performance of consistency rather than an actual alignment of heart and life.",
+      light: "Integrity grown from grace, not fear of exposure, doesn't crack the moment no one's watching." },
+    creativity: { scripture: { ref: "Genesis 1:27", text: "So God created man in his own image, in the image of God he created him." },
+      dark: "Creativity can be hijacked by comparison — making for applause instead of for the joy of it.",
+      light: "To create is to reflect the Maker — your creativity echoes the God who made you in His image." },
+    stability: { scripture: { ref: "Psalm 62:6", text: "He only is my rock and my salvation, my fortress; I shall not be shaken." },
+      dark: "Stability built on circumstances is always one bad season away from collapse.",
+      light: "Real stability isn't the absence of storms — it's being anchored to a Rock that doesn't move." },
+    justice: { scripture: { ref: "Micah 6:8", text: "to do justice, and to love kindness, and to walk humbly with your God." },
+      dark: "A hunger for justice, unchecked, can curdle into self-righteous judgment of everyone else.",
+      light: "Pursue justice as someone who's also received mercy — that's what keeps it from turning hard." },
+    compassion: { scripture: { ref: "Colossians 3:12", text: "Put on then, as God's chosen ones… compassionate hearts, kindness, humility, meekness, and patience." },
+      dark: "Compassion without boundaries can slide into self-erasure — carrying what was never yours to carry.",
+      light: "Compassion flows easiest when you remember how much mercy you yourself were given first." },
+    loyalty: { scripture: { ref: "Proverbs 3:3", text: "Let not steadfast love and faithfulness forsake you; bind them around your neck; write them on the tablet of your heart." },
+      dark: "Loyalty can become blind allegiance — protecting a person or image instead of the truth.",
+      light: "The deepest loyalty is covenant, not convenience — modeled by a God who stays even when we don't." },
+    ambition: { scripture: { ref: "Jeremiah 45:5", text: "do you seek great things for yourself? Seek them not." },
+      dark: "Ambition unchecked makes an idol of achievement — never enough, always the next thing.",
+      light: "Held open-handed, ambition becomes a way of stewarding what God's given, not building your own name." },
+    humility: { scripture: { ref: "James 4:6", text: "God opposes the proud but gives grace to the humble." },
+      dark: "Humility performed can become false modesty — fishing for reassurance while pretending not to.",
+      light: "Real humility isn't thinking less of yourself; it's freedom from having to think of yourself at all." },
+
+    chosen: { scripture: { ref: "Ephesians 1:4", text: "he chose us in him before the foundation of the world." },
+      dark: "\"Chosen\" can curdle into exclusivity — a status that looks down on who wasn't picked.",
+      light: "You were chosen before you did anything to earn it — that's grace, not superiority." },
+    lost: { scripture: { ref: "Luke 15:4", text: "does not leave the ninety-nine… and go after the one that is lost, until he finds it?" },
+      dark: "Feeling lost can convince you that no one is looking for you.",
+      light: "The whole story of the Shepherd is that He goes after the one who's lost — including you." },
+    beloved: { scripture: { ref: "Matthew 3:17", text: "This is my beloved Son, with whom I am well pleased." },
+      dark: "Beloved can be twisted into needing to be someone's favorite to feel secure.",
+      light: "You are beloved the same way Jesus was — before any accomplishment, simply because you're His." },
+    condemned: { scripture: { ref: "Romans 8:1", text: "There is therefore now no condemnation for those who are in Christ Jesus." },
+      dark: "A condemning voice insists you're disqualified — and once believed, you stop bringing anything to God at all.",
+      light: "Conviction from God leads somewhere; condemnation doesn't. In Christ, the verdict has already changed." },
+    forgiven: { scripture: { ref: "Psalm 103:12", text: "As far as the east is from the west, so far does he remove our transgressions from us." },
+      dark: "Forgiveness can be presumed on — treated as a blank check rather than received with any weight.",
+      light: "You're forgiven fully, not provisionally — the debt isn't reduced, it's gone." },
+    unworthy: { scripture: { ref: "Romans 5:8", text: "while we were still sinners, Christ died for us." },
+      dark: "Unworthy left unanswered becomes a reason to hide from God instead of run to Him.",
+      light: "You were never worthy on your own merit — and God moved toward you anyway." },
+    redeemed: { scripture: { ref: "Titus 2:14", text: "gave himself for us to redeem us from all lawlessness." },
+      dark: "Redeemed can be treated as a past event only — forgetting that you're still being redeemed.",
+      light: "What was broken or wasted isn't wasted anymore — redemption means God is still writing the story." },
+    free: { scripture: { ref: "Galatians 5:1", text: "For freedom Christ has set us free; stand firm therefore, and do not submit again to a yoke of slavery." },
+      dark: "\"Free\" can be twisted into \"no one gets to tell me anything\" — its own kind of slavery.",
+      light: "Real freedom is freedom from having to earn or perform — you're free to actually rest." },
+    rejected: { scripture: { ref: "Isaiah 53:3", text: "He was despised and rejected by men… and we esteemed him not." },
+      dark: "Rejection can convince you that you're fundamentally unwanted — a lie that shapes everything after it.",
+      light: "Jesus was rejected too, and He meets you exactly there — you're not alone in it." },
+    righteous: { scripture: { ref: "2 Corinthians 5:21", text: "so that in him we might become the righteousness of God." },
+      dark: "Righteous can slide into self-righteousness — measuring yourself against others instead of receiving grace.",
+      light: "Righteousness isn't something you build — it's given to you in Christ, to walk in, not prove." },
+    orphaned: { scripture: { ref: "Psalm 68:5", text: "Father of the fatherless and protector of widows is God in his holy habitation." },
+      dark: "Feeling orphaned can convince you that you have to fend for yourself, permanently.",
+      light: "You've been adopted, not abandoned — God specifically promises He won't leave you as an orphan." },
+    powerful: { scripture: { ref: "2 Corinthians 12:9", text: "My grace is sufficient for you, for my power is made perfect in weakness." },
+      dark: "Chasing power can become control over people or outcomes that were never yours to control.",
+      light: "Real power shows up most clearly in weakness offered to God, not strength gripped tightly." },
+    convicted: { scripture: { ref: "John 16:8", text: "he will convict the world concerning sin and righteousness and judgment." },
+      dark: "Conviction ignored hardens into a conscience that eventually stops speaking at all.",
+      light: "Conviction is a kindness — it's the Spirit steering you back, not punishing you for drifting." },
+    strong: { scripture: { ref: "2 Corinthians 12:10", text: "when I am weak, then I am strong." },
+      dark: "Strength can become a mask — staying \"strong\" so you never have to ask for help.",
+      light: "The strength that actually holds isn't self-generated — it's Christ's strength met in your weakness." },
+    jealous: { scripture: { ref: "Exodus 34:14", text: "the Lord, whose name is Jealous, is a jealous God." },
+      dark: "Human jealousy curdles into envy or possessiveness — wanting what isn't yours, or gripping what is.",
+      light: "God's jealousy isn't insecurity — it's covenant love that won't share you with what will hurt you." },
+    unforgiveness: { scripture: { ref: "Matthew 6:14-15", text: "if you do not forgive others their trespasses, neither will your Father forgive your trespasses." },
+      dark: "Unforgiveness feels like justice, but it keeps you chained to the very thing that hurt you.",
+      light: "Forgiving doesn't mean it didn't matter — it means handing the debt to God instead of carrying it yourself." },
+    worry: { scripture: { ref: "Matthew 6:34", text: "do not be anxious about tomorrow, for tomorrow will be anxious for itself. Sufficient for the day is its own trouble." },
+      dark: "Worry rehearses a future God hasn't handed you yet, again and again.",
+      light: "Worry can become prayer the moment you actually say it out loud to Him." },
+    doubt: { scripture: { ref: "Mark 9:24", text: "I believe; help my unbelief!" },
+      dark: "Doubt suppressed instead of brought to God quietly hardens into distance.",
+      light: "Doubt honestly voiced to God is still faith — it's asking with one hand open." },
+    fear: { scripture: { ref: "1 John 4:18", text: "There is no fear in love, but perfect love casts out fear." },
+      dark: "Fear left to run the show narrates every decision from a place of self-protection.",
+      light: "You're not asked to have no fear — just to bring it to the One whose love casts it out." },
+    shame: { scripture: { ref: "Genesis 3:10", text: "I was afraid, because I was naked, and I hid myself." },
+      dark: "Shame's first move is always hiding — from others, and from God.",
+      light: "The move toward God, not away, is what shame most wants to prevent — and what actually heals it." },
+    despair: { scripture: { ref: "2 Corinthians 4:8", text: "We are afflicted in every way, but not crushed; perplexed, but not driven to despair." },
+      dark: "Despair quietly stops believing that anything can be good again.",
+      light: "Hope doesn't require you to feel it first — it just requires turning toward God anyway." },
+    pride: { scripture: { ref: "Proverbs 16:18", text: "Pride goes before destruction, and a haughty spirit before a fall." },
+      dark: "Pride says you don't need anyone — not even God — and it costs you the help that could've come.",
+      light: "The way down from pride is small and simple: ask for help. That's already grace at work." },
+    divided: { scripture: { ref: "James 1:8", text: "he is a double-minded man, unstable in all his ways." },
+      dark: "A divided heart tries to serve two masters and ends up fully at rest in neither.",
+      light: "Undivided doesn't mean perfect — it means one direction, kept coming back to God." },
+    whole: { scripture: { ref: "Mark 5:34", text: "your faith has made you well; go in peace." },
+      dark: "\"Whole\" chased through self-sufficiency becomes one more thing to achieve and maintain alone.",
+      light: "Wholeness isn't the absence of brokenness — it's Jesus meeting you in it and calling you healed." }
+  };
+
+  var HINT_DEFAULT = 'Notice which word pulls your attention. Tap it.';
+  var HINT_FROZEN = 'Tap the word again, or tap anywhere else, to keep drifting.';
+
+  var reducedMotion = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  function loadWords() {
+    try {
+      var raw = localStorage.getItem(LS_WORDS);
+      if (raw) { var parsed = JSON.parse(raw); if (Array.isArray(parsed) && parsed.length) return parsed; }
+    } catch (e) {}
+    return PRESETS.identity.slice();
+  }
+  function saveWords(words) { try { localStorage.setItem(LS_WORDS, JSON.stringify(words)); } catch (e) {} }
+
+  var stage = document.getElementById('stage');
+  var hintEl = document.getElementById('hint');
+  var measureCanvas = document.createElement('canvas');
+  var measureCtx = measureCanvas.getContext('2d');
+
+  var state = {
+    words: loadWords(),
+    items: [],
+    frozen: false,
+    selectedId: null
+  };
+
+  /* ---------------- animation clock ---------------- */
+  var rafId = null;
+  var animStart = performance.now();
+  var pausedAccum = 0;
+  var pauseStart = null;
+
+  function loop(now) {
+    var t = (now - animStart - pausedAccum) / 1000;
+    for (var i = 0; i < state.items.length; i++) updateItem(state.items[i], t);
+    rafId = requestAnimationFrame(loop);
+  }
+  function startLoop() { if (!rafId && !reducedMotion) rafId = requestAnimationFrame(loop); }
+  function pauseLoop() {
+    if (rafId) { cancelAnimationFrame(rafId); rafId = null; pauseStart = performance.now(); }
+  }
+  function resumeLoop() {
+    if (rafId || reducedMotion) return;
+    if (pauseStart !== null) { pausedAccum += performance.now() - pauseStart; pauseStart = null; }
+    rafId = requestAnimationFrame(loop);
+  }
+
+  function updateItem(item, t) {
+    var dx = Math.sin(t * item.speedX + item.phaseX) * item.radiusX;
+    var dy = Math.cos(t * item.speedY + item.phaseY) * item.radiusY;
+    var scale = 1 + Math.sin(t * item.scaleSpeed + item.phaseScale) * item.scaleAmp;
+    item.el.style.transform = 'translate(-50%, -50%) translate(' + dx.toFixed(2) + 'px, ' + dy.toFixed(2) + 'px) scale(' + scale.toFixed(3) + ')';
+    var depth = (scale - (1 - item.scaleAmp)) / (2 * item.scaleAmp);
+    item.el.style.opacity = item.dimmed ? '' : (0.6 + depth * 0.4).toFixed(2);
+  }
+
+  /* ---------------- layout ---------------- */
+  function measureWidth(text, fontSizePx) {
+    measureCtx.font = '400 ' + fontSizePx + 'px Georgia, serif';
+    return measureCtx.measureText(text).width;
+  }
+
+  function rebuildStage() {
+    stage.innerHTML = '';
+    state.items = [];
+    state.frozen = false;
+    state.selectedId = null;
+    stage.classList.remove('is-frozen');
+    setHint(HINT_DEFAULT);
+
+    var rect = stage.getBoundingClientRect();
+    var W = rect.width, H = rect.height;
+    if (W < 10 || H < 10) { requestAnimationFrame(rebuildStage); return; }
+
+    var count = state.words.length;
+    var baseFont = Math.max(15, Math.min(30, 26 - count * 0.6));
+    var longest = state.words.reduce(function (m, w) { return Math.max(m, w.length); }, 0);
+    var maxAllowedWidth = W * 0.7;
+    var estLongest = measureWidth('M'.repeat(longest), baseFont) * 0.72;
+    if (estLongest > maxAllowedWidth) baseFont = Math.max(13, baseFont * (maxAllowedWidth / estLongest));
+
+    var marginX = Math.min(70, W * 0.14);
+    var marginY = Math.min(60, H * 0.14);
+    var placed = [];
+
+    state.words.forEach(function (text, i) {
+      var sizeFactor = 0.92 + Math.random() * 0.22;
+      var fontSize = baseFont * sizeFactor;
+      var w = measureWidth(text, fontSize) + 16;
+      var h = fontSize * 1.6;
+
+      var best = null, bestPenetration = Infinity;
+      var padX = 14, padY = 10;
+      for (var attempt = 0; attempt < 400; attempt++) {
+        var x = marginX + Math.random() * Math.max(1, (W - 2 * marginX));
+        var y = marginY + Math.random() * Math.max(1, (H - 2 * marginY));
+        var penetration = 0;
+        for (var p = 0; p < placed.length; p++) {
+          var q = placed[p];
+          var overlapX = (w + q.w) / 2 + padX - Math.abs(x - q.x);
+          var overlapY = (h + q.h) / 2 + padY - Math.abs(y - q.y);
+          if (overlapX > 0 && overlapY > 0) penetration += overlapX * overlapY;
+        }
+        if (penetration < bestPenetration) { bestPenetration = penetration; best = { x: x, y: y }; }
+        if (penetration === 0) break;
+      }
+      placed.push({ x: best.x, y: best.y, w: w, h: h });
+
+      var btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'word';
+      btn.style.left = best.x + 'px';
+      btn.style.top = best.y + 'px';
+      btn.setAttribute('aria-pressed', 'false');
+
+      var label = document.createElement('span');
+      label.className = 'label';
+      label.style.fontSize = fontSize + 'px';
+      label.textContent = text;
+      btn.appendChild(label);
+      stage.appendChild(btn);
+
+      var item = {
+        id: i, el: btn, text: text, dimmed: false,
+        radiusX: 14 + Math.random() * 16,
+        radiusY: 10 + Math.random() * 14,
+        speedX: 0.14 + Math.random() * 0.18,
+        speedY: 0.11 + Math.random() * 0.16,
+        scaleAmp: 0.045 + Math.random() * 0.045,
+        scaleSpeed: 0.09 + Math.random() * 0.14,
+        phaseX: Math.random() * Math.PI * 2,
+        phaseY: Math.random() * Math.PI * 2,
+        phaseScale: Math.random() * Math.PI * 2
+      };
+      state.items.push(item);
+      updateItem(item, 0);
+
+      btn.addEventListener('click', function (e) { e.stopPropagation(); onWordClick(item); });
+    });
+
+    resumeLoop();
+  }
+
+  function setHint(text) { hintEl.textContent = text; }
+
+  /* ---------------- insight tray ---------------- */
+  var insightTray = document.getElementById('insight-tray');
+  var insightWordEl = document.getElementById('insight-word');
+  var insightScriptureEl = document.getElementById('insight-scripture');
+  var insightScriptureTextEl = document.getElementById('insight-scripture-text');
+  var insightScriptureRefEl = document.getElementById('insight-scripture-ref');
+  var insightDarkSection = document.getElementById('insight-dark-section');
+  var insightDarkText = document.getElementById('insight-dark-text');
+  var insightLightSection = document.getElementById('insight-light-section');
+  var insightLightText = document.getElementById('insight-light-text');
+  var insightFallback = document.getElementById('insight-fallback');
+
+  function showInsight(word) {
+    var entry = INSIGHTS[word.toLowerCase()];
+    insightWordEl.textContent = word;
+    if (entry) {
+      if (entry.scripture) {
+        insightScriptureTextEl.textContent = '“' + entry.scripture.text + '”';
+        insightScriptureRefEl.textContent = entry.scripture.ref;
+        insightScriptureEl.style.display = '';
+      } else {
+        insightScriptureEl.style.display = 'none';
+      }
+      insightDarkText.textContent = entry.dark;
+      insightLightText.textContent = entry.light;
+      insightDarkSection.style.display = '';
+      insightLightSection.style.display = '';
+      insightFallback.style.display = 'none';
+    } else {
+      insightScriptureEl.style.display = 'none';
+      insightDarkSection.style.display = 'none';
+      insightLightSection.style.display = 'none';
+      insightFallback.style.display = '';
+    }
+    insightTray.classList.add('open');
+    insightTray.setAttribute('aria-hidden', 'false');
+  }
+
+  function hideInsight() {
+    insightTray.classList.remove('open');
+    insightTray.setAttribute('aria-hidden', 'true');
+  }
+
+  document.getElementById('insight-close-btn').addEventListener('click', function () { unfreeze(); });
+
+  function onWordClick(item) {
+    if (!state.frozen) {
+      state.frozen = true;
+      state.selectedId = item.id;
+      pauseLoop();
+      stage.classList.add('is-frozen');
+      state.items.forEach(function (it) {
+        var selected = it.id === item.id;
+        it.el.classList.toggle('is-selected', selected);
+        it.el.classList.toggle('is-dimmed', !selected);
+        it.dimmed = !selected;
+        it.el.setAttribute('aria-pressed', selected ? 'true' : 'false');
+        if (!selected) it.el.style.opacity = '';
+      });
+      setHint(HINT_FROZEN);
+      showInsight(item.text);
+    } else if (item.id === state.selectedId) {
+      unfreeze();
+    } else {
+      state.selectedId = item.id;
+      state.items.forEach(function (it) {
+        var selected = it.id === item.id;
+        it.el.classList.toggle('is-selected', selected);
+        it.el.classList.toggle('is-dimmed', !selected);
+        it.dimmed = !selected;
+        it.el.setAttribute('aria-pressed', selected ? 'true' : 'false');
+      });
+      showInsight(item.text);
+    }
+  }
+
+  function unfreeze() {
+    state.frozen = false;
+    state.selectedId = null;
+    stage.classList.remove('is-frozen');
+    state.items.forEach(function (it) {
+      it.el.classList.remove('is-selected', 'is-dimmed');
+      it.dimmed = false;
+      it.el.setAttribute('aria-pressed', 'false');
+    });
+    setHint(HINT_DEFAULT);
+    hideInsight();
+    resumeLoop();
+  }
+
+  stage.addEventListener('click', function () { if (state.frozen) unfreeze(); });
+
+  /* ---------------- word editor modal ---------------- */
+  var modalBackdrop = document.getElementById('modal-backdrop');
+  var textarea = document.getElementById('words-textarea');
+  var wasFrozenBeforeModal = false;
+
+  function openModal() {
+    if (state.frozen) unfreeze();
+    pauseLoop();
+    textarea.value = state.words.join('\n');
+    modalBackdrop.classList.add('open');
+  }
+  function closeModal() {
+    modalBackdrop.classList.remove('open');
+    resumeLoop();
+  }
+  function parseWords(raw) {
+    var seen = {};
+    var out = [];
+    raw.split(/\r?\n/).forEach(function (line) {
+      line.split(',').forEach(function (piece) {
+        var w = piece.trim();
+        if (!w) return;
+        var key = w.toLowerCase();
+        if (seen[key]) return;
+        seen[key] = true;
+        out.push(w);
+      });
+    });
+    return out.slice(0, 24);
+  }
+
+  document.getElementById('edit-btn').addEventListener('click', openModal);
+  document.getElementById('cancel-btn').addEventListener('click', closeModal);
+  document.getElementById('modal-backdrop').addEventListener('click', function (e) {
+    if (e.target === modalBackdrop) closeModal();
+  });
+  document.getElementById('save-btn').addEventListener('click', function () {
+    var words = parseWords(textarea.value);
+    if (words.length < 2) { closeModal(); return; }
+    state.words = words;
+    saveWords(words);
+    closeModal();
+    rebuildStage();
+  });
+  Array.prototype.forEach.call(document.querySelectorAll('.preset-btn'), function (btn) {
+    btn.addEventListener('click', function () {
+      textarea.value = PRESETS[btn.getAttribute('data-preset')].join('\n');
+    });
+  });
+
+  /* ---------------- theme ---------------- */
+  function loadTheme() { try { return localStorage.getItem(LS_THEME); } catch (e) { return null; } }
+  function applyTheme(theme) { if (theme) document.documentElement.setAttribute('data-theme', theme); }
+  function toggleTheme() {
+    var current = document.documentElement.getAttribute('data-theme') || (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+    var next = current === 'dark' ? 'light' : 'dark';
+    document.documentElement.setAttribute('data-theme', next);
+    try { localStorage.setItem(LS_THEME, next); } catch (e) {}
+  }
+  document.getElementById('theme-toggle').addEventListener('click', toggleTheme);
+  applyTheme(loadTheme());
+
+  /* ---------------- resize ---------------- */
+  var resizeTimer = null;
+  window.addEventListener('resize', function () {
+    clearTimeout(resizeTimer);
+    resizeTimer = setTimeout(rebuildStage, 220);
+  });
+
+  /* ---------------- init ---------------- */
+  requestAnimationFrame(function () { requestAnimationFrame(rebuildStage); });
+
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', function () { navigator.serviceWorker.register('./sw.js'); });
+  }
+})();
+</script>
+</body>
+</html>

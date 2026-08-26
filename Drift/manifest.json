@@ -1,0 +1,19 @@
+{
+  "name": "Drift — A Noticing Exercise",
+  "short_name": "Drift",
+  "description": "Words drift softly on screen. Notice which one catches your attention — a quiet reflection prompt for solo or small-group check-ins.",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#12151B",
+  "theme_color": "#12151B",
+  "categories": ["lifestyle", "productivity"],
+  "icons": [
+    {
+      "src": "icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
