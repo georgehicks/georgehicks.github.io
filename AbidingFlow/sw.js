@@ -1,7 +1,7 @@
 // Keep this version suffix in sync with APP_VERSION in index.html (shown in
 // Settings) so a stale cache is easy to spot and "Check for updates" there
 // has something real to bust.
-const CACHE = 'abidingflow-v2';
+const CACHE = 'abidingflow-v3';
 const ASSETS = ['./index.html', './manifest.json', './icon.svg'];
 
 self.addEventListener('install', e => {

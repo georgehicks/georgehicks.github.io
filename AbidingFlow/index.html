@@ -155,6 +155,22 @@
   .item-holding { font-family: var(--font-display); font-style: italic; font-size: 0.83rem; color: var(--ink-muted); margin-top: 0.3rem; line-height: 1.45; }
   .item-note { font-size: 0.78rem; color: var(--ink-faint); margin-top: 0.25rem; }
   .item-meta { font-family: var(--font-mono); font-size: 0.64rem; color: var(--ink-faint); margin-top: 0.3rem; text-transform: uppercase; letter-spacing: 0.04em; }
+  .item-steps { margin-top: 0.5rem; }
+  .item-steps-label { font-family: var(--font-mono); font-size: 0.6rem; letter-spacing: 0.06em; text-transform: uppercase; color: var(--ink-faint); margin-bottom: 0.25rem; }
+  .step-row { display: flex; align-items: center; gap: 0.4rem; padding: 0.15rem 0; }
+  .step-check {
+    width: 1.05rem; height: 1.05rem; flex-shrink: 0; border: 1px solid var(--border); border-radius: 4px;
+    background: none; color: var(--teal); font-size: 0.65rem; display: flex; align-items: center; justify-content: center; padding: 0;
+  }
+  .step-row.done .step-check { border-color: var(--teal); }
+  .step-text { font-size: 0.82rem; color: var(--ink); flex: 1; min-width: 0; }
+  .step-row.done .step-text { text-decoration: line-through; color: var(--ink-faint); }
+  .step-del { background: none; border: none; color: var(--ink-faint); font-size: 0.7rem; flex-shrink: 0; padding: 0 0.2rem; }
+  .step-add-input {
+    width: 100%; background: none; border: none; border-bottom: 1px dashed var(--border);
+    font-size: 0.82rem; color: var(--ink); padding: 0.25rem 0.05rem; margin-top: 0.1rem;
+  }
+  .step-add-input::placeholder { color: var(--ink-faint); }
   .item-actions { display: flex; flex-direction: column; gap: 0.3rem; flex-shrink: 0; }
   .icon-mini {
     background: none; border: 1px solid var(--border); color: var(--ink-muted); border-radius: 7px;
@@ -284,6 +300,7 @@
     <p class="greet-sub" id="today-sub"></p>
     <h1 class="greet">Today's Field</h1>
     <div class="tip-card"><strong>Trouble is real. Take heart.</strong> He has overcome. Do this with Him, as unto the Lord, in love.</div>
+    <div class="item-card" id="quick-steps-card"></div>
     <div class="section-label">Drawn for today</div>
     <div id="today-field-list"></div>
     <div class="field-note" id="today-field-note"></div>
@@ -442,7 +459,7 @@
 
   // Keep this in sync with the CACHE suffix in sw.js — shown in Settings so
   // a stale install is easy to spot, and "Check for updates" below busts it.
-  const APP_VERSION = 'v2';
+  const APP_VERSION = 'v3';
 
   // ===== storage =====
   const storage = {
@@ -472,7 +489,8 @@
       dayLog: storage.get('dayLog') || {},
       appointments: storage.get('appointments') || { date: null, items: [] },
       dayWindow: storage.get('dayWindow') || { startHour: 6, endHour: 22 },
-      icsSettings: storage.get('icsSettings') || { urls: '', proxy: '' }
+      icsSettings: storage.get('icsSettings') || { urls: '', proxy: '' },
+      faithfulSteps: storage.get('faithfulSteps') || []
     };
   }
   let data = loadAll();
@@ -507,7 +525,9 @@
   function showView(name) {
     document.querySelectorAll('.view').forEach(v => v.classList.toggle('active', v.getAttribute('data-view') === name));
     document.querySelectorAll('.tabbar button').forEach(b => b.classList.toggle('active', b.dataset.tab === name));
+    const enteringToday = name === 'today' && currentView !== 'today';
     currentView = name;
+    if (enteringToday) dayTimelineAutoScrolled = false;
     if (name === 'today') renderToday();
     if (name === 'sowing') renderSowing();
     if (name === 'takeheart') renderTakeHeart();
@@ -662,6 +682,56 @@
     document.getElementById('vine-again-btn').addEventListener('click', startVine);
   }
 
+  // ===== Faithful Steps (flat list; each optionally linked to a seed or a trouble) =====
+  function stepsFor(ownerType, ownerId) {
+    return data.faithfulSteps.filter(s => s.ownerType === ownerType && s.ownerId === ownerId);
+  }
+  function quickSteps() {
+    return data.faithfulSteps.filter(s => !s.ownerType);
+  }
+
+  function stepsHtml(ownerType, ownerId) {
+    const steps = ownerType ? stepsFor(ownerType, ownerId) : quickSteps();
+    let html = '<div class="item-steps"><div class="item-steps-label">Faithful Steps</div>';
+    steps.forEach(st => {
+      html += '<div class="step-row' + (st.done ? ' done' : '') + '">' +
+        '<button class="step-check" data-step-toggle="' + st.id + '">' + (st.done ? '✓' : '') + '</button>' +
+        '<span class="step-text">' + escapeHtml(st.text) + '</span>' +
+        '<button class="step-del" data-step-del="' + st.id + '">✕</button>' +
+        '</div>';
+    });
+    html += '<input class="step-add-input" placeholder="+ add a step" data-step-add-type="' + (ownerType || '') + '" data-step-add-id="' + (ownerId || '') + '" />';
+    html += '</div>';
+    return html;
+  }
+
+  function wireStepsEvents(container, rerender) {
+    container.querySelectorAll('[data-step-toggle]').forEach(b => b.addEventListener('click', () => {
+      const st = data.faithfulSteps.find(s => s.id === b.dataset.stepToggle);
+      st.done = !st.done; st.doneAt = st.done ? Date.now() : null;
+      save('faithfulSteps');
+      rerender();
+    }));
+    container.querySelectorAll('[data-step-del]').forEach(b => b.addEventListener('click', () => {
+      data.faithfulSteps = data.faithfulSteps.filter(s => s.id !== b.dataset.stepDel);
+      save('faithfulSteps');
+      rerender();
+    }));
+    container.querySelectorAll('[data-step-add-type]').forEach(inp => inp.addEventListener('keydown', e => {
+      if (e.key !== 'Enter') return;
+      const text = inp.value.trim();
+      if (!text) return;
+      data.faithfulSteps.push({
+        id: uid(), text, done: false,
+        ownerType: inp.dataset.stepAddType || null,
+        ownerId: inp.dataset.stepAddId || null,
+        createdAt: Date.now()
+      });
+      save('faithfulSteps');
+      rerender();
+    }));
+  }
+
   // ===== TODAY (the Field) =====
   function fieldSourceItem(sourceType, refId) {
     if (sourceType === 'trouble') return data.takeHeart.find(t => t.id === refId);
@@ -686,6 +756,7 @@
           '<div class="item-text">' + escapeHtml(text) + '</div>' +
           (holding ? '<div class="item-holding">' + escapeHtml(holding) + '</div>' : '') +
           '<div class="item-meta">' + (it.sourceType === 'trouble' ? 'take heart' : 'sowing') + '</div>' +
+          stepsHtml(it.sourceType, it.refId) +
           '</div>' +
           '<div class="item-actions">' +
           '<button class="icon-mini done-btn' + (done ? ' checked' : '') + '" data-field-done="' + it.id + '">✓</button>' +
@@ -699,6 +770,11 @@
 
     list.querySelectorAll('[data-field-done]').forEach(b => b.addEventListener('click', () => toggleFieldItemDone(b.dataset.fieldDone)));
     list.querySelectorAll('[data-field-remove]').forEach(b => b.addEventListener('click', () => removeFieldItem(b.dataset.fieldRemove)));
+    wireStepsEvents(list, renderToday);
+
+    const quickCard = document.getElementById('quick-steps-card');
+    quickCard.innerHTML = stepsHtml(null, null);
+    wireStepsEvents(quickCard, renderToday);
 
     renderDrawTray();
     const tk = todayKey();
@@ -716,6 +792,7 @@
   }
 
   let dayTimelineTimer = null;
+  let dayTimelineAutoScrolled = false;
 
   function buildDayTimeline() {
     const host = document.getElementById('day-timeline');
@@ -783,8 +860,9 @@
     }
 
     const nowRow = host.querySelector('.hour-row.now');
-    if (nowRow && document.activeElement !== nowRow.querySelector('.hour-note')) {
+    if (nowRow && !dayTimelineAutoScrolled && document.activeElement !== nowRow.querySelector('.hour-note')) {
       nowRow.scrollIntoView({ block: 'center' });
+      dayTimelineAutoScrolled = true;
     }
 
     clearInterval(dayTimelineTimer);
@@ -948,6 +1026,7 @@
         '<div class="item-body"><div class="item-text">' + escapeHtml(s.text) + '</div>' +
         (s.root ? '<div class="item-holding">' + escapeHtml(s.root) + '</div>' : '') +
         (aim ? '<div class="item-meta">' + escapeHtml(aim.text.slice(0, 40)) + '</div>' : '') +
+        stepsHtml('seed', s.id) +
         '</div>' +
         '<div class="item-actions">' +
         '<button class="icon-mini done-btn' + (s.done ? ' checked' : '') + '" data-seed-done="' + s.id + '">✓</button>' +
@@ -960,10 +1039,13 @@
       save('sowing'); renderSowing();
     }));
     list.querySelectorAll('[data-seed-del]').forEach(b => b.addEventListener('click', () => {
-      data.sowing.seeds = data.sowing.seeds.filter(x => x.id !== b.dataset.seedDel);
-      data.todayField.items = data.todayField.items.filter(i => !(i.sourceType === 'seed' && i.refId === b.dataset.seedDel));
-      save('sowing'); save('todayField'); renderSowing();
+      const id = b.dataset.seedDel;
+      data.sowing.seeds = data.sowing.seeds.filter(x => x.id !== id);
+      data.todayField.items = data.todayField.items.filter(i => !(i.sourceType === 'seed' && i.refId === id));
+      data.faithfulSteps = data.faithfulSteps.filter(s => !(s.ownerType === 'seed' && s.ownerId === id));
+      save('sowing'); save('todayField'); save('faithfulSteps'); renderSowing();
     }));
+    wireStepsEvents(list, renderSowing);
   }
 
   function checkSeedForm() {
@@ -993,6 +1075,7 @@
       return '<div class="item-card' + (t.done ? ' done' : '') + '">' +
         '<div class="item-body"><div class="item-text">' + escapeHtml(t.trouble) + '</div>' +
         '<div class="item-holding">' + escapeHtml(t.holding) + '</div>' +
+        stepsHtml('trouble', t.id) +
         '</div>' +
         '<div class="item-actions">' +
         '<button class="icon-mini done-btn' + (t.done ? ' checked' : '') + '" data-trouble-done="' + t.id + '">✓</button>' +
@@ -1007,12 +1090,15 @@
       save('takeHeart'); renderTakeHeart();
     }));
     list.querySelectorAll('[data-trouble-del]').forEach(b => b.addEventListener('click', () => {
-      data.takeHeart = data.takeHeart.filter(x => x.id !== b.dataset.troubleDel);
-      data.todayField.items = data.todayField.items.filter(i => !(i.sourceType === 'trouble' && i.refId === b.dataset.troubleDel));
-      save('takeHeart'); save('todayField'); renderTakeHeart();
+      const id = b.dataset.troubleDel;
+      data.takeHeart = data.takeHeart.filter(x => x.id !== id);
+      data.todayField.items = data.todayField.items.filter(i => !(i.sourceType === 'trouble' && i.refId === id));
+      data.faithfulSteps = data.faithfulSteps.filter(s => !(s.ownerType === 'trouble' && s.ownerId === id));
+      save('takeHeart'); save('todayField'); save('faithfulSteps'); renderTakeHeart();
     }));
     list.querySelectorAll('[data-trouble-up]').forEach(b => b.addEventListener('click', () => moveTrouble(b.dataset.troubleUp, -1)));
     list.querySelectorAll('[data-trouble-down]').forEach(b => b.addEventListener('click', () => moveTrouble(b.dataset.troubleDown, 1)));
+    wireStepsEvents(list, renderTakeHeart);
   }
 
   function moveTrouble(id, dir) {
@@ -1140,7 +1226,7 @@
   document.getElementById('ics-pull-btn').addEventListener('click', pullCalendar);
 
   document.getElementById('export-btn').addEventListener('click', () => {
-    const payload = { vine: data.vine, livingAims: data.livingAims, sowing: data.sowing, takeHeart: data.takeHeart, rest: data.rest, dayLog: data.dayLog, dayWindow: data.dayWindow, icsSettings: data.icsSettings, exportedAt: new Date().toISOString() };
+    const payload = { vine: data.vine, livingAims: data.livingAims, sowing: data.sowing, takeHeart: data.takeHeart, rest: data.rest, dayLog: data.dayLog, dayWindow: data.dayWindow, icsSettings: data.icsSettings, faithfulSteps: data.faithfulSteps, exportedAt: new Date().toISOString() };
     const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
@@ -1157,7 +1243,7 @@
     reader.onload = () => {
       try {
         const parsed = JSON.parse(reader.result);
-        ['vine', 'livingAims', 'sowing', 'takeHeart', 'rest', 'dayLog', 'dayWindow', 'icsSettings'].forEach(k => {
+        ['vine', 'livingAims', 'sowing', 'takeHeart', 'rest', 'dayLog', 'dayWindow', 'icsSettings', 'faithfulSteps'].forEach(k => {
           if (parsed[k] !== undefined) { data[k] = parsed[k]; save(k); }
         });
         ensureDay();
