@@ -42,7 +42,7 @@
   button { cursor: pointer; }
   :focus-visible { outline: 2px solid var(--brass); outline-offset: 2px; }
 
-  .page { min-height: 100vh; padding: calc(1.1rem + env(safe-area-inset-top, 0px)) 1.1rem calc(5.5rem + env(safe-area-inset-bottom, 0px)); }
+  .page { min-height: 100vh; padding: calc(1.1rem + env(safe-area-inset-top, 0px)) 1.1rem calc(7.7rem + env(safe-area-inset-bottom, 0px)); }
   .wrap { max-width: 28rem; margin: 0 auto; }
 
   .topbar { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.2rem; min-height: 2rem; }
@@ -97,6 +97,10 @@
   .mode-tag {
     font-family: var(--font-mono); font-size: 0.65rem; letter-spacing: 0.08em; text-transform: uppercase;
     color: var(--ink-faint); margin-bottom: 0.8rem; text-align: center;
+  }
+  .voice-tag {
+    font-family: var(--font-mono); font-size: 0.66rem; letter-spacing: 0.05em; text-transform: uppercase;
+    color: var(--teal); margin-bottom: 0.6rem;
   }
   .prompt-card {
     background: var(--surface); border: 1px solid var(--border); border-radius: 16px;
@@ -191,9 +195,28 @@
   .field-note { font-size: 0.78rem; color: var(--ink-faint); margin: -0.3rem 0 0.9rem; }
   .field-note.over { color: var(--brass-strong); }
 
+  /* ---- bottom dock (notes + tab bar) ---- */
+  .bottom-dock { position: fixed; left: 0; right: 0; bottom: 0; z-index: 10; display: flex; flex-direction: column; }
+
+  .notes-dock { background: var(--surface-2); border-top: 1px solid var(--border); }
+  .notes-toggle {
+    width: 100%; background: none; border: none; display: flex; align-items: center; gap: 0.5rem;
+    padding: 0.5rem 1rem; color: var(--ink-muted); font-size: 0.8rem; text-align: left;
+  }
+  .notes-toggle .nt-glyph { font-size: 0.95rem; flex-shrink: 0; }
+  .notes-toggle .nt-preview { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--ink-faint); }
+  .notes-toggle .nt-chevron { color: var(--ink-faint); font-size: 0.75rem; flex-shrink: 0; }
+  .notes-panel { display: none; padding: 0 0.9rem 0.7rem; }
+  .notes-dock.open .notes-panel { display: block; }
+  .notes-dock.open .notes-toggle .nt-preview { display: none; }
+  .notes-textarea {
+    width: 100%; min-height: 9rem; max-height: 40vh; resize: vertical;
+    background: var(--surface); border: 1px solid var(--border); border-radius: 10px;
+    color: var(--ink); font-family: inherit; font-size: 0.88rem; padding: 0.7rem 0.8rem;
+  }
+
   /* ---- tab bar ---- */
   .tabbar {
-    position: fixed; left: 0; right: 0; bottom: 0; z-index: 10;
     display: flex; background: var(--surface); border-top: 1px solid var(--border);
     padding: 0.35rem 0.3rem calc(0.35rem + env(safe-area-inset-bottom, 0px));
   }
@@ -362,14 +385,26 @@
     <div class="tip-card" id="streak-detail"></div>
   </div>
 
-  <div class="tabbar" id="tabbar">
-    <button data-tab="vine"><span class="tab-glyph">🌿</span>Vine</button>
-    <button data-tab="today"><span class="tab-glyph">☀</span>Today</button>
-    <button data-tab="sowing"><span class="tab-glyph">🌱</span>Sowing</button>
-    <button data-tab="takeheart"><span class="tab-glyph">✚</span>Take Heart</button>
-    <button data-tab="aims"><span class="tab-glyph">◎</span>Aims</button>
-    <button data-tab="rest"><span class="tab-glyph">☾</span>Rest</button>
-    <button data-tab="settings"><span class="tab-glyph">⚙</span></button>
+  <div class="bottom-dock">
+    <div class="notes-dock" id="notes-dock">
+      <button class="notes-toggle" id="notes-toggle">
+        <span class="nt-glyph">📝</span>
+        <span class="nt-preview" id="notes-preview">Notes</span>
+        <span class="nt-chevron" id="notes-chevron">▲</span>
+      </button>
+      <div class="notes-panel" id="notes-panel">
+        <textarea class="notes-textarea" id="notes-textarea" placeholder="Thoughts, as they come…"></textarea>
+      </div>
+    </div>
+    <div class="tabbar" id="tabbar">
+      <button data-tab="vine"><span class="tab-glyph">🌿</span>Vine</button>
+      <button data-tab="today"><span class="tab-glyph">☀</span>Today</button>
+      <button data-tab="sowing"><span class="tab-glyph">🌱</span>Sowing</button>
+      <button data-tab="takeheart"><span class="tab-glyph">✚</span>Take Heart</button>
+      <button data-tab="aims"><span class="tab-glyph">◎</span>Aims</button>
+      <button data-tab="rest"><span class="tab-glyph">☾</span>Rest</button>
+      <button data-tab="settings"><span class="tab-glyph">⚙</span></button>
+    </div>
   </div>
 
 </div></div>
@@ -498,18 +533,18 @@
   const VINE_STEPS = [
     {
       key: 'sit', tag: 'Step 1 · Sit', cta: "I'm here",
-      plain: 'Set down what you were carrying. You are not starting the day as an orphan managing a farm.'
+      plain: 'Set down what you were carrying.'
     },
     {
-      key: 'speak', tag: 'Step 2 · Speak the belonging', cta: 'Amen — continue',
+      key: 'speak', tag: 'Step 2 · Speak the belonging', cta: 'Amen — continue', voice: 'You say',
       text: 'I am in Christ. I remain. I do not start as an orphan managing a farm. Fan into flame what is already given.'
     },
     {
-      key: 'listen', tag: 'Step 3 · Listen', cta: 'Continue', wait: 8,
-      text: 'I am the vine; you are the branches. Remain in me, and I in you. Apart from me you can do nothing. Remain in my love. I chose you to go and bear fruit that will last. The water I give will become a spring welling up to eternal life. In Him we live and move and have our being.'
+      key: 'listen', tag: 'Step 3 · Listen', cta: 'Continue', wait: 8, voice: 'Jesus says',
+      text: 'I am the vine; you are the branches. Remain in me, and I in you. Apart from me you can do nothing. Remain in my love. I chose you to go and bear fruit that will last. The water I give will become a spring welling up to eternal life.'
     },
     {
-      key: 'ask', tag: 'Step 4 · Ask', cta: 'Continue to the field', journal: true,
+      key: 'ask', tag: 'Step 4 · Ask', cta: 'Continue to the field', journal: true, voice: 'You, to the Father',
       plain: 'Father, what is Yours in this day?'
     }
   ];
@@ -535,6 +570,7 @@
     ).join('') + '</div>';
     html += '<div class="mode-tag">' + step.tag + '</div>';
     html += '<div class="prompt-card">';
+    if (step.voice) html += '<div class="voice-tag">' + escapeHtml(step.voice) + '</div>';
     if (step.text) html += '<p class="assertion-text">' + escapeHtml(step.text) + '</p>';
     if (step.plain) html += '<p class="assertion-plain">' + escapeHtml(step.plain) + '</p>';
     if (step.journal) html += '<textarea class="vine-journal" id="vine-journal" placeholder="Optional — what surfaces">' + escapeHtml(vineJournalText) + '</textarea>';
@@ -1091,6 +1127,47 @@
     if (t) document.documentElement.setAttribute('data-theme', t);
   })();
 
+  // ===== always-visible notes dock =====
+  function currentDayNotes() {
+    const tk = todayKey();
+    data.dayLog[tk] = data.dayLog[tk] || {};
+    return data.dayLog[tk];
+  }
+
+  function refreshNotesPreview() {
+    const val = (currentDayNotes().notes || '').trim();
+    const preview = document.getElementById('notes-preview');
+    if (document.getElementById('notes-dock').classList.contains('open')) return;
+    preview.textContent = val ? val.split('\n')[0].slice(0, 60) : 'Notes';
+  }
+
+  function loadNotesTextarea() {
+    const ta = document.getElementById('notes-textarea');
+    if (document.activeElement !== ta) ta.value = currentDayNotes().notes || '';
+  }
+
+  document.getElementById('notes-toggle').addEventListener('click', () => {
+    const dock = document.getElementById('notes-dock');
+    const chevron = document.getElementById('notes-chevron');
+    const opening = !dock.classList.contains('open');
+    dock.classList.toggle('open', opening);
+    chevron.textContent = opening ? '▼' : '▲';
+    if (opening) {
+      loadNotesTextarea();
+      document.getElementById('notes-textarea').focus();
+    } else {
+      refreshNotesPreview();
+    }
+  });
+
+  document.getElementById('notes-textarea').addEventListener('input', e => {
+    currentDayNotes().notes = e.target.value;
+    save('dayLog');
+  });
+
+  loadNotesTextarea();
+  refreshNotesPreview();
+
   // ===== init =====
   renderStreakPill();
   enforceGate();
@@ -1150,6 +1227,8 @@
       renderStreakPill();
       enforceGate();
       showView(currentView);
+      loadNotesTextarea();
+      refreshNotesPreview();
     }
   }
 
