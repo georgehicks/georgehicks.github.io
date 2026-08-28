@@ -206,6 +206,29 @@
   .tabbar button.active { color: var(--brass-strong); }
   .tabbar button:disabled { opacity: 0.3; }
 
+  /* ---- day timeline ---- */
+  .day-timeline { max-height: 22rem; overflow-y: auto; border: 1px solid var(--border); border-radius: 12px; margin-bottom: 1.1rem; }
+  .hour-row { display: flex; align-items: flex-start; gap: 0.6rem; padding: 0.55rem 0.7rem; border-bottom: 1px solid var(--border); position: relative; }
+  .hour-row:last-child { border-bottom: none; }
+  .hour-row.past { opacity: 0.5; }
+  .hour-row.now { background: color-mix(in srgb, var(--brass) 8%, transparent); }
+  .hour-time { font-family: var(--font-mono); font-size: 0.72rem; color: var(--ink-faint); width: 3.6rem; flex-shrink: 0; padding-top: 0.4rem; }
+  .hour-row.now .hour-time { color: var(--brass-strong); font-weight: 600; }
+  .hour-body { flex: 1; min-width: 0; }
+  .hour-appts { display: flex; flex-wrap: wrap; gap: 0.3rem; margin-bottom: 0.3rem; }
+  .appt-chip { background: var(--surface-2); border: 1px solid var(--border); color: var(--ink-muted); border-radius: 8px; padding: 0.15rem 0.5rem; font-size: 0.72rem; }
+  .hour-note {
+    width: 100%; background: none; border: none; border-bottom: 1px dashed var(--border);
+    color: var(--ink); font-size: 0.84rem; padding: 0.2rem 0.1rem; font-family: inherit;
+  }
+  .hour-note::placeholder { color: var(--ink-faint); }
+  .hour-progress { position: absolute; left: 0; bottom: -1px; height: 2px; background: var(--brass); }
+  .day-window-row { display: flex; gap: 0.6rem; align-items: center; margin-bottom: 0.7rem; }
+  .day-window-row input { width: 4.2rem; background: var(--surface-2); border: 1px solid var(--border); border-radius: 8px; color: var(--ink); padding: 0.35rem 0.5rem; font-size: 0.85rem; }
+  .ics-textarea { width: 100%; min-height: 4rem; background: var(--surface-2); border: 1px solid var(--border); border-radius: 8px; color: var(--ink); padding: 0.5rem; font-size: 0.8rem; margin-bottom: 0.5rem; resize: vertical; }
+  .ics-input { width: 100%; background: var(--surface-2); border: 1px solid var(--border); border-radius: 8px; color: var(--ink); padding: 0.5rem; font-size: 0.8rem; margin-bottom: 0.5rem; }
+  #ics-status { font-size: 0.76rem; color: var(--ink-muted); margin-top: 0.3rem; }
+
   /* ---- settings / sync ---- */
   .settings-row { display: flex; align-items: center; justify-content: space-between; gap: 0.6rem; margin-bottom: 0.7rem; }
   .settings-row .link-btn { background: none; border: 1px solid var(--border); color: var(--ink); border-radius: 8px; padding: 0.4rem 0.8rem; font-size: 0.82rem; }
@@ -246,6 +269,8 @@
       <div class="section-label" style="margin-top:0;">Undone troubles &amp; seeds — tap to add</div>
       <div class="tray-chips" id="draw-tray-chips"></div>
     </div>
+    <div class="section-label">Your day</div>
+    <div class="day-timeline" id="day-timeline"></div>
     <div class="section-label">Evening</div>
     <div class="add-form">
       <label for="fruit-note">Fruit noticed, without grabbing it</label>
@@ -318,6 +343,17 @@
       <button class="link-btn" id="sync-signin">Sign in with Google</button>
       <button class="link-btn" id="sync-signout" style="display:none;">Sign out</button>
     </div>
+    <div class="section-label">Day window</div>
+    <div class="day-window-row">
+      <input id="day-start-hour" type="number" min="0" max="23" />
+      <span style="color:var(--ink-faint); font-size:0.82rem;">to</span>
+      <input id="day-end-hour" type="number" min="1" max="24" />
+    </div>
+    <div class="section-label">Calendar import (ICS)</div>
+    <textarea class="ics-textarea" id="ics-url" placeholder="One .ics feed URL per line"></textarea>
+    <input class="ics-input" id="ics-proxy" type="text" placeholder="CORS proxy URL (ends with ?url=) — see CALENDAR-SETUP.md" />
+    <button class="backup-btn" id="ics-pull-btn">Pull appointments now</button>
+    <div id="ics-status"></div>
     <div class="section-label">Backup</div>
     <button class="backup-btn" id="export-btn">Export everything as JSON</button>
     <button class="backup-btn" id="import-btn">Import from JSON file</button>
@@ -342,6 +378,8 @@
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+<!-- ICS calendar parser -->
+<script src="https://cdn.jsdelivr.net/npm/ical.js@1.5.0/build/ical.min.js"></script>
 
 <script>
 (function () {
@@ -384,7 +422,10 @@
       takeHeart: storage.get('takeHeart') || [],
       rest: storage.get('rest') || [],
       todayField: storage.get('todayField') || { date: null, items: [] },
-      dayLog: storage.get('dayLog') || {}
+      dayLog: storage.get('dayLog') || {},
+      appointments: storage.get('appointments') || { date: null, items: [] },
+      dayWindow: storage.get('dayWindow') || { startHour: 6, endHour: 22 },
+      icsSettings: storage.get('icsSettings') || { urls: '', proxy: '' }
     };
   }
   let data = loadAll();
@@ -403,6 +444,10 @@
     if (!data.livingAims.some(a => a.pinned)) {
       data.livingAims.unshift({ id: 'pinned-remain', text: PINNED_AIM_TEXT, pinned: true, status: 'active', createdAt: Date.now() });
       save('livingAims');
+    }
+    if (data.appointments.date !== tk) {
+      data.appointments = { date: tk, items: [] };
+      save('appointments');
     }
   }
   ensureDay();
@@ -590,6 +635,165 @@
     renderDrawTray();
     const tk = todayKey();
     document.getElementById('fruit-note').value = (data.dayLog[tk] && data.dayLog[tk].fruitNote) || '';
+    buildDayTimeline();
+  }
+
+  // ===== Day timeline (time-surfing, calendar-aware) =====
+  function formatAMPM(minutes) {
+    let h = Math.floor(minutes / 60);
+    const m = minutes % 60;
+    const ampm = h >= 12 ? 'PM' : 'AM';
+    h = h % 12 || 12;
+    return h + ':' + String(m).padStart(2, '0') + ' ' + ampm;
+  }
+
+  let dayTimelineTimer = null;
+
+  function buildDayTimeline() {
+    const host = document.getElementById('day-timeline');
+    if (!host) return;
+    const now = new Date();
+    const nowMinutes = now.getHours() * 60 + now.getMinutes();
+    const tk = todayKey();
+    data.dayLog[tk] = data.dayLog[tk] || {};
+    const hourNotes = data.dayLog[tk].hourNotes || (data.dayLog[tk].hourNotes = {});
+    const startHour = data.dayWindow.startHour, endHour = data.dayWindow.endHour;
+
+    host.innerHTML = '';
+    for (let h = startHour; h < endHour; h++) {
+      const hourMinutes = h * 60;
+      const isPast = nowMinutes >= hourMinutes + 60;
+      const isNow = nowMinutes >= hourMinutes && nowMinutes < hourMinutes + 60;
+      const appts = data.appointments.items.filter(a => a.startMinutes < hourMinutes + 60 && a.endMinutes > hourMinutes);
+
+      const row = document.createElement('div');
+      row.className = 'hour-row' + (isPast ? ' past' : '') + (isNow ? ' now' : '');
+
+      const timeEl = document.createElement('div');
+      timeEl.className = 'hour-time';
+      timeEl.textContent = formatAMPM(hourMinutes);
+      row.appendChild(timeEl);
+
+      const body = document.createElement('div');
+      body.className = 'hour-body';
+
+      if (appts.length) {
+        const apptsRow = document.createElement('div');
+        apptsRow.className = 'hour-appts';
+        appts.forEach(a => {
+          const chip = document.createElement('span');
+          chip.className = 'appt-chip';
+          chip.title = formatAMPM(a.startMinutes) + '–' + formatAMPM(a.endMinutes) + ': ' + a.text;
+          chip.textContent = a.text.length > 28 ? a.text.slice(0, 28) + '…' : a.text;
+          apptsRow.appendChild(chip);
+        });
+        body.appendChild(apptsRow);
+      }
+
+      const noteInput = document.createElement('input');
+      noteInput.type = 'text';
+      noteInput.className = 'hour-note';
+      noteInput.placeholder = 'what are you doing?';
+      noteInput.value = hourNotes[hourMinutes] || '';
+      noteInput.addEventListener('input', () => {
+        hourNotes[hourMinutes] = noteInput.value;
+        save('dayLog');
+      });
+      body.appendChild(noteInput);
+
+      row.appendChild(body);
+
+      if (isNow) {
+        const pct = ((nowMinutes - hourMinutes) / 60) * 100;
+        const prog = document.createElement('div');
+        prog.className = 'hour-progress';
+        prog.style.width = pct + '%';
+        row.appendChild(prog);
+      }
+
+      host.appendChild(row);
+    }
+
+    const nowRow = host.querySelector('.hour-row.now');
+    if (nowRow && document.activeElement !== nowRow.querySelector('.hour-note')) {
+      nowRow.scrollIntoView({ block: 'center' });
+    }
+
+    clearInterval(dayTimelineTimer);
+    dayTimelineTimer = setInterval(() => {
+      if (currentView === 'today' && !(document.activeElement && document.activeElement.classList.contains('hour-note'))) buildDayTimeline();
+    }, 60000);
+  }
+
+  async function pullCalendar() {
+    const urls = (document.getElementById('ics-url').value || '').split('\n').map(s => s.trim()).filter(Boolean);
+    const proxy = (document.getElementById('ics-proxy').value || '').trim();
+    data.icsSettings = { urls: document.getElementById('ics-url').value, proxy };
+    save('icsSettings');
+    const statusEl = document.getElementById('ics-status');
+    if (!urls.length) { statusEl.textContent = 'Enter at least one calendar .ics URL.'; return; }
+    if (typeof ICAL === 'undefined') { statusEl.textContent = 'Calendar library still loading — try again in a moment.'; return; }
+    statusEl.textContent = 'Fetching…';
+    let all = [], ok = 0, failed = 0;
+    for (const url of urls) {
+      try {
+        const res = await fetch(proxy ? proxy + encodeURIComponent(url) : url);
+        if (!res.ok) throw new Error('HTTP ' + res.status);
+        const text = await res.text();
+        all = all.concat(parseTodayEvents(text));
+        ok++;
+      } catch (e) { failed++; }
+    }
+    if (ok === 0) { statusEl.textContent = 'All fetches failed — check the URLs and proxy.'; return; }
+    const seen = new Set();
+    const merged = all.filter(ev => { const k = ev.start + '|' + ev.end + '|' + ev.text; if (seen.has(k)) return false; seen.add(k); return true; });
+    data.appointments = { date: todayKey(), items: merged.map((ev, i) => ({ id: 'ics_' + i + '_' + ev.uid, startMinutes: ev.start, endMinutes: ev.end, text: ev.text })) };
+    save('appointments');
+    statusEl.textContent = 'Imported ' + merged.length + ' event' + (merged.length === 1 ? '' : 's') + ' from ' + ok + ' calendar' + (ok === 1 ? '' : 's') + (failed ? (', ' + failed + ' failed') : '') + ' · ' + new Date().toLocaleTimeString();
+    if (currentView === 'today') buildDayTimeline();
+  }
+
+  function registerIcsTimezones(comp) {
+    comp.getAllSubcomponents('vtimezone').forEach(vt => {
+      try { ICAL.TimezoneService.register(vt); } catch (e) {}
+    });
+  }
+
+  function parseTodayEvents(icsText) {
+    const comp = new ICAL.Component(ICAL.parse(icsText));
+    registerIcsTimezones(comp);
+    const now = new Date();
+    const dayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const dayEnd = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1);
+    const toMin = d => d.getHours() * 60 + d.getMinutes();
+    const results = [];
+    const add = (startJs, endJs, summary, uid) => {
+      if (startJs >= dayEnd || endJs <= dayStart) return;
+      const s = startJs < dayStart ? 0 : toMin(startJs);
+      const e = endJs >= dayEnd ? 1439 : toMin(endJs);
+      if (e <= s) return;
+      results.push({ uid, start: s, end: e, text: summary || '(busy)' });
+    };
+    comp.getAllSubcomponents('vevent').forEach(ve => {
+      const event = new ICAL.Event(ve);
+      if (event.startDate && event.startDate.isDate) return;
+      if (event.isRecurring()) {
+        const it = event.iterator();
+        let next, guard = 0;
+        while ((next = it.next()) && guard++ < 5000) {
+          const startJs = next.toJSDate();
+          if (startJs >= dayEnd) break;
+          const det = event.getOccurrenceDetails(next);
+          const endJs = det.endDate.toJSDate();
+          if (endJs <= dayStart) continue;
+          add(startJs, endJs, event.summary, (event.uid || 'e') + '_' + next.toUnixTime());
+        }
+      } else {
+        add(event.startDate.toJSDate(), event.endDate.toJSDate(), event.summary, event.uid || ('e' + Math.random().toString(36).slice(2)));
+      }
+    });
+    results.sort((a, b) => a.start - b.start);
+    return results;
   }
 
   function toggleFieldItemDone(fieldId) {
@@ -822,10 +1026,26 @@
   });
 
   // ===== SETTINGS extras (backup) =====
-  function renderSettingsExtras() { renderStreakPill(); }
+  function renderSettingsExtras() {
+    renderStreakPill();
+    document.getElementById('day-start-hour').value = data.dayWindow.startHour;
+    document.getElementById('day-end-hour').value = data.dayWindow.endHour;
+    document.getElementById('ics-url').value = data.icsSettings.urls || '';
+    document.getElementById('ics-proxy').value = data.icsSettings.proxy || '';
+  }
+
+  document.getElementById('day-start-hour').addEventListener('change', e => {
+    data.dayWindow.startHour = Math.max(0, Math.min(23, parseInt(e.target.value) || 0));
+    save('dayWindow');
+  });
+  document.getElementById('day-end-hour').addEventListener('change', e => {
+    data.dayWindow.endHour = Math.max(1, Math.min(24, parseInt(e.target.value) || 24));
+    save('dayWindow');
+  });
+  document.getElementById('ics-pull-btn').addEventListener('click', pullCalendar);
 
   document.getElementById('export-btn').addEventListener('click', () => {
-    const payload = { vine: data.vine, livingAims: data.livingAims, sowing: data.sowing, takeHeart: data.takeHeart, rest: data.rest, dayLog: data.dayLog, exportedAt: new Date().toISOString() };
+    const payload = { vine: data.vine, livingAims: data.livingAims, sowing: data.sowing, takeHeart: data.takeHeart, rest: data.rest, dayLog: data.dayLog, dayWindow: data.dayWindow, icsSettings: data.icsSettings, exportedAt: new Date().toISOString() };
     const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
@@ -842,7 +1062,7 @@
     reader.onload = () => {
       try {
         const parsed = JSON.parse(reader.result);
-        ['vine', 'livingAims', 'sowing', 'takeHeart', 'rest', 'dayLog'].forEach(k => {
+        ['vine', 'livingAims', 'sowing', 'takeHeart', 'rest', 'dayLog', 'dayWindow', 'icsSettings'].forEach(k => {
           if (parsed[k] !== undefined) { data[k] = parsed[k]; save(k); }
         });
         ensureDay();
