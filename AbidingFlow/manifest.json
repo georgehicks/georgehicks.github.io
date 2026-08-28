@@ -1,0 +1,19 @@
+{
+  "name": "AbidingFlow — Remain in the Vine",
+  "short_name": "AbidingFlow",
+  "description": "The Vine first, every day. Living Aims, Faithful Sowing, Take Heart, and Rest — lists that serve remaining, not the other way around.",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#14171C",
+  "theme_color": "#14171C",
+  "categories": ["lifestyle", "productivity"],
+  "icons": [
+    {
+      "src": "icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

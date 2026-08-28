@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <rect width="512" height="512" rx="96" fill="#14171C"/>
+  <!-- Vine stem -->
+  <path d="M256 420 C256 420 246 300 270 250 C294 200 284 140 256 96" fill="none" stroke="#5FA98C" stroke-width="12" stroke-linecap="round"/>
+  <!-- Branches -->
+  <path d="M270 250 C310 240 336 210 344 176" fill="none" stroke="#5FA98C" stroke-width="9" stroke-linecap="round"/>
+  <path d="M262 320 C222 312 194 284 184 250" fill="none" stroke="#5FA98C" stroke-width="9" stroke-linecap="round"/>
+  <!-- Leaves -->
+  <path d="M344 176 C368 160 376 132 366 108 C340 112 320 132 320 158 C320 168 330 176 344 176 Z" fill="#CD9A4E"/>
+  <path d="M184 250 C158 238 146 210 154 184 C180 186 202 204 204 230 C205 240 196 249 184 250 Z" fill="#CD9A4E"/>
+  <path d="M256 96 C270 74 270 48 256 28 C240 48 240 74 256 96 Z" fill="#CD9A4E"/>
+  <!-- Root / ground line -->
+  <circle cx="256" cy="430" r="10" fill="#ECE8DF"/>
+</svg>

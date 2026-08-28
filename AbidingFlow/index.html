@@ -1,0 +1,981 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+<meta name="theme-color" content="#14171C" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+<meta name="description" content="AbidingFlow — the Vine first, every day. Lists that serve remaining, not the other way around." />
+<title>AbidingFlow — Remain in the Vine</title>
+<link rel="manifest" href="manifest.json" />
+<link rel="icon" href="icon.svg" type="image/svg+xml" />
+<link rel="apple-touch-icon" href="icon.svg" />
+<style>
+  :root {
+    --bg: #14171C; --surface: #1B1F26; --surface-2: #232832; --border: #2E3440;
+    --ink: #ECE8DF; --ink-muted: #9AA0AC; --ink-faint: #5B6270;
+    --brass: #CD9A4E; --brass-strong: #E4B268; --teal: #5FA98C; --rust: #C1614A;
+    --font-display: Georgia, "Iowan Old Style", "Palatino Linotype", "Book Antiqua", serif;
+    --font-body: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    --font-mono: ui-monospace, "SF Mono", "Cascadia Code", Menlo, Consolas, monospace;
+  }
+  @media (prefers-color-scheme: light) {
+    :root { --bg:#F5F1E8; --surface:#FFFFFF; --surface-2:#EDE7D8; --border:#DDD5C0;
+      --ink:#201C15; --ink-muted:#6B6455; --ink-faint:#A79E8A;
+      --brass:#A9782F; --brass-strong:#8C6224; --teal:#3F8367; --rust:#A8432C; }
+  }
+  :root[data-theme="dark"] { --bg:#14171C; --surface:#1B1F26; --surface-2:#232832; --border:#2E3440;
+    --ink:#ECE8DF; --ink-muted:#9AA0AC; --ink-faint:#5B6270;
+    --brass:#CD9A4E; --brass-strong:#E4B268; --teal:#5FA98C; --rust:#C1614A; }
+  :root[data-theme="light"] { --bg:#F5F1E8; --surface:#FFFFFF; --surface-2:#EDE7D8; --border:#DDD5C0;
+    --ink:#201C15; --ink-muted:#6B6455; --ink-faint:#A79E8A;
+    --brass:#A9782F; --brass-strong:#8C6224; --teal:#3F8367; --rust:#A8432C; }
+
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; }
+  body {
+    background: var(--bg); color: var(--ink); font-family: var(--font-body);
+    line-height: 1.5; font-size: 16px; -webkit-tap-highlight-color: transparent;
+  }
+  button, input, textarea { font-family: inherit; color: inherit; }
+  button { cursor: pointer; }
+  :focus-visible { outline: 2px solid var(--brass); outline-offset: 2px; }
+
+  .page { min-height: 100vh; padding: calc(1.1rem + env(safe-area-inset-top, 0px)) 1.1rem calc(5.5rem + env(safe-area-inset-bottom, 0px)); }
+  .wrap { max-width: 28rem; margin: 0 auto; }
+
+  .topbar { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.2rem; min-height: 2rem; }
+  .wordmark { font-family: var(--font-display); font-size: 1.25rem; background: none; border: none; color: var(--ink); padding: 0; }
+  .topbar-left { display: flex; align-items: center; gap: 0.6rem; }
+  .topbar-right { display: flex; align-items: center; gap: 0.6rem; }
+  .streak-pill {
+    font-family: var(--font-mono); font-size: 0.72rem; color: var(--brass-strong);
+    background: var(--surface); border: 1px solid var(--border); border-radius: 999px;
+    padding: 0.25rem 0.6rem; white-space: nowrap;
+  }
+  .icon-btn {
+    background: var(--surface); border: 1px solid var(--border); border-radius: 8px;
+    width: 2rem; height: 2rem; display: flex; align-items: center; justify-content: center;
+    color: var(--ink-muted); font-size: 0.95rem;
+  }
+
+  .view { display: none; }
+  .view.active { display: block; }
+
+  .greet-sub { font-size: 0.85rem; color: var(--ink-muted); margin: 0 0 0.15rem; }
+  .greet { font-family: var(--font-display); font-weight: 400; font-size: 1.5rem; margin: 0 0 1.1rem; text-wrap: balance; }
+
+  .section-label {
+    font-family: var(--font-mono); font-size: 0.66rem; letter-spacing: 0.1em; text-transform: uppercase;
+    color: var(--ink-faint); margin: 1.3rem 0 0.65rem;
+  }
+  .section-label:first-of-type { margin-top: 0; }
+
+  /* ---- gate lock ---- */
+  .gate-note {
+    background: var(--surface); border: 1px solid var(--border); border-radius: 14px;
+    padding: 1.4rem 1.2rem; text-align: center; color: var(--ink-muted); font-size: 0.9rem;
+  }
+  .gate-note .gate-verse { font-family: var(--font-display); font-style: italic; color: var(--ink); font-size: 1.02rem; margin-bottom: 0.9rem; line-height: 1.5; }
+
+  /* ---- tip card (pinned reminder) ---- */
+  .tip-card {
+    background: linear-gradient(160deg, var(--surface-2), var(--surface));
+    border: 1px solid var(--border); border-left: 3px solid var(--brass);
+    border-radius: 12px; padding: 0.85rem 1rem; margin-bottom: 1rem; font-size: 0.86rem; color: var(--ink-muted);
+  }
+  .tip-card strong { color: var(--ink); font-weight: 600; }
+
+  /* ---- session/wizard stage (Vine) ---- */
+  .session-stage { display: flex; flex-direction: column; min-height: 22rem; }
+  .exercise-track { display: flex; gap: 4px; margin: 0 0 1.3rem; }
+  .exercise-track span { flex: 1; height: 4px; border-radius: 2px; background: var(--border); }
+  .exercise-track span.done { background: var(--teal); }
+  .exercise-track span.now { background: var(--brass); }
+
+  .mode-tag {
+    font-family: var(--font-mono); font-size: 0.65rem; letter-spacing: 0.08em; text-transform: uppercase;
+    color: var(--ink-faint); margin-bottom: 0.8rem; text-align: center;
+  }
+  .prompt-card {
+    background: var(--surface); border: 1px solid var(--border); border-radius: 16px;
+    padding: 1.5rem 1.25rem; margin-bottom: 1.2rem; text-align: center; flex: 1;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+  }
+  .prompt-card .assertion-text {
+    font-family: var(--font-display); font-size: 1.3rem; line-height: 1.5;
+    margin: 0; text-wrap: balance; color: var(--ink); font-style: italic;
+  }
+  .prompt-card .assertion-plain {
+    font-family: var(--font-display); font-size: 1.15rem; line-height: 1.5;
+    margin: 0.9rem 0 0; text-wrap: balance; color: var(--ink-muted); font-style: normal;
+  }
+  .vine-journal {
+    width: 100%; margin-top: 1rem; background: var(--surface-2); border: 1px solid var(--border);
+    border-radius: 10px; padding: 0.7rem 0.8rem; color: var(--ink); font-size: 0.9rem; resize: vertical; min-height: 3.6rem;
+  }
+
+  .gate-btn {
+    text-align: center; width: 100%;
+    background: var(--brass); color: #1B1305; border: none; border-radius: 12px; font-weight: 700;
+    padding: 0.9rem 0.95rem; font-size: 0.95rem;
+  }
+  .gate-btn:disabled { opacity: 0.45; }
+  .gate-btn.soft { background: var(--surface); color: var(--ink); border: 1px solid var(--border); font-weight: 500; }
+  .wait-hint { font-family: var(--font-mono); font-size: 0.7rem; color: var(--ink-faint); text-align: center; margin-top: 0.55rem; }
+
+  .vine-done-card {
+    background: var(--surface); border: 1px solid var(--border); border-radius: 16px;
+    padding: 1.4rem 1.2rem; text-align: center;
+  }
+  .vine-done-card .glyph { font-size: 1.6rem; margin-bottom: 0.6rem; color: var(--teal); }
+
+  /* ---- chip rows / picking ---- */
+  .chip-row { display: flex; flex-wrap: wrap; gap: 0.4rem; margin-bottom: 1rem; }
+  .chip {
+    border: 1px solid var(--border); background: var(--surface); color: var(--ink-muted);
+    border-radius: 999px; padding: 0.35rem 0.7rem; font-size: 0.78rem;
+  }
+  .chip.active { background: var(--brass); color: #1B1305; border-color: var(--brass); font-weight: 600; }
+
+  /* ---- field / list item cards ---- */
+  .item-card {
+    background: var(--surface); border: 1px solid var(--border); border-radius: 12px;
+    padding: 0.75rem 0.85rem; margin-bottom: 0.55rem; display: flex; align-items: flex-start; gap: 0.6rem;
+  }
+  .item-card.done { opacity: 0.5; }
+  .item-card.done .item-text { text-decoration: line-through; }
+  .item-body { flex: 1; min-width: 0; }
+  .item-text { font-size: 0.9rem; color: var(--ink); line-height: 1.4; }
+  .item-holding { font-family: var(--font-display); font-style: italic; font-size: 0.83rem; color: var(--ink-muted); margin-top: 0.3rem; line-height: 1.45; }
+  .item-note { font-size: 0.78rem; color: var(--ink-faint); margin-top: 0.25rem; }
+  .item-meta { font-family: var(--font-mono); font-size: 0.64rem; color: var(--ink-faint); margin-top: 0.3rem; text-transform: uppercase; letter-spacing: 0.04em; }
+  .item-actions { display: flex; flex-direction: column; gap: 0.3rem; flex-shrink: 0; }
+  .icon-mini {
+    background: none; border: 1px solid var(--border); color: var(--ink-muted); border-radius: 7px;
+    width: 1.7rem; height: 1.7rem; font-size: 0.85rem; display: flex; align-items: center; justify-content: center;
+  }
+  .icon-mini.done-btn.checked { color: var(--teal); border-color: var(--teal); }
+  .icon-mini:hover { color: var(--ink); }
+  .empty-note { color: var(--ink-faint); font-size: 0.85rem; padding: 0.4rem 0.1rem 0.8rem; }
+
+  /* ---- add forms ---- */
+  .add-form { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 0.75rem; margin-bottom: 1.1rem; }
+  .add-form input, .add-form textarea {
+    width: 100%; background: var(--surface-2); border: 1px solid var(--border); border-radius: 8px;
+    padding: 0.55rem 0.65rem; font-size: 0.87rem; color: var(--ink); margin-bottom: 0.5rem;
+  }
+  .add-form textarea { resize: vertical; min-height: 2.4rem; }
+  .add-form label { display: block; font-family: var(--font-mono); font-size: 0.62rem; letter-spacing: 0.06em; text-transform: uppercase; color: var(--ink-faint); margin: 0 0 0.25rem; }
+  .add-form-row { display: flex; gap: 0.5rem; align-items: center; }
+  .add-btn {
+    background: var(--brass); color: #1B1305; border: none; border-radius: 8px; font-weight: 700;
+    padding: 0.5rem 0.9rem; font-size: 0.85rem; white-space: nowrap;
+  }
+  .add-btn:disabled { opacity: 0.4; }
+
+  /* ---- tray (pick chips for Today's field) ---- */
+  .tray { background: var(--surface); border: 1px dashed var(--border); border-radius: 12px; padding: 0.75rem; margin-bottom: 1.1rem; }
+  .tray-chips { display: flex; flex-wrap: wrap; gap: 0.4rem; }
+  .tray-chip {
+    background: var(--surface-2); border: 1px solid var(--border); color: var(--ink-muted);
+    border-radius: 10px; padding: 0.4rem 0.6rem; font-size: 0.8rem; max-width: 100%;
+    display: flex; align-items: center; gap: 0.35rem;
+  }
+  .tray-chip .tc-dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
+  .tray-chip .tc-dot.thorn { background: var(--rust); }
+  .tray-chip .tc-dot.seed { background: var(--teal); }
+  .tray-chip.picked { border-color: var(--brass); color: var(--ink); background: color-mix(in srgb, var(--brass) 14%, var(--surface-2)); }
+  .draw-btn { background: none; border: 1px dashed var(--border); color: var(--ink-muted); border-radius: 10px; padding: 0.55rem 0.8rem; font-size: 0.85rem; width: 100%; text-align: center; }
+  .field-note { font-size: 0.78rem; color: var(--ink-faint); margin: -0.3rem 0 0.9rem; }
+  .field-note.over { color: var(--brass-strong); }
+
+  /* ---- tab bar ---- */
+  .tabbar {
+    position: fixed; left: 0; right: 0; bottom: 0; z-index: 10;
+    display: flex; background: var(--surface); border-top: 1px solid var(--border);
+    padding: 0.35rem 0.3rem calc(0.35rem + env(safe-area-inset-bottom, 0px));
+  }
+  .tabbar button {
+    flex: 1; background: none; border: none; color: var(--ink-faint); font-size: 0.66rem;
+    display: flex; flex-direction: column; align-items: center; gap: 0.2rem; padding: 0.3rem 0.1rem;
+    font-family: var(--font-body); border-radius: 8px;
+  }
+  .tabbar button .tab-glyph { font-size: 1.05rem; line-height: 1; }
+  .tabbar button.active { color: var(--brass-strong); }
+  .tabbar button:disabled { opacity: 0.3; }
+
+  /* ---- settings / sync ---- */
+  .settings-row { display: flex; align-items: center; justify-content: space-between; gap: 0.6rem; margin-bottom: 0.7rem; }
+  .settings-row .link-btn { background: none; border: 1px solid var(--border); color: var(--ink); border-radius: 8px; padding: 0.4rem 0.8rem; font-size: 0.82rem; }
+  #sync-status { font-size: 0.78rem; color: var(--ink-muted); }
+  .backup-btn { background: var(--surface); border: 1px solid var(--border); color: var(--ink); border-radius: 10px; padding: 0.6rem 0.8rem; font-size: 0.85rem; width: 100%; margin-bottom: 0.55rem; text-align: left; }
+
+  a { color: var(--brass-strong); }
+</style>
+</head>
+<body>
+<div class="page"><div class="wrap">
+
+  <div class="topbar">
+    <div class="topbar-left"><span class="wordmark">AbidingFlow</span></div>
+    <div class="topbar-right">
+      <span class="streak-pill" id="streak-pill">—</span>
+      <button class="icon-btn" id="theme-toggle" title="Toggle theme">◐</button>
+    </div>
+  </div>
+
+  <!-- VIEW: vine -->
+  <div class="view active" data-view="vine">
+    <p class="greet-sub" id="vine-sub">First. Every day.</p>
+    <h1 class="greet">The Vine</h1>
+    <div id="vine-host"></div>
+  </div>
+
+  <!-- VIEW: today -->
+  <div class="view" data-view="today">
+    <p class="greet-sub" id="today-sub"></p>
+    <h1 class="greet">Today's Field</h1>
+    <div class="tip-card"><strong>Trouble is real. Take heart.</strong> He has overcome. Do this with Him, as unto the Lord, in love.</div>
+    <div class="section-label">Drawn for today</div>
+    <div id="today-field-list"></div>
+    <div class="field-note" id="today-field-note"></div>
+    <button class="draw-btn" id="draw-field-btn">+ Draw from the field</button>
+    <div class="tray" id="draw-tray" style="display:none;">
+      <div class="section-label" style="margin-top:0;">Undone thorns &amp; seeds — tap to add</div>
+      <div class="tray-chips" id="draw-tray-chips"></div>
+    </div>
+    <div class="section-label">Evening</div>
+    <div class="add-form">
+      <label for="fruit-note">Fruit noticed, without grabbing it</label>
+      <textarea id="fruit-note" placeholder="Optional — a line or two"></textarea>
+      <button class="add-btn" id="release-btn">Release the day</button>
+    </div>
+  </div>
+
+  <!-- VIEW: sowing -->
+  <div class="view" data-view="sowing">
+    <p class="greet-sub">Proactive only. The good future you are co-growing with God.</p>
+    <h1 class="greet">Faithful Sowing</h1>
+    <div class="section-label">This week's aim</div>
+    <div class="chip-row" id="sowing-aim-chips"></div>
+    <div class="add-form">
+      <label for="seed-text">Next seed</label>
+      <input id="seed-text" type="text" placeholder="The next plank. The next row." />
+      <button class="add-btn" id="seed-add-btn">Add seed</button>
+    </div>
+    <div class="section-label">Seeds</div>
+    <div id="sowing-list"></div>
+  </div>
+
+  <!-- VIEW: takeheart -->
+  <div class="view" data-view="takeheart">
+    <p class="greet-sub">A working list, read top down.</p>
+    <h1 class="greet">Take Heart</h1>
+    <div class="tip-card"><strong>Trouble is real. Take heart.</strong> He has overcome. Do this with Him, as unto the Lord, in love. I belong. I do not handle thorns as an orphan. Apart from the Vine I can do nothing. With Him this is only a thorn, not lord.</div>
+    <div class="add-form">
+      <label for="thorn-text">The trouble</label>
+      <input id="thorn-text" type="text" placeholder="Taxes, a leak, a hard call…" />
+      <label for="thorn-holding">How you'll hold it</label>
+      <input id="thorn-holding" type="text" placeholder="A leak, not a verdict. I am not condemned by it." />
+      <button class="add-btn" id="thorn-add-btn" disabled>Add thorn</button>
+    </div>
+    <div id="takeheart-list"></div>
+  </div>
+
+  <!-- VIEW: aims -->
+  <div class="view" data-view="aims">
+    <p class="greet-sub">Season-level yeses. Directions, not tasks. Reviewed monthly.</p>
+    <h1 class="greet">Living Aims</h1>
+    <div id="aims-list"></div>
+    <div class="add-form">
+      <label for="aim-text">A confirmed yes of this season</label>
+      <input id="aim-text" type="text" placeholder="Care for the people in my house with presence…" />
+      <button class="add-btn" id="aim-add-btn">Add aim</button>
+    </div>
+  </div>
+
+  <!-- VIEW: rest -->
+  <div class="view" data-view="rest">
+    <p class="greet-sub">Everything real that is not now. Written down so your mind can stop carrying it.</p>
+    <h1 class="greet">Rest</h1>
+    <div class="add-form">
+      <input id="rest-text" type="text" placeholder="The larger question — not this week…" />
+      <button class="add-btn" id="rest-add-btn">Add to Rest</button>
+    </div>
+    <div id="rest-list"></div>
+  </div>
+
+  <!-- VIEW: settings -->
+  <div class="view" data-view="settings">
+    <h1 class="greet">Settings</h1>
+    <div class="section-label">Cloud sync</div>
+    <div class="settings-row">
+      <span id="sync-status">Not configured</span>
+    </div>
+    <div class="settings-row">
+      <button class="link-btn" id="sync-signin">Sign in with Google</button>
+      <button class="link-btn" id="sync-signout" style="display:none;">Sign out</button>
+    </div>
+    <div class="section-label">Backup</div>
+    <button class="backup-btn" id="export-btn">Export everything as JSON</button>
+    <button class="backup-btn" id="import-btn">Import from JSON file</button>
+    <input type="file" id="import-file" accept="application/json" style="display:none;" />
+    <div class="section-label">Vine streak</div>
+    <div class="tip-card" id="streak-detail"></div>
+  </div>
+
+  <div class="tabbar" id="tabbar">
+    <button data-tab="vine"><span class="tab-glyph">🌿</span>Vine</button>
+    <button data-tab="today"><span class="tab-glyph">☀</span>Today</button>
+    <button data-tab="sowing"><span class="tab-glyph">🌱</span>Sowing</button>
+    <button data-tab="takeheart"><span class="tab-glyph">✚</span>Take Heart</button>
+    <button data-tab="aims"><span class="tab-glyph">◎</span>Aims</button>
+    <button data-tab="rest"><span class="tab-glyph">☾</span>Rest</button>
+    <button data-tab="settings"><span class="tab-glyph">⚙</span></button>
+  </div>
+
+</div></div>
+
+<!-- Firebase compat SDK (cloud sync) -->
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+
+<script>
+(function () {
+  'use strict';
+
+  // ===== Firebase config — paste your project's web config here (see FIREBASE-SETUP.md) =====
+  const FIREBASE_CONFIG = {
+    apiKey: "",
+    authDomain: "",
+    projectId: "",
+    appId: ""
+  };
+
+  // ===== storage =====
+  const storage = {
+    data: {},
+    get(k) { try { return JSON.parse(localStorage.getItem(k)); } catch (e) { return this.data[k] || null; } },
+    set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) { this.data[k] = v; } }
+  };
+
+  function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2, 8); }
+  function escapeHtml(s) { return (s || '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c])); }
+  function todayKey() { const d = new Date(); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); }
+  function daysBetween(a, b) { return Math.round((new Date(b) - new Date(a)) / 86400000); }
+
+  // ===== data model =====
+  const PINNED_AIM_TEXT = 'Remain in the Vine. Hear and obey. Live from that belonging.';
+
+  function loadAll() {
+    return {
+      vine: storage.get('vine') || { lastRemainedAt: null, streak: 0 },
+      livingAims: storage.get('livingAims') || [
+        { id: 'pinned-remain', text: PINNED_AIM_TEXT, pinned: true, status: 'active', createdAt: Date.now() }
+      ],
+      sowing: storage.get('sowing') || { weeklyAimId: null, seeds: [] },
+      takeHeart: storage.get('takeHeart') || [],
+      rest: storage.get('rest') || [],
+      todayField: storage.get('todayField') || { date: null, items: [] },
+      dayLog: storage.get('dayLog') || {}
+    };
+  }
+  let data = loadAll();
+
+  function save(key) {
+    storage.set(key, data[key]);
+  }
+
+  // Ensure today's field resets on a new calendar day, and the pinned aim always exists
+  function ensureDay() {
+    const tk = todayKey();
+    if (data.todayField.date !== tk) {
+      data.todayField = { date: tk, items: [] };
+      save('todayField');
+    }
+    if (!data.livingAims.some(a => a.pinned)) {
+      data.livingAims.unshift({ id: 'pinned-remain', text: PINNED_AIM_TEXT, pinned: true, status: 'active', createdAt: Date.now() });
+      save('livingAims');
+    }
+  }
+  ensureDay();
+
+  function vineDoneToday() { return data.vine.lastRemainedAt === todayKey(); }
+
+  // ===== view / nav =====
+  let currentView = 'vine';
+
+  function showView(name) {
+    document.querySelectorAll('.view').forEach(v => v.classList.toggle('active', v.getAttribute('data-view') === name));
+    document.querySelectorAll('.tabbar button').forEach(b => b.classList.toggle('active', b.dataset.tab === name));
+    currentView = name;
+    if (name === 'today') renderToday();
+    if (name === 'sowing') renderSowing();
+    if (name === 'takeheart') renderTakeHeart();
+    if (name === 'aims') renderAims();
+    if (name === 'rest') renderRest();
+    if (name === 'settings') renderSettingsExtras();
+  }
+
+  function enforceGate() {
+    const gated = !vineDoneToday();
+    document.querySelectorAll('.tabbar button').forEach(b => {
+      if (b.dataset.tab !== 'vine' && b.dataset.tab !== 'settings') b.disabled = gated;
+    });
+    if (gated && currentView !== 'vine' && currentView !== 'settings') showView('vine');
+  }
+
+  document.querySelectorAll('.tabbar button').forEach(btn => {
+    btn.addEventListener('click', () => { if (!btn.disabled) showView(btn.dataset.tab); });
+  });
+
+  // ===== streak pill =====
+  function renderStreakPill() {
+    const el = document.getElementById('streak-pill');
+    const done = vineDoneToday();
+    el.textContent = done ? ('🌿 ' + data.vine.streak + (data.vine.streak === 1 ? ' day' : ' days')) : 'Not yet today';
+    const detail = document.getElementById('streak-detail');
+    if (detail) {
+      detail.textContent = data.vine.streak
+        ? `You've remained ${data.vine.streak} day${data.vine.streak === 1 ? '' : 's'} in a row. Last: ${data.vine.lastRemainedAt || '—'}.`
+        : 'No streak yet — the Vine is first, every day.';
+    }
+  }
+
+  // ===== VINE wizard =====
+  const VINE_STEPS = [
+    {
+      key: 'sit', tag: 'Step 1 · Sit', cta: "I'm here",
+      plain: 'Set down what you were carrying. You are not starting the day as an orphan managing a farm.'
+    },
+    {
+      key: 'speak', tag: 'Step 2 · Speak the belonging', cta: 'Amen — continue',
+      text: 'I am in Christ. I remain. I do not start as an orphan managing a farm. Fan into flame what is already given.'
+    },
+    {
+      key: 'listen', tag: 'Step 3 · Listen', cta: 'Continue', wait: 8,
+      text: 'I am the vine; you are the branches. Remain in me, and I in you. Apart from me you can do nothing. Remain in my love. I chose you to go and bear fruit that will last. The water I give will become a spring welling up to eternal life. In Him we live and move and have our being.'
+    },
+    {
+      key: 'ask', tag: 'Step 4 · Ask', cta: 'Continue to the field', journal: true,
+      plain: 'Father, what is Yours in this day?'
+    }
+  ];
+
+  let vineStepIndex = 0;
+  let vineJournalText = '';
+  let vineWaitTimer = null;
+
+  function startVine() {
+    vineStepIndex = 0;
+    vineJournalText = '';
+    renderVineStep();
+  }
+
+  function renderVineStep() {
+    clearInterval(vineWaitTimer);
+    const host = document.getElementById('vine-host');
+    if (vineStepIndex >= VINE_STEPS.length) { finishVine(); return; }
+    const step = VINE_STEPS[vineStepIndex];
+    let html = '<div class="session-stage">';
+    html += '<div class="exercise-track">' + VINE_STEPS.map((s, i) =>
+      '<span class="' + (i < vineStepIndex ? 'done' : (i === vineStepIndex ? 'now' : '')) + '"></span>'
+    ).join('') + '</div>';
+    html += '<div class="mode-tag">' + step.tag + '</div>';
+    html += '<div class="prompt-card">';
+    if (step.text) html += '<p class="assertion-text">' + escapeHtml(step.text) + '</p>';
+    if (step.plain) html += '<p class="assertion-plain">' + escapeHtml(step.plain) + '</p>';
+    if (step.journal) html += '<textarea class="vine-journal" id="vine-journal" placeholder="Optional — what surfaces">' + escapeHtml(vineJournalText) + '</textarea>';
+    html += '</div>';
+    html += '<button class="gate-btn" id="vine-next-btn"' + (step.wait ? ' disabled' : '') + '>' + step.cta + '</button>';
+    if (step.wait) html += '<div class="wait-hint" id="vine-wait-hint">Hold here — ' + step.wait + 's</div>';
+    html += '</div>';
+    host.innerHTML = html;
+
+    const btn = document.getElementById('vine-next-btn');
+    if (step.journal) {
+      document.getElementById('vine-journal').addEventListener('input', e => { vineJournalText = e.target.value; });
+    }
+    if (step.wait) {
+      let remaining = step.wait;
+      const hint = document.getElementById('vine-wait-hint');
+      vineWaitTimer = setInterval(() => {
+        remaining -= 1;
+        if (remaining <= 0) {
+          clearInterval(vineWaitTimer);
+          hint.textContent = '';
+          btn.disabled = false;
+        } else {
+          hint.textContent = 'Hold here — ' + remaining + 's';
+        }
+      }, 1000);
+    }
+    btn.addEventListener('click', () => { vineStepIndex += 1; renderVineStep(); });
+  }
+
+  function finishVine() {
+    const tk = todayKey();
+    const wasAlready = vineDoneToday();
+    if (!wasAlready) {
+      if (data.vine.lastRemainedAt && daysBetween(data.vine.lastRemainedAt, tk) === 1) {
+        data.vine.streak = (data.vine.streak || 0) + 1;
+      } else {
+        data.vine.streak = 1;
+      }
+      data.vine.lastRemainedAt = tk;
+      save('vine');
+    }
+    if (vineJournalText.trim() && !data.dayLog[tk]) data.dayLog[tk] = {};
+    if (vineJournalText.trim()) { data.dayLog[tk] = data.dayLog[tk] || {}; data.dayLog[tk].vineNote = vineJournalText.trim(); save('dayLog'); }
+
+    renderStreakPill();
+    enforceGate();
+
+    const host = document.getElementById('vine-host');
+    host.innerHTML =
+      '<div class="vine-done-card"><div class="glyph">🌿</div>' +
+      '<p class="assertion-plain" style="margin:0 0 1rem;">Remain in me, and I in you.</p>' +
+      '<button class="gate-btn" id="vine-continue-btn">' + (wasAlready ? 'Return to the field' : "Continue to today's field") + '</button>' +
+      '<div style="margin-top:0.6rem;"><button class="gate-btn soft" id="vine-again-btn">Walk it again</button></div>' +
+      '</div>';
+    document.getElementById('vine-continue-btn').addEventListener('click', () => showView('today'));
+    document.getElementById('vine-again-btn').addEventListener('click', startVine);
+  }
+
+  // ===== TODAY (the Field) =====
+  function fieldSourceItem(sourceType, refId) {
+    if (sourceType === 'thorn') return data.takeHeart.find(t => t.id === refId);
+    return data.sowing.seeds.find(s => s.id === refId);
+  }
+
+  function renderToday() {
+    document.getElementById('today-sub').textContent = new Date().toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric' });
+    const list = document.getElementById('today-field-list');
+    const items = data.todayField.items;
+    if (!items.length) {
+      list.innerHTML = '<div class="empty-note">Nothing drawn yet. Choose one or two troubles, one or two seeds — four or fewer.</div>';
+    } else {
+      list.innerHTML = items.map(it => {
+        const src = fieldSourceItem(it.sourceType, it.refId);
+        if (!src) return '';
+        const text = it.sourceType === 'thorn' ? src.trouble : src.text;
+        const holding = it.sourceType === 'thorn' ? src.holding : '';
+        const done = !!src.done;
+        return '<div class="item-card' + (done ? ' done' : '') + '">' +
+          '<div class="item-body">' +
+          '<div class="item-text">' + escapeHtml(text) + '</div>' +
+          (holding ? '<div class="item-holding">' + escapeHtml(holding) + '</div>' : '') +
+          '<div class="item-meta">' + (it.sourceType === 'thorn' ? 'take heart' : 'sowing') + '</div>' +
+          '</div>' +
+          '<div class="item-actions">' +
+          '<button class="icon-mini done-btn' + (done ? ' checked' : '') + '" data-field-done="' + it.id + '">✓</button>' +
+          '<button class="icon-mini" data-field-remove="' + it.id + '">✕</button>' +
+          '</div></div>';
+      }).join('');
+    }
+    const note = document.getElementById('today-field-note');
+    if (items.length > 4) { note.textContent = 'More than four today — no rule broken, just notice it.'; note.classList.add('over'); }
+    else { note.textContent = ''; note.classList.remove('over'); }
+
+    list.querySelectorAll('[data-field-done]').forEach(b => b.addEventListener('click', () => toggleFieldItemDone(b.dataset.fieldDone)));
+    list.querySelectorAll('[data-field-remove]').forEach(b => b.addEventListener('click', () => removeFieldItem(b.dataset.fieldRemove)));
+
+    renderDrawTray();
+    const tk = todayKey();
+    document.getElementById('fruit-note').value = (data.dayLog[tk] && data.dayLog[tk].fruitNote) || '';
+  }
+
+  function toggleFieldItemDone(fieldId) {
+    const it = data.todayField.items.find(x => x.id === fieldId);
+    if (!it) return;
+    const src = fieldSourceItem(it.sourceType, it.refId);
+    if (!src) return;
+    src.done = !src.done;
+    src.doneAt = src.done ? Date.now() : null;
+    save(it.sourceType === 'thorn' ? 'takeHeart' : 'sowing');
+    renderToday();
+  }
+
+  function removeFieldItem(fieldId) {
+    data.todayField.items = data.todayField.items.filter(x => x.id !== fieldId);
+    save('todayField');
+    renderToday();
+  }
+
+  function renderDrawTray() {
+    const chipsHost = document.getElementById('draw-tray-chips');
+    const pickedRefIds = new Set(data.todayField.items.map(i => i.sourceType + ':' + i.refId));
+    const thorns = data.takeHeart.filter(t => !t.done);
+    const seeds = data.sowing.seeds.filter(s => !s.done);
+    const chips = [];
+    thorns.forEach(t => chips.push({ sourceType: 'thorn', refId: t.id, text: t.trouble }));
+    seeds.forEach(s => chips.push({ sourceType: 'seed', refId: s.id, text: s.text }));
+    if (!chips.length) { chipsHost.innerHTML = '<div class="empty-note">Nothing waiting — add a thorn or a seed first.</div>'; return; }
+    chipsHost.innerHTML = chips.map(c => {
+      const key = c.sourceType + ':' + c.refId;
+      const picked = pickedRefIds.has(key);
+      return '<button class="tray-chip' + (picked ? ' picked' : '') + '" data-pick-source="' + c.sourceType + '" data-pick-ref="' + c.refId + '">' +
+        '<span class="tc-dot ' + c.sourceType + '"></span>' + escapeHtml(c.text) + '</button>';
+    }).join('');
+    chipsHost.querySelectorAll('[data-pick-source]').forEach(b => b.addEventListener('click', () => {
+      const sourceType = b.dataset.pickSource, refId = b.dataset.pickRef;
+      const key = sourceType + ':' + refId;
+      const exists = data.todayField.items.find(i => i.sourceType + ':' + i.refId === key);
+      if (exists) data.todayField.items = data.todayField.items.filter(i => i !== exists);
+      else data.todayField.items.push({ id: uid(), sourceType, refId });
+      save('todayField');
+      renderToday();
+    }));
+  }
+
+  document.getElementById('draw-field-btn').addEventListener('click', () => {
+    const tray = document.getElementById('draw-tray');
+    tray.style.display = tray.style.display === 'none' ? 'block' : 'none';
+  });
+
+  document.getElementById('release-btn').addEventListener('click', () => {
+    const tk = todayKey();
+    data.dayLog[tk] = data.dayLog[tk] || {};
+    data.dayLog[tk].fruitNote = document.getElementById('fruit-note').value.trim();
+    data.dayLog[tk].releasedAt = Date.now();
+    save('dayLog');
+    document.getElementById('release-btn').textContent = 'Released ✓';
+    setTimeout(() => { document.getElementById('release-btn').textContent = 'Release the day'; }, 1600);
+  });
+
+  // ===== SOWING =====
+  function renderSowing() {
+    const aimChips = document.getElementById('sowing-aim-chips');
+    const aims = data.livingAims.filter(a => !a.pinned && a.status === 'active');
+    if (!aims.length) {
+      aimChips.innerHTML = '<div class="empty-note">No active aims yet — add one in Living Aims.</div>';
+    } else {
+      aimChips.innerHTML = aims.map(a =>
+        '<button class="chip' + (data.sowing.weeklyAimId === a.id ? ' active' : '') + '" data-aim-pick="' + a.id + '">' + escapeHtml(a.text) + '</button>'
+      ).join('');
+      aimChips.querySelectorAll('[data-aim-pick]').forEach(b => b.addEventListener('click', () => {
+        data.sowing.weeklyAimId = data.sowing.weeklyAimId === b.dataset.aimPick ? null : b.dataset.aimPick;
+        save('sowing');
+        renderSowing();
+      }));
+    }
+
+    const list = document.getElementById('sowing-list');
+    const seeds = data.sowing.seeds.slice().sort((a, b) => (a.done === b.done ? b.createdAt - a.createdAt : a.done ? 1 : -1));
+    if (!seeds.length) { list.innerHTML = '<div class="empty-note">No seeds yet. One to three, small enough to do in union with Him.</div>'; return; }
+    list.innerHTML = seeds.map(s => {
+      const aim = data.livingAims.find(a => a.id === s.aimId);
+      return '<div class="item-card' + (s.done ? ' done' : '') + '">' +
+        '<div class="item-body"><div class="item-text">' + escapeHtml(s.text) + '</div>' +
+        (aim ? '<div class="item-meta">' + escapeHtml(aim.text.slice(0, 40)) + '</div>' : '') +
+        '</div>' +
+        '<div class="item-actions">' +
+        '<button class="icon-mini done-btn' + (s.done ? ' checked' : '') + '" data-seed-done="' + s.id + '">✓</button>' +
+        '<button class="icon-mini" data-seed-del="' + s.id + '">✕</button>' +
+        '</div></div>';
+    }).join('');
+    list.querySelectorAll('[data-seed-done]').forEach(b => b.addEventListener('click', () => {
+      const s = data.sowing.seeds.find(x => x.id === b.dataset.seedDone);
+      s.done = !s.done; s.doneAt = s.done ? Date.now() : null;
+      save('sowing'); renderSowing();
+    }));
+    list.querySelectorAll('[data-seed-del]').forEach(b => b.addEventListener('click', () => {
+      data.sowing.seeds = data.sowing.seeds.filter(x => x.id !== b.dataset.seedDel);
+      data.todayField.items = data.todayField.items.filter(i => !(i.sourceType === 'seed' && i.refId === b.dataset.seedDel));
+      save('sowing'); save('todayField'); renderSowing();
+    }));
+  }
+
+  document.getElementById('seed-add-btn').addEventListener('click', () => {
+    const input = document.getElementById('seed-text');
+    const text = input.value.trim();
+    if (!text) return;
+    data.sowing.seeds.push({ id: uid(), text, aimId: data.sowing.weeklyAimId, done: false, createdAt: Date.now() });
+    save('sowing');
+    input.value = '';
+    renderSowing();
+  });
+
+  // ===== TAKE HEART =====
+  function renderTakeHeart() {
+    const list = document.getElementById('takeheart-list');
+    const thorns = data.takeHeart;
+    if (!thorns.length) { list.innerHTML = '<div class="empty-note">No thorns right now.</div>'; return; }
+    list.innerHTML = thorns.map((t, i) => {
+      return '<div class="item-card' + (t.done ? ' done' : '') + '">' +
+        '<div class="item-body"><div class="item-text">' + escapeHtml(t.trouble) + '</div>' +
+        '<div class="item-holding">' + escapeHtml(t.holding) + '</div>' +
+        '</div>' +
+        '<div class="item-actions">' +
+        '<button class="icon-mini done-btn' + (t.done ? ' checked' : '') + '" data-thorn-done="' + t.id + '">✓</button>' +
+        (i > 0 ? '<button class="icon-mini" data-thorn-up="' + t.id + '">↑</button>' : '') +
+        (i < thorns.length - 1 ? '<button class="icon-mini" data-thorn-down="' + t.id + '">↓</button>' : '') +
+        '<button class="icon-mini" data-thorn-del="' + t.id + '">✕</button>' +
+        '</div></div>';
+    }).join('');
+    list.querySelectorAll('[data-thorn-done]').forEach(b => b.addEventListener('click', () => {
+      const t = data.takeHeart.find(x => x.id === b.dataset.thornDone);
+      t.done = !t.done; t.doneAt = t.done ? Date.now() : null;
+      save('takeHeart'); renderTakeHeart();
+    }));
+    list.querySelectorAll('[data-thorn-del]').forEach(b => b.addEventListener('click', () => {
+      data.takeHeart = data.takeHeart.filter(x => x.id !== b.dataset.thornDel);
+      data.todayField.items = data.todayField.items.filter(i => !(i.sourceType === 'thorn' && i.refId === b.dataset.thornDel));
+      save('takeHeart'); save('todayField'); renderTakeHeart();
+    }));
+    list.querySelectorAll('[data-thorn-up]').forEach(b => b.addEventListener('click', () => moveThorn(b.dataset.thornUp, -1)));
+    list.querySelectorAll('[data-thorn-down]').forEach(b => b.addEventListener('click', () => moveThorn(b.dataset.thornDown, 1)));
+  }
+
+  function moveThorn(id, dir) {
+    const i = data.takeHeart.findIndex(x => x.id === id);
+    const j = i + dir;
+    if (i < 0 || j < 0 || j >= data.takeHeart.length) return;
+    const tmp = data.takeHeart[i]; data.takeHeart[i] = data.takeHeart[j]; data.takeHeart[j] = tmp;
+    save('takeHeart'); renderTakeHeart();
+  }
+
+  function checkThornForm() {
+    const trouble = document.getElementById('thorn-text').value.trim();
+    const holding = document.getElementById('thorn-holding').value.trim();
+    document.getElementById('thorn-add-btn').disabled = !(trouble && holding);
+  }
+  document.getElementById('thorn-text').addEventListener('input', checkThornForm);
+  document.getElementById('thorn-holding').addEventListener('input', checkThornForm);
+  document.getElementById('thorn-add-btn').addEventListener('click', () => {
+    const troubleEl = document.getElementById('thorn-text'), holdingEl = document.getElementById('thorn-holding');
+    const trouble = troubleEl.value.trim(), holding = holdingEl.value.trim();
+    if (!trouble || !holding) return;
+    data.takeHeart.push({ id: uid(), trouble, holding, done: false, createdAt: Date.now() });
+    save('takeHeart');
+    troubleEl.value = ''; holdingEl.value = '';
+    checkThornForm();
+    renderTakeHeart();
+  });
+
+  // ===== LIVING AIMS =====
+  function renderAims() {
+    const list = document.getElementById('aims-list');
+    list.innerHTML = data.livingAims.map(a => {
+      const statusLabel = a.pinned ? 'first aim' : a.status;
+      return '<div class="item-card">' +
+        '<div class="item-body"><div class="item-text">' + escapeHtml(a.text) + '</div>' +
+        '<div class="item-meta">' + escapeHtml(statusLabel) + '</div>' +
+        '</div>' +
+        (a.pinned ? '' :
+          '<div class="item-actions">' +
+          '<button class="icon-mini" data-aim-toggle="' + a.id + '">' + (a.status === 'active' ? '⏸' : '▶') + '</button>' +
+          '<button class="icon-mini" data-aim-del="' + a.id + '">✕</button>' +
+          '</div>') +
+        '</div>';
+    }).join('');
+    list.querySelectorAll('[data-aim-toggle]').forEach(b => b.addEventListener('click', () => {
+      const a = data.livingAims.find(x => x.id === b.dataset.aimToggle);
+      a.status = a.status === 'active' ? 'resting' : 'active';
+      save('livingAims'); renderAims();
+    }));
+    list.querySelectorAll('[data-aim-del]').forEach(b => b.addEventListener('click', () => {
+      data.livingAims = data.livingAims.filter(x => x.id !== b.dataset.aimDel);
+      save('livingAims'); renderAims();
+    }));
+  }
+
+  document.getElementById('aim-add-btn').addEventListener('click', () => {
+    const input = document.getElementById('aim-text');
+    const text = input.value.trim();
+    if (!text) return;
+    data.livingAims.push({ id: uid(), text, pinned: false, status: 'active', createdAt: Date.now() });
+    save('livingAims');
+    input.value = '';
+    renderAims();
+  });
+
+  // ===== REST =====
+  function renderRest() {
+    const list = document.getElementById('rest-list');
+    if (!data.rest.length) { list.innerHTML = '<div class="empty-note">Nothing parked here. That\'s fine.</div>'; return; }
+    list.innerHTML = data.rest.slice().sort((a, b) => b.createdAt - a.createdAt).map(r =>
+      '<div class="item-card"><div class="item-body"><div class="item-text">' + escapeHtml(r.text) + '</div></div>' +
+      '<div class="item-actions"><button class="icon-mini" data-rest-del="' + r.id + '">✕</button></div></div>'
+    ).join('');
+    list.querySelectorAll('[data-rest-del]').forEach(b => b.addEventListener('click', () => {
+      data.rest = data.rest.filter(x => x.id !== b.dataset.restDel);
+      save('rest'); renderRest();
+    }));
+  }
+
+  document.getElementById('rest-add-btn').addEventListener('click', () => {
+    const input = document.getElementById('rest-text');
+    const text = input.value.trim();
+    if (!text) return;
+    data.rest.push({ id: uid(), text, createdAt: Date.now() });
+    save('rest');
+    input.value = '';
+    renderRest();
+  });
+
+  // ===== SETTINGS extras (backup) =====
+  function renderSettingsExtras() { renderStreakPill(); }
+
+  document.getElementById('export-btn').addEventListener('click', () => {
+    const payload = { vine: data.vine, livingAims: data.livingAims, sowing: data.sowing, takeHeart: data.takeHeart, rest: data.rest, dayLog: data.dayLog, exportedAt: new Date().toISOString() };
+    const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = 'abidingflow-backup-' + todayKey() + '.json';
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  });
+
+  document.getElementById('import-btn').addEventListener('click', () => document.getElementById('import-file').click());
+  document.getElementById('import-file').addEventListener('change', e => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      try {
+        const parsed = JSON.parse(reader.result);
+        ['vine', 'livingAims', 'sowing', 'takeHeart', 'rest', 'dayLog'].forEach(k => {
+          if (parsed[k] !== undefined) { data[k] = parsed[k]; save(k); }
+        });
+        ensureDay();
+        renderStreakPill(); enforceGate();
+        showView(currentView);
+        alert('Import complete.');
+      } catch (err) { alert("Couldn't read that file."); }
+    };
+    reader.readAsText(file);
+  });
+
+  // ===== theme toggle =====
+  document.getElementById('theme-toggle').addEventListener('click', () => {
+    const root = document.documentElement;
+    const cur = root.getAttribute('data-theme');
+    if (!cur) {
+      const prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+      root.setAttribute('data-theme', prefersDark ? 'light' : 'dark');
+    } else {
+      root.setAttribute('data-theme', cur === 'dark' ? 'light' : 'dark');
+    }
+    storage.set('theme', root.getAttribute('data-theme'));
+  });
+  (function initTheme() {
+    const t = storage.get('theme');
+    if (t) document.documentElement.setAttribute('data-theme', t);
+  })();
+
+  // ===== init =====
+  renderStreakPill();
+  enforceGate();
+  startVine();
+
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => {}));
+  }
+
+  // ===== Cloud Sync engine (mirrors FocusFlowFireBase's pattern) =====
+  let _fbDocRef = null;
+  let _fbApplyingRemote = false;
+  let _fbPushTimer = null;
+
+  (function () {
+    const origSet = storage.set.bind(storage);
+    storage.set = function (k, v) { origSet(k, v); if (!_fbApplyingRemote) queuePush(); };
+  })();
+
+  function syncStatus(msg) { const el = document.getElementById('sync-status'); if (el) el.textContent = msg; }
+
+  function allLocalData() {
+    const out = {};
+    for (let i = 0; i < localStorage.length; i++) {
+      const k = localStorage.key(i);
+      if (k.startsWith('__local_')) continue;
+      out[k] = localStorage.getItem(k);
+    }
+    return out;
+  }
+
+  function queuePush() {
+    if (!_fbDocRef) return;
+    clearTimeout(_fbPushTimer);
+    _fbPushTimer = setTimeout(() => {
+      _fbDocRef.set({ data: allLocalData(), updatedAt: Date.now() })
+        .then(() => syncStatus('Synced ✓ ' + new Date().toLocaleTimeString()))
+        .catch(e => syncStatus('Sync error: ' + e.message));
+    }, 800);
+  }
+
+  function applyRemote(remote) {
+    if (!remote) return;
+    const active = document.activeElement;
+    const isTextInput = active && (active.tagName === 'TEXTAREA' || active.tagName === 'INPUT');
+    _fbApplyingRemote = true;
+    let changed = false;
+    Object.keys(remote).forEach(k => {
+      if (k.startsWith('__local_')) return;
+      if (localStorage.getItem(k) !== remote[k]) changed = true;
+      localStorage.setItem(k, remote[k]);
+    });
+    _fbApplyingRemote = false;
+    if (changed && !isTextInput) {
+      data = loadAll();
+      ensureDay();
+      renderStreakPill();
+      enforceGate();
+      showView(currentView);
+    }
+  }
+
+  function syncSignIn() {
+    if (!(window.firebase && firebase.apps.length)) return alert('Sync is not configured yet — add your Firebase config in index.html.');
+    const provider = new firebase.auth.GoogleAuthProvider();
+    firebase.auth().signInWithPopup(provider).catch(e => {
+      if (e.code === 'auth/popup-blocked' || e.code === 'auth/cancelled-popup-request' || e.code === 'auth/operation-not-supported-in-this-environment')
+        firebase.auth().signInWithRedirect(provider);
+      else syncStatus('Sign-in error: ' + e.message);
+    });
+  }
+  function syncSignOut() { if (window.firebase && firebase.apps.length) firebase.auth().signOut(); }
+
+  document.getElementById('sync-signin').addEventListener('click', syncSignIn);
+  document.getElementById('sync-signout').addEventListener('click', syncSignOut);
+
+  (function initSync() {
+    if (!window.firebase || !FIREBASE_CONFIG.apiKey) { syncStatus('Sync not configured — see FIREBASE-SETUP.md'); return; }
+    firebase.initializeApp(FIREBASE_CONFIG);
+    const auth = firebase.auth();
+    const db = firebase.firestore();
+    firebase.firestore.setLogLevel('error');
+    try {
+      db.settings({ cache: firebase.firestore.persistentLocalCache({ tabManager: firebase.firestore.persistentMultipleTabManager() }) });
+    } catch (e) {
+      try { db.enablePersistence({ synchronizeTabs: true }); } catch (_) {}
+    }
+    syncStatus('Not signed in');
+    auth.onAuthStateChanged(user => {
+      document.getElementById('sync-signin').style.display = user ? 'none' : '';
+      document.getElementById('sync-signout').style.display = user ? '' : 'none';
+      if (!user) { _fbDocRef = null; syncStatus('Not signed in'); return; }
+      syncStatus('Signed in as ' + (user.email || user.uid));
+      _fbDocRef = db.collection('users').doc(user.uid);
+      let first = true;
+      _fbDocRef.onSnapshot(snap => {
+        const remote = snap.exists ? (snap.data().data || {}) : null;
+        if (first) {
+          first = false;
+          if (remote) applyRemote(remote);
+          else queuePush();
+          return;
+        }
+        if (remote) applyRemote(remote);
+      }, e => syncStatus('Sync error: ' + e.message));
+    });
+  })();
+
+})();
+</script>
+</body>
+</html>
