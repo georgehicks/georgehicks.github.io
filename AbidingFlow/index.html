@@ -309,9 +309,11 @@
     <div class="section-label">This week's aim</div>
     <div class="chip-row" id="sowing-aim-chips"></div>
     <div class="add-form">
-      <label for="seed-text">Next seed</label>
-      <input id="seed-text" type="text" placeholder="The next plank. The next row." />
-      <button class="add-btn" id="seed-add-btn">Add seed</button>
+      <label for="seed-text">The next seed</label>
+      <input id="seed-text" type="text" placeholder="The next small, faithful step" />
+      <label for="seed-root">Root — why this is Yours to sow</label>
+      <input id="seed-root" type="text" placeholder="Invitation, not obligation. I don't own the outcome." />
+      <button class="add-btn" id="seed-add-btn" disabled>Add seed</button>
     </div>
     <div class="section-label">Seeds</div>
     <div id="sowing-list"></div>
@@ -383,6 +385,12 @@
     <input type="file" id="import-file" accept="application/json" style="display:none;" />
     <div class="section-label">Vine streak</div>
     <div class="tip-card" id="streak-detail"></div>
+    <div class="section-label">App version</div>
+    <div class="settings-row">
+      <span id="app-version-label"></span>
+    </div>
+    <button class="backup-btn" id="reload-app-btn">Check for updates &amp; reload</button>
+    <div id="reload-status" style="font-size:0.76rem; color:var(--ink-muted); margin-top:0.2rem;"></div>
   </div>
 
   <div class="bottom-dock">
@@ -431,6 +439,10 @@
     messagingSenderId: "735380295401",
     appId: "1:735380295401:web:08bd07e9ce19a74c8b2a78"
   };
+
+  // Keep this in sync with the CACHE suffix in sw.js — shown in Settings so
+  // a stale install is easy to spot, and "Check for updates" below busts it.
+  const APP_VERSION = 'v2';
 
   // ===== storage =====
   const storage = {
@@ -667,7 +679,7 @@
         const src = fieldSourceItem(it.sourceType, it.refId);
         if (!src) return '';
         const text = it.sourceType === 'trouble' ? src.trouble : src.text;
-        const holding = it.sourceType === 'trouble' ? src.holding : '';
+        const holding = it.sourceType === 'trouble' ? src.holding : src.root;
         const done = !!src.done;
         return '<div class="item-card' + (done ? ' done' : '') + '">' +
           '<div class="item-body">' +
@@ -934,6 +946,7 @@
       const aim = data.livingAims.find(a => a.id === s.aimId);
       return '<div class="item-card' + (s.done ? ' done' : '') + '">' +
         '<div class="item-body"><div class="item-text">' + escapeHtml(s.text) + '</div>' +
+        (s.root ? '<div class="item-holding">' + escapeHtml(s.root) + '</div>' : '') +
         (aim ? '<div class="item-meta">' + escapeHtml(aim.text.slice(0, 40)) + '</div>' : '') +
         '</div>' +
         '<div class="item-actions">' +
@@ -953,13 +966,21 @@
     }));
   }
 
+  function checkSeedForm() {
+    const text = document.getElementById('seed-text').value.trim();
+    const root = document.getElementById('seed-root').value.trim();
+    document.getElementById('seed-add-btn').disabled = !(text && root);
+  }
+  document.getElementById('seed-text').addEventListener('input', checkSeedForm);
+  document.getElementById('seed-root').addEventListener('input', checkSeedForm);
   document.getElementById('seed-add-btn').addEventListener('click', () => {
-    const input = document.getElementById('seed-text');
-    const text = input.value.trim();
-    if (!text) return;
-    data.sowing.seeds.push({ id: uid(), text, aimId: data.sowing.weeklyAimId, done: false, createdAt: Date.now() });
+    const textEl = document.getElementById('seed-text'), rootEl = document.getElementById('seed-root');
+    const text = textEl.value.trim(), root = rootEl.value.trim();
+    if (!text || !root) return;
+    data.sowing.seeds.push({ id: uid(), text, root, aimId: data.sowing.weeklyAimId, done: false, createdAt: Date.now() });
     save('sowing');
-    input.value = '';
+    textEl.value = ''; rootEl.value = '';
+    checkSeedForm();
     renderSowing();
   });
 
@@ -1088,7 +1109,25 @@
     document.getElementById('day-end-hour').value = data.dayWindow.endHour;
     document.getElementById('ics-url').value = data.icsSettings.urls || '';
     document.getElementById('ics-proxy').value = data.icsSettings.proxy || '';
+    document.getElementById('app-version-label').textContent = 'AbidingFlow ' + APP_VERSION;
   }
+
+  document.getElementById('reload-app-btn').addEventListener('click', async () => {
+    const status = document.getElementById('reload-status');
+    status.textContent = 'Clearing cache…';
+    try {
+      if ('caches' in window) {
+        const keys = await caches.keys();
+        await Promise.all(keys.filter(k => k.startsWith('abidingflow-')).map(k => caches.delete(k)));
+      }
+      if ('serviceWorker' in navigator) {
+        const regs = await navigator.serviceWorker.getRegistrations();
+        await Promise.all(regs.map(r => r.unregister()));
+      }
+    } catch (e) { /* fall through to reload regardless */ }
+    status.textContent = 'Reloading…';
+    location.reload();
+  });
 
   document.getElementById('day-start-hour').addEventListener('change', e => {
     data.dayWindow.startHour = Math.max(0, Math.min(23, parseInt(e.target.value) || 0));
