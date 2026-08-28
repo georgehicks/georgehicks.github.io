@@ -184,7 +184,7 @@
     display: flex; align-items: center; gap: 0.35rem;
   }
   .tray-chip .tc-dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
-  .tray-chip .tc-dot.thorn { background: var(--rust); }
+  .tray-chip .tc-dot.trouble { background: var(--rust); }
   .tray-chip .tc-dot.seed { background: var(--teal); }
   .tray-chip.picked { border-color: var(--brass); color: var(--ink); background: color-mix(in srgb, var(--brass) 14%, var(--surface-2)); }
   .draw-btn { background: none; border: 1px dashed var(--border); color: var(--ink-muted); border-radius: 10px; padding: 0.55rem 0.8rem; font-size: 0.85rem; width: 100%; text-align: center; }
@@ -243,7 +243,7 @@
     <div class="field-note" id="today-field-note"></div>
     <button class="draw-btn" id="draw-field-btn">+ Draw from the field</button>
     <div class="tray" id="draw-tray" style="display:none;">
-      <div class="section-label" style="margin-top:0;">Undone thorns &amp; seeds — tap to add</div>
+      <div class="section-label" style="margin-top:0;">Undone troubles &amp; seeds — tap to add</div>
       <div class="tray-chips" id="draw-tray-chips"></div>
     </div>
     <div class="section-label">Evening</div>
@@ -273,13 +273,13 @@
   <div class="view" data-view="takeheart">
     <p class="greet-sub">A working list, read top down.</p>
     <h1 class="greet">Take Heart</h1>
-    <div class="tip-card"><strong>Trouble is real. Take heart.</strong> He has overcome. Do this with Him, as unto the Lord, in love. I belong. I do not handle thorns as an orphan. Apart from the Vine I can do nothing. With Him this is only a thorn, not lord.</div>
+    <div class="tip-card"><strong>Trouble is real. Take heart.</strong> He has overcome. Do this with Him, as unto the Lord, in love. I belong. I do not handle trouble as an orphan. Apart from the Vine I can do nothing. With Him this is only trouble, not lord.</div>
     <div class="add-form">
-      <label for="thorn-text">The trouble</label>
-      <input id="thorn-text" type="text" placeholder="Taxes, a leak, a hard call…" />
-      <label for="thorn-holding">How you'll hold it</label>
-      <input id="thorn-holding" type="text" placeholder="A leak, not a verdict. I am not condemned by it." />
-      <button class="add-btn" id="thorn-add-btn" disabled>Add thorn</button>
+      <label for="trouble-text">The trouble</label>
+      <input id="trouble-text" type="text" placeholder="Taxes, a leak, a hard call…" />
+      <label for="trouble-holding">How you'll hold it</label>
+      <input id="trouble-holding" type="text" placeholder="A leak, not a verdict. I am not condemned by it." />
+      <button class="add-btn" id="trouble-add-btn" disabled>Add trouble</button>
     </div>
     <div id="takeheart-list"></div>
   </div>
@@ -347,12 +347,16 @@
 (function () {
   'use strict';
 
-  // ===== Firebase config — paste your project's web config here (see FIREBASE-SETUP.md) =====
+  // ===== Firebase config — shared with FocusFlow (Sync), same project =====
+  // AbidingFlow writes to its own 'abidingflow_users' collection (see FIREBASE-SETUP.md)
+  // so the two apps' data never collide even though they share a project.
   const FIREBASE_CONFIG = {
-    apiKey: "",
-    authDomain: "",
-    projectId: "",
-    appId: ""
+    apiKey: "AIzaSyCE28NOfXara7ARw9RIUvVHdWJoebxU-i8",
+    authDomain: "focusflowgeorge.firebaseapp.com",
+    projectId: "focusflowgeorge",
+    storageBucket: "focusflowgeorge.firebasestorage.app",
+    messagingSenderId: "735380295401",
+    appId: "1:735380295401:web:08bd07e9ce19a74c8b2a78"
   };
 
   // ===== storage =====
@@ -547,7 +551,7 @@
 
   // ===== TODAY (the Field) =====
   function fieldSourceItem(sourceType, refId) {
-    if (sourceType === 'thorn') return data.takeHeart.find(t => t.id === refId);
+    if (sourceType === 'trouble') return data.takeHeart.find(t => t.id === refId);
     return data.sowing.seeds.find(s => s.id === refId);
   }
 
@@ -561,14 +565,14 @@
       list.innerHTML = items.map(it => {
         const src = fieldSourceItem(it.sourceType, it.refId);
         if (!src) return '';
-        const text = it.sourceType === 'thorn' ? src.trouble : src.text;
-        const holding = it.sourceType === 'thorn' ? src.holding : '';
+        const text = it.sourceType === 'trouble' ? src.trouble : src.text;
+        const holding = it.sourceType === 'trouble' ? src.holding : '';
         const done = !!src.done;
         return '<div class="item-card' + (done ? ' done' : '') + '">' +
           '<div class="item-body">' +
           '<div class="item-text">' + escapeHtml(text) + '</div>' +
           (holding ? '<div class="item-holding">' + escapeHtml(holding) + '</div>' : '') +
-          '<div class="item-meta">' + (it.sourceType === 'thorn' ? 'take heart' : 'sowing') + '</div>' +
+          '<div class="item-meta">' + (it.sourceType === 'trouble' ? 'take heart' : 'sowing') + '</div>' +
           '</div>' +
           '<div class="item-actions">' +
           '<button class="icon-mini done-btn' + (done ? ' checked' : '') + '" data-field-done="' + it.id + '">✓</button>' +
@@ -595,7 +599,7 @@
     if (!src) return;
     src.done = !src.done;
     src.doneAt = src.done ? Date.now() : null;
-    save(it.sourceType === 'thorn' ? 'takeHeart' : 'sowing');
+    save(it.sourceType === 'trouble' ? 'takeHeart' : 'sowing');
     renderToday();
   }
 
@@ -608,12 +612,12 @@
   function renderDrawTray() {
     const chipsHost = document.getElementById('draw-tray-chips');
     const pickedRefIds = new Set(data.todayField.items.map(i => i.sourceType + ':' + i.refId));
-    const thorns = data.takeHeart.filter(t => !t.done);
+    const troubles = data.takeHeart.filter(t => !t.done);
     const seeds = data.sowing.seeds.filter(s => !s.done);
     const chips = [];
-    thorns.forEach(t => chips.push({ sourceType: 'thorn', refId: t.id, text: t.trouble }));
+    troubles.forEach(t => chips.push({ sourceType: 'trouble', refId: t.id, text: t.trouble }));
     seeds.forEach(s => chips.push({ sourceType: 'seed', refId: s.id, text: s.text }));
-    if (!chips.length) { chipsHost.innerHTML = '<div class="empty-note">Nothing waiting — add a thorn or a seed first.</div>'; return; }
+    if (!chips.length) { chipsHost.innerHTML = '<div class="empty-note">Nothing waiting — add a trouble or a seed first.</div>'; return; }
     chipsHost.innerHTML = chips.map(c => {
       const key = c.sourceType + ':' + c.refId;
       const picked = pickedRefIds.has(key);
@@ -702,35 +706,35 @@
   // ===== TAKE HEART =====
   function renderTakeHeart() {
     const list = document.getElementById('takeheart-list');
-    const thorns = data.takeHeart;
-    if (!thorns.length) { list.innerHTML = '<div class="empty-note">No thorns right now.</div>'; return; }
-    list.innerHTML = thorns.map((t, i) => {
+    const troubles = data.takeHeart;
+    if (!troubles.length) { list.innerHTML = '<div class="empty-note">No trouble right now.</div>'; return; }
+    list.innerHTML = troubles.map((t, i) => {
       return '<div class="item-card' + (t.done ? ' done' : '') + '">' +
         '<div class="item-body"><div class="item-text">' + escapeHtml(t.trouble) + '</div>' +
         '<div class="item-holding">' + escapeHtml(t.holding) + '</div>' +
         '</div>' +
         '<div class="item-actions">' +
-        '<button class="icon-mini done-btn' + (t.done ? ' checked' : '') + '" data-thorn-done="' + t.id + '">✓</button>' +
-        (i > 0 ? '<button class="icon-mini" data-thorn-up="' + t.id + '">↑</button>' : '') +
-        (i < thorns.length - 1 ? '<button class="icon-mini" data-thorn-down="' + t.id + '">↓</button>' : '') +
-        '<button class="icon-mini" data-thorn-del="' + t.id + '">✕</button>' +
+        '<button class="icon-mini done-btn' + (t.done ? ' checked' : '') + '" data-trouble-done="' + t.id + '">✓</button>' +
+        (i > 0 ? '<button class="icon-mini" data-trouble-up="' + t.id + '">↑</button>' : '') +
+        (i < troubles.length - 1 ? '<button class="icon-mini" data-trouble-down="' + t.id + '">↓</button>' : '') +
+        '<button class="icon-mini" data-trouble-del="' + t.id + '">✕</button>' +
         '</div></div>';
     }).join('');
-    list.querySelectorAll('[data-thorn-done]').forEach(b => b.addEventListener('click', () => {
-      const t = data.takeHeart.find(x => x.id === b.dataset.thornDone);
+    list.querySelectorAll('[data-trouble-done]').forEach(b => b.addEventListener('click', () => {
+      const t = data.takeHeart.find(x => x.id === b.dataset.troubleDone);
       t.done = !t.done; t.doneAt = t.done ? Date.now() : null;
       save('takeHeart'); renderTakeHeart();
     }));
-    list.querySelectorAll('[data-thorn-del]').forEach(b => b.addEventListener('click', () => {
-      data.takeHeart = data.takeHeart.filter(x => x.id !== b.dataset.thornDel);
-      data.todayField.items = data.todayField.items.filter(i => !(i.sourceType === 'thorn' && i.refId === b.dataset.thornDel));
+    list.querySelectorAll('[data-trouble-del]').forEach(b => b.addEventListener('click', () => {
+      data.takeHeart = data.takeHeart.filter(x => x.id !== b.dataset.troubleDel);
+      data.todayField.items = data.todayField.items.filter(i => !(i.sourceType === 'trouble' && i.refId === b.dataset.troubleDel));
       save('takeHeart'); save('todayField'); renderTakeHeart();
     }));
-    list.querySelectorAll('[data-thorn-up]').forEach(b => b.addEventListener('click', () => moveThorn(b.dataset.thornUp, -1)));
-    list.querySelectorAll('[data-thorn-down]').forEach(b => b.addEventListener('click', () => moveThorn(b.dataset.thornDown, 1)));
+    list.querySelectorAll('[data-trouble-up]').forEach(b => b.addEventListener('click', () => moveTrouble(b.dataset.troubleUp, -1)));
+    list.querySelectorAll('[data-trouble-down]').forEach(b => b.addEventListener('click', () => moveTrouble(b.dataset.troubleDown, 1)));
   }
 
-  function moveThorn(id, dir) {
+  function moveTrouble(id, dir) {
     const i = data.takeHeart.findIndex(x => x.id === id);
     const j = i + dir;
     if (i < 0 || j < 0 || j >= data.takeHeart.length) return;
@@ -738,21 +742,21 @@
     save('takeHeart'); renderTakeHeart();
   }
 
-  function checkThornForm() {
-    const trouble = document.getElementById('thorn-text').value.trim();
-    const holding = document.getElementById('thorn-holding').value.trim();
-    document.getElementById('thorn-add-btn').disabled = !(trouble && holding);
+  function checkTroubleForm() {
+    const trouble = document.getElementById('trouble-text').value.trim();
+    const holding = document.getElementById('trouble-holding').value.trim();
+    document.getElementById('trouble-add-btn').disabled = !(trouble && holding);
   }
-  document.getElementById('thorn-text').addEventListener('input', checkThornForm);
-  document.getElementById('thorn-holding').addEventListener('input', checkThornForm);
-  document.getElementById('thorn-add-btn').addEventListener('click', () => {
-    const troubleEl = document.getElementById('thorn-text'), holdingEl = document.getElementById('thorn-holding');
+  document.getElementById('trouble-text').addEventListener('input', checkTroubleForm);
+  document.getElementById('trouble-holding').addEventListener('input', checkTroubleForm);
+  document.getElementById('trouble-add-btn').addEventListener('click', () => {
+    const troubleEl = document.getElementById('trouble-text'), holdingEl = document.getElementById('trouble-holding');
     const trouble = troubleEl.value.trim(), holding = holdingEl.value.trim();
     if (!trouble || !holding) return;
     data.takeHeart.push({ id: uid(), trouble, holding, done: false, createdAt: Date.now() });
     save('takeHeart');
     troubleEl.value = ''; holdingEl.value = '';
-    checkThornForm();
+    checkTroubleForm();
     renderTakeHeart();
   });
 
@@ -960,7 +964,7 @@
       document.getElementById('sync-signout').style.display = user ? '' : 'none';
       if (!user) { _fbDocRef = null; syncStatus('Not signed in'); return; }
       syncStatus('Signed in as ' + (user.email || user.uid));
-      _fbDocRef = db.collection('users').doc(user.uid);
+      _fbDocRef = db.collection('abidingflow_users').doc(user.uid);
       let first = true;
       _fbDocRef.onSnapshot(snap => {
         const remote = snap.exists ? (snap.data().data || {}) : null;
