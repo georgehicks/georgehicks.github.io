@@ -165,7 +165,7 @@
   .step-row.done .step-check { border-color: var(--teal); }
   .step-text { font-size: 0.82rem; color: var(--ink); flex: 1; min-width: 0; }
   .step-row.done .step-text { text-decoration: line-through; color: var(--ink-faint); }
-  .step-del { background: none; border: none; color: var(--ink-faint); font-size: 0.7rem; flex-shrink: 0; padding: 0 0.2rem; }
+  .step-del, .step-move { background: none; border: none; color: var(--ink-faint); font-size: 0.7rem; flex-shrink: 0; padding: 0 0.2rem; }
   .step-add-input {
     width: 100%; background: none; border: none; border-bottom: 1px dashed var(--border);
     font-size: 0.82rem; color: var(--ink); padding: 0.25rem 0.05rem; margin-top: 0.1rem;
@@ -459,7 +459,7 @@
 
   // Keep this in sync with the CACHE suffix in sw.js — shown in Settings so
   // a stale install is easy to spot, and "Check for updates" below busts it.
-  const APP_VERSION = 'v3';
+  const APP_VERSION = 'v4';
 
   // ===== storage =====
   const storage = {
@@ -693,16 +693,34 @@
   function stepsHtml(ownerType, ownerId) {
     const steps = ownerType ? stepsFor(ownerType, ownerId) : quickSteps();
     let html = '<div class="item-steps"><div class="item-steps-label">Faithful Steps</div>';
-    steps.forEach(st => {
+    steps.forEach((st, i) => {
       html += '<div class="step-row' + (st.done ? ' done' : '') + '">' +
         '<button class="step-check" data-step-toggle="' + st.id + '">' + (st.done ? '✓' : '') + '</button>' +
         '<span class="step-text">' + escapeHtml(st.text) + '</span>' +
+        (i > 0 ? '<button class="step-move" data-step-up="' + st.id + '">↑</button>' : '') +
+        (i < steps.length - 1 ? '<button class="step-move" data-step-down="' + st.id + '">↓</button>' : '') +
         '<button class="step-del" data-step-del="' + st.id + '">✕</button>' +
         '</div>';
     });
     html += '<input class="step-add-input" placeholder="+ add a step" data-step-add-type="' + (ownerType || '') + '" data-step-add-id="' + (ownerId || '') + '" />';
     html += '</div>';
     return html;
+  }
+
+  function moveStep(id, dir) {
+    const st = data.faithfulSteps.find(s => s.id === id);
+    if (!st) return;
+    const group = st.ownerType ? stepsFor(st.ownerType, st.ownerId) : quickSteps();
+    const gi = group.findIndex(s => s.id === id);
+    const gj = gi + dir;
+    if (gi < 0 || gj < 0 || gj >= group.length) return;
+    const other = group[gj];
+    const ai = data.faithfulSteps.findIndex(s => s.id === st.id);
+    const aj = data.faithfulSteps.findIndex(s => s.id === other.id);
+    const tmp = data.faithfulSteps[ai];
+    data.faithfulSteps[ai] = data.faithfulSteps[aj];
+    data.faithfulSteps[aj] = tmp;
+    save('faithfulSteps');
   }
 
   function wireStepsEvents(container, rerender) {
@@ -712,6 +730,8 @@
       save('faithfulSteps');
       rerender();
     }));
+    container.querySelectorAll('[data-step-up]').forEach(b => b.addEventListener('click', () => { moveStep(b.dataset.stepUp, -1); rerender(); }));
+    container.querySelectorAll('[data-step-down]').forEach(b => b.addEventListener('click', () => { moveStep(b.dataset.stepDown, 1); rerender(); }));
     container.querySelectorAll('[data-step-del]').forEach(b => b.addEventListener('click', () => {
       data.faithfulSteps = data.faithfulSteps.filter(s => s.id !== b.dataset.stepDel);
       save('faithfulSteps');
