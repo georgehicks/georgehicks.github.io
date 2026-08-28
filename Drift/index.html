@@ -215,7 +215,7 @@
       <button class="preset-btn" data-preset="values" type="button">Values</button>
     </div>
     <textarea id="words-textarea" class="words-textarea" placeholder="One word per line" spellcheck="false"></textarea>
-    <p class="modal-hint">One word per line (or comma-separated). Up to 24.</p>
+    <p class="modal-hint">One word per line (or comma-separated). Up to 30.</p>
     <div class="modal-actions">
       <button class="btn-secondary" id="cancel-btn" type="button">Cancel</button>
       <button class="btn-primary" id="save-btn" type="button">Save &amp; drift</button>
@@ -235,7 +235,7 @@
     emotions: ['Joyful','Angry','Grateful','Sad','Hopeful','Afraid','Calm','Ashamed','Peaceful','Guilty','Excited','Lonely','Loved','Overwhelmed','Content','Resentful'],
     needs: ['Connection','Autonomy','Rest','Recognition','Clarity','Trust','Space','Purpose','Belonging','Control','Safety','Growth'],
     values: ['Honesty','Courage','Balance','Freedom','Integrity','Creativity','Stability','Justice','Compassion','Loyalty','Ambition','Humility'],
-    identity: ['Chosen','Lost','Beloved','Condemned','Forgiven','Unworthy','Redeemed','Free','Rejected','Righteous','Orphaned','Powerful','Convicted','Strong','Jealous','Unforgiveness','Worry','Doubt','Fear','Shame','Despair','Pride','Divided','Hopeful','Whole']
+    identity: ['Chosen','Lost','Beloved','Condemned','Forgiven','Unworthy','Redeemed','Free','Rejected','Righteous','Orphaned','Powerful','Convicted','Strong','Jealous','Unforgiveness','Worry','Doubt','Fear','Shame','Despair','Pride','Divided','Hopeful','Whole','Deceived','Hate']
   };
 
   var INSIGHTS = {
@@ -433,7 +433,13 @@
       light: "Undivided doesn't mean perfect — it means one direction, kept coming back to God." },
     whole: { scripture: { ref: "Mark 5:34", text: "your faith has made you well; go in peace." },
       dark: "\"Whole\" chased through self-sufficiency becomes one more thing to achieve and maintain alone.",
-      light: "Wholeness isn't the absence of brokenness — it's Jesus meeting you in it and calling you healed." }
+      light: "Wholeness isn't the absence of brokenness — it's Jesus meeting you in it and calling you healed." },
+    deceived: { scripture: { ref: "Genesis 3:13", text: "The serpent deceived me, and I ate." },
+      dark: "Deception doesn't feel like a lie while you're inside it — it feels like clarity, like you're finally seeing straight.",
+      light: "Truth isn't just information, it's a Person. Staying close to Jesus is what keeps you from being led astray." },
+    hate: { scripture: { ref: "1 John 4:20", text: "If anyone says, 'I love God,' and hates his brother, he is a liar." },
+      dark: "Hate convinces you it's protecting something — but it always ends up destroying the one who carries it.",
+      light: "You can't hate someone made in God's image and stay close to the God whose image they carry." }
   };
 
   var HINT_DEFAULT = 'Notice which word pulls your attention. Tap it.';
@@ -701,7 +707,7 @@
         out.push(w);
       });
     });
-    return out.slice(0, 24);
+    return out.slice(0, 30);
   }
 
   document.getElementById('edit-btn').addEventListener('click', openModal);
