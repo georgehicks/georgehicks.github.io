@@ -532,19 +532,39 @@
   // ===== VINE wizard =====
   const VINE_STEPS = [
     {
-      key: 'sit', tag: 'Step 1 · Sit', cta: "I'm here",
-      plain: 'Set down what you were carrying.'
+      key: 'belong', title: 'I Belong to You', cta: 'I belong to You.', voice: 'The LORD says', ref: 'Isaiah 43:1',
+      scripture: 'Do not fear, for I have redeemed you; I have summoned you by name; you are mine.'
     },
     {
-      key: 'speak', tag: 'Step 2 · Speak the belonging', cta: 'Amen — continue', voice: 'You say',
-      text: 'I am in Christ. I remain. I do not start as an orphan managing a farm. Fan into flame what is already given.'
+      key: 'vine', title: 'The Vine', cta: 'Apart, nothing. In Him, fruit.', voice: 'Jesus says', ref: 'John 15:5',
+      scripture: 'I am the vine; you are the branches. If you remain in me and I in you, you will bear much fruit; apart from me you can do nothing.'
     },
     {
-      key: 'listen', tag: 'Step 3 · Listen', cta: 'Continue', wait: 8, voice: 'Jesus says',
-      text: 'I am the vine; you are the branches. Remain in me, and I in you. Apart from me you can do nothing. Remain in my love. I chose you to go and bear fruit that will last. The water I give will become a spring welling up to eternal life.'
+      key: 'gardener', title: 'The Gardener', cta: 'I am tended, not self-grown.', voice: 'Jesus says', ref: 'John 15:1',
+      scripture: 'I am the true vine, and my Father is the gardener.'
     },
     {
-      key: 'ask', tag: 'Step 4 · Ask', cta: 'Continue to the field', journal: true, voice: 'You, to the Father',
+      key: 'love', title: 'Remain in Love', cta: 'I remain in Your love.', voice: 'Jesus says', ref: 'John 15:9',
+      scripture: 'As the Father has loved me, so have I loved you. Now remain in my love.'
+    },
+    {
+      key: 'chosen', title: 'Chosen for Fruit', cta: 'Chosen first. Fruit follows.', voice: 'Jesus says', ref: 'John 15:16',
+      scripture: 'You did not choose me, but I chose you and appointed you so that you might go and bear fruit — fruit that will last.'
+    },
+    {
+      key: 'water', title: 'Living Water', cta: 'I am supplied, not straining.', voice: 'Jesus says', ref: 'John 4:14',
+      scripture: 'Whoever drinks the water I give them will never thirst. Indeed, the water I give them will become in them a spring of water welling up to eternal life.'
+    },
+    {
+      key: 'rivers', title: 'Rivers Flow', cta: 'Filled first, then it flows.', voice: 'Jesus says', ref: 'John 7:38',
+      scripture: 'Whoever believes in me, as Scripture has said, rivers of living water will flow from within them.'
+    },
+    {
+      key: 'inhim', title: 'In Him', cta: 'I live and move in You.', voice: 'Paul says', ref: 'Acts 17:28',
+      scripture: 'In him we live and move and have our being.'
+    },
+    {
+      key: 'ask', title: 'Ask', cta: 'Continue to the field', journal: true, voice: 'You, to the Father',
       plain: 'Father, what is Yours in this day?'
     }
   ];
@@ -568,10 +588,10 @@
     html += '<div class="exercise-track">' + VINE_STEPS.map((s, i) =>
       '<span class="' + (i < vineStepIndex ? 'done' : (i === vineStepIndex ? 'now' : '')) + '"></span>'
     ).join('') + '</div>';
-    html += '<div class="mode-tag">' + step.tag + '</div>';
+    html += '<div class="mode-tag">Step ' + (vineStepIndex + 1) + ' of ' + VINE_STEPS.length + ' · ' + escapeHtml(step.title) + '</div>';
     html += '<div class="prompt-card">';
-    if (step.voice) html += '<div class="voice-tag">' + escapeHtml(step.voice) + '</div>';
-    if (step.text) html += '<p class="assertion-text">' + escapeHtml(step.text) + '</p>';
+    if (step.voice) html += '<div class="voice-tag">' + escapeHtml(step.voice) + (step.ref ? ' — ' + escapeHtml(step.ref) : '') + '</div>';
+    if (step.scripture) html += '<p class="assertion-text">' + escapeHtml(step.scripture) + '</p>';
     if (step.plain) html += '<p class="assertion-plain">' + escapeHtml(step.plain) + '</p>';
     if (step.journal) html += '<textarea class="vine-journal" id="vine-journal" placeholder="Optional — what surfaces">' + escapeHtml(vineJournalText) + '</textarea>';
     html += '</div>';
