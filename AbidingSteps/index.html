@@ -188,6 +188,20 @@
   .outcome-row-meta { margin-top: 5px; }
   .today-star { background: none; border: none; cursor: pointer; font-size: 1rem; color: var(--text-faint); padding: 0; line-height: 1; }
   .today-star.active { color: var(--accent); }
+  .maybe-toggle {
+    background: none; border: 1px dashed var(--border); color: var(--text-faint); cursor: pointer;
+    font-size: 0.62rem; padding: 0; line-height: 1; width: 16px; height: 16px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+  }
+  .maybe-toggle.active { color: var(--text); border-color: var(--text-dim); border-style: solid; }
+  .maybe-filter-chip { border-style: dashed; }
+  /* maybe = trying it on, not committed — dashed/striped instead of a solid filled bar,
+     and no "behind schedule" red anywhere */
+  .outcome-row.maybe { border-style: dashed; }
+  .outcome-row.maybe .budget-bar {
+    background: repeating-linear-gradient(45deg, var(--accent), var(--accent) 4px, transparent 4px, transparent 8px);
+    opacity: 0.75;
+  }
   .badge { font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-faint); }
   .budget-bar-wrap { height: 5px; background: var(--bg-raised); border-radius: 3px; margin-top: 8px; overflow: hidden; }
   .budget-bar { height: 100%; background: var(--accent); }
@@ -274,6 +288,22 @@
   }
   .breath-caption.fade-out { opacity: 0; }
   .breath-audio-row { display: flex; gap: 8px; justify-content: center; margin-top: 4px; }
+  .breath-duration-row { display: flex; gap: 6px; justify-content: center; margin-top: 10px; }
+  .breath-duration-chip {
+    background: none; border: 1px solid var(--border); color: var(--text-faint); cursor: pointer;
+    border-radius: 999px; padding: 4px 10px; font-size: 0.68rem;
+  }
+  .breath-duration-chip.selected { border-color: var(--abide); color: var(--abide); }
+  /* hyper-subtle by design — no numbers, no countdown, just barely-there progress.
+     "usually need to set a time and then trust the timer" — Watch-style: pick once,
+     then it's invisible-ish, you don't watch it count down */
+  .breath-progress-track {
+    display: none; height: 2px; width: 140px; margin: 12px auto 0; background: var(--border);
+    border-radius: 2px; overflow: hidden; opacity: 0.4;
+  }
+  .breath-progress-track.active { display: block; }
+  .breath-progress-fill { height: 100%; width: 0%; background: var(--abide); transition: width 1s linear; }
+  .breath-progress-fill.done { background: #fff; }
   .breath-audio-btn {
     background: none; border: 1px solid var(--border); color: var(--text-faint);
     border-radius: 999px; padding: 5px 11px; font-size: 0.72rem; cursor: pointer;
@@ -296,6 +326,30 @@
     font-size: 0.74rem; padding: 6px 12px; font-weight: 500;
   }
   .abide-anchor .abide-actions .btn.primary { color: var(--text-dim); border-color: var(--border); }
+
+  /* ===== add/edit outcome modal — a real form, not native dialogs ===== */
+  .modal-overlay {
+    display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.55); z-index: 20;
+    align-items: center; justify-content: center; padding: 20px;
+  }
+  .modal-overlay.show { display: flex; }
+  .modal-card {
+    background: var(--bg-elevated); border: 1px solid var(--border); border-radius: 16px;
+    padding: 20px; width: 100%; max-width: 340px;
+  }
+  .modal-card h3 { margin: 0 0 14px; font-size: 1rem; color: var(--text); }
+  .modal-input {
+    width: 100%; background: var(--bg-raised); border: 1px solid var(--border); color: var(--text);
+    border-radius: 8px; padding: 10px 12px; font-size: 0.9rem; font-family: inherit; margin-bottom: 14px;
+  }
+  .modal-field-label { font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-faint); margin-bottom: 6px; }
+  .modal-toggle-row { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 14px; }
+  .modal-toggle-btn {
+    background: var(--bg-raised); border: 1px solid var(--border); color: var(--text-dim);
+    border-radius: 999px; padding: 6px 12px; font-size: 0.78rem; cursor: pointer;
+  }
+  .modal-toggle-btn.selected { background: var(--accent); color: #10131c; border-color: var(--accent); font-weight: 600; }
+  .modal-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 4px; }
 
   /* ===== tab bar ===== */
   .tabbar {
@@ -407,6 +461,7 @@
         <span class="chip" data-role="Resources">Resources</span>
         <span class="chip" data-role="Reach">Reach</span>
         <span class="chip" data-role="Reality">Reality</span>
+        <span class="chip maybe-filter-chip" data-role="Maybe">Maybe</span>
       </div>
       <div class="role-subtitle" id="roleSubtitle"></div>
       <div id="aheadList"></div>
@@ -446,7 +501,7 @@
 
       <div class="settings-section">
         <h3>Notes</h3>
-        <div class="settings-row"><span>Voice notes (push to record)</span><input type="checkbox" checked></div>
+        <div class="settings-row"><span>Voice notes (push to record)</span><input type="checkbox" id="voiceNotesToggle" checked></div>
       </div>
 
       <div class="settings-section">
@@ -514,6 +569,16 @@
             <button class="breath-audio-btn" id="breathToneBtn" title="Breathing tone">🔉 Tone</button>
             <button class="breath-audio-btn" id="breathVoiceBtn" title="Read scripture aloud">🗣️ Voice</button>
           </div>
+          <div class="breath-duration-row" id="breathDurationRow">
+            <span class="breath-duration-chip selected" data-min="0">Free</span>
+            <span class="breath-duration-chip" data-min="1">1m</span>
+            <span class="breath-duration-chip" data-min="2">2m</span>
+            <span class="breath-duration-chip" data-min="3">3m</span>
+            <span class="breath-duration-chip" data-min="5">5m</span>
+          </div>
+          <div class="breath-progress-track" id="breathProgressTrack">
+            <div class="breath-progress-fill" id="breathProgressFill"></div>
+          </div>
         </div>
       </div>
       <div class="abide-anchor">
@@ -526,6 +591,53 @@
     </section>
 
   </main>
+
+  <!-- a real form, not native prompt()/confirm() — those are unreliable or
+       silently suppressed in installed (standalone) PWAs on iOS -->
+  <div class="modal-overlay" id="outcomeModalOverlay">
+    <div class="modal-card">
+      <h3 id="outcomeModalTitle">New outcome</h3>
+      <input type="text" id="outcomeModalName" class="modal-input" placeholder="Outcome name">
+      <div class="modal-field-label">Type</div>
+      <div class="modal-toggle-row">
+        <button type="button" class="modal-toggle-btn" data-type="Deliverable">Deliverable</button>
+        <button type="button" class="modal-toggle-btn" data-type="Directive">Directive</button>
+      </div>
+      <div class="modal-field-label">Role</div>
+      <div class="modal-toggle-row" id="outcomeModalTagRow">
+        <button type="button" class="modal-toggle-btn" data-tag="Roots">Roots</button>
+        <button type="button" class="modal-toggle-btn" data-tag="Resources">Resources</button>
+        <button type="button" class="modal-toggle-btn" data-tag="Reach">Reach</button>
+        <button type="button" class="modal-toggle-btn" data-tag="Reality">Reality</button>
+      </div>
+      <div class="modal-actions">
+        <button type="button" class="btn" id="outcomeModalCancel">Cancel</button>
+        <button type="button" class="btn primary" id="outcomeModalSave">Save</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal-overlay" id="textModalOverlay">
+    <div class="modal-card">
+      <h3 id="textModalTitle">Add</h3>
+      <input type="text" id="textModalInput" class="modal-input" style="margin-bottom:0;">
+      <div class="modal-actions">
+        <button type="button" class="btn" id="textModalCancel">Cancel</button>
+        <button type="button" class="btn primary" id="textModalSave">Save</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal-overlay" id="confirmModalOverlay">
+    <div class="modal-card">
+      <h3 id="confirmModalTitle">Are you sure?</h3>
+      <p id="confirmModalMessage" style="font-size:0.85rem; color:var(--text-dim); margin:0 0 16px;"></p>
+      <div class="modal-actions">
+        <button type="button" class="btn" id="confirmModalCancel">Cancel</button>
+        <button type="button" class="btn primary" id="confirmModalOk" style="background:var(--danger); border-color:var(--danger); color:#fff;">Delete</button>
+      </div>
+    </div>
+  </div>
 
   <nav class="tabbar">
     <button class="tab active" data-tab="step">Step</button>
@@ -612,12 +724,51 @@ For God alone my soul waits in silence. — Psalm 62:1`;
       }, 600);
     }, CYCLES_PER_VERSE * 8000);
     if (breathToneEnabled) startBreathTone();
+    startBreathSession();
   }
   function stopBreathCue() {
     if (breathTimer) clearInterval(breathTimer);
     breathTimer = null;
     stopBreathTone();
+    stopBreathSession();
     if (window.speechSynthesis) window.speechSynthesis.cancel();
+  }
+
+  // ---- optional session length — pick once, then trust it completely, no visible
+  // countdown. Opt-in on top of free-form breathing (the default), not a replacement
+  // for it — "no fixed session length" was a deliberate earlier choice. ----
+  let breathDurationMin = 0, breathSessionInterval = null, breathSessionStart = null;
+  const breathProgressTrack = document.getElementById('breathProgressTrack');
+  const breathProgressFill = document.getElementById('breathProgressFill');
+  document.querySelectorAll('.breath-duration-chip').forEach(chip => {
+    chip.addEventListener('click', () => {
+      document.querySelectorAll('.breath-duration-chip').forEach(c => c.classList.remove('selected'));
+      chip.classList.add('selected');
+      breathDurationMin = parseInt(chip.dataset.min, 10);
+      startBreathSession(); // re-arm immediately if already in Abide
+    });
+  });
+  function startBreathSession() {
+    if (breathSessionInterval) clearInterval(breathSessionInterval);
+    breathProgressFill.classList.remove('done');
+    breathProgressFill.style.width = '0%';
+    if (breathDurationMin <= 0) { breathProgressTrack.classList.remove('active'); return; }
+    breathProgressTrack.classList.add('active');
+    breathSessionStart = Date.now();
+    const totalMs = breathDurationMin * 60000;
+    breathSessionInterval = setInterval(() => {
+      const pct = Math.min(100, ((Date.now() - breathSessionStart) / totalMs) * 100);
+      breathProgressFill.style.width = pct + '%';
+      if (pct >= 100) {
+        breathProgressFill.classList.add('done');
+        clearInterval(breathSessionInterval);
+        breathSessionInterval = null;
+      }
+    }, 1000);
+  }
+  function stopBreathSession() {
+    if (breathSessionInterval) clearInterval(breathSessionInterval);
+    breathSessionInterval = null;
   }
 
   // ---- voice: reads each verse aloud via the browser's built-in TTS (free, no
@@ -635,7 +786,15 @@ For God alone my soul waits in silence. — Psalm 62:1`;
       || voices.find(v => /enhanced|premium|natural/i.test(v.name))
       || voices.find(v => v.lang && v.lang.startsWith('en'));
     if (chosen) u.voice = chosen;
-    u.rate = 0.85; // slower than default — unhurried, matching the whole point of this screen
+    // softened: slower, slightly lower pitch, slightly quieter — these are the only
+    // real levers on a SpeechSynthesisUtterance. There's a hard ceiling here: the
+    // underlying voice engine (whatever the OS provides) is what actually determines
+    // how "harsh" it sounds, and no utterance parameter fixes a fundamentally robotic
+    // voice — the real fix is picking a better installed voice in Settings, or testing
+    // on iOS where Safari's on-device voices are meaningfully less harsh than Windows'.
+    u.rate = 0.82;
+    u.pitch = 0.92;
+    u.volume = 0.88;
     window.speechSynthesis.speak(u);
   }
   const voiceSelect = document.getElementById('voiceSelect');
@@ -672,31 +831,103 @@ For God alone my soul waits in silence. — Psalm 62:1`;
   // reproduce: the Vibration API has no intensity control even where it's supported,
   // and iOS Safari doesn't support it at all, so a haptic version would just be
   // silently dead on the user's actual phone. Audio works everywhere instead. ----
-  let breathToneEnabled = false, breathOsc = null, breathGainNode = null, breathToneLoopTimer = null;
+  // Not a tone — a musical pitch read as "grating" no matter the volume curve.
+  // Subtle filtered-noise ticks instead, like a soft ratchet.
+  //
+  // Tick timing is numerically solved from the REAL `bloom-spin` timing
+  // function — cubic-bezier(0.5, 0, 0.5, 1), the actual value in the CSS
+  // above — not a guessed "rest window" or a generic ease formula. Because
+  // y1=0 and y2=1 for this specific curve, its output-progress as a function
+  // of its own bezier parameter reduces to the standard smoothstep
+  // 3t²-2t³, independent of x1/x2; inverting that (Newton's method) gives
+  // the bezier parameter for each evenly-spaced *output* position, and
+  // plugging that back into the curve's real x(t) gives the actual *time*
+  // it occurs at. Ticks placed at evenly-spaced output positions naturally
+  // land dense where the real curve moves fast (mid-transition) and sparse
+  // where it's slow (near 0%/50%/100%, its actual rest points) — no
+  // fabricated silence window, it falls out of the real math.
+  let breathToneEnabled = false, breathToneLoopTimer = null, breathNoiseBuffer = null;
+  function bezierX(t, x1, x2) { const mt = 1 - t; return 3 * mt * mt * t * x1 + 3 * mt * t * t * x2 + t * t * t; }
+  function solveBezierTForY(targetY) {
+    let t = targetY;
+    for (let i = 0; i < 10; i++) {
+      const y = 3 * t * t - 2 * t * t * t;      // = bezier Y(t) when y1=0, y2=1
+      const dy = 6 * t - 6 * t * t;             // dY/dt
+      if (Math.abs(dy) < 1e-6) break;
+      t -= (y - targetY) / dy;
+      t = Math.min(1, Math.max(0, t));
+    }
+    return t;
+  }
+  function buildMovementTicks(startTime, halfDuration, count, x1, x2) {
+    const times = [];
+    for (let i = 1; i < count; i++) {
+      const t = solveBezierTForY(i / count);
+      times.push(startTime + bezierX(t, x1, x2) * halfDuration);
+    }
+    return times;
+  }
+  // bloom-spin is cubic-bezier(0.5, 0, 0.5, 1) over the full 8s, split into two
+  // 4s halves (0-50% opening, 50-100% closing) — each half re-runs the same curve
+  const RATCHET_TIMES = [...buildMovementTicks(0, 4, 12, 0.5, 0.5), ...buildMovementTicks(4, 4, 12, 0.5, 0.5)];
+  function getNoiseBuffer() {
+    if (breathNoiseBuffer) return breathNoiseBuffer;
+    const len = Math.floor(audioCtx.sampleRate * 0.05);
+    breathNoiseBuffer = audioCtx.createBuffer(1, len, audioCtx.sampleRate);
+    const data = breathNoiseBuffer.getChannelData(0);
+    for (let i = 0; i < len; i++) data[i] = Math.random() * 2 - 1;
+    return breathNoiseBuffer;
+  }
+  function playRatchetTick(when) {
+    const src = audioCtx.createBufferSource();
+    src.buffer = getNoiseBuffer();
+    const filter = audioCtx.createBiquadFilter();
+    // low Q on purpose — a narrow band on filtered noise starts to sound like a
+    // pitch, which is exactly the "frequency tone" character being avoided here
+    filter.type = 'bandpass'; filter.frequency.value = 2200; filter.Q.value = 0.7;
+    const gain = audioCtx.createGain();
+    gain.gain.setValueAtTime(0.0001, when);
+    gain.gain.linearRampToValueAtTime(0.09, when + 0.004);
+    gain.gain.exponentialRampToValueAtTime(0.0001, when + 0.05);
+    src.connect(filter); filter.connect(gain); gain.connect(audioCtx.destination);
+    src.start(when); src.stop(when + 0.06);
+  }
+  // The CSS animation runs on the browser's own compositor clock, starting
+  // whenever the Abide screen renders — completely independent of whenever
+  // the Tone button gets clicked. Without reading its actual phase, the
+  // audio schedule was just assuming "now" = the visual cycle's t=0, which
+  // is only true by coincidence. Web Animations API gives the real phase.
+  function getBloomPhaseSeconds() {
+    try {
+      const anim = document.querySelector('.breath-bloom').getAnimations()[0];
+      const ct = anim && anim.currentTime;
+      const ms = (ct && typeof ct === 'object') ? ct.value : ct;
+      if (typeof ms === 'number') return (ms / 1000) % 8;
+    } catch (e) {}
+    return 0;
+  }
   function startBreathTone() {
     audioCtx = audioCtx || new (window.AudioContext || window.webkitAudioContext)();
-    breathOsc = audioCtx.createOscillator();
-    breathGainNode = audioCtx.createGain();
-    breathOsc.type = 'sine'; breathOsc.frequency.value = 210;
-    breathGainNode.gain.value = 0.0001;
-    breathOsc.connect(breathGainNode); breathGainNode.connect(audioCtx.destination);
-    breathOsc.start();
-    scheduleBreathSwell();
+    if (audioCtx.state === 'suspended') audioCtx.resume();
+    scheduleRatchetCycle();
   }
-  function scheduleBreathSwell() {
-    if (!breathToneEnabled || !breathGainNode) return;
+  function scheduleRatchetCycle() {
+    if (!breathToneEnabled) return;
     const now = audioCtx.currentTime;
-    breathGainNode.gain.cancelScheduledValues(now);
-    breathGainNode.gain.setValueAtTime(0.0001, now);
-    breathGainNode.gain.exponentialRampToValueAtTime(0.045, now + 4);
-    breathGainNode.gain.exponentialRampToValueAtTime(0.0001, now + 8);
-    breathToneLoopTimer = setTimeout(scheduleBreathSwell, 8000);
+    // re-read the real animation phase EVERY cycle, not just the first — setTimeout
+    // isn't precise enough to trust as a periodic clock over many repeats (event loop
+    // delays, tab throttling, execution time not accounted for all compound over time),
+    // so re-anchoring to ground truth each cycle prevents drift instead of trusting the timer
+    const offset = getBloomPhaseSeconds();
+    RATCHET_TIMES.forEach(t => {
+      const delay = ((t - offset) % 8 + 8) % 8;
+      playRatchetTick(now + delay);
+    });
+    breathToneLoopTimer = setTimeout(scheduleRatchetCycle, 8000);
   }
   function stopBreathTone() {
     if (breathToneLoopTimer) clearTimeout(breathToneLoopTimer);
     breathToneLoopTimer = null;
-    if (breathOsc) { try { breathOsc.stop(); } catch (e) {} breathOsc.disconnect(); breathOsc = null; }
-    if (breathGainNode) { breathGainNode.disconnect(); breathGainNode = null; }
   }
   const breathToneBtn = document.getElementById('breathToneBtn');
   breathToneBtn.addEventListener('click', () => {
@@ -880,12 +1111,17 @@ For God alone my soul waits in silence. — Psalm 62:1`;
     const addChip = document.createElement('span');
     addChip.className = 'chip add-chip'; addChip.textContent = '+';
     addChip.addEventListener('click', () => {
-      const n = parseInt(prompt('Add a chunk length, in minutes:'), 10);
-      if (n > 0 && !chunkSizes.includes(n)) {
-        chunkSizes.push(n);
-        chunkSizes.sort((a, b) => a - b);
-        refreshChunkSizeUI();
-      }
+      openTextModal({
+        title: 'Add a chunk length (minutes)', inputType: 'number',
+        onSave: (val) => {
+          const n = parseInt(val, 10);
+          if (n > 0 && !chunkSizes.includes(n)) {
+            chunkSizes.push(n);
+            chunkSizes.sort((a, b) => a - b);
+            refreshChunkSizeUI();
+          }
+        }
+      });
     });
     row.appendChild(addChip);
   }
@@ -1015,6 +1251,7 @@ For God alone my soul waits in silence. — Psalm 62:1`;
   function beep() {
     try {
       audioCtx = audioCtx || new (window.AudioContext || window.webkitAudioContext)();
+      if (audioCtx.state === 'suspended') audioCtx.resume();
       const osc = audioCtx.createOscillator(), gain = audioCtx.createGain();
       osc.frequency.value = 880; osc.type = 'sine';
       gain.gain.setValueAtTime(0.001, audioCtx.currentTime);
@@ -1046,6 +1283,92 @@ For God alone my soul waits in silence. — Psalm 62:1`;
     'AbidingSteps spec': ['Data model', 'Screen spec', 'Music settings'],
     'File taxes': ['Gather receipts', 'Fill forms', 'Submit'],
   };
+
+  // ===== add/edit outcome modal — a real form, not prompt()/confirm(), which are
+  // unreliable or silently suppressed in installed (standalone) PWAs on iOS =====
+  const outcomeModalOverlay = document.getElementById('outcomeModalOverlay');
+  const outcomeModalName = document.getElementById('outcomeModalName');
+  const outcomeModalTitle = document.getElementById('outcomeModalTitle');
+  let outcomeModalOnSave = null;
+
+  function setModalToggle(attr, value) {
+    document.querySelectorAll('.modal-toggle-btn[data-' + attr + ']').forEach(btn => {
+      btn.classList.toggle('selected', btn.dataset[attr] === value);
+    });
+  }
+  function openOutcomeModal(opts) {
+    outcomeModalTitle.textContent = opts.title;
+    outcomeModalName.value = opts.name || '';
+    setModalToggle('type', opts.type || 'Deliverable');
+    setModalToggle('tag', opts.tag || 'Reach');
+    outcomeModalOnSave = opts.onSave;
+    outcomeModalOverlay.classList.add('show');
+    outcomeModalName.focus();
+  }
+  function closeOutcomeModal() { outcomeModalOverlay.classList.remove('show'); outcomeModalOnSave = null; }
+  document.querySelectorAll('.modal-toggle-btn[data-type]').forEach(btn =>
+    btn.addEventListener('click', () => setModalToggle('type', btn.dataset.type)));
+  document.querySelectorAll('.modal-toggle-btn[data-tag]').forEach(btn =>
+    btn.addEventListener('click', () => setModalToggle('tag', btn.dataset.tag)));
+  document.getElementById('outcomeModalCancel').addEventListener('click', closeOutcomeModal);
+  document.getElementById('outcomeModalSave').addEventListener('click', () => {
+    const name = outcomeModalName.value.trim();
+    if (!name) { outcomeModalName.focus(); return; }
+    const type = (document.querySelector('.modal-toggle-btn[data-type].selected') || {}).dataset?.type || 'Deliverable';
+    const tag = (document.querySelector('.modal-toggle-btn[data-tag].selected') || {}).dataset?.tag || 'Reach';
+    const cb = outcomeModalOnSave;
+    closeOutcomeModal();
+    if (cb) cb(name, type, tag);
+  });
+  outcomeModalOverlay.addEventListener('click', (e) => { if (e.target === outcomeModalOverlay) closeOutcomeModal(); });
+
+  // generic single-field text/number modal — replaces every remaining prompt()
+  const textModalOverlay = document.getElementById('textModalOverlay');
+  const textModalInput = document.getElementById('textModalInput');
+  const textModalTitleEl = document.getElementById('textModalTitle');
+  let textModalOnSave = null;
+  function openTextModal(opts) {
+    textModalTitleEl.textContent = opts.title;
+    textModalInput.type = opts.inputType || 'text';
+    textModalInput.value = opts.value || '';
+    textModalOnSave = opts.onSave;
+    textModalOverlay.classList.add('show');
+    textModalInput.focus();
+  }
+  function closeTextModal() { textModalOverlay.classList.remove('show'); textModalOnSave = null; }
+  document.getElementById('textModalCancel').addEventListener('click', closeTextModal);
+  document.getElementById('textModalSave').addEventListener('click', () => {
+    const val = textModalInput.value.trim();
+    const cb = textModalOnSave;
+    closeTextModal();
+    if (val && cb) cb(val);
+  });
+  textModalOverlay.addEventListener('click', (e) => { if (e.target === textModalOverlay) closeTextModal(); });
+  textModalInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') document.getElementById('textModalSave').click(); });
+
+  // generic confirm modal — replaces every remaining confirm()
+  const confirmModalOverlay = document.getElementById('confirmModalOverlay');
+  let confirmModalOnOk = null;
+  function openConfirmModal(opts) {
+    document.getElementById('confirmModalTitle').textContent = opts.title || 'Are you sure?';
+    document.getElementById('confirmModalMessage').textContent = opts.message || '';
+    const okBtn = document.getElementById('confirmModalOk'), cancelBtn = document.getElementById('confirmModalCancel');
+    okBtn.textContent = opts.okLabel || 'Delete';
+    okBtn.style.background = opts.okLabel ? 'var(--accent)' : 'var(--danger)';
+    okBtn.style.borderColor = okBtn.style.background;
+    okBtn.style.color = opts.okLabel ? '#10131c' : '#fff';
+    cancelBtn.style.display = opts.hideCancel ? 'none' : '';
+    confirmModalOnOk = opts.onOk;
+    confirmModalOverlay.classList.add('show');
+  }
+  function closeConfirmModal() { confirmModalOverlay.classList.remove('show'); confirmModalOnOk = null; }
+  document.getElementById('confirmModalCancel').addEventListener('click', closeConfirmModal);
+  document.getElementById('confirmModalOk').addEventListener('click', () => {
+    const cb = confirmModalOnOk;
+    closeConfirmModal();
+    if (cb) cb();
+  });
+  confirmModalOverlay.addEventListener('click', (e) => { if (e.target === confirmModalOverlay) closeConfirmModal(); });
   function renderOutcomeGroup(id, list) {
     const el = document.getElementById(id);
     list.forEach(o => {
@@ -1062,11 +1385,19 @@ For God alone my soul waits in silence. — Psalm 62:1`;
   const addChip = document.createElement('div');
   addChip.className = 'outcome-chip add-chip'; addChip.textContent = '+ Add';
   addChip.addEventListener('click', () => {
-    const name = prompt('New outcome name:');
-    if (name) { const chip = document.createElement('div'); chip.className = 'outcome-chip deliverable';
-      chip.innerHTML = '<span class="type-dot"></span>' + name;
-      chip.addEventListener('click', () => selectOutcome(name, chip));
-      document.getElementById('outcomesOther').appendChild(chip); selectOutcome(name, chip); }
+    openOutcomeModal({
+      title: 'New outcome',
+      onSave: (name, type, tag) => {
+        const chip = document.createElement('div');
+        chip.className = 'outcome-chip ' + type.toLowerCase();
+        chip.innerHTML = '<span class="type-dot"></span>' + name;
+        chip.addEventListener('click', () => selectOutcome(name, chip));
+        document.getElementById('outcomesOther').appendChild(chip);
+        aheadOutcomes.push({ t: name, type, tag, budget: null, today: false, completed: false, maybe: false });
+        renderAheadList();
+        selectOutcome(name, chip);
+      }
+    });
   });
   document.getElementById('outcomesOther').appendChild(addChip);
 
@@ -1099,13 +1430,16 @@ For God alone my soul waits in silence. — Psalm 62:1`;
     });
     const addSub = document.createElement('span'); addSub.className = 'chip add-chip'; addSub.textContent = '+ add';
     addSub.addEventListener('click', () => {
-      const s = prompt('New sub-outcome for ' + name + ':');
-      if (!s) return;
-      if (!subOutcomeMap[name]) subOutcomeMap[name] = [];
-      subOutcomeMap[name].push(s);
-      selectedSubOutcome = s;
-      renderSubOutcomeRow(name);
-      finishOutcomeSelection(name);
+      openTextModal({
+        title: 'New sub-outcome for ' + name,
+        onSave: (s) => {
+          if (!subOutcomeMap[name]) subOutcomeMap[name] = [];
+          subOutcomeMap[name].push(s);
+          selectedSubOutcome = s;
+          renderSubOutcomeRow(name);
+          finishOutcomeSelection(name);
+        }
+      });
     });
     row.appendChild(addSub);
   }
@@ -1145,8 +1479,21 @@ For God alone my soul waits in silence. — Psalm 62:1`;
     };
     recognizer.onend = () => { recording = false; micBtn.classList.remove('recording'); };
   }
+  let voiceNotesEnabled = true;
+  const voiceNotesToggle = document.getElementById('voiceNotesToggle');
+  function updateMicBtnVisibility() { micBtn.style.display = voiceNotesEnabled ? 'flex' : 'none'; }
+  voiceNotesToggle.addEventListener('change', () => {
+    voiceNotesEnabled = voiceNotesToggle.checked;
+    if (!voiceNotesEnabled && recording) { recording = false; micBtn.classList.remove('recording'); recognizer.stop(); }
+    updateMicBtnVisibility();
+  });
+  updateMicBtnVisibility();
+
   micBtn.addEventListener('click', () => {
-    if (!SpeechRec) { alert('Voice input isn\'t supported in this browser — type instead.'); return; }
+    if (!SpeechRec) {
+      openConfirmModal({ title: 'Voice input not available', message: 'Not supported in this browser — type your note instead.', okLabel: 'OK', hideCancel: true });
+      return;
+    }
     recording = !recording;
     micBtn.classList.toggle('recording', recording);
     if (recording) recognizer.start(); else recognizer.stop();
@@ -1154,10 +1501,11 @@ For God alone my soul waits in silence. — Psalm 62:1`;
 
   // ===== Ahead list (mock) — the star is the deliberate "add to today" path =====
   const aheadOutcomes = [
-    { t: 'AbidingSteps spec', type: 'Deliverable', tag: 'Reach', budget: null, today: true },
-    { t: 'File taxes', type: 'Deliverable', tag: 'Reality', budget: { acc: 45, target: 120 }, today: false },
-    { t: 'Exercise', type: 'Directive', tag: 'Reality', budget: { acc: 90, target: 180 }, today: true },
-    { t: 'Read scripture', type: 'Directive', tag: 'Roots', budget: null, today: false },
+    { t: 'AbidingSteps spec', type: 'Deliverable', tag: 'Reach', budget: null, today: true, maybe: false },
+    { t: 'File taxes', type: 'Deliverable', tag: 'Reality', budget: { acc: 45, target: 120 }, today: false, maybe: false },
+    { t: 'Exercise', type: 'Directive', tag: 'Reality', budget: { acc: 90, target: 180 }, today: true, maybe: false },
+    { t: 'Read scripture', type: 'Directive', tag: 'Roots', budget: null, today: false, maybe: false },
+    { t: 'Try journaling', type: 'Directive', tag: 'Reach', budget: { acc: 10, target: 60 }, today: false, maybe: true },
   ];
   // shareable with people unfamiliar with the shorthand — spelled out per role
   const ROLE_SUBTITLES = {
@@ -1165,6 +1513,7 @@ For God alone my soul waits in silence. — Psalm 62:1`;
     'Resources': 'Finances, Home, Possessions, Stewardship',
     'Reality': 'Fitness, Health, Work, Obligations',
     'Reach': 'Calling, Growth, Career, Influence',
+    'Maybe': 'Trying these on — no guilt if they don\'t stick',
   };
   document.querySelectorAll('#roleFilterRow .chip').forEach(chip => {
     chip.addEventListener('click', () => {
@@ -1172,22 +1521,30 @@ For God alone my soul waits in silence. — Psalm 62:1`;
       chip.classList.add('selected');
       const role = chip.dataset.role;
       document.getElementById('roleSubtitle').textContent = ROLE_SUBTITLES[role] || '';
-      document.querySelectorAll('#aheadList .outcome-row').forEach(row => {
-        row.style.display = (role === 'All' || row.dataset.tag === role) ? 'block' : 'none';
-      });
+      renderAheadList();
     });
   });
 
   const ROLE_TAGS = ['Roots', 'Resources', 'Reach', 'Reality'];
   const aheadList = document.getElementById('aheadList');
-  const activeRoleFilter = () => (document.querySelector('#roleFilterRow .chip.selected') || {}).dataset || {};
+  const activeRoleFilter = () => ((document.querySelector('#roleFilterRow .chip.selected') || {}).dataset || {}).role;
+  function outcomeMatchesFilter(o, role) {
+    if (role === 'Maybe') return !!o.maybe;
+    if (o.maybe) return false; // maybe items stay out of the way — only the Maybe filter shows them
+    if (!role || role === 'All') return true;
+    return o.tag === role;
+  }
 
   function renderAheadList() {
     aheadList.innerHTML = '';
+    const role = activeRoleFilter();
     aheadOutcomes.forEach(o => {
-      const row = document.createElement('div'); row.className = 'outcome-row' + (o.completed ? ' completed' : ''); row.dataset.tag = o.tag;
+      const row = document.createElement('div');
+      row.className = 'outcome-row' + (o.completed ? ' completed' : '') + (o.maybe ? ' maybe' : '');
+      row.dataset.tag = o.tag;
       let html = '<div class="outcome-row-top">'
         + '<div class="outcome-row-title"><button class="today-star' + (o.today ? ' active' : '') + '" title="Add to today">' + (o.today ? '★' : '☆') + '</button>'
+        + '<button class="maybe-toggle' + (o.maybe ? ' active' : '') + '" title="Maybe — trying it on, not committed">?</button>'
         + '<span class="outcome-name' + (o.completed ? ' completed' : '') + '">' + o.t + '</span></div>'
         + '<div class="outcome-row-actions">'
         + (o.type === 'Deliverable' ? '<button class="row-icon-btn complete-btn' + (o.completed ? ' done' : '') + '" title="Mark complete">✓</button>' : '')
@@ -1207,41 +1564,46 @@ For God alone my soul waits in silence. — Psalm 62:1`;
         e.target.classList.toggle('active', o.today);
         e.target.textContent = o.today ? '★' : '☆';
       });
+      row.querySelector('.maybe-toggle').addEventListener('click', () => { o.maybe = !o.maybe; renderAheadList(); });
       const completeBtn = row.querySelector('.complete-btn');
       if (completeBtn) completeBtn.addEventListener('click', () => { o.completed = !o.completed; renderAheadList(); });
       row.querySelector('.edit-btn').addEventListener('click', () => {
-        const newName = prompt('Outcome name:', o.t);
-        if (newName === null) return;
-        if (newName.trim()) o.t = newName.trim();
-        const newType = prompt('Type — type "directive" or "deliverable":', o.type.toLowerCase());
-        if (newType && /^d/i.test(newType)) o.type = /^dir/i.test(newType) ? 'Directive' : 'Deliverable';
-        const newTag = prompt('Role — one of ' + ROLE_TAGS.join('/') + ':', o.tag);
-        if (newTag && ROLE_TAGS.includes(newTag.trim())) o.tag = newTag.trim();
-        renderAheadList();
+        openOutcomeModal({
+          title: 'Edit outcome', name: o.t, type: o.type, tag: o.tag,
+          onSave: (name, type, tag) => { o.t = name; o.type = type; o.tag = tag; renderAheadList(); }
+        });
       });
       row.querySelector('.delete-btn').addEventListener('click', () => {
-        if (confirm('Delete "' + o.t + '"? This can\'t be undone.')) {
-          aheadOutcomes.splice(aheadOutcomes.indexOf(o), 1);
-          renderAheadList();
-        }
+        openConfirmModal({
+          title: 'Delete outcome?', message: '"' + o.t + '" — this can\'t be undone.',
+          onOk: () => {
+            aheadOutcomes.splice(aheadOutcomes.indexOf(o), 1);
+            if (o.t === selectedOutcomeName) {
+              selectedOutcomeName = null; selectedSubOutcome = null;
+              document.getElementById('outcomeSummaryText').textContent = '';
+              document.querySelectorAll('#chunkChips .chip').forEach(c => c.classList.add('disabled'));
+              returnToIdle('Pick an outcome above to begin');
+              expandOutcomePicker();
+            }
+            renderAheadList();
+          }
+        });
       });
 
-      const role = activeRoleFilter().role;
-      row.style.display = (!role || role === 'All' || o.tag === role) ? 'block' : 'none';
+      row.style.display = outcomeMatchesFilter(o, role) ? 'block' : 'none';
       aheadList.appendChild(row);
     });
   }
   renderAheadList();
 
   document.querySelector('.fab').addEventListener('click', () => {
-    const name = prompt('New outcome name:');
-    if (!name || !name.trim()) return;
-    const typeInput = prompt('Type — "directive" (ongoing) or "deliverable" (has a finish line):', 'deliverable');
-    const type = /^dir/i.test(typeInput || '') ? 'Directive' : 'Deliverable';
-    const tagInput = prompt('Role — one of ' + ROLE_TAGS.join('/') + ':', 'Reach');
-    const tag = ROLE_TAGS.includes((tagInput || '').trim()) ? tagInput.trim() : 'Reach';
-    aheadOutcomes.push({ t: name.trim(), type, tag, budget: null, today: false, completed: false });
-    renderAheadList();
+    openOutcomeModal({
+      title: 'New outcome',
+      onSave: (name, type, tag) => {
+        aheadOutcomes.push({ t: name, type, tag, budget: null, today: false, completed: false, maybe: false });
+        renderAheadList();
+      }
+    });
   });
 
   // click outside popover closes it
@@ -1253,7 +1615,7 @@ For God alone my soul waits in silence. — Psalm 62:1`;
 
   // Keep in sync with the CACHE suffix in sw.js — shown here so a stale
   // install is easy to spot, and "Check for updates" has something real to bust.
-  const APP_VERSION = 'v2';
+  const APP_VERSION = 'v11';
   document.getElementById('appVersionLabel').textContent = 'AbidingSteps ' + APP_VERSION;
   document.getElementById('reloadAppBtn').addEventListener('click', async () => {
     const status = document.getElementById('reloadStatus');

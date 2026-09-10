@@ -383,11 +383,79 @@ manifest/service-worker boilerplate from `AbidingFlow/` and
 `FocusFlowFireBase/`; the Faithful Steps checklist component if that shape
 carries over.
 
-## Abide audio + cross (added 2026-09-10)
+## Abide audio + cross (added 2026-09-10, tone redesigned same day)
 
-- **Breathing tone** — Web Audio oscillator (210Hz sine) with gain swelling
-  0→0.045→0 over the 8s cycle, an audible stand-in for the Watch's variable
-  haptic pulses. Haptics themselves were considered and rejected: the
+- **Breath feedback — NOT a tone.** First built as a 210Hz sine oscillator
+  swelling over the 8s cycle — an audible stand-in for the Watch's variable
+  haptic pulses. Went through a real debugging saga: reported as silent,
+  traced through several dead ends (site-level Chrome sound blocks, muted
+  audio, environment differences) before isolating the actual cause with a
+  minimal isolated `AudioContext` test in the browser console — Web Audio
+  itself worked fine, the bug was the envelope: `exponentialRampToValueAtTime`
+  stays near-silent for most of its ramp by design, so even a "working"
+  swell was inaudible under normal listening. Fixed that (linear ramp,
+  higher peak) — then got clear, blunt feedback that a sustained sine pitch
+  reads as "grating" regardless of volume curve, not what was wanted at all.
+  **Redesigned from scratch**: no oscillator, no sustained pitch. Now a
+  series of short filtered-noise ticks (bandpass ~2200Hz, ~50ms buffer,
+  fast attack/decay envelope) — a soft ratchet-like click, not a note.
+  Refined three times more the same day on direct feedback. First two
+  refinements: ticks needed to move during the bloom's opening/closing and
+  go silent at rest (fully closed/open); then the tick *rate* needed to
+  track actual animation speed, not be evenly spaced — but both passes
+  used **guessed window boundaries and a generic quadratic ease formula**,
+  not the real CSS values. Called out directly ("are you tracking with the
+  actual animation, or did you just make up the time bounds") — correctly:
+  0.3s/3.6s/4.4s/7.7s were invented round numbers.
+
+  **Final version is numerically derived from the actual animation**, not
+  guessed: `bloom-spin`'s real timing function is
+  `cubic-bezier(0.5, 0, 0.5, 1)`. Because that curve's y1=0/y2=1, its
+  output-progress as a function of its own bezier parameter reduces to the
+  standard smoothstep `3t²-2t³` independent of x1/x2 — `solveBezierTForY()`
+  inverts that via Newton's method for each evenly-spaced *output*
+  position, and `bezierX()` maps the result back to the real *time* it
+  occurs at (same x1=x2=0.5 as the real CSS). Ticks land at evenly-spaced
+  visual *positions*, which naturally clusters them where the curve moves
+  fast and spreads them where it's slow — no fabricated silence window;
+  verified output: first tick at 0.898s (rest point at t=0 has exactly zero
+  velocity), tightening to a 0.168s gap at t=2 (the curve's real
+  peak-velocity point, center of each 4s half), widening symmetrically back
+  out. Also dropped the bandpass filter's `Q` from 2.5 to 0.7 — narrow Q on
+  filtered noise starts to sound like a pitch, which is exactly the
+  "frequency tone" character being avoided. Kept deliberately quiet (peak
+  gain 0.09 per tick).
+
+  **One more real gap, also called out directly** ("when are you syncing
+  the two... sounds like you're just starting it and expecting times to
+  line up") — correct again: the audio schedule was never actually
+  synchronized to the CSS animation's real clock. `bloom-spin` starts
+  whenever the Abide screen renders (the browser's own compositor clock);
+  the Tone button can be clicked seconds or minutes later, completely
+  decoupled. The code just assumed `audioCtx.currentTime` at click-time
+  equaled the visual cycle's t=0 — true only by coincidence. Fixed by
+  reading the CSS animation's actual elapsed phase via the Web Animations
+  API (`document.querySelector('.breath-bloom').getAnimations()[0]
+  .currentTime`) and using it as a wraparound offset for the first
+  scheduled batch (`((t - phase) % 8 + 8) % 8` per tick) — verified live:
+  caught the real animation at 2.80s into its cycle, and ticks whose phase
+  had already passed that cycle correctly deferred to the next one
+  (~6-8s delay) while upcoming ones fired within the current cycle. Only
+  the first batch needs correcting — every repeat after shares the same 8s
+  period as the CSS animation, so alignment holds without re-checking.
+
+  **That assumption was wrong — user reported drift, correctly.** Only the
+  *first* batch was phase-corrected; every repeat after that trusted
+  `setTimeout(..., 8000)` to stay exactly periodic, which it isn't (event
+  loop delays, tab throttling, callback execution time not accounted for
+  all compound over repeated cycles). Fixed by calling
+  `getBloomPhaseSeconds()` fresh on **every** cycle instead of once, so each
+  batch re-anchors to the real animation's ground truth rather than trusting
+  the timer to stay in sync. Verified: the CSS animation's own clock (Web
+  Animations API) tracked real elapsed time to within 7ms over 17 seconds
+  (2+ full cycles) — since the audio now re-reads that ground truth every
+  cycle rather than extrapolating from a stale starting point, it can't
+  accumulate drift the way it did before. Haptics themselves were considered and rejected: the
   Vibration API has no intensity control even where supported, and **iOS
   Safari doesn't support it at all** — since the user's actual device is an
   iPhone, a haptic version would be silently dead on their real phone.
@@ -398,7 +466,10 @@ carries over.
   and it surfaced only `Microsoft David/Mark/Zira`, Windows' old SAPI
   voices, which the user correctly flagged as "machinelike." This isn't a
   bug to fix in code; it's the real ceiling of free browser TTS on this
-  platform. Settings has a voice picker (`Abide Scripture` section) so the
+  platform. Softened what's actually controllable on an utterance — rate 0.82, pitch
+  0.92, volume 0.88 (down from just rate 0.85) — but there's a hard ceiling:
+  these parameters can't fix a fundamentally robotic underlying voice, only
+  picking a better installed voice can. Settings has a voice picker (`Abide Scripture` section) so the
   user can select whatever's actually best on their device — on their
   iPhone, Safari's on-device voices are meaningfully better, especially if
   "Enhanced"/"Premium" voices are downloaded via iOS Settings → Accessibility
@@ -437,6 +508,85 @@ separate "promote" step needed:
 Abide nudging the user if today's list is still empty was discussed as a
 third path (a guardrail against never planning) but not yet built into the
 skeleton — worth adding once Abide has real state to check against.
+
+## prompt()/confirm()/alert() replaced with real modals (2026-09-10)
+
+User hit "outcome add" not working and, fairly, called out that repeated
+requests to "make sure everything is working" kept surfacing more gaps.
+Root cause: every add/edit/delete flow relied on native `prompt()`/
+`confirm()`/`alert()`, which are known to be unreliable or silently
+suppressed in installed (standalone) PWAs on iOS — exactly this user's
+real test environment. Fixed properly this time, not just the one
+reported spot: swept the whole file for every remaining instance and
+replaced all of them with real in-page modals —
+- `openOutcomeModal({title, name, type, tag, onSave})` — name field +
+  Deliverable/Directive and role-tag toggle buttons. Used by: Ahead's "+"
+  FAB, Ahead row edit, Step's outcome "+ Add."
+- `openTextModal({title, value, inputType, onSave})` — single field.
+  Used by: Step's sub-outcome "+ add," Settings' chunk-size "+ add."
+- `openConfirmModal({title, message, onOk, okLabel, hideCancel})` — used
+  by: Ahead row delete, and repurposed (hideCancel + custom okLabel) for
+  the "voice input not supported" notice that used to be an `alert()`.
+Zero `prompt()`/`confirm()`/`alert()` calls remain in the file.
+
+While fixing this, found and fixed two more real bugs the new flow
+surfaced: (1) creating an outcome from Step's "+ Add" pushed into
+`aheadOutcomes` but never called `renderAheadList()`, so it silently
+didn't appear in Ahead until some unrelated action re-rendered it; (2)
+deleting an outcome that was the *currently selected* one in Step left
+the Action block showing "Working on [deleted outcome]" — now clears
+selection, re-disables the chunk chips, and reopens the outcome picker.
+
+Also set up a real local server (`python -m http.server` via
+`.claude/launch.json`) instead of testing through the sandboxed preview,
+per the user's suggestion — confirmed the service worker genuinely
+registers and controls the page over real `http://`, which was never
+verifiable under the `data:`-origin preview.
+
+## Another unwired-control sweep (2026-09-10)
+
+Found one more real gap while re-checking: **Voice notes toggle** in
+Settings had no `id` and no wiring at all — the mic button ignored it
+completely. Fixed: unchecking it now actually hides the mic button (and
+stops an in-progress recording), checking it restores it.
+
+Checked and confirmed still legitimately deferred, not silently broken:
+tapping the day bar itself (not an event block) to open a full calendar
+view — that's a whole screen that doesn't exist yet, not a missing click
+handler, so it stays on the open/deferred list rather than getting a
+half-built stand-in here.
+
+## Maybe targets (added 2026-09-10)
+
+A "maybe target" is a time-budget (or any outcome) you're trying on, not
+committing to — "maybe 2 hours this week on journaling" vs. a real
+commitment. Matters for an ADHD-focused, guardrail-not-guilt tool
+specifically because a committed target you miss creates the shame spiral
+that makes people abandon tools like this; a "maybe" target you miss is
+just nothing happened, no big deal.
+
+Implemented as a `maybe: boolean` flag on the **Outcome itself** (not
+nested under `timeBudget`) — deliberately not a separate someday/maybe
+list, since that would be one more place to remember to check, fighting
+the low-friction goal. Reuses the existing flat outcome model instead of
+adding new structure:
+- A dashed circular `?` toggle next to the today-star on each Ahead row.
+- Maybe outcomes get a dashed card border, and their budget bar (if any)
+  renders as a diagonal-stripe pattern instead of a solid fill — visually
+  distinct from a committed target, and deliberately with no "behind
+  schedule" framing anywhere.
+- **Maybe** is a filter chip alongside the role tags (Roots/Resources/
+  Reach/Reality), not a separate control — clicking it shows only
+  maybe-flagged outcomes regardless of role, with its own subtitle
+  ("Trying these on — no guilt if they don't stick").
+- **Maybe outcomes are hidden everywhere else** — not shown under "All" or
+  any role filter, only under the explicit Maybe filter. First pass showed
+  them mixed into every view, which the user flagged as unwanted clutter:
+  "I wouldn't want to see maybe most of the time." Resolved by excluding
+  `maybe`-flagged outcomes from every filter except Maybe itself, rather
+  than adding a second "include maybe" toggle — one less control to manage.
+No explicit "commit" action was built yet (turning a maybe into a real
+tracked goal) — discussed as the natural next step but not asked for.
 
 ## Outcome management + other dead buttons fixed (2026-09-10)
 
@@ -493,6 +643,31 @@ tabbar potentially growing taller from that inset. Not verifiable in this
 desktop preview (env() resolves to 0 with no notch) — needs confirming on
 the actual iPhone.
 
+## Optional session length (added 2026-09-10)
+
+Watch-style pattern: pick a duration once, then trust it completely — no
+visible countdown, no numbers. Opt-in on top of free-form breathing (still
+the default, "Free" chip), not a replacement for it — "no fixed session
+length, nothing to complete" was a deliberate earlier design choice for
+Abide, so this only adds the option rather than forcing structure on
+everyone.
+
+- Duration chips (Free/1m/2m/3m/5m) next to the Tone/Voice toggles.
+- Picking a duration reveals a **hyper-subtle** progress track — a 2px
+  line at 40% opacity, no numbers, no countdown text, easy to not even
+  notice unless you're looking for it. Fills linearly over the chosen
+  duration; turns white and stops updating at completion. Does not force
+  navigation away or interrupt the breathing/verse cycle in any way — it's
+  a quiet background signal, not an alarm.
+- Picking "Free" hides the track and resets progress entirely.
+- Session state resets whenever Abide is re-entered or a new duration is
+  picked (`startBreathSession()` called from `startBreathCue()` and from
+  the chip click handler); cleared via `stopBreathSession()` when leaving
+  Abide, alongside the existing tone/verse-cycle teardown.
+- Verified live: fast-forwarded a 1m session to 55s, confirmed fill at
+  ~93.5%, then to completion — fill hit exactly 100% and the `done` state
+  applied correctly.
+
 ## PWA installability (added 2026-09-10)
 
 Was always the requirement, not optional — built now: `manifest.json`,
@@ -512,4 +687,6 @@ localhost). Needs a real check once deployed to GitHub Pages.
   Safari-installed PWA requirement) — deferred, designed for above.
 - Exact calendar sync mechanics (reuse `AbidingFlow/CALENDAR-SETUP.md` vs.
   rebuild) — not yet decided.
+- Full calendar view (tapping the day bar itself, not an event block) —
+  a whole screen that doesn't exist yet.
 - Onboarding / minimum first-run data — not yet decided.
