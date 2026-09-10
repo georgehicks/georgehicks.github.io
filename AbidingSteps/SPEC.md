@@ -643,6 +643,36 @@ tabbar potentially growing taller from that inset. Not verifiable in this
 desktop preview (env() resolves to 0 with no notch) — needs confirming on
 the actual iPhone.
 
+## Focus Music — actually plays now (2026-09-10)
+
+Real gap, not just a documented deferral this time: the 🎵 topbar button
+and Focus Music Settings section were always meant to reuse the working
+YouTube IFrame pattern from `FocusFlowFireBase/focus-flow.html` ("port the
+Firebase/calendar/PWA infrastructure modules" was the plan from the very
+first spec draft), but the actual porting never happened — the button only
+ever toggled its own color, never touched YouTube at all. Ported properly
+now: hidden 2px `YT.Player`, `listType:'playlist'`, random start position
+(`playVideoAt` on a random index once loaded, matching the original design
+commitment). Per-mode: Step/Ahead/Abide each have their own enable
+checkbox + playlist URL in Settings; switching tabs while playing loads
+the new mode's playlist automatically (or pauses if that mode's music is
+disabled); editing a URL or its checkbox takes effect immediately if
+that's the mode currently playing, not just on the next tab switch.
+Verified live: `playerState: 1` (actually playing), real track metadata
+returned from YouTube, playlist genuinely swapped on mode switch. User
+confirmed hearing it.
+
+**Auto-pause during decision moments — now built.** Ported from
+FocusFlowFireBase: pauses while any modal (add/edit/confirm) or the
+overrun tray is open, or a text field is focused; resumes after, but only
+if music was actually on — never auto-starts music the user had turned
+off (gated on the `musicPlaying` master toggle). Watches the relevant
+elements via `MutationObserver` on their `class` attribute (`.show`
+toggle) plus `focusin`/`focusout` for text fields. Verified live:
+opening the "new outcome" modal dropped the player from state 1 (playing)
+to state 2 (paused) and set `musicAutoPaused = true`; clicking Cancel
+closed the modal, resumed playback (state 1), and cleared the flag.
+
 ## Optional session length (added 2026-09-10)
 
 Watch-style pattern: pick a duration once, then trust it completely — no

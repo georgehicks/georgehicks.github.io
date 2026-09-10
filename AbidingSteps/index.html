@@ -507,16 +507,16 @@
       <div class="settings-section">
         <h3>Focus Music</h3>
         <div class="music-row">
-          <div class="music-row-head"><span class="name" style="color:var(--step)">Step</span><input type="checkbox" checked></div>
-          <input type="text" value="https://www.youtube.com/playlist?list=PLfd0VTIoVYk1UTLrj9ARhBpmhUBkth1Px">
+          <div class="music-row-head"><span class="name" style="color:var(--step)">Step</span><input type="checkbox" id="musicEnable_step" checked></div>
+          <input type="text" id="musicUrl_step" value="https://www.youtube.com/playlist?list=PLfd0VTIoVYk1UTLrj9ARhBpmhUBkth1Px">
         </div>
         <div class="music-row">
-          <div class="music-row-head"><span class="name" style="color:var(--ahead)">Ahead</span><input type="checkbox" checked></div>
-          <input type="text" value="https://www.youtube.com/playlist?list=PLfd0VTIoVYk2mLoNsO36ULCr3XZUPwAZw">
+          <div class="music-row-head"><span class="name" style="color:var(--ahead)">Ahead</span><input type="checkbox" id="musicEnable_ahead" checked></div>
+          <input type="text" id="musicUrl_ahead" value="https://www.youtube.com/playlist?list=PLfd0VTIoVYk2mLoNsO36ULCr3XZUPwAZw">
         </div>
         <div class="music-row">
-          <div class="music-row-head"><span class="name" style="color:var(--abide)">Abide</span><input type="checkbox" checked></div>
-          <input type="text" value="https://www.youtube.com/playlist?list=PLfd0VTIoVYk0ElEwgDLPMkSuIIoZ1LED0">
+          <div class="music-row-head"><span class="name" style="color:var(--abide)">Abide</span><input type="checkbox" id="musicEnable_abide" checked></div>
+          <input type="text" id="musicUrl_abide" value="https://www.youtube.com/playlist?list=PLfd0VTIoVYk0ElEwgDLPMkSuIIoZ1LED0">
         </div>
       </div>
 
@@ -656,6 +656,7 @@
       document.documentElement.setAttribute('data-mode', tab);
     }
     updateMusicBtn();
+    if (musicPlaying && (tab === 'step' || tab === 'ahead' || tab === 'abide')) musicPlayer.playForMode(tab);
     if (tab === 'abide') startBreathCue(); else stopBreathCue();
   }
 
@@ -948,12 +949,14 @@ For God alone my soul waits in silence. — Psalm 62:1`;
     });
   });
 
-  // ===== music toggle — one button, follows whichever mode's playlist is current =====
-  // Real playback (the ported FocusFlowFireBase YouTube IFrame pattern) isn't wired into
-  // this skeleton yet; this is the affordance + state, matching everything else here
-  // that's real UI without a backend behind it.
+  // ===== music — real YouTube IFrame playback, ported from FocusFlowFireBase's
+  // working pattern (hidden 2px YT.Player, listType:'playlist') — this was
+  // documented as "should reuse this" when Focus Music was first designed and
+  // never actually got ported until now. =====
   let musicPlaying = false;
   const musicBtn = document.getElementById('musicBtn');
+  const MUSIC_URL_INPUTS = { step: 'musicUrl_step', ahead: 'musicUrl_ahead', abide: 'musicUrl_abide' };
+  const MUSIC_ENABLE_INPUTS = { step: 'musicEnable_step', ahead: 'musicEnable_ahead', abide: 'musicEnable_abide' };
   function currentModeLabel() {
     const m = document.documentElement.getAttribute('data-mode') || 'step';
     return m.charAt(0).toUpperCase() + m.slice(1);
@@ -962,8 +965,113 @@ For God alone my soul waits in silence. — Psalm 62:1`;
     musicBtn.classList.toggle('playing', musicPlaying);
     musicBtn.title = (musicPlaying ? 'Pause ' : 'Play ') + currentModeLabel() + ' music';
   }
-  musicBtn.addEventListener('click', () => { musicPlaying = !musicPlaying; updateMusicBtn(); });
+  const musicPlayer = {
+    yt: null, apiLoading: false, pendingCb: null,
+    extractPlaylistId(url) {
+      const trimmed = (url || '').trim();
+      if (!trimmed) return null;
+      if (!trimmed.includes('://') && /^[A-Za-z0-9_-]{10,}$/.test(trimmed)) return trimmed;
+      const m = trimmed.match(/[?&]list=([A-Za-z0-9_-]+)/);
+      return m ? m[1] : null;
+    },
+    ensureApi(cb) {
+      if (window.YT && window.YT.Player) { cb(); return; }
+      this.pendingCb = cb;
+      if (this.apiLoading) return;
+      this.apiLoading = true;
+      const prevReady = window.onYouTubeIframeAPIReady;
+      window.onYouTubeIframeAPIReady = () => {
+        if (typeof prevReady === 'function') prevReady();
+        if (this.pendingCb) { const fn = this.pendingCb; this.pendingCb = null; fn(); }
+      };
+      const s = document.createElement('script');
+      s.src = 'https://www.youtube.com/iframe_api';
+      document.head.appendChild(s);
+    },
+    modeEnabled(mode) {
+      const el = document.getElementById(MUSIC_ENABLE_INPUTS[mode]);
+      return !el || el.checked;
+    },
+    urlForMode(mode) {
+      const el = document.getElementById(MUSIC_URL_INPUTS[mode]);
+      return el ? el.value : '';
+    },
+    playForMode(mode) {
+      if (!this.modeEnabled(mode)) { this.pause(); return; }
+      const id = this.extractPlaylistId(this.urlForMode(mode));
+      if (!id) return;
+      this.ensureApi(() => this.createOrLoad(id));
+    },
+    createOrLoad(id) {
+      if (this.yt && this.yt.loadPlaylist) {
+        this.yt.loadPlaylist({ list: id, listType: 'playlist' });
+        this.yt.playVideo && this.yt.playVideo();
+        setTimeout(() => this.randomizeStart(), 800);
+        return;
+      }
+      let host = document.getElementById('yt-music-player');
+      if (!host) {
+        host = document.createElement('div'); host.id = 'yt-music-player';
+        host.style.cssText = 'position:fixed; left:-9999px; top:-9999px; width:2px; height:2px; opacity:0.01; pointer-events:none;';
+        document.body.appendChild(host);
+      }
+      this.yt = new YT.Player(host, {
+        width: '2', height: '2',
+        playerVars: { listType: 'playlist', list: id, autoplay: 1, playsinline: 1, controls: 0 },
+        events: { onReady: () => this.randomizeStart() },
+      });
+    },
+    randomizeStart() {
+      try {
+        const list = this.yt.getPlaylist();
+        if (list && list.length) this.yt.playVideoAt(Math.floor(Math.random() * list.length));
+      } catch (e) {}
+    },
+    pause() { if (this.yt && this.yt.pauseVideo) { try { this.yt.pauseVideo(); } catch (e) {} } },
+    resume() { if (this.yt && this.yt.playVideo) { try { this.yt.playVideo(); } catch (e) {} } },
+  };
+  musicBtn.addEventListener('click', () => {
+    musicPlaying = !musicPlaying;
+    updateMusicBtn();
+    const mode = document.documentElement.getAttribute('data-mode') || 'step';
+    if (musicPlaying) musicPlayer.playForMode(mode); else musicPlayer.pause();
+  });
   updateMusicBtn();
+  // editing a playlist URL or its enable checkbox takes effect immediately if that
+  // mode is the one currently playing, rather than needing a tab switch to notice
+  ['step', 'ahead', 'abide'].forEach(mode => {
+    const applyIfCurrent = () => {
+      if (musicPlaying && (document.documentElement.getAttribute('data-mode') || 'step') === mode) musicPlayer.playForMode(mode);
+    };
+    document.getElementById(MUSIC_ENABLE_INPUTS[mode]).addEventListener('change', applyIfCurrent);
+    document.getElementById(MUSIC_URL_INPUTS[mode]).addEventListener('change', applyIfCurrent);
+  });
+
+  // ===== auto-pause music during decision moments (ported from FocusFlowFireBase) =====
+  // Pauses while any modal/tray is open or a text field is focused — a decision
+  // moment shouldn't compete with background music — and resumes after, but only
+  // if music was actually on; never auto-starts music the user turned off.
+  let musicAutoPaused = false;
+  function anyDecisionMomentOpen() {
+    if (['outcomeModalOverlay', 'textModalOverlay', 'confirmModalOverlay'].some(id =>
+      document.getElementById(id).classList.contains('show'))) return true;
+    if (document.getElementById('overrunTray').classList.contains('show')) return true;
+    const el = document.activeElement;
+    return !!(el && ['INPUT', 'TEXTAREA', 'SELECT'].includes(el.tagName));
+  }
+  function updateMusicPauseState() {
+    if (!musicPlaying) return;
+    if (anyDecisionMomentOpen()) {
+      if (!musicAutoPaused) { musicPlayer.pause(); musicAutoPaused = true; }
+    } else if (musicAutoPaused) {
+      musicPlayer.resume(); musicAutoPaused = false;
+    }
+  }
+  ['outcomeModalOverlay', 'textModalOverlay', 'confirmModalOverlay', 'overrunTray'].forEach(id => {
+    new MutationObserver(updateMusicPauseState).observe(document.getElementById(id), { attributes: true, attributeFilter: ['class'] });
+  });
+  document.addEventListener('focusin', updateMusicPauseState, true);
+  document.addEventListener('focusout', () => setTimeout(updateMusicPauseState, 0), true);
 
   // ===== L1 week strip + full date =====
   function renderWeekStrip() {
@@ -1615,7 +1723,7 @@ For God alone my soul waits in silence. — Psalm 62:1`;
 
   // Keep in sync with the CACHE suffix in sw.js — shown here so a stale
   // install is easy to spot, and "Check for updates" has something real to bust.
-  const APP_VERSION = 'v11';
+  const APP_VERSION = 'v13';
   document.getElementById('appVersionLabel').textContent = 'AbidingSteps ' + APP_VERSION;
   document.getElementById('reloadAppBtn').addEventListener('click', async () => {
     const status = document.getElementById('reloadStatus');
