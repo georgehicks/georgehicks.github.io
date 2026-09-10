@@ -1,0 +1,1119 @@
+<!DOCTYPE html>
+<html lang="en" data-mode="step">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>AbidingSteps</title>
+<style>
+  :root {
+    --bg: #0e1016;
+    --bg-elevated: #171a24;
+    --bg-raised: #1f2330;
+    --border: #2a2f40;
+    --text: #e9e7df;
+    --text-dim: #8b8fa3;
+    --text-faint: #5b5f70;
+    --danger: #e2645c;
+    --step: #4fd1c5;
+    --ahead: #9db4f8;
+    --abide: #8fbf7a;
+    --accent: var(--step);
+  }
+  html[data-mode="ahead"] { --accent: var(--ahead); }
+  html[data-mode="abide"] { --accent: var(--abide); }
+
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    -webkit-tap-highlight-color: transparent;
+    /* a soft glow tied to whichever mode you're in — echoes the Abide bloom's warmth
+       across the whole app instead of leaving it a flat dark background everywhere else */
+    background:
+      radial-gradient(ellipse 650px 420px at 50% -8%, color-mix(in srgb, var(--accent) 12%, transparent) 0%, transparent 70%),
+      var(--bg);
+    background-attachment: fixed;
+    transition: background 0.6s ease;
+  }
+  .app { max-width: 480px; margin: 0 auto; min-height: 100vh; display: flex; flex-direction: column; }
+
+  /* topbar */
+  .topbar {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 14px 16px 10px; position: sticky; top: 0; background: var(--bg); z-index: 5;
+  }
+  .brand { font-weight: 600; letter-spacing: 0.02em; font-size: 0.95rem; color: var(--text-dim); }
+  .abide-btn {
+    display: flex; align-items: center; gap: 6px;
+    background: var(--bg-raised); color: var(--abide); border: 1px solid var(--border);
+    border-radius: 999px; padding: 7px 14px; font-size: 0.85rem; font-weight: 600;
+    cursor: pointer; transition: transform 0.15s ease;
+  }
+  .abide-btn:active { transform: scale(0.95); }
+  .topbar-actions { display: flex; align-items: center; gap: 8px; }
+  .music-btn {
+    background: var(--bg-raised); border: 1px solid var(--border); color: var(--text-faint);
+    border-radius: 999px; width: 34px; height: 34px; display: flex; align-items: center; justify-content: center;
+    cursor: pointer; font-size: 0.9rem;
+  }
+  .music-btn.playing { color: var(--accent); border-color: var(--accent); }
+
+  main { flex: 1; padding: 4px 16px 90px; }
+  .view { display: none; }
+  .view.active { display: block; }
+
+  /* ===== L1 date line (reused as generic section header elsewhere) ===== */
+  .date-line { font-size: 0.8rem; color: var(--text-dim); letter-spacing: 0.06em; margin: 6px 0 14px; }
+
+  /* ===== L1 week strip — subdued context, shows progression through the week ===== */
+  .week-strip { display: flex; gap: 5px; margin: 8px 0 6px; }
+  .week-day { flex: 1; text-align: center; padding: 7px 0 6px; border-radius: 9px; background: var(--bg-elevated); border: 1px solid var(--border); }
+  .week-day .wd { font-size: 0.6rem; color: var(--text-faint); text-transform: uppercase; letter-spacing: 0.03em; }
+  .week-day .dn { font-size: 0.85rem; color: var(--text-dim); margin-top: 2px; }
+  .week-day.past { opacity: 0.4; }
+  .week-day.today { background: var(--accent); border-color: var(--accent); }
+  .week-day.today .wd, .week-day.today .dn { color: #10131c; font-weight: 700; }
+  .full-date { font-size: 0.72rem; color: var(--text-faint); margin: 8px 0 14px; letter-spacing: 0.04em; }
+
+  /* ===== L2 day bar — subdued context; passed/left must be unmistakable ===== */
+  .day-bar-wrap { margin-bottom: 16px; }
+  .day-stats { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 5px; }
+  .stat { display: flex; flex-direction: row; align-items: baseline; gap: 4px; }
+  .stat.right { flex-direction: row-reverse; }
+  .stat-value { font-size: 0.74rem; font-weight: 600; color: var(--text-dim); font-variant-numeric: tabular-nums; line-height: 1.1; }
+  .stat-value.accent { color: var(--accent); }
+  .stat-label { font-size: 0.6rem; color: var(--text-faint); text-transform: uppercase; letter-spacing: 0.05em; }
+  /* the bar's fill proportion is the primary signal — text is a small secondary confirmation */
+  .day-bar { position: relative; height: 32px; border-radius: 7px; border: 1px solid var(--border); overflow: hidden; cursor: pointer; }
+  .day-bar-block { position: absolute; top: 0; bottom: 0; border-radius: 3px; opacity: 0.85; z-index: 2; }
+  .day-bar-block.past { opacity: 0.28; filter: saturate(0.6); }
+  .day-bar-now { position: absolute; top: -3px; bottom: -3px; width: 2px; background: var(--accent); z-index: 3; box-shadow: 0 0 6px var(--accent); }
+  .day-bar-ticks { display: flex; justify-content: space-between; margin-top: 4px; }
+  .day-bar-ticks span { font-size: 0.58rem; color: var(--text-faint); }
+  .event-popover { display: none; margin-top: 8px; padding: 10px 12px; background: var(--bg-raised); border: 1px solid var(--border); border-radius: 8px; font-size: 0.8rem; }
+  .event-popover.show { display: block; }
+
+  /* ===== Outcome picker — sits above Action; collapses to a single subdued line once chosen ===== */
+  .outcome-picker { margin-bottom: 14px; }
+  .outcome-summary { display: flex; align-items: center; justify-content: space-between; background: var(--bg-elevated); border: 1px solid var(--border); border-radius: 10px; padding: 10px 12px; font-size: 0.84rem; color: var(--text-dim); }
+  .outcome-summary b { color: var(--text); font-weight: 600; }
+  .link-btn { background: none; border: none; color: var(--accent); font-size: 0.76rem; cursor: pointer; padding: 4px; }
+  .section-label { font-size: 0.66rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-faint); margin: 10px 0 6px; }
+  .outcome-group { margin-bottom: 8px; }
+  .outcome-group-title { font-size: 0.66rem; color: var(--text-faint); margin-bottom: 5px; }
+  /* one compact row per group — scrolls sideways instead of wrapping and growing tall */
+  .outcome-list { display: flex; flex-wrap: nowrap; overflow-x: auto; gap: 6px; padding-bottom: 3px; scrollbar-width: thin; -webkit-overflow-scrolling: touch; }
+  .outcome-chip { background: var(--bg-elevated); border: 1px solid var(--border); color: var(--text-faint); border-radius: 8px; padding: 5px 9px; font-size: 0.74rem; cursor: pointer; display: flex; align-items: center; gap: 5px; white-space: nowrap; flex: 0 0 auto; }
+  .outcome-chip.selected { border-color: var(--accent); color: var(--accent); }
+  .outcome-chip .type-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--text-faint); }
+  .outcome-chip.deliverable .type-dot { background: var(--step); }
+  .outcome-chip.directive .type-dot { background: var(--ahead); }
+  .add-chip { border-style: dashed; color: var(--text-faint); }
+  .sub-outcome-row { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+
+  /* ===== Action block — the strong visual focal point; everything else stays subdued ===== */
+  .action-block {
+    background: var(--bg-elevated); border: 1.5px solid var(--accent); border-radius: 18px;
+    padding: 28px 20px; text-align: center; margin-bottom: 18px; transition: background 0.3s ease;
+    box-shadow: 0 0 30px color-mix(in srgb, var(--accent) 25%, transparent);
+  }
+  .action-block.overrun { background: #2a1a1a; border-color: var(--danger); animation: pulse 1.4s ease-in-out infinite; }
+  @keyframes pulse { 0%,100% { box-shadow: 0 0 0 rgba(226,100,92,0); } 50% { box-shadow: 0 0 28px rgba(226,100,92,0.55); } }
+  .action-idle-label { font-size: 0.92rem; color: var(--text-dim); margin-bottom: 2px; }
+  /* single scrollable row, not a wrapping grid — the choice shouldn't dominate the block */
+  .chip-row { display: flex; flex-wrap: nowrap; overflow-x: auto; gap: 6px; justify-content: flex-start; margin-top: 14px; padding-bottom: 2px; scrollbar-width: thin; -webkit-overflow-scrolling: touch; }
+  .chip { background: var(--bg-raised); border: 1px solid var(--border); color: var(--text-dim); border-radius: 999px; padding: 6px 11px; font-size: 0.78rem; cursor: pointer; white-space: nowrap; flex: 0 0 auto; }
+  .chip.selected { background: var(--accent); color: #10131c; border-color: var(--accent); font-weight: 600; }
+  .chip.disabled { opacity: 0.3; pointer-events: none; }
+
+  /* the ring's remaining arc IS the countdown — glance, don't read */
+  .ring-wrap { position: relative; width: 190px; height: 190px; margin: 0 auto; }
+  .ring-wrap svg { width: 100%; height: 100%; }
+  .ring-track { fill: none; stroke: var(--bg-raised); stroke-width: 14; }
+  .ring-progress { fill: none; stroke: var(--accent); stroke-width: 14; stroke-linecap: round; transition: stroke-dashoffset 1s linear, stroke 0.3s ease; }
+  .action-block.overrun .ring-progress { stroke: var(--danger); }
+  .ring-center { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+  .timer-display { font-size: 1.5rem; font-weight: 700; font-variant-numeric: tabular-nums; letter-spacing: 0.01em; color: var(--text-dim); }
+  .action-focus { font-size: 1.02rem; font-weight: 600; margin-top: 10px; }
+  .timer-sub { font-size: 0.78rem; color: var(--text-dim); margin-top: 6px; min-height: 1.1em; }
+  .overrun-tray { display: none; margin-top: 16px; padding-top: 14px; border-top: 1px dashed var(--border); }
+  .overrun-tray.show { display: block; }
+  .overrun-tray .headline { font-size: 0.9rem; font-weight: 600; color: var(--danger); margin-bottom: 10px; }
+  .overrun-actions { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; margin-top: 10px; }
+  .btn { border: none; border-radius: 10px; padding: 10px 16px; font-size: 0.85rem; font-weight: 600; cursor: pointer; background: var(--bg-raised); color: var(--text); border: 1px solid var(--border); }
+  .btn.primary { background: var(--accent); color: #10131c; }
+
+  /* ===== L6 notes — subdued, below the fold of attention ===== */
+  .notes-wrap.subdued { opacity: 0.85; }
+
+  /* ===== L6 notes ===== */
+  .notes-wrap { margin-top: 16px; position: relative; }
+  textarea.notes {
+    width: 100%; min-height: 64px; background: var(--bg-elevated); border: 1px solid var(--border);
+    border-radius: 10px; color: var(--text); padding: 10px 44px 10px 12px; font-size: 0.85rem;
+    font-family: inherit; resize: vertical;
+  }
+  .mic-btn {
+    position: absolute; right: 8px; top: 8px; width: 30px; height: 30px; border-radius: 50%;
+    background: var(--bg-raised); border: 1px solid var(--border); color: var(--text-dim);
+    cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 0.9rem;
+  }
+  .mic-btn.recording { background: var(--danger); color: #fff; border-color: var(--danger); }
+
+  /* ===== Ahead view ===== */
+  .filter-row { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 6px; }
+  .role-subtitle { font-size: 0.74rem; color: var(--text-faint); min-height: 1.2em; margin-bottom: 14px; }
+  .outcome-row {
+    background: var(--bg-elevated); border: 1px solid var(--border); border-radius: 12px;
+    padding: 12px 14px; margin-bottom: 10px;
+  }
+  .outcome-row-top { display: flex; justify-content: space-between; align-items: center; font-size: 0.9rem; gap: 8px; }
+  .outcome-row-title { display: flex; align-items: center; gap: 8px; }
+  .today-star { background: none; border: none; cursor: pointer; font-size: 1rem; color: var(--text-faint); padding: 0; line-height: 1; }
+  .today-star.active { color: var(--accent); }
+  .badge { font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-faint); }
+  .budget-bar-wrap { height: 5px; background: var(--bg-raised); border-radius: 3px; margin-top: 8px; overflow: hidden; }
+  .budget-bar { height: 100%; background: var(--accent); }
+  .budget-label { font-size: 0.72rem; color: var(--text-dim); margin-top: 4px; }
+  .fab {
+    position: fixed; bottom: 78px; right: calc(50% - 240px + 20px); background: var(--accent); color: #10131c;
+    border: none; width: 50px; height: 50px; border-radius: 50%; font-size: 1.4rem; cursor: pointer;
+    box-shadow: 0 4px 14px rgba(0,0,0,0.4);
+  }
+  @media (max-width: 480px) { .fab { right: 20px; } }
+
+  /* ===== Settings ===== */
+  .settings-section { margin-bottom: 22px; }
+  .settings-section h3 { font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-dim); margin: 0 0 10px; }
+  .settings-row { display: flex; align-items: center; justify-content: space-between; padding: 8px 0; font-size: 0.88rem; border-bottom: 1px solid var(--border); }
+  .settings-row:last-child { border-bottom: none; }
+  .settings-row input[type=text], .settings-row input[type=number], .settings-row select {
+    background: var(--bg-elevated); border: 1px solid var(--border); color: var(--text);
+    border-radius: 6px; padding: 6px 8px; font-size: 0.82rem; width: 55%;
+  }
+  .settings-row input[type=color] {
+    width: 40px; height: 28px; padding: 0; border: 1px solid var(--border); border-radius: 6px;
+    background: none; cursor: pointer;
+  }
+  .music-row { padding: 10px 0; border-bottom: 1px solid var(--border); }
+  .music-row:last-child { border-bottom: none; }
+  .music-row-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
+  .music-row-head .name { font-weight: 600; font-size: 0.85rem; }
+  .music-row input[type=text] {
+    width: 100%; background: var(--bg-elevated); border: 1px solid var(--border); color: var(--text-dim);
+    border-radius: 6px; padding: 6px 8px; font-size: 0.75rem;
+  }
+
+  /* ===== Abide view ===== */
+  .abide-view { text-align: center; padding-top: 26px; }
+  .abide-view .glyph { font-size: 2.2rem; margin-bottom: 6px; }
+  .abide-view h2 { color: var(--abide); margin: 4px 0 18px; font-weight: 600; }
+  /* a self-paced breath cue, not a timed meditation session — leave whenever ready.
+     A soft radial bloom of petals (Apple Watch Breathe-style) rather than one flat circle. */
+  .breath-wrap { margin: 6px 0 22px; position: relative; }
+  /* Recreated from the real mechanic (verified, not guessed): a container that does
+     its own scale+rotate pulse, wrapping circles that independently translate from
+     dead-center outward. Circles stay full-size/opacity and blend with `screen`, so
+     brightening-to-white at rest is real overlap math, not a gradient fake. */
+  .breath-bloom {
+    position: relative; width: 160px; height: 160px; margin: 0 auto;
+    animation: bloom-spin 8s cubic-bezier(0.5, 0, 0.5, 1) infinite;
+  }
+  @keyframes bloom-spin {
+    0%, 100% { transform: scale(0.15) rotate(180deg); }
+    50% { transform: scale(1) rotate(0deg); }
+  }
+  .petal {
+    position: absolute; top: 50%; left: 50%; width: 56px; height: 56px; margin: -28px 0 0 -28px;
+    border-radius: 50%; mix-blend-mode: screen; opacity: 0.62;
+    background: var(--abide);
+    transform: rotate(calc(var(--i) * 45deg)) translateY(0);
+    animation: petal-spread 8s ease-in-out infinite;
+  }
+  .petal:nth-child(even) { background: color-mix(in srgb, var(--abide) 55%, white 45%); }
+  @keyframes petal-spread {
+    0%, 100% { transform: rotate(calc(var(--i) * 45deg)) translateY(0); }
+    50% { transform: rotate(calc(var(--i) * 45deg)) translateY(-46px); }
+  }
+  /* revealed only at full blossom — hidden the rest of the cycle, not a fixed logo.
+     Positioned OUTSIDE .breath-bloom's own rotate/scale (a sibling, not a child) so it
+     never inherits that spin — a rotating cross reads as an X mid-sweep, not a cross. */
+  .breath-cross {
+    position: absolute; top: 80px; left: 50%; width: 22px; height: 32px; margin: -16px 0 0 -11px;
+    z-index: 2; animation: cross-reveal 8s ease-in-out infinite;
+  }
+  .cross-v, .cross-h { position: absolute; background: #fff; border-radius: 1.5px; box-shadow: 0 0 6px rgba(255,255,255,0.85); }
+  /* a Latin cross — longer arm below the bar, not a symmetric plus */
+  .cross-v { top: 0; bottom: 0; left: 50%; width: 3px; margin-left: -1.5px; }
+  .cross-h { left: 0; right: 0; top: 9px; height: 3px; margin-top: -1.5px; }
+  @keyframes cross-reveal {
+    0%, 25%, 75%, 100% { opacity: 0; }
+    50% { opacity: 0.9; }
+  }
+  .breath-caption {
+    margin: 10px auto 26px; font-size: 0.95rem; color: var(--text); line-height: 1.5;
+    max-width: 320px; font-style: italic; min-height: 2.6em;
+    opacity: 1; transition: opacity 0.6s ease;
+  }
+  .breath-caption.fade-out { opacity: 0; }
+  .breath-audio-row { display: flex; gap: 8px; justify-content: center; margin-top: 4px; }
+  .breath-audio-btn {
+    background: none; border: 1px solid var(--border); color: var(--text-faint);
+    border-radius: 999px; padding: 5px 11px; font-size: 0.72rem; cursor: pointer;
+  }
+  .breath-audio-btn.active { color: var(--abide); border-color: var(--abide); }
+  .tally-summary { background: var(--bg-elevated); border: 1px solid var(--border); border-radius: 12px; padding: 14px; font-size: 0.85rem; color: var(--text-dim); margin-bottom: 26px; }
+  .abide-actions { display: flex; gap: 10px; justify-content: center; }
+  /* pinned below the scripture/breathing so verse-length changes never shift it, and
+     kept quiet on purpose — the verse and the bloom should hold visual attention, not these */
+  .abide-anchor {
+    position: fixed; left: 0; right: 0; bottom: 58px; max-width: 480px; margin: 0 auto;
+    padding: 0 16px; display: flex; flex-direction: column; align-items: center; gap: 8px; z-index: 4;
+  }
+  .abide-anchor .tally-summary {
+    background: none; border: none; padding: 0; margin: 0; font-size: 0.7rem; color: var(--text-faint);
+  }
+  .abide-anchor .abide-actions .btn {
+    background: none; border: 1px solid var(--border); color: var(--text-faint);
+    font-size: 0.74rem; padding: 6px 12px; font-weight: 500;
+  }
+  .abide-anchor .abide-actions .btn.primary { color: var(--text-dim); border-color: var(--border); }
+
+  /* ===== tab bar ===== */
+  .tabbar {
+    position: fixed; bottom: 0; left: 0; right: 0; display: flex;
+    background: var(--bg-elevated); border-top: 1px solid var(--border);
+    max-width: 480px; margin: 0 auto;
+  }
+  .tab {
+    flex: 1; background: none; border: none; color: var(--text-faint); padding: 12px 0 10px;
+    font-size: 0.78rem; cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 3px;
+  }
+  .tab.active { color: var(--accent); }
+</style>
+</head>
+<body>
+<div class="app">
+
+  <div class="topbar">
+    <div class="brand">AbidingSteps</div>
+    <div class="topbar-actions">
+      <button class="music-btn" id="musicBtn" title="Play music">🎵</button>
+      <button class="abide-btn" id="abideBtn">🕊 Abide</button>
+    </div>
+  </div>
+
+  <main>
+
+    <!-- ========== STEP ========== -->
+    <section id="view-step" class="view active">
+      <div class="week-strip" id="weekStrip"></div>
+      <div class="full-date" id="dateLine"></div>
+
+      <div class="day-bar-wrap">
+        <div class="day-stats">
+          <div class="stat"><span class="stat-value" id="timePassedStat">--</span><span class="stat-label">passed</span></div>
+          <div class="stat right"><span class="stat-value accent" id="timeLeftStat">--</span><span class="stat-label">left today</span></div>
+        </div>
+        <div class="day-bar" id="dayBar"></div>
+        <div class="day-bar-ticks"><span>6</span><span>9</span><span>12</span><span>15</span><span>18</span><span>21</span></div>
+        <div class="event-popover" id="eventPopover"></div>
+      </div>
+
+      <div class="outcome-picker" id="outcomePicker">
+        <div class="outcome-summary" id="outcomeSummary" style="display:none;">
+          <span>Working on <b id="outcomeSummaryText"></b></span>
+          <button class="link-btn" id="changeOutcomeBtn">change</button>
+        </div>
+        <div id="outcomeFull">
+          <div class="section-label">Outcome — pick this first</div>
+          <div class="outcome-group">
+            <div class="outcome-group-title">Recent</div>
+            <div class="outcome-list" id="outcomesRecent"></div>
+          </div>
+          <div class="outcome-group">
+            <div class="outcome-group-title">Today</div>
+            <div class="outcome-list" id="outcomesToday"></div>
+          </div>
+          <div class="outcome-group">
+            <div class="outcome-group-title">Other</div>
+            <div class="outcome-list" id="outcomesOther"></div>
+          </div>
+          <div class="sub-outcome-row" id="subOutcomeRow"></div>
+        </div>
+      </div>
+
+      <div class="action-block" id="actionBlock">
+        <div class="action-idle" id="actionIdle">
+          <div class="action-idle-label" id="actionIdleLabel">Pick an outcome above to begin</div>
+          <div class="chip-row" id="chunkChips"></div>
+        </div>
+        <div class="action-running" id="actionRunning" style="display:none;">
+          <div class="ring-wrap">
+            <svg viewBox="0 0 200 200">
+              <g transform="rotate(-90 100 100)">
+                <circle class="ring-track" cx="100" cy="100" r="86"></circle>
+                <circle class="ring-progress" id="ringProgress" cx="100" cy="100" r="86"></circle>
+              </g>
+            </svg>
+            <div class="ring-center">
+              <div class="timer-display" id="timerDisplay">--:--</div>
+            </div>
+          </div>
+          <div class="action-focus" id="actionFocus">Working on —</div>
+          <div class="timer-sub" id="timerSub"></div>
+        </div>
+        <div class="overrun-tray" id="overrunTray">
+          <div class="headline">Time's up — still going?</div>
+          <div class="chip-row" id="overrunChips"></div>
+          <div class="overrun-actions">
+            <button class="btn primary" id="btnContinue">Continue +10m</button>
+            <button class="btn" id="btnBreak">Break</button>
+            <button class="btn" id="btnSwitch">Switch outcome</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="notes-wrap subdued">
+        <textarea class="notes" id="notesArea" placeholder="Notes for this chunk…"></textarea>
+        <button class="mic-btn" id="micBtn" title="Push to record">🎙</button>
+      </div>
+    </section>
+
+    <!-- ========== AHEAD (Planning) ========== -->
+    <section id="view-ahead" class="view">
+      <div class="date-line">Ahead</div>
+      <div class="filter-row" id="roleFilterRow">
+        <span class="chip selected" data-role="All">All</span>
+        <span class="chip" data-role="Roots">Roots</span>
+        <span class="chip" data-role="Resources">Resources</span>
+        <span class="chip" data-role="Reach">Reach</span>
+        <span class="chip" data-role="Reality">Reality</span>
+      </div>
+      <div class="role-subtitle" id="roleSubtitle"></div>
+      <div id="aheadList"></div>
+      <button class="fab" title="Add outcome">+</button>
+    </section>
+
+    <!-- ========== SETTINGS ========== -->
+    <section id="view-settings" class="view">
+      <div class="date-line">Settings</div>
+
+      <div class="settings-section">
+        <h3>Theme</h3>
+        <div class="settings-row"><span>Step accent</span><input type="color" id="themeStep" value="#4fd1c5"></div>
+        <div class="settings-row"><span>Ahead accent</span><input type="color" id="themeAhead" value="#9db4f8"></div>
+        <div class="settings-row"><span>Abide accent</span><input type="color" id="themeAbide" value="#8fbf7a"></div>
+      </div>
+
+      <div class="settings-section">
+        <h3>Chunk sizes</h3>
+        <div class="chip-row" id="settingsChunkChips" style="justify-content:flex-start; overflow-x:visible; flex-wrap:wrap;"></div>
+      </div>
+
+      <div class="settings-section">
+        <h3>Overrun</h3>
+        <div class="settings-row"><span>Auto-overrun by default</span><input type="checkbox"></div>
+        <div class="settings-row"><span>Bump length</span><input type="number" value="10"> min</div>
+        <div class="settings-row"><span>Week reset day</span>
+          <select><option>Monday</option><option>Sunday</option><option>Saturday</option></select>
+        </div>
+      </div>
+
+      <div class="settings-section">
+        <h3>Notes</h3>
+        <div class="settings-row"><span>Voice notes (push to record)</span><input type="checkbox" checked></div>
+      </div>
+
+      <div class="settings-section">
+        <h3>Focus Music</h3>
+        <div class="music-row">
+          <div class="music-row-head"><span class="name" style="color:var(--step)">Step</span><input type="checkbox" checked></div>
+          <input type="text" value="https://www.youtube.com/playlist?list=PLfd0VTIoVYk1UTLrj9ARhBpmhUBkth1Px">
+        </div>
+        <div class="music-row">
+          <div class="music-row-head"><span class="name" style="color:var(--ahead)">Ahead</span><input type="checkbox" checked></div>
+          <input type="text" value="https://www.youtube.com/playlist?list=PLfd0VTIoVYk2mLoNsO36ULCr3XZUPwAZw">
+        </div>
+        <div class="music-row">
+          <div class="music-row-head"><span class="name" style="color:var(--abide)">Abide</span><input type="checkbox" checked></div>
+          <input type="text" value="https://www.youtube.com/playlist?list=PLfd0VTIoVYk0ElEwgDLPMkSuIIoZ1LED0">
+        </div>
+      </div>
+
+      <div class="settings-section">
+        <h3>Abide Scripture</h3>
+        <p style="font-size:0.72rem; color:var(--text-faint); margin:0 0 8px;">One whole verse per line: quote — reference. "Abide in me" (John 15:4) always shows first; 21 defaults included — replace any or all of them.</p>
+        <textarea id="breathTextarea" style="width:100%; min-height:160px; background:var(--bg-elevated); border:1px solid var(--border); border-radius:8px; color:var(--text); padding:10px; font-size:0.76rem; font-family:inherit; resize:vertical;"></textarea>
+        <div class="settings-row" style="margin-top:10px;">
+          <span>Voice for read-aloud</span>
+          <select id="voiceSelect" style="width:55%;"><option>Loading voices…</option></select>
+        </div>
+        <p style="font-size:0.68rem; color:var(--text-faint); margin:6px 0 0;">Uses your browser's built-in text-to-speech — free, but quality depends entirely on what voices your device has installed. Pick whichever sounds best here.</p>
+      </div>
+
+      <div class="settings-section">
+        <h3>Calendar</h3>
+        <button class="btn" disabled style="opacity:0.5; width:100%;">Connect Google Calendar — not yet built</button>
+      </div>
+    </section>
+
+    <!-- ========== ABIDE ========== -->
+    <section id="view-abide" class="view">
+      <div class="abide-view">
+        <div class="glyph">🕊</div>
+        <h2>Abide</h2>
+        <div class="breath-wrap">
+          <div class="breath-bloom">
+            <div class="petal" style="--i:0"></div>
+            <div class="petal" style="--i:1"></div>
+            <div class="petal" style="--i:2"></div>
+            <div class="petal" style="--i:3"></div>
+            <div class="petal" style="--i:4"></div>
+            <div class="petal" style="--i:5"></div>
+            <div class="petal" style="--i:6"></div>
+            <div class="petal" style="--i:7"></div>
+          </div>
+          <div class="breath-cross"><span class="cross-v"></span><span class="cross-h"></span></div>
+          <div class="breath-caption" id="breathCaption">&nbsp;</div>
+          <div class="breath-audio-row">
+            <button class="breath-audio-btn" id="breathToneBtn" title="Breathing tone">🔉 Tone</button>
+            <button class="breath-audio-btn" id="breathVoiceBtn" title="Read scripture aloud">🗣️ Voice</button>
+          </div>
+        </div>
+      </div>
+      <div class="abide-anchor">
+        <div class="tally-summary">Today so far: 2h 15m Step · 40m Ahead · 15m Abide</div>
+        <div class="abide-actions">
+          <button class="btn" onclick="switchTab('ahead')">Continue to Ahead</button>
+          <button class="btn primary" onclick="switchTab('step')">Continue to Step</button>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <nav class="tabbar">
+    <button class="tab active" data-tab="step">Step</button>
+    <button class="tab" data-tab="ahead">Ahead</button>
+    <button class="tab" data-tab="settings">Settings</button>
+  </nav>
+</div>
+
+<script>
+  // ===== tab / mode switching =====
+  function switchTab(tab) {
+    document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+    document.getElementById('view-' + tab).classList.add('active');
+    document.querySelectorAll('.tab').forEach(b => b.classList.toggle('active', b.dataset.tab === tab));
+    if (tab === 'step' || tab === 'ahead' || tab === 'abide') {
+      document.documentElement.setAttribute('data-mode', tab);
+    }
+    updateMusicBtn();
+    if (tab === 'abide') startBreathCue(); else stopBreathCue();
+  }
+
+  // ===== Abide breath cue — whole scripture verses, paced to soak in, not read fast =====
+  // Inspired by the Abide meditation app's pattern (guided breath set to scripture,
+  // not a generic mindfulness script) — but self-paced and no audio, since a
+  // multi-minute guided practice would be friction in a tool built around removing
+  // friction. Each verse shows whole (not split into fragments) and holds for a few
+  // full breath cycles before crossfading to the next — casual, not a race to read.
+  // The list is Settings-owned (one verse per line, quote — reference); "Abide in me"
+  // (John 15:4) is always first, since it's this app's namesake verse, then the
+  // rotation moves through the rest of the list in order.
+  const CYCLES_PER_VERSE = 3; // 3 × 8s breath cycle = 24s to read each verse, unhurried
+  const DEFAULT_BREATH_TEXT =
+`Abide in me, and I in you. As the branch cannot bear fruit by itself, unless it abides in the vine, neither can you, unless you abide in me. — John 15:4
+Be still, and know that I am God. — Psalm 46:10
+Come to me, all who are weary, and I will give you rest. — Matthew 11:28
+The Lord is my shepherd; I shall not want. — Psalm 23:1
+You keep him in perfect peace whose mind is stayed on you. — Isaiah 26:3
+Do not be anxious about anything, but in everything, by prayer, present your requests to God. — Philippians 4:6
+And the peace of God, which surpasses all understanding, will guard your heart. — Philippians 4:7
+Peace I leave with you; my peace I give to you. — John 14:27
+Be still before the Lord and wait patiently for him. — Psalm 37:7
+The Lord is near to the brokenhearted and saves the crushed in spirit. — Psalm 34:18
+Fear not, for I am with you; be not dismayed, for I am your God. — Isaiah 41:10
+My grace is sufficient for you, for my power is made perfect in weakness. — 2 Corinthians 12:9
+He who dwells in the shelter of the Most High will rest in the shadow of the Almighty. — Psalm 91:1
+Do not be anxious about tomorrow, for tomorrow will be anxious for itself. — Matthew 6:34
+Cast your burden on the Lord, and he will sustain you. — Psalm 55:22
+And we know that in all things God works for the good of those who love him. — Romans 8:28
+His mercies never come to an end; they are new every morning. — Lamentations 3:22-23
+In peace I will lie down and sleep, for you alone, Lord, make me dwell in safety. — Psalm 4:8
+The Lord your God is with you; he will quiet you with his love. — Zephaniah 3:17
+The Lord is good, a stronghold in the day of trouble. — Nahum 1:7
+For God alone my soul waits in silence. — Psalm 62:1`;
+
+  function parseVerses(text) {
+    return text.split('\n').map(l => l.trim()).filter(Boolean);
+  }
+  let breathVerses = parseVerses(DEFAULT_BREATH_TEXT);
+  const breathTextarea = document.getElementById('breathTextarea');
+  breathTextarea.value = DEFAULT_BREATH_TEXT;
+  breathTextarea.addEventListener('change', () => {
+    const parsed = parseVerses(breathTextarea.value);
+    if (parsed.length) breathVerses = parsed;
+  });
+
+  let breathTimer = null;
+  function startBreathCue() {
+    const caption = document.getElementById('breathCaption');
+    let idx = 0;
+    const showVerse = (i) => {
+      const text = breathVerses[i % breathVerses.length];
+      caption.textContent = text;
+      speakVerse(text);
+    };
+    caption.classList.remove('fade-out');
+    showVerse(idx); // always starts on "Abide in me" — breathVerses[0]
+    if (breathTimer) clearInterval(breathTimer);
+    breathTimer = setInterval(() => {
+      idx++;
+      caption.classList.add('fade-out');
+      setTimeout(() => {
+        showVerse(idx);
+        caption.classList.remove('fade-out');
+      }, 600);
+    }, CYCLES_PER_VERSE * 8000);
+    if (breathToneEnabled) startBreathTone();
+  }
+  function stopBreathCue() {
+    if (breathTimer) clearInterval(breathTimer);
+    breathTimer = null;
+    stopBreathTone();
+    if (window.speechSynthesis) window.speechSynthesis.cancel();
+  }
+
+  // ---- voice: reads each verse aloud via the browser's built-in TTS (free, no
+  // API/cost — quality depends entirely on what voices the OS/browser ships with,
+  // there's no way to guarantee an "amazing" one, so Settings lets you pick the
+  // best-sounding one you actually have installed) ----
+  let breathVoiceEnabled = false;
+  let preferredVoiceURI = null;
+  function speakVerse(text) {
+    if (!breathVoiceEnabled || !window.speechSynthesis) return;
+    window.speechSynthesis.cancel();
+    const u = new SpeechSynthesisUtterance(text);
+    const voices = window.speechSynthesis.getVoices();
+    const chosen = voices.find(v => v.voiceURI === preferredVoiceURI)
+      || voices.find(v => /enhanced|premium|natural/i.test(v.name))
+      || voices.find(v => v.lang && v.lang.startsWith('en'));
+    if (chosen) u.voice = chosen;
+    u.rate = 0.85; // slower than default — unhurried, matching the whole point of this screen
+    window.speechSynthesis.speak(u);
+  }
+  const voiceSelect = document.getElementById('voiceSelect');
+  function populateVoiceList() {
+    if (!window.speechSynthesis) { voiceSelect.innerHTML = '<option>Not supported in this browser</option>'; return; }
+    const voices = window.speechSynthesis.getVoices();
+    if (!voices.length) return; // wait for onvoiceschanged
+    voiceSelect.innerHTML = '';
+    voices.forEach(v => {
+      const opt = document.createElement('option');
+      opt.value = v.voiceURI; opt.textContent = v.name + ' (' + v.lang + ')';
+      voiceSelect.appendChild(opt);
+    });
+    const auto = voices.find(v => /enhanced|premium|natural/i.test(v.name)) || voices.find(v => v.lang && v.lang.startsWith('en'));
+    if (auto) { voiceSelect.value = auto.voiceURI; preferredVoiceURI = auto.voiceURI; }
+  }
+  voiceSelect.addEventListener('change', () => { preferredVoiceURI = voiceSelect.value; });
+  if (window.speechSynthesis) {
+    populateVoiceList();
+    window.speechSynthesis.onvoiceschanged = populateVoiceList;
+  }
+
+  const breathVoiceBtn = document.getElementById('breathVoiceBtn');
+  breathVoiceBtn.addEventListener('click', () => {
+    breathVoiceEnabled = !breathVoiceEnabled;
+    breathVoiceBtn.classList.toggle('active', breathVoiceEnabled);
+    if (!breathVoiceEnabled && window.speechSynthesis) window.speechSynthesis.cancel();
+    else speakVerse(document.getElementById('breathCaption').textContent);
+  });
+
+  // ---- breathing tone: a soft swelling tone synced to the 8s cycle — an audible
+  // stand-in for the Watch's variable haptic pulses, which the web genuinely can't
+  // reproduce: the Vibration API has no intensity control even where it's supported,
+  // and iOS Safari doesn't support it at all, so a haptic version would just be
+  // silently dead on the user's actual phone. Audio works everywhere instead. ----
+  let breathToneEnabled = false, breathOsc = null, breathGainNode = null, breathToneLoopTimer = null;
+  function startBreathTone() {
+    audioCtx = audioCtx || new (window.AudioContext || window.webkitAudioContext)();
+    breathOsc = audioCtx.createOscillator();
+    breathGainNode = audioCtx.createGain();
+    breathOsc.type = 'sine'; breathOsc.frequency.value = 210;
+    breathGainNode.gain.value = 0.0001;
+    breathOsc.connect(breathGainNode); breathGainNode.connect(audioCtx.destination);
+    breathOsc.start();
+    scheduleBreathSwell();
+  }
+  function scheduleBreathSwell() {
+    if (!breathToneEnabled || !breathGainNode) return;
+    const now = audioCtx.currentTime;
+    breathGainNode.gain.cancelScheduledValues(now);
+    breathGainNode.gain.setValueAtTime(0.0001, now);
+    breathGainNode.gain.exponentialRampToValueAtTime(0.045, now + 4);
+    breathGainNode.gain.exponentialRampToValueAtTime(0.0001, now + 8);
+    breathToneLoopTimer = setTimeout(scheduleBreathSwell, 8000);
+  }
+  function stopBreathTone() {
+    if (breathToneLoopTimer) clearTimeout(breathToneLoopTimer);
+    breathToneLoopTimer = null;
+    if (breathOsc) { try { breathOsc.stop(); } catch (e) {} breathOsc.disconnect(); breathOsc = null; }
+    if (breathGainNode) { breathGainNode.disconnect(); breathGainNode = null; }
+  }
+  const breathToneBtn = document.getElementById('breathToneBtn');
+  breathToneBtn.addEventListener('click', () => {
+    breathToneEnabled = !breathToneEnabled;
+    breathToneBtn.classList.toggle('active', breathToneEnabled);
+    if (breathToneEnabled) startBreathTone(); else stopBreathTone();
+  });
+  document.querySelectorAll('.tab').forEach(btn => {
+    btn.addEventListener('click', () => switchTab(btn.dataset.tab));
+  });
+  document.getElementById('abideBtn').addEventListener('click', () => switchTab('abide'));
+
+  // ===== theme — live color pickers, resolves the earlier "which warm color" debate
+  // by letting the user just try colors directly instead of guessing in chat =====
+  [['themeStep', '--step'], ['themeAhead', '--ahead'], ['themeAbide', '--abide']].forEach(([id, cssVar]) => {
+    document.getElementById(id).addEventListener('input', (e) => {
+      document.documentElement.style.setProperty(cssVar, e.target.value);
+    });
+  });
+
+  // ===== music toggle — one button, follows whichever mode's playlist is current =====
+  // Real playback (the ported FocusFlowFireBase YouTube IFrame pattern) isn't wired into
+  // this skeleton yet; this is the affordance + state, matching everything else here
+  // that's real UI without a backend behind it.
+  let musicPlaying = false;
+  const musicBtn = document.getElementById('musicBtn');
+  function currentModeLabel() {
+    const m = document.documentElement.getAttribute('data-mode') || 'step';
+    return m.charAt(0).toUpperCase() + m.slice(1);
+  }
+  function updateMusicBtn() {
+    musicBtn.classList.toggle('playing', musicPlaying);
+    musicBtn.title = (musicPlaying ? 'Pause ' : 'Play ') + currentModeLabel() + ' music';
+  }
+  musicBtn.addEventListener('click', () => { musicPlaying = !musicPlaying; updateMusicBtn(); });
+  updateMusicBtn();
+
+  // ===== L1 week strip + full date =====
+  function renderWeekStrip() {
+    const el = document.getElementById('weekStrip');
+    el.innerHTML = '';
+    const today = new Date();
+    const dow = (today.getDay() + 6) % 7; // Monday = 0
+    const monday = new Date(today); monday.setDate(today.getDate() - dow);
+    for (let i = 0; i < 7; i++) {
+      const d = new Date(monday); d.setDate(monday.getDate() + i);
+      const cell = document.createElement('div');
+      cell.className = 'week-day' + (i === dow ? ' today' : i < dow ? ' past' : '');
+      cell.innerHTML = '<div class="wd">' + d.toLocaleDateString('en-US', { weekday: 'narrow' }) + '</div><div class="dn">' + d.getDate() + '</div>';
+      el.appendChild(cell);
+    }
+  }
+  function renderDateLine() {
+    const d = new Date();
+    const opts = { year: 'numeric', month: 'short', day: '2-digit', weekday: 'short' };
+    const parts = d.toLocaleDateString('en-US', opts).toUpperCase().replace(',', '');
+    document.getElementById('dateLine').textContent = parts;
+  }
+  renderWeekStrip(); renderDateLine();
+
+  // ===== L2 day bar — passed/left must be unmistakable, not a footnote =====
+  const DAY_START_H = 6, DAY_END_H = 22; // compressed window
+  const mockEvents = [
+    { title: 'Team standup', start: 9.5, end: 10, color: '#4fd1c5' },
+    { title: 'Dentist', start: 13, end: 14, color: '#e0b168' },
+    { title: 'Review w/ Sam', start: 16, end: 16.75, color: '#9db4f8' },
+  ];
+  function hourToPct(h) { return Math.max(0, Math.min(100, ((h - DAY_START_H) / (DAY_END_H - DAY_START_H)) * 100)); }
+  function renderDayBar() {
+    const bar = document.getElementById('dayBar');
+    bar.innerHTML = '';
+    const nowH = new Date().getHours() + new Date().getMinutes() / 60;
+    const nowPct = hourToPct(nowH);
+    bar.style.background = 'linear-gradient(to right, var(--bg-elevated) 0%, var(--bg-elevated) ' + nowPct +
+      '%, color-mix(in srgb, var(--accent) 32%, var(--bg-elevated)) ' + nowPct + '%, color-mix(in srgb, var(--accent) 32%, var(--bg-elevated)) 100%)';
+    mockEvents.forEach(ev => {
+      const el = document.createElement('div');
+      const isPast = ev.end <= nowH;
+      el.className = 'day-bar-block' + (isPast ? ' past' : '');
+      el.style.left = hourToPct(ev.start) + '%';
+      el.style.width = (hourToPct(ev.end) - hourToPct(ev.start)) + '%';
+      el.style.background = ev.color;
+      el.title = ev.title;
+      el.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const pop = document.getElementById('eventPopover');
+        const startStr = hourLabel(ev.start), endStr = hourLabel(ev.end);
+        pop.innerHTML = '<b>' + ev.title + '</b><br>' + startStr + ' – ' + endStr;
+        pop.classList.add('show');
+      });
+      bar.appendChild(el);
+    });
+    const now = document.createElement('div');
+    now.className = 'day-bar-now';
+    now.style.left = nowPct + '%';
+    bar.appendChild(now);
+  }
+  function hourLabel(h) {
+    const hh = Math.floor(h), mm = Math.round((h - hh) * 60);
+    const period = hh >= 12 ? 'PM' : 'AM';
+    const h12 = ((hh + 11) % 12) + 1;
+    return h12 + (mm ? ':' + String(mm).padStart(2, '0') : '') + ' ' + period;
+  }
+  function renderDayStats() {
+    const now = new Date();
+    const nowH = now.getHours() + now.getMinutes() / 60 + now.getSeconds() / 3600;
+    const passedH = Math.max(0, Math.min(DAY_END_H - DAY_START_H, nowH - DAY_START_H));
+    const leftH = Math.max(0, DAY_END_H - nowH);
+    const fmtH = (hrs) => { const totalMin = Math.round(hrs * 60); return Math.floor(totalMin / 60) + 'h ' + (totalMin % 60) + 'm'; };
+    document.getElementById('timePassedStat').textContent = fmtH(passedH);
+    document.getElementById('timeLeftStat').textContent = fmtH(leftH);
+  }
+  renderDayBar(); renderDayStats();
+  setInterval(() => { renderDayBar(); renderDayStats(); }, 30000);
+
+  // ===== Action block — ONLY the choice (idle) or the counter + focus (running) =====
+  let selectedOutcomeName = null, selectedSubOutcome = null;
+
+  // chunk sizes are Settings-owned state — Step's chips and the overrun "add time"
+  // chips both render from this one array, so editing it in Settings updates both live
+  let chunkSizes = [5, 10, 15, 20, 30, 60, 90];
+
+  function renderChunkChips() {
+    const chipRow = document.getElementById('chunkChips');
+    chipRow.innerHTML = '';
+    chunkSizes.forEach(min => {
+      const c = document.createElement('span');
+      c.className = 'chip' + (selectedOutcomeName ? '' : ' disabled');
+      c.textContent = min + 'm';
+      c.addEventListener('click', () => { if (selectedOutcomeName) startChunk(min); });
+      chipRow.appendChild(c);
+    });
+  }
+  function renderOverrunChips() {
+    const row = document.getElementById('overrunChips');
+    row.innerHTML = '';
+    chunkSizes.forEach(min => {
+      const c = document.createElement('span');
+      c.className = 'chip'; c.textContent = '+' + min + 'm';
+      c.addEventListener('click', () => acknowledgeOverrun(min));
+      row.appendChild(c);
+    });
+  }
+  function renderSettingsChunkChips() {
+    const row = document.getElementById('settingsChunkChips');
+    row.innerHTML = '';
+    chunkSizes.forEach(min => {
+      const c = document.createElement('span');
+      c.className = 'chip'; c.textContent = min + 'm ×';
+      c.title = 'Remove ' + min + 'm';
+      c.addEventListener('click', () => {
+        chunkSizes = chunkSizes.filter(m => m !== min);
+        refreshChunkSizeUI();
+      });
+      row.appendChild(c);
+    });
+    const addChip = document.createElement('span');
+    addChip.className = 'chip add-chip'; addChip.textContent = '+';
+    addChip.addEventListener('click', () => {
+      const n = parseInt(prompt('Add a chunk length, in minutes:'), 10);
+      if (n > 0 && !chunkSizes.includes(n)) {
+        chunkSizes.push(n);
+        chunkSizes.sort((a, b) => a - b);
+        refreshChunkSizeUI();
+      }
+    });
+    row.appendChild(addChip);
+  }
+  function refreshChunkSizeUI() {
+    renderChunkChips();
+    renderOverrunChips();
+    renderSettingsChunkChips();
+  }
+  refreshChunkSizeUI();
+
+  let endsAt = null, tickHandle = null, chunkTotalMs = 0;
+  let overrunState = 'none'; // none | visual | sound | bumped
+  let soundTimeout = null, bumpTimeout = null;
+  const OVERRUN_SOUND_DELAY = 12000;
+  const OVERRUN_BUMP_DELAY = 40000;
+  const DEFAULT_BUMP_MIN = 10;
+  const RING_R = 86, RING_C = 2 * Math.PI * RING_R;
+  const ringEl = document.getElementById('ringProgress');
+  ringEl.setAttribute('stroke-dasharray', RING_C);
+
+  function setRing(fractionRemaining) {
+    const f = Math.max(0, Math.min(1, fractionRemaining));
+    ringEl.setAttribute('stroke-dashoffset', RING_C * (1 - f));
+  }
+
+  function startChunk(minutes) {
+    clearOverrunTimers();
+    chunkTotalMs = minutes * 60000;
+    endsAt = Date.now() + chunkTotalMs;
+    overrunState = 'none';
+    document.getElementById('actionBlock').classList.remove('overrun');
+    document.getElementById('overrunTray').classList.remove('show');
+    document.getElementById('actionIdle').style.display = 'none';
+    document.getElementById('actionRunning').style.display = 'block';
+    document.getElementById('actionFocus').textContent = 'Working on ' + (selectedOutcomeName || '—') + (selectedSubOutcome ? ' › ' + selectedSubOutcome : '');
+    document.getElementById('timerSub').textContent = '';
+    if (tickHandle) clearInterval(tickHandle);
+    tick();
+    tickHandle = setInterval(tick, 1000);
+  }
+
+  function tick() {
+    const remainMs = endsAt - Date.now();
+    if (remainMs > 0) {
+      document.getElementById('timerDisplay').textContent = fmt(remainMs);
+      setRing(remainMs / chunkTotalMs);
+    } else {
+      document.getElementById('timerDisplay').textContent = '+' + fmt(-remainMs);
+      setRing(1); // full ring, colored red via .overrun — the glance-value now means "over," not "remaining"
+      if (overrunState === 'none') enterOverrun();
+    }
+  }
+
+  function fmt(ms) {
+    const totalSec = Math.max(0, Math.round(ms / 1000));
+    const m = Math.floor(totalSec / 60), s = totalSec % 60;
+    return m + ':' + String(s).padStart(2, '0');
+  }
+
+  function enterOverrun() {
+    overrunState = 'visual';
+    document.getElementById('actionBlock').classList.add('overrun');
+    document.getElementById('overrunTray').classList.add('show');
+    document.getElementById('timerSub').textContent = 'Chunk finished — visual alert first, no sound yet';
+    soundTimeout = setTimeout(() => {
+      overrunState = 'sound';
+      beep();
+      document.getElementById('timerSub').textContent = 'Still there? (one beep, then auto-continue if quiet)';
+    }, OVERRUN_SOUND_DELAY);
+    bumpTimeout = setTimeout(() => {
+      acknowledgeOverrun(DEFAULT_BUMP_MIN, true);
+    }, OVERRUN_BUMP_DELAY);
+  }
+
+  function acknowledgeOverrun(addMinutes, wasAuto) {
+    clearOverrunTimers();
+    chunkTotalMs = addMinutes * 60000;
+    endsAt = Date.now() + chunkTotalMs;
+    overrunState = 'none';
+    document.getElementById('actionBlock').classList.remove('overrun');
+    document.getElementById('overrunTray').classList.remove('show');
+    document.getElementById('timerSub').textContent = wasAuto
+      ? 'Auto-continued +' + addMinutes + 'm (no response)'
+      : 'Continuing +' + addMinutes + 'm';
+  }
+
+  function clearOverrunTimers() {
+    if (soundTimeout) clearTimeout(soundTimeout);
+    if (bumpTimeout) clearTimeout(bumpTimeout);
+    soundTimeout = null; bumpTimeout = null;
+  }
+
+  function returnToIdle(label) {
+    clearOverrunTimers();
+    if (tickHandle) clearInterval(tickHandle);
+    overrunState = 'none';
+    document.getElementById('actionBlock').classList.remove('overrun');
+    document.getElementById('overrunTray').classList.remove('show');
+    document.getElementById('actionRunning').style.display = 'none';
+    document.getElementById('actionIdle').style.display = 'block';
+    document.getElementById('actionIdleLabel').textContent = label;
+    document.querySelectorAll('#chunkChips .chip').forEach(c => c.classList.remove('selected'));
+  }
+
+  document.getElementById('btnContinue').addEventListener('click', () => acknowledgeOverrun(DEFAULT_BUMP_MIN));
+  document.getElementById('btnBreak').addEventListener('click', () => returnToIdle('On a break — pick a length to resume'));
+  document.getElementById('btnSwitch').addEventListener('click', () => {
+    returnToIdle('Pick an outcome above to begin');
+    expandOutcomePicker();
+  });
+
+  let audioCtx = null;
+  function beep() {
+    try {
+      audioCtx = audioCtx || new (window.AudioContext || window.webkitAudioContext)();
+      const osc = audioCtx.createOscillator(), gain = audioCtx.createGain();
+      osc.frequency.value = 880; osc.type = 'sine';
+      gain.gain.setValueAtTime(0.001, audioCtx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.2, audioCtx.currentTime + 0.02);
+      gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.4);
+      osc.connect(gain); gain.connect(audioCtx.destination);
+      osc.start(); osc.stop(audioCtx.currentTime + 0.4);
+      if (navigator.vibrate) navigator.vibrate(120);
+    } catch (e) {}
+  }
+
+  // ===== Outcome picker (mock) — lives above Action, collapses once chosen =====
+  function expandOutcomePicker() {
+    document.getElementById('outcomeSummary').style.display = 'none';
+    document.getElementById('outcomeFull').style.display = 'block';
+  }
+  function collapseOutcomePicker() {
+    document.getElementById('outcomeSummary').style.display = 'flex';
+    document.getElementById('outcomeFull').style.display = 'none';
+  }
+  document.getElementById('changeOutcomeBtn').addEventListener('click', expandOutcomePicker);
+
+  const outcomes = {
+    recent: [{ t: 'Reply to emails', type: 'deliverable' }, { t: 'Draft sermon notes', type: 'deliverable' }],
+    today:  [{ t: 'AbidingSteps spec', type: 'deliverable' }, { t: 'Exercise', type: 'directive' }],
+    other:  [{ t: 'File taxes', type: 'deliverable' }, { t: 'Read scripture', type: 'directive' }, { t: 'Call Mom', type: 'deliverable' }],
+  };
+  const subOutcomeMap = {
+    'AbidingSteps spec': ['Data model', 'Screen spec', 'Music settings'],
+    'File taxes': ['Gather receipts', 'Fill forms', 'Submit'],
+  };
+  function renderOutcomeGroup(id, list) {
+    const el = document.getElementById(id);
+    list.forEach(o => {
+      const chip = document.createElement('div');
+      chip.className = 'outcome-chip ' + o.type;
+      chip.innerHTML = '<span class="type-dot"></span>' + o.t;
+      chip.addEventListener('click', () => selectOutcome(o.t, chip));
+      el.appendChild(chip);
+    });
+  }
+  renderOutcomeGroup('outcomesRecent', outcomes.recent);
+  renderOutcomeGroup('outcomesToday', outcomes.today);
+  renderOutcomeGroup('outcomesOther', outcomes.other);
+  const addChip = document.createElement('div');
+  addChip.className = 'outcome-chip add-chip'; addChip.textContent = '+ Add';
+  addChip.addEventListener('click', () => {
+    const name = prompt('New outcome name:');
+    if (name) { const chip = document.createElement('div'); chip.className = 'outcome-chip deliverable';
+      chip.innerHTML = '<span class="type-dot"></span>' + name;
+      chip.addEventListener('click', () => selectOutcome(name, chip));
+      document.getElementById('outcomesOther').appendChild(chip); selectOutcome(name, chip); }
+  });
+  document.getElementById('outcomesOther').appendChild(addChip);
+
+  function selectOutcome(name, chipEl) {
+    document.querySelectorAll('.outcome-chip').forEach(c => c.classList.remove('selected'));
+    chipEl.classList.add('selected');
+    selectedOutcomeName = name; selectedSubOutcome = null;
+
+    // choosing to work on it now IS choosing it for today — no separate promote step
+    if (chipEl.parentElement && chipEl.parentElement.id === 'outcomesOther') {
+      document.getElementById('outcomesToday').appendChild(chipEl);
+    }
+
+    const row = document.getElementById('subOutcomeRow');
+    row.innerHTML = '';
+    (subOutcomeMap[name] || []).forEach(s => {
+      const c = document.createElement('span'); c.className = 'chip'; c.textContent = s;
+      c.addEventListener('click', () => {
+        document.querySelectorAll('#subOutcomeRow .chip').forEach(x => x.classList.toggle('selected', x === c));
+        selectedSubOutcome = s;
+        finishOutcomeSelection(name);
+      });
+      row.appendChild(c);
+    });
+    const addSub = document.createElement('span'); addSub.className = 'chip add-chip'; addSub.textContent = '+ add';
+    row.appendChild(addSub);
+
+    finishOutcomeSelection(name);
+  }
+
+  function finishOutcomeSelection(name) {
+    const label = name + (selectedSubOutcome ? ' › ' + selectedSubOutcome : '');
+    document.getElementById('outcomeSummaryText').textContent = label;
+    collapseOutcomePicker();
+    document.querySelectorAll('#chunkChips .chip').forEach(c => c.classList.remove('disabled'));
+    document.getElementById('actionIdleLabel').textContent = 'Choose a length';
+    switchNotesContext(label);
+  }
+
+  // ===== notes are scoped to whatever outcome (+ sub-outcome) is current, not global =====
+  const notesByKey = {};
+  function switchNotesContext(newKey) {
+    const notesEl = document.getElementById('notesArea');
+    const prevKey = notesEl.dataset.key;
+    if (prevKey) notesByKey[prevKey] = notesEl.value;
+    notesEl.value = notesByKey[newKey] || '';
+    notesEl.dataset.key = newKey;
+    notesEl.placeholder = 'Notes for ' + newKey + '…';
+  }
+
+  // ===== L6 voice notes =====
+  const micBtn = document.getElementById('micBtn');
+  const notesArea = document.getElementById('notesArea');
+  const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
+  let recognizer = null, recording = false;
+  if (SpeechRec) {
+    recognizer = new SpeechRec();
+    recognizer.continuous = true; recognizer.interimResults = false;
+    recognizer.onresult = (e) => {
+      let text = '';
+      for (let i = e.resultIndex; i < e.results.length; i++) text += e.results[i][0].transcript;
+      notesArea.value += (notesArea.value ? ' ' : '') + text.trim();
+    };
+    recognizer.onend = () => { recording = false; micBtn.classList.remove('recording'); };
+  }
+  micBtn.addEventListener('click', () => {
+    if (!SpeechRec) { alert('Voice input isn\'t supported in this browser — type instead.'); return; }
+    recording = !recording;
+    micBtn.classList.toggle('recording', recording);
+    if (recording) recognizer.start(); else recognizer.stop();
+  });
+
+  // ===== Ahead list (mock) — the star is the deliberate "add to today" path =====
+  const aheadOutcomes = [
+    { t: 'AbidingSteps spec', type: 'Deliverable', tag: 'Reach', budget: null, today: true },
+    { t: 'File taxes', type: 'Deliverable', tag: 'Reality', budget: { acc: 45, target: 120 }, today: false },
+    { t: 'Exercise', type: 'Directive', tag: 'Reality', budget: { acc: 90, target: 180 }, today: true },
+    { t: 'Read scripture', type: 'Directive', tag: 'Roots', budget: null, today: false },
+  ];
+  // shareable with people unfamiliar with the shorthand — spelled out per role
+  const ROLE_SUBTITLES = {
+    'Roots': 'Faith, Family, Friends, Fellowship',
+    'Resources': 'Finances, Home, Possessions, Stewardship',
+    'Reality': 'Fitness, Health, Work, Obligations',
+    'Reach': 'Calling, Growth, Career, Influence',
+  };
+  document.querySelectorAll('#roleFilterRow .chip').forEach(chip => {
+    chip.addEventListener('click', () => {
+      document.querySelectorAll('#roleFilterRow .chip').forEach(c => c.classList.remove('selected'));
+      chip.classList.add('selected');
+      const role = chip.dataset.role;
+      document.getElementById('roleSubtitle').textContent = ROLE_SUBTITLES[role] || '';
+      document.querySelectorAll('#aheadList .outcome-row').forEach(row => {
+        row.style.display = (role === 'All' || row.dataset.tag === role) ? 'block' : 'none';
+      });
+    });
+  });
+
+  const aheadList = document.getElementById('aheadList');
+  aheadOutcomes.forEach(o => {
+    const row = document.createElement('div'); row.className = 'outcome-row'; row.dataset.tag = o.tag;
+    let html = '<div class="outcome-row-top"><div class="outcome-row-title"><button class="today-star' + (o.today ? ' active' : '') +
+      '" title="Add to today">' + (o.today ? '★' : '☆') + '</button><span>' + o.t +
+      '</span></div><span class="badge">' + o.type + ' · ' + o.tag + '</span></div>';
+    if (o.budget) {
+      const pct = Math.min(100, (o.budget.acc / o.budget.target) * 100);
+      html += '<div class="budget-bar-wrap"><div class="budget-bar" style="width:' + pct + '%"></div></div>';
+      html += '<div class="budget-label">' + o.budget.acc + 'm / ' + o.budget.target + 'm this week</div>';
+    }
+    row.innerHTML = html;
+    row.querySelector('.today-star').addEventListener('click', (e) => {
+      o.today = !o.today;
+      e.target.classList.toggle('active', o.today);
+      e.target.textContent = o.today ? '★' : '☆';
+    });
+    aheadList.appendChild(row);
+  });
+
+  // click outside popover closes it
+  document.addEventListener('click', () => document.getElementById('eventPopover').classList.remove('show'));
+</script>
+</body>
+</html>
