@@ -438,6 +438,32 @@ Abide nudging the user if today's list is still empty was discussed as a
 third path (a guardrail against never planning) but not yet built into the
 skeleton — worth adding once Abide has real state to check against.
 
+## Settings → About (added 2026-09-10)
+
+`APP_VERSION` constant ('v1', kept in sync with the `abidingsteps-` cache
+suffix in `sw.js`) shown as "AbidingSteps v1" in Settings, plus a "Check
+for updates & reload" button — same pattern as AbidingFlow: deletes all
+`abidingsteps-*` caches, unregisters service workers, reloads. Exists so a
+stale install is visually obvious and fixable without knowing devtools.
+Verified the cache-clear logic runs; couldn't verify the final
+`location.reload()` in this session's preview pane, which blocks top-frame
+navigation to `data:` URLs as a sandbox restriction — not expected to be an
+issue once deployed or tested as the real installed PWA.
+
+## Safe-area insets for iOS (added 2026-09-10)
+
+Reported on a real iPhone: the topbar rendered underneath the status
+bar/notch (camera, time, battery). `viewport-fit=cover` was already set
+(required to access safe-area values at all) but nothing was actually
+padding for it. Fixed: `.topbar` gets `padding-top: env(safe-area-inset-top)`
+added to its existing padding; `.tabbar` gets `padding-bottom:
+env(safe-area-inset-bottom)` for the home-indicator area (same class of
+bug, fixed proactively rather than waiting to be told); `main`'s bottom
+padding and `.abide-anchor`'s fixed bottom offset both account for the
+tabbar potentially growing taller from that inset. Not verifiable in this
+desktop preview (env() resolves to 0 with no notch) — needs confirming on
+the actual iPhone.
+
 ## PWA installability (added 2026-09-10)
 
 Was always the requirement, not optional — built now: `manifest.json`,

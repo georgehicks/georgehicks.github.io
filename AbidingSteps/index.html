@@ -45,7 +45,8 @@
   /* topbar */
   .topbar {
     display: flex; align-items: center; justify-content: space-between;
-    padding: 14px 16px 10px; position: sticky; top: 0; background: var(--bg); z-index: 5;
+    padding: 14px 16px 10px; padding-top: calc(14px + env(safe-area-inset-top));
+    position: sticky; top: 0; background: var(--bg); z-index: 5;
   }
   .brand { font-weight: 600; letter-spacing: 0.02em; font-size: 0.95rem; color: var(--text-dim); }
   .abide-btn {
@@ -63,7 +64,7 @@
   }
   .music-btn.playing { color: var(--accent); border-color: var(--accent); }
 
-  main { flex: 1; padding: 4px 16px 90px; }
+  main { flex: 1; padding: 4px 16px calc(90px + env(safe-area-inset-bottom)); }
   .view { display: none; }
   .view.active { display: block; }
 
@@ -272,7 +273,8 @@
   /* pinned below the scripture/breathing so verse-length changes never shift it, and
      kept quiet on purpose — the verse and the bloom should hold visual attention, not these */
   .abide-anchor {
-    position: fixed; left: 0; right: 0; bottom: 58px; max-width: 480px; margin: 0 auto;
+    position: fixed; left: 0; right: 0; bottom: calc(58px + env(safe-area-inset-bottom));
+    max-width: 480px; margin: 0 auto;
     padding: 0 16px; display: flex; flex-direction: column; align-items: center; gap: 8px; z-index: 4;
   }
   .abide-anchor .tally-summary {
@@ -288,7 +290,7 @@
   .tabbar {
     position: fixed; bottom: 0; left: 0; right: 0; display: flex;
     background: var(--bg-elevated); border-top: 1px solid var(--border);
-    max-width: 480px; margin: 0 auto;
+    max-width: 480px; margin: 0 auto; padding-bottom: env(safe-area-inset-bottom);
   }
   .tab {
     flex: 1; background: none; border: none; color: var(--text-faint); padding: 12px 0 10px;
@@ -469,6 +471,13 @@
       <div class="settings-section">
         <h3>Calendar</h3>
         <button class="btn" disabled style="opacity:0.5; width:100%;">Connect Google Calendar — not yet built</button>
+      </div>
+
+      <div class="settings-section">
+        <h3>About</h3>
+        <div class="settings-row"><span>Installed version</span><span id="appVersionLabel" style="color:var(--text-dim);"></span></div>
+        <button class="btn" id="reloadAppBtn" style="width:100%; margin-top:8px;">Check for updates &amp; reload</button>
+        <div id="reloadStatus" style="font-size:0.72rem; color:var(--text-faint); margin-top:6px;"></div>
       </div>
     </section>
 
@@ -1157,6 +1166,27 @@ For God alone my soul waits in silence. — Psalm 62:1`;
   if ('serviceWorker' in navigator) {
     window.addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => {}));
   }
+
+  // Keep in sync with the CACHE suffix in sw.js — shown here so a stale
+  // install is easy to spot, and "Check for updates" has something real to bust.
+  const APP_VERSION = 'v1';
+  document.getElementById('appVersionLabel').textContent = 'AbidingSteps ' + APP_VERSION;
+  document.getElementById('reloadAppBtn').addEventListener('click', async () => {
+    const status = document.getElementById('reloadStatus');
+    status.textContent = 'Clearing cache…';
+    try {
+      if ('caches' in window) {
+        const keys = await caches.keys();
+        await Promise.all(keys.filter(k => k.startsWith('abidingsteps-')).map(k => caches.delete(k)));
+      }
+      if ('serviceWorker' in navigator) {
+        const regs = await navigator.serviceWorker.getRegistrations();
+        await Promise.all(regs.map(r => r.unregister()));
+      }
+    } catch (e) { /* fall through to reload regardless */ }
+    status.textContent = 'Reloading…';
+    location.reload();
+  });
 </script>
 </body>
 </html>
