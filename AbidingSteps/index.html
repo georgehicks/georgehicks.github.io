@@ -3,6 +3,11 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0e1016">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon.svg">
 <title>AbidingSteps</title>
 <style>
   :root {
@@ -187,7 +192,7 @@
   .settings-section h3 { font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-dim); margin: 0 0 10px; }
   .settings-row { display: flex; align-items: center; justify-content: space-between; padding: 8px 0; font-size: 0.88rem; border-bottom: 1px solid var(--border); }
   .settings-row:last-child { border-bottom: none; }
-  .settings-row input[type=text], .settings-row input[type=number], .settings-row select {
+  .settings-row input[type=text], .settings-row input[type=number], .settings-row input[type=time], .settings-row select {
     background: var(--bg-elevated); border: 1px solid var(--border); color: var(--text);
     border-radius: 6px; padding: 6px 8px; font-size: 0.82rem; width: 55%;
   }
@@ -316,7 +321,7 @@
           <div class="stat right"><span class="stat-value accent" id="timeLeftStat">--</span><span class="stat-label">left today</span></div>
         </div>
         <div class="day-bar" id="dayBar"></div>
-        <div class="day-bar-ticks"><span>6</span><span>9</span><span>12</span><span>15</span><span>18</span><span>21</span></div>
+        <div class="day-bar-ticks" id="dayBarTicks"></div>
         <div class="event-popover" id="eventPopover"></div>
       </div>
 
@@ -412,6 +417,12 @@
       </div>
 
       <div class="settings-section">
+        <h3>Day hours</h3>
+        <div class="settings-row"><span>Day starts</span><input type="time" id="dayStartInput" value="06:00"></div>
+        <div class="settings-row"><span>Day ends</span><input type="time" id="dayEndInput" value="22:00"></div>
+      </div>
+
+      <div class="settings-section">
         <h3>Overrun</h3>
         <div class="settings-row"><span>Auto-overrun by default</span><input type="checkbox"></div>
         <div class="settings-row"><span>Bump length</span><input type="number" value="10"> min</div>
@@ -447,7 +458,10 @@
         <textarea id="breathTextarea" style="width:100%; min-height:160px; background:var(--bg-elevated); border:1px solid var(--border); border-radius:8px; color:var(--text); padding:10px; font-size:0.76rem; font-family:inherit; resize:vertical;"></textarea>
         <div class="settings-row" style="margin-top:10px;">
           <span>Voice for read-aloud</span>
-          <select id="voiceSelect" style="width:55%;"><option>Loading voices…</option></select>
+          <div style="display:flex; gap:6px; width:55%;">
+            <select id="voiceSelect" style="flex:1;"><option>Loading voices…</option></select>
+            <button class="btn" id="refreshVoicesBtn" style="padding:6px 10px; font-size:0.72rem;" title="Re-check for newly installed voices">↻</button>
+          </div>
         </div>
         <p style="font-size:0.68rem; color:var(--text-faint); margin:6px 0 0;">Uses your browser's built-in text-to-speech — free, but quality depends entirely on what voices your device has installed. Pick whichever sounds best here.</p>
       </div>
@@ -623,6 +637,7 @@ For God alone my soul waits in silence. — Psalm 62:1`;
     populateVoiceList();
     window.speechSynthesis.onvoiceschanged = populateVoiceList;
   }
+  document.getElementById('refreshVoicesBtn').addEventListener('click', populateVoiceList);
 
   const breathVoiceBtn = document.getElementById('breathVoiceBtn');
   breathVoiceBtn.addEventListener('click', () => {
@@ -723,13 +738,37 @@ For God alone my soul waits in silence. — Psalm 62:1`;
   renderWeekStrip(); renderDateLine();
 
   // ===== L2 day bar — passed/left must be unmistakable, not a footnote =====
-  const DAY_START_H = 6, DAY_END_H = 22; // compressed window
+  // Hours range is Settings-owned, not fixed — defaults to a typical waking day.
+  let DAY_START_H = 6, DAY_END_H = 22;
   const mockEvents = [
     { title: 'Team standup', start: 9.5, end: 10, color: '#4fd1c5' },
     { title: 'Dentist', start: 13, end: 14, color: '#e0b168' },
     { title: 'Review w/ Sam', start: 16, end: 16.75, color: '#9db4f8' },
   ];
   function hourToPct(h) { return Math.max(0, Math.min(100, ((h - DAY_START_H) / (DAY_END_H - DAY_START_H)) * 100)); }
+  function renderDayBarTicks() {
+    const row = document.getElementById('dayBarTicks');
+    row.innerHTML = '';
+    const steps = 6;
+    for (let i = 0; i < steps; i++) {
+      const h = DAY_START_H + (DAY_END_H - DAY_START_H) * (i / (steps - 1));
+      const span = document.createElement('span');
+      span.textContent = Math.round(h);
+      row.appendChild(span);
+    }
+  }
+  const dayStartInput = document.getElementById('dayStartInput');
+  const dayEndInput = document.getElementById('dayEndInput');
+  function timeToHours(hhmm) { const [h, m] = hhmm.split(':').map(Number); return h + m / 60; }
+  function applyDayHours() {
+    const s = timeToHours(dayStartInput.value || '06:00');
+    const e = timeToHours(dayEndInput.value || '22:00');
+    if (e > s) { DAY_START_H = s; DAY_END_H = e; }
+    renderDayBarTicks(); renderDayBar(); renderDayStats();
+  }
+  dayStartInput.addEventListener('change', applyDayHours);
+  dayEndInput.addEventListener('change', applyDayHours);
+  renderDayBarTicks();
   function renderDayBar() {
     const bar = document.getElementById('dayBar');
     bar.innerHTML = '';
@@ -1114,6 +1153,10 @@ For God alone my soul waits in silence. — Psalm 62:1`;
 
   // click outside popover closes it
   document.addEventListener('click', () => document.getElementById('eventPopover').classList.remove('show'));
+
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => {}));
+  }
 </script>
 </body>
 </html>

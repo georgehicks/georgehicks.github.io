@@ -259,6 +259,11 @@ playlist is current, so one tap plays/pauses regardless of where you are.
   Step's cyan-teal, and ties directly to the vine/branch imagery in the
   John 15:4 verse itself ("abide in the vine") better than either warm
   alternative did.
+- **Day hours** — the compressed day-bar window (default 6:00 AM–10:00 PM)
+  is Settings-owned now, not a hardcoded constant. Two native
+  `<input type="time">` fields; changing either re-renders the bar, the
+  passed/left stats, and the tick labels (now computed dynamically across
+  whatever range is set, not fixed "6 9 12 15 18 21" text).
 - The whole app's background now carries a soft radial glow tied to
   `--accent` (`color-mix` into the base `--bg`, ~12% strength, positioned
   top-center) — echoes the Abide bloom's warmth across Step and Ahead too,
@@ -400,6 +405,13 @@ carries over.
   → Spoken Content → Voices (free, built into iOS). A genuinely natural
   neural voice (ElevenLabs, OpenAI TTS, etc.) is possible but requires a
   paid API — not compatible with "free."
+  **Windows-specific gotcha confirmed 2026-09-10:** installing a voice via
+  Narrator → Settings → Add natural voices does NOT make it appear here —
+  those voices are Narrator-exclusive, not exposed through the general SAPI
+  list that `speechSynthesis.getVoices()` queries. The path that *would*
+  work is Settings → Time & Language → Speech → Manage voices → Add voices
+  (a different menu). User decided to just judge voice quality on their
+  iPhone instead of chasing this further on Windows.
 - **Cross reveal** — a small Latin cross (proper cross shape: longer arm
   below the bar, not a symmetric plus) fades in only at full blossom, in
   the hollow space the petals open up. First pass put it *inside*
@@ -425,6 +437,19 @@ separate "promote" step needed:
 Abide nudging the user if today's list is still empty was discussed as a
 third path (a guardrail against never planning) but not yet built into the
 skeleton — worth adding once Abide has real state to check against.
+
+## PWA installability (added 2026-09-10)
+
+Was always the requirement, not optional — built now: `manifest.json`,
+`sw.js`, and `icon.svg` (a teal ascending stepping-stone path, brightest
+dot = the next step, not the destination), ported from the
+AbidingFlow/FocusFlowFireBase pattern (cache name `abidingsteps-v1`,
+network-first for the HTML shell, cache-first for everything else).
+Registration code is in place and structurally matches the working
+AbidingFlow pattern, but **not live-verified** — this session's preview
+pane loads over a `data:` origin where `serviceWorker` isn't even present
+in `navigator`, since service workers require a secure context (https or
+localhost). Needs a real check once deployed to GitHub Pages.
 
 ## Open / deferred
 
