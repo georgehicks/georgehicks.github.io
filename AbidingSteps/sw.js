@@ -1,6 +1,6 @@
 // Keep this version suffix in sync with any version marker shown in-app so a
 // stale cache is easy to spot and force-refresh.
-const CACHE = 'abidingsteps-v1';
+const CACHE = 'abidingsteps-v2';
 const ASSETS = ['./index.html', './manifest.json', './icon.svg'];
 
 self.addEventListener('install', e => {

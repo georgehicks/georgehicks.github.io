@@ -438,11 +438,40 @@ Abide nudging the user if today's list is still empty was discussed as a
 third path (a guardrail against never planning) but not yet built into the
 skeleton — worth adding once Abide has real state to check against.
 
+## Outcome management + other dead buttons fixed (2026-09-10)
+
+Flagged: no way to edit, delete, or mark an outcome complete once created.
+Broadened to a full sweep for anything else that looked wired but wasn't:
+
+- **Ahead rows** — each now has ✓ (mark complete, Deliverables only —
+  Directives never complete, per the data model)/✎ (edit: name, type, role
+  tag, via prompts)/× (delete, with a confirm). Completed rows show
+  strikethrough + dimmed. `renderAheadList()` is now a real re-render
+  function rather than a one-time forEach, so all of this can mutate state
+  and redraw.
+- **Ahead's "+" FAB** — was completely dead (no click handler at all). Now
+  prompts for name/type/role and appends a real new outcome.
+- **Step's sub-outcome "+ add" chip** — also dead. Now prompts, adds to
+  `subOutcomeMap`, selects it, and re-renders the row.
+- **Settings → Auto-overrun toggle + Bump length** — were visual-only.
+  Bump length now drives the actual bump amount everywhere (the Continue
+  button label updates live too). Auto-overrun, when on, skips the
+  visual/sound escalation entirely and silently auto-continues the moment a
+  chunk ends — resolves the original ambiguity between "escalate then
+  auto-bump" (off) and a true silent auto-overrun (on).
+
+Deliberately left as-is, not silently ignored: **Week reset day** has
+nothing to wire yet — there's no real weekly-accumulation state in this
+mock to reset, so the control would be cosmetic either way; **Calendar**
+and **Focus Music playback** are already honestly labeled/documented as
+not-yet-built subsystems, not small missed wires.
+
 ## Settings → About (added 2026-09-10)
 
-`APP_VERSION` constant ('v1', kept in sync with the `abidingsteps-` cache
-suffix in `sw.js`) shown as "AbidingSteps v1" in Settings, plus a "Check
-for updates & reload" button — same pattern as AbidingFlow: deletes all
+`APP_VERSION` constant (kept in sync with the `abidingsteps-` cache suffix
+in `sw.js`; both at `v2` as of the outcome-management/overrun-wiring pass —
+missed bumping them when that work first landed, caught when asked "did
+you bump?") shown in Settings, plus a "Check for updates & reload" button — same pattern as AbidingFlow: deletes all
 `abidingsteps-*` caches, unregisters service workers, reloads. Exists so a
 stale install is visually obvious and fixable without knowing devtools.
 Verified the cache-clear logic runs; couldn't verify the final

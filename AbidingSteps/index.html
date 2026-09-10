@@ -174,7 +174,18 @@
     padding: 12px 14px; margin-bottom: 10px;
   }
   .outcome-row-top { display: flex; justify-content: space-between; align-items: center; font-size: 0.9rem; gap: 8px; }
-  .outcome-row-title { display: flex; align-items: center; gap: 8px; }
+  .outcome-row-title { display: flex; align-items: center; gap: 8px; min-width: 0; }
+  .outcome-row-title .outcome-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .outcome-name.completed { text-decoration: line-through; color: var(--text-faint); }
+  .outcome-row.completed { opacity: 0.6; }
+  .outcome-row-actions { display: flex; gap: 5px; flex-shrink: 0; }
+  .row-icon-btn {
+    background: none; border: 1px solid var(--border); color: var(--text-faint); border-radius: 6px;
+    width: 24px; height: 24px; font-size: 0.72rem; cursor: pointer; padding: 0;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .row-icon-btn.complete-btn.done { background: var(--accent); color: #10131c; border-color: var(--accent); }
+  .outcome-row-meta { margin-top: 5px; }
   .today-star { background: none; border: none; cursor: pointer; font-size: 1rem; color: var(--text-faint); padding: 0; line-height: 1; }
   .today-star.active { color: var(--accent); }
   .badge { font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-faint); }
@@ -426,8 +437,8 @@
 
       <div class="settings-section">
         <h3>Overrun</h3>
-        <div class="settings-row"><span>Auto-overrun by default</span><input type="checkbox"></div>
-        <div class="settings-row"><span>Bump length</span><input type="number" value="10"> min</div>
+        <div class="settings-row"><span>Auto-overrun by default</span><input type="checkbox" id="autoOverrunToggle"></div>
+        <div class="settings-row"><span>Bump length</span><input type="number" id="bumpLengthInput" value="10" min="1"> min</div>
         <div class="settings-row"><span>Week reset day</span>
           <select><option>Monday</option><option>Sunday</option><option>Saturday</option></select>
         </div>
@@ -890,7 +901,16 @@ For God alone my soul waits in silence. — Psalm 62:1`;
   let soundTimeout = null, bumpTimeout = null;
   const OVERRUN_SOUND_DELAY = 12000;
   const OVERRUN_BUMP_DELAY = 40000;
-  const DEFAULT_BUMP_MIN = 10;
+  let bumpMinutes = 10, autoOverrunEnabled = false;
+  const bumpLengthInput = document.getElementById('bumpLengthInput');
+  function updateContinueLabel() { document.getElementById('btnContinue').textContent = 'Continue +' + bumpMinutes + 'm'; }
+  bumpLengthInput.addEventListener('change', () => {
+    const n = parseInt(bumpLengthInput.value, 10);
+    if (n > 0) { bumpMinutes = n; updateContinueLabel(); }
+  });
+  document.getElementById('autoOverrunToggle').addEventListener('change', (e) => {
+    autoOverrunEnabled = e.target.checked;
+  });
   const RING_R = 86, RING_C = 2 * Math.PI * RING_R;
   const ringEl = document.getElementById('ringProgress');
   ringEl.setAttribute('stroke-dasharray', RING_C);
@@ -935,6 +955,11 @@ For God alone my soul waits in silence. — Psalm 62:1`;
   }
 
   function enterOverrun() {
+    if (autoOverrunEnabled) {
+      // no alarm at all — just keep going, silently, by the configured bump length
+      acknowledgeOverrun(bumpMinutes, true);
+      return;
+    }
     overrunState = 'visual';
     document.getElementById('actionBlock').classList.add('overrun');
     document.getElementById('overrunTray').classList.add('show');
@@ -945,7 +970,7 @@ For God alone my soul waits in silence. — Psalm 62:1`;
       document.getElementById('timerSub').textContent = 'Still there? (one beep, then auto-continue if quiet)';
     }, OVERRUN_SOUND_DELAY);
     bumpTimeout = setTimeout(() => {
-      acknowledgeOverrun(DEFAULT_BUMP_MIN, true);
+      acknowledgeOverrun(bumpMinutes, true);
     }, OVERRUN_BUMP_DELAY);
   }
 
@@ -979,7 +1004,7 @@ For God alone my soul waits in silence. — Psalm 62:1`;
     document.querySelectorAll('#chunkChips .chip').forEach(c => c.classList.remove('selected'));
   }
 
-  document.getElementById('btnContinue').addEventListener('click', () => acknowledgeOverrun(DEFAULT_BUMP_MIN));
+  document.getElementById('btnContinue').addEventListener('click', () => acknowledgeOverrun(bumpMinutes));
   document.getElementById('btnBreak').addEventListener('click', () => returnToIdle('On a break — pick a length to resume'));
   document.getElementById('btnSwitch').addEventListener('click', () => {
     returnToIdle('Pick an outcome above to begin');
@@ -1055,10 +1080,16 @@ For God alone my soul waits in silence. — Psalm 62:1`;
       document.getElementById('outcomesToday').appendChild(chipEl);
     }
 
+    renderSubOutcomeRow(name);
+    finishOutcomeSelection(name);
+  }
+
+  function renderSubOutcomeRow(name) {
     const row = document.getElementById('subOutcomeRow');
     row.innerHTML = '';
     (subOutcomeMap[name] || []).forEach(s => {
-      const c = document.createElement('span'); c.className = 'chip'; c.textContent = s;
+      const c = document.createElement('span'); c.className = 'chip' + (s === selectedSubOutcome ? ' selected' : '');
+      c.textContent = s;
       c.addEventListener('click', () => {
         document.querySelectorAll('#subOutcomeRow .chip').forEach(x => x.classList.toggle('selected', x === c));
         selectedSubOutcome = s;
@@ -1067,9 +1098,16 @@ For God alone my soul waits in silence. — Psalm 62:1`;
       row.appendChild(c);
     });
     const addSub = document.createElement('span'); addSub.className = 'chip add-chip'; addSub.textContent = '+ add';
+    addSub.addEventListener('click', () => {
+      const s = prompt('New sub-outcome for ' + name + ':');
+      if (!s) return;
+      if (!subOutcomeMap[name]) subOutcomeMap[name] = [];
+      subOutcomeMap[name].push(s);
+      selectedSubOutcome = s;
+      renderSubOutcomeRow(name);
+      finishOutcomeSelection(name);
+    });
     row.appendChild(addSub);
-
-    finishOutcomeSelection(name);
   }
 
   function finishOutcomeSelection(name) {
@@ -1140,24 +1178,70 @@ For God alone my soul waits in silence. — Psalm 62:1`;
     });
   });
 
+  const ROLE_TAGS = ['Roots', 'Resources', 'Reach', 'Reality'];
   const aheadList = document.getElementById('aheadList');
-  aheadOutcomes.forEach(o => {
-    const row = document.createElement('div'); row.className = 'outcome-row'; row.dataset.tag = o.tag;
-    let html = '<div class="outcome-row-top"><div class="outcome-row-title"><button class="today-star' + (o.today ? ' active' : '') +
-      '" title="Add to today">' + (o.today ? '★' : '☆') + '</button><span>' + o.t +
-      '</span></div><span class="badge">' + o.type + ' · ' + o.tag + '</span></div>';
-    if (o.budget) {
-      const pct = Math.min(100, (o.budget.acc / o.budget.target) * 100);
-      html += '<div class="budget-bar-wrap"><div class="budget-bar" style="width:' + pct + '%"></div></div>';
-      html += '<div class="budget-label">' + o.budget.acc + 'm / ' + o.budget.target + 'm this week</div>';
-    }
-    row.innerHTML = html;
-    row.querySelector('.today-star').addEventListener('click', (e) => {
-      o.today = !o.today;
-      e.target.classList.toggle('active', o.today);
-      e.target.textContent = o.today ? '★' : '☆';
+  const activeRoleFilter = () => (document.querySelector('#roleFilterRow .chip.selected') || {}).dataset || {};
+
+  function renderAheadList() {
+    aheadList.innerHTML = '';
+    aheadOutcomes.forEach(o => {
+      const row = document.createElement('div'); row.className = 'outcome-row' + (o.completed ? ' completed' : ''); row.dataset.tag = o.tag;
+      let html = '<div class="outcome-row-top">'
+        + '<div class="outcome-row-title"><button class="today-star' + (o.today ? ' active' : '') + '" title="Add to today">' + (o.today ? '★' : '☆') + '</button>'
+        + '<span class="outcome-name' + (o.completed ? ' completed' : '') + '">' + o.t + '</span></div>'
+        + '<div class="outcome-row-actions">'
+        + (o.type === 'Deliverable' ? '<button class="row-icon-btn complete-btn' + (o.completed ? ' done' : '') + '" title="Mark complete">✓</button>' : '')
+        + '<button class="row-icon-btn edit-btn" title="Edit">✎</button>'
+        + '<button class="row-icon-btn delete-btn" title="Delete">×</button>'
+        + '</div></div>'
+        + '<div class="outcome-row-meta"><span class="badge">' + o.type + ' · ' + o.tag + '</span></div>';
+      if (o.budget) {
+        const pct = Math.min(100, (o.budget.acc / o.budget.target) * 100);
+        html += '<div class="budget-bar-wrap"><div class="budget-bar" style="width:' + pct + '%"></div></div>';
+        html += '<div class="budget-label">' + o.budget.acc + 'm / ' + o.budget.target + 'm this week</div>';
+      }
+      row.innerHTML = html;
+
+      row.querySelector('.today-star').addEventListener('click', (e) => {
+        o.today = !o.today;
+        e.target.classList.toggle('active', o.today);
+        e.target.textContent = o.today ? '★' : '☆';
+      });
+      const completeBtn = row.querySelector('.complete-btn');
+      if (completeBtn) completeBtn.addEventListener('click', () => { o.completed = !o.completed; renderAheadList(); });
+      row.querySelector('.edit-btn').addEventListener('click', () => {
+        const newName = prompt('Outcome name:', o.t);
+        if (newName === null) return;
+        if (newName.trim()) o.t = newName.trim();
+        const newType = prompt('Type — type "directive" or "deliverable":', o.type.toLowerCase());
+        if (newType && /^d/i.test(newType)) o.type = /^dir/i.test(newType) ? 'Directive' : 'Deliverable';
+        const newTag = prompt('Role — one of ' + ROLE_TAGS.join('/') + ':', o.tag);
+        if (newTag && ROLE_TAGS.includes(newTag.trim())) o.tag = newTag.trim();
+        renderAheadList();
+      });
+      row.querySelector('.delete-btn').addEventListener('click', () => {
+        if (confirm('Delete "' + o.t + '"? This can\'t be undone.')) {
+          aheadOutcomes.splice(aheadOutcomes.indexOf(o), 1);
+          renderAheadList();
+        }
+      });
+
+      const role = activeRoleFilter().role;
+      row.style.display = (!role || role === 'All' || o.tag === role) ? 'block' : 'none';
+      aheadList.appendChild(row);
     });
-    aheadList.appendChild(row);
+  }
+  renderAheadList();
+
+  document.querySelector('.fab').addEventListener('click', () => {
+    const name = prompt('New outcome name:');
+    if (!name || !name.trim()) return;
+    const typeInput = prompt('Type — "directive" (ongoing) or "deliverable" (has a finish line):', 'deliverable');
+    const type = /^dir/i.test(typeInput || '') ? 'Directive' : 'Deliverable';
+    const tagInput = prompt('Role — one of ' + ROLE_TAGS.join('/') + ':', 'Reach');
+    const tag = ROLE_TAGS.includes((tagInput || '').trim()) ? tagInput.trim() : 'Reach';
+    aheadOutcomes.push({ t: name.trim(), type, tag, budget: null, today: false, completed: false });
+    renderAheadList();
   });
 
   // click outside popover closes it
@@ -1169,7 +1253,7 @@ For God alone my soul waits in silence. — Psalm 62:1`;
 
   // Keep in sync with the CACHE suffix in sw.js — shown here so a stale
   // install is easy to spot, and "Check for updates" has something real to bust.
-  const APP_VERSION = 'v1';
+  const APP_VERSION = 'v2';
   document.getElementById('appVersionLabel').textContent = 'AbidingSteps ' + APP_VERSION;
   document.getElementById('reloadAppBtn').addEventListener('click', async () => {
     const status = document.getElementById('reloadStatus');
