@@ -350,6 +350,12 @@
   }
   .modal-toggle-btn.selected { background: var(--accent); color: #10131c; border-color: var(--accent); font-weight: 600; }
   .modal-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 4px; }
+  .modal-field-label .optional { text-transform: none; letter-spacing: 0; }
+  .modal-budget-row { display: flex; align-items: center; gap: 8px; margin-bottom: 14px; }
+  .modal-budget-row .modal-input { width: 90px; margin-bottom: 0; }
+  .modal-budget-row .unit { font-size: 0.78rem; color: var(--text-dim); }
+  .modal-budget-row .modal-toggle-row { margin-bottom: 0; margin-left: auto; flex-wrap: nowrap; }
+  .budget-label.over { color: var(--accent); }
 
   /* ===== tab bar ===== */
   .tabbar {
@@ -495,7 +501,7 @@
         <div class="settings-row"><span>Auto-overrun by default</span><input type="checkbox" id="autoOverrunToggle"></div>
         <div class="settings-row"><span>Bump length</span><input type="number" id="bumpLengthInput" value="10" min="1"> min</div>
         <div class="settings-row"><span>Week reset day</span>
-          <select><option>Monday</option><option>Sunday</option><option>Saturday</option></select>
+          <select id="weekResetSelect"><option>Monday</option><option>Sunday</option><option>Saturday</option></select>
         </div>
       </div>
 
@@ -532,6 +538,14 @@
           </div>
         </div>
         <p style="font-size:0.68rem; color:var(--text-faint); margin:6px 0 0;">Uses your browser's built-in text-to-speech — free, but quality depends entirely on what voices your device has installed. Pick whichever sounds best here.</p>
+      </div>
+
+      <div class="settings-section">
+        <h3>Cloud Sync</h3>
+        <p style="font-size:0.72rem; color:var(--text-faint); margin:0 0 8px;">Everything saves on this device automatically, signed in or not. Sign in to also sync across your devices.</p>
+        <div id="syncStatus" style="font-size:0.76rem; color:var(--text-dim); margin-bottom:8px;">Saved on this device</div>
+        <button class="btn" id="syncSignInBtn" style="width:100%;" disabled>Sign in with Google</button>
+        <button class="btn" id="syncSignOutBtn" style="width:100%; display:none;">Sign out</button>
       </div>
 
       <div class="settings-section">
@@ -610,6 +624,15 @@
         <button type="button" class="modal-toggle-btn" data-tag="Reach">Reach</button>
         <button type="button" class="modal-toggle-btn" data-tag="Reality">Reality</button>
       </div>
+      <div class="modal-field-label">Time budget <span class="optional">— optional, blank = none</span></div>
+      <div class="modal-budget-row">
+        <input type="number" id="outcomeModalBudget" class="modal-input" placeholder="None" min="1" inputmode="numeric">
+        <span class="unit">min</span>
+        <div class="modal-toggle-row">
+          <button type="button" class="modal-toggle-btn" data-period="week">Per week</button>
+          <button type="button" class="modal-toggle-btn" data-period="total">Total</button>
+        </div>
+      </div>
       <div class="modal-actions">
         <button type="button" class="btn" id="outcomeModalCancel">Cancel</button>
         <button type="button" class="btn primary" id="outcomeModalSave">Save</button>
@@ -647,6 +670,53 @@
 </div>
 
 <script>
+  // ===== storage — localStorage is the source of truth, always. Cloud sync (bottom of
+  // this script) is optional and only mirrors these keys, so the app works fully
+  // signed-out or offline. Keys are namespaced because every app on this origin shares
+  // one localStorage; "__local_" keys are device-private and never sync. =====
+  const STORE_PREFIX = 'abidingsteps:';
+  const store = {
+    mem: {}, onChange: null,
+    get(k, def) {
+      try {
+        const raw = localStorage.getItem(STORE_PREFIX + k);
+        return raw == null ? def : JSON.parse(raw);
+      } catch (e) { return k in this.mem ? this.mem[k] : def; }
+    },
+    set(k, v, opts) {
+      try { localStorage.setItem(STORE_PREFIX + k, JSON.stringify(v)); } catch (e) { this.mem[k] = v; }
+      if (!(opts && opts.quiet) && !k.startsWith('__local_') && this.onChange) this.onChange(k);
+    },
+  };
+  function escapeHtml(str) {
+    return String(str).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  }
+
+  const DEFAULT_SETTINGS = {
+    themeStep: '#4fd1c5', themeAhead: '#9db4f8', themeAbide: '#8fbf7a',
+    chunkSizes: [5, 10, 15, 20, 30, 60, 90],
+    dayStart: '06:00', dayEnd: '22:00',
+    autoOverrun: false, bumpMinutes: 10, weekReset: 'Monday',
+    voiceNotes: true,
+    music: {
+      step:  { enabled: true, url: 'https://www.youtube.com/playlist?list=PLfd0VTIoVYk1UTLrj9ARhBpmhUBkth1Px' },
+      ahead: { enabled: true, url: 'https://www.youtube.com/playlist?list=PLfd0VTIoVYk2mLoNsO36ULCr3XZUPwAZw' },
+      abide: { enabled: true, url: 'https://www.youtube.com/playlist?list=PLfd0VTIoVYk0ElEwgDLPMkSuIIoZ1LED0' },
+    },
+    breathText: null, // null = the built-in verse list
+    breathDurationMin: 0, breathTone: false, breathVoice: false,
+  };
+  function loadSettings() {
+    const saved = store.get('settings', null) || {};
+    const st = Object.assign({}, DEFAULT_SETTINGS, saved);
+    st.chunkSizes = (Array.isArray(saved.chunkSizes) ? saved.chunkSizes : DEFAULT_SETTINGS.chunkSizes).slice();
+    st.music = {};
+    ['step', 'ahead', 'abide'].forEach(m => { st.music[m] = Object.assign({}, DEFAULT_SETTINGS.music[m], (saved.music || {})[m]); });
+    return st;
+  }
+  let settings = loadSettings();
+  function saveSettings() { store.set('settings', settings); }
+
   // ===== tab / mode switching =====
   function switchTab(tab) {
     document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
@@ -702,6 +772,7 @@ For God alone my soul waits in silence. — Psalm 62:1`;
   breathTextarea.addEventListener('change', () => {
     const parsed = parseVerses(breathTextarea.value);
     if (parsed.length) breathVerses = parsed;
+    settings.breathText = breathTextarea.value; saveSettings();
   });
 
   let breathTimer = null;
@@ -746,6 +817,7 @@ For God alone my soul waits in silence. — Psalm 62:1`;
       document.querySelectorAll('.breath-duration-chip').forEach(c => c.classList.remove('selected'));
       chip.classList.add('selected');
       breathDurationMin = parseInt(chip.dataset.min, 10);
+      settings.breathDurationMin = breathDurationMin; saveSettings();
       startBreathSession(); // re-arm immediately if already in Abide
     });
   });
@@ -809,10 +881,13 @@ For God alone my soul waits in silence. — Psalm 62:1`;
       opt.value = v.voiceURI; opt.textContent = v.name + ' (' + v.lang + ')';
       voiceSelect.appendChild(opt);
     });
-    const auto = voices.find(v => /enhanced|premium|natural/i.test(v.name)) || voices.find(v => v.lang && v.lang.startsWith('en'));
-    if (auto) { voiceSelect.value = auto.voiceURI; preferredVoiceURI = auto.voiceURI; }
+    const saved = store.get('__local_voiceURI', null);
+    const pick = voices.find(v => v.voiceURI === saved)
+      || voices.find(v => /enhanced|premium|natural/i.test(v.name)) || voices.find(v => v.lang && v.lang.startsWith('en'));
+    if (pick) { voiceSelect.value = pick.voiceURI; preferredVoiceURI = pick.voiceURI; }
   }
-  voiceSelect.addEventListener('change', () => { preferredVoiceURI = voiceSelect.value; });
+  // installed voices differ per device, so the pick is device-local and never synced
+  voiceSelect.addEventListener('change', () => { preferredVoiceURI = voiceSelect.value; store.set('__local_voiceURI', preferredVoiceURI); });
   if (window.speechSynthesis) {
     populateVoiceList();
     window.speechSynthesis.onvoiceschanged = populateVoiceList;
@@ -822,6 +897,7 @@ For God alone my soul waits in silence. — Psalm 62:1`;
   const breathVoiceBtn = document.getElementById('breathVoiceBtn');
   breathVoiceBtn.addEventListener('click', () => {
     breathVoiceEnabled = !breathVoiceEnabled;
+    settings.breathVoice = breathVoiceEnabled; saveSettings();
     breathVoiceBtn.classList.toggle('active', breathVoiceEnabled);
     if (!breathVoiceEnabled && window.speechSynthesis) window.speechSynthesis.cancel();
     else speakVerse(document.getElementById('breathCaption').textContent);
@@ -933,6 +1009,7 @@ For God alone my soul waits in silence. — Psalm 62:1`;
   const breathToneBtn = document.getElementById('breathToneBtn');
   breathToneBtn.addEventListener('click', () => {
     breathToneEnabled = !breathToneEnabled;
+    settings.breathTone = breathToneEnabled; saveSettings();
     breathToneBtn.classList.toggle('active', breathToneEnabled);
     if (breathToneEnabled) startBreathTone(); else stopBreathTone();
   });
@@ -946,6 +1023,7 @@ For God alone my soul waits in silence. — Psalm 62:1`;
   [['themeStep', '--step'], ['themeAhead', '--ahead'], ['themeAbide', '--abide']].forEach(([id, cssVar]) => {
     document.getElementById(id).addEventListener('input', (e) => {
       document.documentElement.style.setProperty(cssVar, e.target.value);
+      settings[id] = e.target.value; saveSettings();
     });
   });
 
@@ -965,8 +1043,9 @@ For God alone my soul waits in silence. — Psalm 62:1`;
     musicBtn.classList.toggle('playing', musicPlaying);
     musicBtn.title = (musicPlaying ? 'Pause ' : 'Play ') + currentModeLabel() + ' music';
   }
+  function currentMode() { return document.documentElement.getAttribute('data-mode') || 'step'; }
   const musicPlayer = {
-    yt: null, apiLoading: false, pendingCb: null,
+    yt: null, ready: false, loadedId: null, started: false, apiLoading: false, pendingCb: null,
     extractPlaylistId(url) {
       const trimmed = (url || '').trim();
       if (!trimmed) return null;
@@ -996,45 +1075,69 @@ For God alone my soul waits in silence. — Psalm 62:1`;
       const el = document.getElementById(MUSIC_URL_INPUTS[mode]);
       return el ? el.value : '';
     },
+    // Warm up before anyone taps 🎵: load the IFrame API plus a cued (silent) player,
+    // so the tap itself can call playVideo() synchronously. Building the player on the
+    // tap meant waiting on a network script + iframe load first — by then the browser
+    // no longer counts it as a user gesture and blocks autoplay, so the first tap on
+    // Step silently did nothing and only a *later* tap (e.g. opening Abide) played.
+    preload() {
+      if (this.yt) return;
+      const mode = [currentMode(), 'step', 'ahead', 'abide'].find(m => this.modeEnabled(m) && this.extractPlaylistId(this.urlForMode(m)));
+      if (!mode) return;
+      const id = this.extractPlaylistId(this.urlForMode(mode));
+      this.ensureApi(() => { if (!this.yt) this.createPlayer(id, false); });
+    },
     playForMode(mode) {
       if (!this.modeEnabled(mode)) { this.pause(); return; }
       const id = this.extractPlaylistId(this.urlForMode(mode));
-      if (!id) return;
-      this.ensureApi(() => this.createOrLoad(id));
-    },
-    createOrLoad(id) {
-      if (this.yt && this.yt.loadPlaylist) {
+      if (!id) { this.pause(); return; }
+      if (!this.yt) { this.ensureApi(() => { if (!this.yt) this.createPlayer(id, true); }); return; }
+      if (!this.ready) return; // onReady re-runs this once the player can take commands
+      if (id !== this.loadedId) {
+        this.loadedId = id; this.started = true;
         this.yt.loadPlaylist({ list: id, listType: 'playlist' });
-        this.yt.playVideo && this.yt.playVideo();
         setTimeout(() => this.randomizeStart(), 800);
-        return;
+      } else if (!this.started) {
+        this.started = true;
+        this.randomizeStart();
+      } else {
+        this.resume();
       }
+    },
+    createPlayer(id, autoplay) {
       let host = document.getElementById('yt-music-player');
       if (!host) {
         host = document.createElement('div'); host.id = 'yt-music-player';
         host.style.cssText = 'position:fixed; left:-9999px; top:-9999px; width:2px; height:2px; opacity:0.01; pointer-events:none;';
         document.body.appendChild(host);
       }
+      this.loadedId = id; this.started = false;
       this.yt = new YT.Player(host, {
         width: '2', height: '2',
-        playerVars: { listType: 'playlist', list: id, autoplay: 1, playsinline: 1, controls: 0 },
-        events: { onReady: () => this.randomizeStart() },
+        playerVars: { listType: 'playlist', list: id, autoplay: autoplay ? 1 : 0, playsinline: 1, controls: 0 },
+        events: {
+          onReady: () => {
+            this.ready = true;
+            if (musicPlaying && !musicAutoPaused) this.playForMode(currentMode());
+          },
+        },
       });
     },
     randomizeStart() {
       try {
         const list = this.yt.getPlaylist();
-        if (list && list.length) this.yt.playVideoAt(Math.floor(Math.random() * list.length));
+        if (list && list.length) { this.yt.playVideoAt(Math.floor(Math.random() * list.length)); return; }
       } catch (e) {}
+      try { this.yt.playVideo(); } catch (e) {}
     },
-    pause() { if (this.yt && this.yt.pauseVideo) { try { this.yt.pauseVideo(); } catch (e) {} } },
-    resume() { if (this.yt && this.yt.playVideo) { try { this.yt.playVideo(); } catch (e) {} } },
+    pause() { if (this.yt && this.ready) { try { this.yt.pauseVideo(); } catch (e) {} } },
+    resume() { if (this.yt && this.ready) { try { this.yt.playVideo(); } catch (e) {} } },
   };
   musicBtn.addEventListener('click', () => {
     musicPlaying = !musicPlaying;
+    musicAutoPaused = false;
     updateMusicBtn();
-    const mode = document.documentElement.getAttribute('data-mode') || 'step';
-    if (musicPlaying) musicPlayer.playForMode(mode); else musicPlayer.pause();
+    if (musicPlaying) musicPlayer.playForMode(currentMode()); else musicPlayer.pause();
   });
   updateMusicBtn();
   // editing a playlist URL or its enable checkbox takes effect immediately if that
@@ -1043,8 +1146,12 @@ For God alone my soul waits in silence. — Psalm 62:1`;
     const applyIfCurrent = () => {
       if (musicPlaying && (document.documentElement.getAttribute('data-mode') || 'step') === mode) musicPlayer.playForMode(mode);
     };
-    document.getElementById(MUSIC_ENABLE_INPUTS[mode]).addEventListener('change', applyIfCurrent);
-    document.getElementById(MUSIC_URL_INPUTS[mode]).addEventListener('change', applyIfCurrent);
+    document.getElementById(MUSIC_ENABLE_INPUTS[mode]).addEventListener('change', (e) => {
+      settings.music[mode].enabled = e.target.checked; saveSettings(); applyIfCurrent();
+    });
+    document.getElementById(MUSIC_URL_INPUTS[mode]).addEventListener('change', (e) => {
+      settings.music[mode].url = e.target.value.trim(); saveSettings(); applyIfCurrent();
+    });
   });
 
   // ===== auto-pause music during decision moments (ported from FocusFlowFireBase) =====
@@ -1125,8 +1232,10 @@ For God alone my soul waits in silence. — Psalm 62:1`;
     if (e > s) { DAY_START_H = s; DAY_END_H = e; }
     renderDayBarTicks(); renderDayBar(); renderDayStats();
   }
-  dayStartInput.addEventListener('change', applyDayHours);
-  dayEndInput.addEventListener('change', applyDayHours);
+  [dayStartInput, dayEndInput].forEach(inp => inp.addEventListener('change', () => {
+    applyDayHours();
+    settings.dayStart = dayStartInput.value; settings.dayEnd = dayEndInput.value; saveSettings();
+  }));
   renderDayBarTicks();
   function renderDayBar() {
     const bar = document.getElementById('dayBar');
@@ -1176,7 +1285,7 @@ For God alone my soul waits in silence. — Psalm 62:1`;
   setInterval(() => { renderDayBar(); renderDayStats(); }, 30000);
 
   // ===== Action block — ONLY the choice (idle) or the counter + focus (running) =====
-  let selectedOutcomeName = null, selectedSubOutcome = null;
+  let selectedOutcomeId = null, selectedSubOutcome = null;
 
   // chunk sizes are Settings-owned state — Step's chips and the overrun "add time"
   // chips both render from this one array, so editing it in Settings updates both live
@@ -1187,9 +1296,9 @@ For God alone my soul waits in silence. — Psalm 62:1`;
     chipRow.innerHTML = '';
     chunkSizes.forEach(min => {
       const c = document.createElement('span');
-      c.className = 'chip' + (selectedOutcomeName ? '' : ' disabled');
+      c.className = 'chip' + (selectedOutcomeId ? '' : ' disabled');
       c.textContent = min + 'm';
-      c.addEventListener('click', () => { if (selectedOutcomeName) startChunk(min); });
+      c.addEventListener('click', () => { if (selectedOutcomeId) startChunk(min); });
       chipRow.appendChild(c);
     });
   }
@@ -1212,7 +1321,7 @@ For God alone my soul waits in silence. — Psalm 62:1`;
       c.title = 'Remove ' + min + 'm';
       c.addEventListener('click', () => {
         chunkSizes = chunkSizes.filter(m => m !== min);
-        refreshChunkSizeUI();
+        refreshChunkSizeUI(); saveChunkSizes();
       });
       row.appendChild(c);
     });
@@ -1226,13 +1335,14 @@ For God alone my soul waits in silence. — Psalm 62:1`;
           if (n > 0 && !chunkSizes.includes(n)) {
             chunkSizes.push(n);
             chunkSizes.sort((a, b) => a - b);
-            refreshChunkSizeUI();
+            refreshChunkSizeUI(); saveChunkSizes();
           }
         }
       });
     });
     row.appendChild(addChip);
   }
+  function saveChunkSizes() { settings.chunkSizes = chunkSizes.slice(); saveSettings(); }
   function refreshChunkSizeUI() {
     renderChunkChips();
     renderOverrunChips();
@@ -1250,10 +1360,11 @@ For God alone my soul waits in silence. — Psalm 62:1`;
   function updateContinueLabel() { document.getElementById('btnContinue').textContent = 'Continue +' + bumpMinutes + 'm'; }
   bumpLengthInput.addEventListener('change', () => {
     const n = parseInt(bumpLengthInput.value, 10);
-    if (n > 0) { bumpMinutes = n; updateContinueLabel(); }
+    if (n > 0) { bumpMinutes = n; updateContinueLabel(); settings.bumpMinutes = n; saveSettings(); }
   });
   document.getElementById('autoOverrunToggle').addEventListener('change', (e) => {
     autoOverrunEnabled = e.target.checked;
+    settings.autoOverrun = autoOverrunEnabled; saveSettings();
   });
   const RING_R = 86, RING_C = 2 * Math.PI * RING_R;
   const ringEl = document.getElementById('ringProgress');
@@ -1264,7 +1375,49 @@ For God alone my soul waits in silence. — Psalm 62:1`;
     ringEl.setAttribute('stroke-dashoffset', RING_C * (1 - f));
   }
 
+  // ===== time budgets — minutes actually spent in running chunks count toward the
+  // selected outcome's budget. "week" budgets start fresh on Settings' week reset day;
+  // "total" budgets never reset. Committed every minute (and when the app is hidden),
+  // so a PWA killed in the background loses at most a minute. =====
+  const WEEKDAY_INDEX = { Sunday: 0, Monday: 1, Saturday: 6 };
+  function weekStartMs() {
+    const d = new Date(); d.setHours(0, 0, 0, 0);
+    const resetDow = WEEKDAY_INDEX[settings.weekReset] ?? 1;
+    d.setDate(d.getDate() - ((d.getDay() - resetDow + 7) % 7));
+    return d.getTime();
+  }
+  function makeBudget(target, period) { return { target, period: period || 'week', acc: 0, countedAt: Date.now() }; }
+  // minutes counted in the current period — a week budget last counted before this
+  // week's reset reads as 0 (stored lazily, so nothing has to run at midnight)
+  function budgetAcc(o) {
+    const b = o.budget;
+    if (!b) return 0;
+    if (b.period === 'week' && (b.countedAt || 0) < weekStartMs()) return 0;
+    return b.acc || 0;
+  }
+  function fmtMins(m) {
+    const r = Math.floor(m);
+    if (r < 60) return r + 'm';
+    return Math.floor(r / 60) + 'h' + (r % 60 ? ' ' + (r % 60) + 'm' : '');
+  }
+  let workSeg = null; // { outcomeId, since } while a chunk is running
+  function commitWork() {
+    if (!workSeg) return;
+    const now = Date.now();
+    const mins = (now - workSeg.since) / 60000;
+    workSeg.since = now;
+    const o = findOutcome(workSeg.outcomeId);
+    if (!o || !o.budget || mins <= 0) return;
+    o.budget.acc = budgetAcc(o) + mins;
+    o.budget.countedAt = now;
+    saveOutcomes();
+    renderAheadList();
+  }
+  function startWork() { commitWork(); workSeg = selectedOutcomeId ? { outcomeId: selectedOutcomeId, since: Date.now() } : null; }
+  function stopWork() { commitWork(); workSeg = null; }
+
   function startChunk(minutes) {
+    startWork();
     clearOverrunTimers();
     chunkTotalMs = minutes * 60000;
     endsAt = Date.now() + chunkTotalMs;
@@ -1273,7 +1426,7 @@ For God alone my soul waits in silence. — Psalm 62:1`;
     document.getElementById('overrunTray').classList.remove('show');
     document.getElementById('actionIdle').style.display = 'none';
     document.getElementById('actionRunning').style.display = 'block';
-    document.getElementById('actionFocus').textContent = 'Working on ' + (selectedOutcomeName || '—') + (selectedSubOutcome ? ' › ' + selectedSubOutcome : '');
+    document.getElementById('actionFocus').textContent = 'Working on ' + ((selectedOutcome() || {}).t || '—') + (selectedSubOutcome ? ' › ' + selectedSubOutcome : '');
     document.getElementById('timerSub').textContent = '';
     if (tickHandle) clearInterval(tickHandle);
     tick();
@@ -1281,6 +1434,7 @@ For God alone my soul waits in silence. — Psalm 62:1`;
   }
 
   function tick() {
+    if (workSeg && Date.now() - workSeg.since >= 60000) commitWork();
     const remainMs = endsAt - Date.now();
     if (remainMs > 0) {
       document.getElementById('timerDisplay').textContent = fmt(remainMs);
@@ -1337,6 +1491,7 @@ For God alone my soul waits in silence. — Psalm 62:1`;
   }
 
   function returnToIdle(label) {
+    stopWork();
     clearOverrunTimers();
     if (tickHandle) clearInterval(tickHandle);
     overrunState = 'none';
@@ -1382,15 +1537,47 @@ For God alone my soul waits in silence. — Psalm 62:1`;
   }
   document.getElementById('changeOutcomeBtn').addEventListener('click', expandOutcomePicker);
 
-  const outcomes = {
-    recent: [{ t: 'Reply to emails', type: 'deliverable' }, { t: 'Draft sermon notes', type: 'deliverable' }],
-    today:  [{ t: 'AbidingSteps spec', type: 'deliverable' }, { t: 'Exercise', type: 'directive' }],
-    other:  [{ t: 'File taxes', type: 'deliverable' }, { t: 'Read scripture', type: 'directive' }, { t: 'Call Mom', type: 'deliverable' }],
-  };
-  const subOutcomeMap = {
-    'AbidingSteps spec': ['Data model', 'Screen spec', 'Music settings'],
-    'File taxes': ['Gather receipts', 'Fill forms', 'Submit'],
-  };
+  // ===== outcomes — ONE persisted list shared by Step's picker and Ahead. (Step used
+  // to render its own separate mock lists, so Ahead edits never reached it — and
+  // nothing was saved anywhere, so a restart reset both.) =====
+  function newId() { return 'o' + Date.now().toString(36) + Math.random().toString(36).slice(2, 7); }
+  function makeOutcome(t, type, tag, extra) {
+    return Object.assign({ id: newId(), t, type, tag, budget: null, today: false, completed: false, maybe: false, subs: [], lastWorked: null }, extra);
+  }
+  // first run only — the same starter examples the mockup showed, so it isn't empty
+  function seedOutcomes() {
+    const yesterday = Date.now() - 864e5;
+    return [
+      makeOutcome('AbidingSteps spec', 'Deliverable', 'Reach', { today: true, subs: ['Data model', 'Screen spec', 'Music settings'] }),
+      makeOutcome('Exercise', 'Directive', 'Reality', { today: true, budget: makeBudget(180, 'week') }),
+      makeOutcome('Reply to emails', 'Deliverable', 'Reality', { lastWorked: yesterday }),
+      makeOutcome('Draft sermon notes', 'Deliverable', 'Reach', { lastWorked: yesterday }),
+      makeOutcome('File taxes', 'Deliverable', 'Reality', { budget: makeBudget(120, 'total'), subs: ['Gather receipts', 'Fill forms', 'Submit'] }),
+      makeOutcome('Read scripture', 'Directive', 'Roots'),
+      makeOutcome('Call Mom', 'Deliverable', 'Roots'),
+      makeOutcome('Try journaling', 'Directive', 'Reach', { budget: makeBudget(60, 'week'), maybe: true }),
+    ];
+  }
+  let outcomes = store.get('outcomes', null);
+  if (!Array.isArray(outcomes)) { outcomes = seedOutcomes(); store.set('outcomes', outcomes, { quiet: true }); }
+  else if (normalizeOutcomes(outcomes)) store.set('outcomes', outcomes, { quiet: true });
+  function saveOutcomes() { store.set('outcomes', outcomes); }
+  function applyBudgetSpec(o, spec) {
+    if (!spec) { o.budget = null; return; }
+    if (o.budget && o.budget.period === spec.period) { o.budget.target = spec.target; return; }
+    o.budget = makeBudget(spec.target, spec.period);
+  }
+  // budgets from before tracking existed had made-up sample minutes and no period —
+  // zero them once so the bars only ever show real time
+  function normalizeOutcomes(list) {
+    let changed = false;
+    list.forEach(o => {
+      if (o.budget && !o.budget.period) { o.budget = makeBudget(o.budget.target, 'week'); changed = true; }
+    });
+    return changed;
+  }
+  function findOutcome(id) { return outcomes.find(o => o.id === id) || null; }
+  function selectedOutcome() { return selectedOutcomeId ? findOutcome(selectedOutcomeId) : null; }
 
   // ===== add/edit outcome modal — a real form, not prompt()/confirm(), which are
   // unreliable or silently suppressed in installed (standalone) PWAs on iOS =====
@@ -1409,6 +1596,8 @@ For God alone my soul waits in silence. — Psalm 62:1`;
     outcomeModalName.value = opts.name || '';
     setModalToggle('type', opts.type || 'Deliverable');
     setModalToggle('tag', opts.tag || 'Reach');
+    document.getElementById('outcomeModalBudget').value = opts.budget ? opts.budget.target : '';
+    setModalToggle('period', opts.budget ? opts.budget.period : 'week');
     outcomeModalOnSave = opts.onSave;
     outcomeModalOverlay.classList.add('show');
     outcomeModalName.focus();
@@ -1418,15 +1607,20 @@ For God alone my soul waits in silence. — Psalm 62:1`;
     btn.addEventListener('click', () => setModalToggle('type', btn.dataset.type)));
   document.querySelectorAll('.modal-toggle-btn[data-tag]').forEach(btn =>
     btn.addEventListener('click', () => setModalToggle('tag', btn.dataset.tag)));
+  document.querySelectorAll('.modal-toggle-btn[data-period]').forEach(btn =>
+    btn.addEventListener('click', () => setModalToggle('period', btn.dataset.period)));
   document.getElementById('outcomeModalCancel').addEventListener('click', closeOutcomeModal);
   document.getElementById('outcomeModalSave').addEventListener('click', () => {
     const name = outcomeModalName.value.trim();
     if (!name) { outcomeModalName.focus(); return; }
     const type = (document.querySelector('.modal-toggle-btn[data-type].selected') || {}).dataset?.type || 'Deliverable';
     const tag = (document.querySelector('.modal-toggle-btn[data-tag].selected') || {}).dataset?.tag || 'Reach';
+    const target = parseInt(document.getElementById('outcomeModalBudget').value, 10);
+    const period = (document.querySelector('.modal-toggle-btn[data-period].selected') || {}).dataset?.period || 'week';
+    const budget = target > 0 ? { target, period } : null;
     const cb = outcomeModalOnSave;
     closeOutcomeModal();
-    if (cb) cb(name, type, tag);
+    if (cb) cb(name, type, tag, budget);
   });
   outcomeModalOverlay.addEventListener('click', (e) => { if (e.target === outcomeModalOverlay) closeOutcomeModal(); });
 
@@ -1456,7 +1650,7 @@ For God alone my soul waits in silence. — Psalm 62:1`;
 
   // generic confirm modal — replaces every remaining confirm()
   const confirmModalOverlay = document.getElementById('confirmModalOverlay');
-  let confirmModalOnOk = null;
+  let confirmModalOnOk = null, confirmModalOnCancel = null;
   function openConfirmModal(opts) {
     document.getElementById('confirmModalTitle').textContent = opts.title || 'Are you sure?';
     document.getElementById('confirmModalMessage').textContent = opts.message || '';
@@ -1466,111 +1660,166 @@ For God alone my soul waits in silence. — Psalm 62:1`;
     okBtn.style.borderColor = okBtn.style.background;
     okBtn.style.color = opts.okLabel ? '#10131c' : '#fff';
     cancelBtn.style.display = opts.hideCancel ? 'none' : '';
+    cancelBtn.textContent = opts.cancelLabel || 'Cancel';
     confirmModalOnOk = opts.onOk;
+    confirmModalOnCancel = opts.onCancel || null;
     confirmModalOverlay.classList.add('show');
   }
-  function closeConfirmModal() { confirmModalOverlay.classList.remove('show'); confirmModalOnOk = null; }
-  document.getElementById('confirmModalCancel').addEventListener('click', closeConfirmModal);
+  function closeConfirmModal() { confirmModalOverlay.classList.remove('show'); confirmModalOnOk = null; confirmModalOnCancel = null; }
+  document.getElementById('confirmModalCancel').addEventListener('click', () => {
+    const cb = confirmModalOnCancel;
+    closeConfirmModal();
+    if (cb) cb();
+  });
   document.getElementById('confirmModalOk').addEventListener('click', () => {
     const cb = confirmModalOnOk;
     closeConfirmModal();
     if (cb) cb();
   });
   confirmModalOverlay.addEventListener('click', (e) => { if (e.target === confirmModalOverlay) closeConfirmModal(); });
-  function renderOutcomeGroup(id, list) {
-    const el = document.getElementById(id);
-    list.forEach(o => {
-      const chip = document.createElement('div');
-      chip.className = 'outcome-chip ' + o.type;
-      chip.innerHTML = '<span class="type-dot"></span>' + o.t;
-      chip.addEventListener('click', () => selectOutcome(o.t, chip));
-      el.appendChild(chip);
-    });
+  function outcomeChip(o) {
+    const chip = document.createElement('div');
+    chip.className = 'outcome-chip ' + String(o.type).toLowerCase() + (o.id === selectedOutcomeId ? ' selected' : '');
+    chip.innerHTML = '<span class="type-dot"></span>';
+    chip.appendChild(document.createTextNode(o.t));
+    chip.addEventListener('click', () => selectOutcome(o.id));
+    return chip;
   }
-  renderOutcomeGroup('outcomesRecent', outcomes.recent);
-  renderOutcomeGroup('outcomesToday', outcomes.today);
-  renderOutcomeGroup('outcomesOther', outcomes.other);
-  const addChip = document.createElement('div');
-  addChip.className = 'outcome-chip add-chip'; addChip.textContent = '+ Add';
-  addChip.addEventListener('click', () => {
-    openOutcomeModal({
-      title: 'New outcome',
-      onSave: (name, type, tag) => {
-        const chip = document.createElement('div');
-        chip.className = 'outcome-chip ' + type.toLowerCase();
-        chip.innerHTML = '<span class="type-dot"></span>' + name;
-        chip.addEventListener('click', () => selectOutcome(name, chip));
-        document.getElementById('outcomesOther').appendChild(chip);
-        aheadOutcomes.push({ t: name, type, tag, budget: null, today: false, completed: false, maybe: false });
-        renderAheadList();
-        selectOutcome(name, chip);
-      }
+  const RECENT_WINDOW_MS = 7 * 864e5;
+  function renderOutcomePicker() {
+    const groups = { outcomesRecent: [], outcomesToday: [], outcomesOther: [] };
+    const recentCutoff = Date.now() - RECENT_WINDOW_MS;
+    outcomes.forEach(o => {
+      if (o.completed) return;
+      if (o.today) groups.outcomesToday.push(o);
+      else if (o.lastWorked && o.lastWorked > recentCutoff) groups.outcomesRecent.push(o);
+      else if (!o.maybe) groups.outcomesOther.push(o); // maybe items stay out of the way, same as Ahead
     });
-  });
-  document.getElementById('outcomesOther').appendChild(addChip);
+    groups.outcomesRecent.sort((a, b) => b.lastWorked - a.lastWorked);
+    Object.keys(groups).forEach(id => {
+      const el = document.getElementById(id);
+      el.innerHTML = '';
+      groups[id].forEach(o => el.appendChild(outcomeChip(o)));
+      if (id !== 'outcomesOther') el.parentElement.style.display = groups[id].length ? '' : 'none';
+    });
+    const addChip = document.createElement('div');
+    addChip.className = 'outcome-chip add-chip'; addChip.textContent = '+ Add';
+    addChip.addEventListener('click', () => {
+      openOutcomeModal({
+        title: 'New outcome',
+        onSave: (name, type, tag, budget) => {
+          const o = makeOutcome(name, type, tag);
+          applyBudgetSpec(o, budget);
+          outcomes.push(o);
+          saveOutcomes();
+          selectOutcome(o.id);
+        }
+      });
+    });
+    document.getElementById('outcomesOther').appendChild(addChip);
+  }
 
-  function selectOutcome(name, chipEl) {
-    document.querySelectorAll('.outcome-chip').forEach(c => c.classList.remove('selected'));
-    chipEl.classList.add('selected');
-    selectedOutcomeName = name; selectedSubOutcome = null;
-
+  function selectOutcome(id, opts) {
+    const o = findOutcome(id);
+    if (!o) return;
+    selectedOutcomeId = id;
+    selectedSubOutcome = (opts && opts.sub && (o.subs || []).includes(opts.sub)) ? opts.sub : null;
     // choosing to work on it now IS choosing it for today — no separate promote step
-    if (chipEl.parentElement && chipEl.parentElement.id === 'outcomesOther') {
-      document.getElementById('outcomesToday').appendChild(chipEl);
+    if (!(opts && opts.restore)) {
+      o.today = true; o.lastWorked = Date.now();
+      saveOutcomes();
     }
-
-    renderSubOutcomeRow(name);
-    finishOutcomeSelection(name);
+    if (workSeg && workSeg.outcomeId !== id) startWork();
+    renderOutcomePicker(); renderAheadList();
+    renderSubOutcomeRow(o);
+    finishOutcomeSelection(o);
+    updateSelectionLabels();
   }
 
-  function renderSubOutcomeRow(name) {
+  function clearSelection() {
+    selectedOutcomeId = null; selectedSubOutcome = null;
+    document.getElementById('outcomeSummaryText').textContent = '';
+    document.getElementById('subOutcomeRow').innerHTML = '';
+    document.querySelectorAll('#chunkChips .chip').forEach(c => c.classList.add('disabled'));
+    returnToIdle('Pick an outcome above to begin');
+    expandOutcomePicker();
+    switchNotesContext('_', null);
+    store.set('__local_selection', null);
+  }
+
+  function renderSubOutcomeRow(o) {
     const row = document.getElementById('subOutcomeRow');
     row.innerHTML = '';
-    (subOutcomeMap[name] || []).forEach(s => {
+    (o.subs || []).forEach(s => {
       const c = document.createElement('span'); c.className = 'chip' + (s === selectedSubOutcome ? ' selected' : '');
       c.textContent = s;
       c.addEventListener('click', () => {
         document.querySelectorAll('#subOutcomeRow .chip').forEach(x => x.classList.toggle('selected', x === c));
         selectedSubOutcome = s;
-        finishOutcomeSelection(name);
+        finishOutcomeSelection(o);
       });
       row.appendChild(c);
     });
     const addSub = document.createElement('span'); addSub.className = 'chip add-chip'; addSub.textContent = '+ add';
     addSub.addEventListener('click', () => {
       openTextModal({
-        title: 'New sub-outcome for ' + name,
+        title: 'New sub-outcome for ' + o.t,
         onSave: (s) => {
-          if (!subOutcomeMap[name]) subOutcomeMap[name] = [];
-          subOutcomeMap[name].push(s);
+          const cur = findOutcome(o.id);
+          if (!cur) return;
+          if (!cur.subs) cur.subs = [];
+          if (!cur.subs.includes(s)) cur.subs.push(s);
+          saveOutcomes();
           selectedSubOutcome = s;
-          renderSubOutcomeRow(name);
-          finishOutcomeSelection(name);
+          renderSubOutcomeRow(cur);
+          finishOutcomeSelection(cur);
         }
       });
     });
     row.appendChild(addSub);
   }
 
-  function finishOutcomeSelection(name) {
-    const label = name + (selectedSubOutcome ? ' › ' + selectedSubOutcome : '');
+  function selectionLabel(o) { return o.t + (selectedSubOutcome ? ' › ' + selectedSubOutcome : ''); }
+  function finishOutcomeSelection(o) {
+    const label = selectionLabel(o);
     document.getElementById('outcomeSummaryText').textContent = label;
     collapseOutcomePicker();
     document.querySelectorAll('#chunkChips .chip').forEach(c => c.classList.remove('disabled'));
     document.getElementById('actionIdleLabel').textContent = 'Choose a length';
-    switchNotesContext(label);
+    switchNotesContext(o.id + (selectedSubOutcome ? '|' + selectedSubOutcome : ''), label);
+    store.set('__local_selection', { id: o.id, sub: selectedSubOutcome });
+  }
+  // after a rename (here or synced from another device), refresh every place the name shows
+  function updateSelectionLabels() {
+    const o = selectedOutcome();
+    if (!o) return;
+    const label = selectionLabel(o);
+    document.getElementById('outcomeSummaryText').textContent = label;
+    if (document.getElementById('actionRunning').style.display !== 'none') document.getElementById('actionFocus').textContent = 'Working on ' + label;
+    document.getElementById('notesArea').placeholder = 'Notes for ' + label + '…';
   }
 
-  // ===== notes are scoped to whatever outcome (+ sub-outcome) is current, not global =====
-  const notesByKey = {};
-  function switchNotesContext(newKey) {
+  // ===== notes are scoped to whatever outcome (+ sub-outcome) is current, not global.
+  // Keyed by outcome id (so a rename keeps its notes) and saved as you type. =====
+  let notesByKey = store.get('notes', {}) || {};
+  let notesSaveTimer = null;
+  function captureNotes() {
     const notesEl = document.getElementById('notesArea');
-    const prevKey = notesEl.dataset.key;
-    if (prevKey) notesByKey[prevKey] = notesEl.value;
+    const key = notesEl.dataset.key;
+    if (!key || (notesByKey[key] || '') === notesEl.value) return;
+    notesByKey[key] = notesEl.value;
+    clearTimeout(notesSaveTimer);
+    notesSaveTimer = setTimeout(() => { notesSaveTimer = null; store.set('notes', notesByKey); }, 400);
+  }
+  function switchNotesContext(newKey, label) {
+    const notesEl = document.getElementById('notesArea');
+    captureNotes();
     notesEl.value = notesByKey[newKey] || '';
     notesEl.dataset.key = newKey;
-    notesEl.placeholder = 'Notes for ' + newKey + '…';
+    notesEl.placeholder = label ? 'Notes for ' + label + '…' : 'Notes for this chunk…';
   }
+  document.getElementById('notesArea').addEventListener('input', captureNotes);
+  renderOutcomePicker();
 
   // ===== L6 voice notes =====
   const micBtn = document.getElementById('micBtn');
@@ -1584,6 +1833,7 @@ For God alone my soul waits in silence. — Psalm 62:1`;
       let text = '';
       for (let i = e.resultIndex; i < e.results.length; i++) text += e.results[i][0].transcript;
       notesArea.value += (notesArea.value ? ' ' : '') + text.trim();
+      captureNotes();
     };
     recognizer.onend = () => { recording = false; micBtn.classList.remove('recording'); };
   }
@@ -1592,6 +1842,7 @@ For God alone my soul waits in silence. — Psalm 62:1`;
   function updateMicBtnVisibility() { micBtn.style.display = voiceNotesEnabled ? 'flex' : 'none'; }
   voiceNotesToggle.addEventListener('change', () => {
     voiceNotesEnabled = voiceNotesToggle.checked;
+    settings.voiceNotes = voiceNotesEnabled; saveSettings();
     if (!voiceNotesEnabled && recording) { recording = false; micBtn.classList.remove('recording'); recognizer.stop(); }
     updateMicBtnVisibility();
   });
@@ -1607,14 +1858,7 @@ For God alone my soul waits in silence. — Psalm 62:1`;
     if (recording) recognizer.start(); else recognizer.stop();
   });
 
-  // ===== Ahead list (mock) — the star is the deliberate "add to today" path =====
-  const aheadOutcomes = [
-    { t: 'AbidingSteps spec', type: 'Deliverable', tag: 'Reach', budget: null, today: true, maybe: false },
-    { t: 'File taxes', type: 'Deliverable', tag: 'Reality', budget: { acc: 45, target: 120 }, today: false, maybe: false },
-    { t: 'Exercise', type: 'Directive', tag: 'Reality', budget: { acc: 90, target: 180 }, today: true, maybe: false },
-    { t: 'Read scripture', type: 'Directive', tag: 'Roots', budget: null, today: false, maybe: false },
-    { t: 'Try journaling', type: 'Directive', tag: 'Reach', budget: { acc: 10, target: 60 }, today: false, maybe: true },
-  ];
+  // ===== Ahead list — the star is the deliberate "add to today" path =====
   // shareable with people unfamiliar with the shorthand — spelled out per role
   const ROLE_SUBTITLES = {
     'Roots': 'Faith, Family, Friends, Fellowship',
@@ -1646,14 +1890,14 @@ For God alone my soul waits in silence. — Psalm 62:1`;
   function renderAheadList() {
     aheadList.innerHTML = '';
     const role = activeRoleFilter();
-    aheadOutcomes.forEach(o => {
+    outcomes.forEach(o => {
       const row = document.createElement('div');
       row.className = 'outcome-row' + (o.completed ? ' completed' : '') + (o.maybe ? ' maybe' : '');
       row.dataset.tag = o.tag;
       let html = '<div class="outcome-row-top">'
         + '<div class="outcome-row-title"><button class="today-star' + (o.today ? ' active' : '') + '" title="Add to today">' + (o.today ? '★' : '☆') + '</button>'
         + '<button class="maybe-toggle' + (o.maybe ? ' active' : '') + '" title="Maybe — trying it on, not committed">?</button>'
-        + '<span class="outcome-name' + (o.completed ? ' completed' : '') + '">' + o.t + '</span></div>'
+        + '<span class="outcome-name' + (o.completed ? ' completed' : '') + '">' + escapeHtml(o.t) + '</span></div>'
         + '<div class="outcome-row-actions">'
         + (o.type === 'Deliverable' ? '<button class="row-icon-btn complete-btn' + (o.completed ? ' done' : '') + '" title="Mark complete">✓</button>' : '')
         + '<button class="row-icon-btn edit-btn" title="Edit">✎</button>'
@@ -1661,39 +1905,40 @@ For God alone my soul waits in silence. — Psalm 62:1`;
         + '</div></div>'
         + '<div class="outcome-row-meta"><span class="badge">' + o.type + ' · ' + o.tag + '</span></div>';
       if (o.budget) {
-        const pct = Math.min(100, (o.budget.acc / o.budget.target) * 100);
+        const acc = budgetAcc(o), target = o.budget.target;
+        const pct = Math.min(100, (acc / target) * 100);
         html += '<div class="budget-bar-wrap"><div class="budget-bar" style="width:' + pct + '%"></div></div>';
-        html += '<div class="budget-label">' + o.budget.acc + 'm / ' + o.budget.target + 'm this week</div>';
+        html += '<div class="budget-label' + (acc >= target ? ' over' : '') + '">' + fmtMins(acc) + ' / ' + fmtMins(target)
+          + (o.budget.period === 'total' ? ' total' : ' this week') + (acc >= target ? ' ✓' : '') + '</div>';
       }
       row.innerHTML = html;
 
-      row.querySelector('.today-star').addEventListener('click', (e) => {
-        o.today = !o.today;
-        e.target.classList.toggle('active', o.today);
-        e.target.textContent = o.today ? '★' : '☆';
-      });
-      row.querySelector('.maybe-toggle').addEventListener('click', () => { o.maybe = !o.maybe; renderAheadList(); });
+      // every change saves and redraws BOTH views, so Step always matches Ahead
+      const changed = () => { saveOutcomes(); renderAheadList(); renderOutcomePicker(); };
+      row.querySelector('.today-star').addEventListener('click', () => { o.today = !o.today; changed(); });
+      row.querySelector('.maybe-toggle').addEventListener('click', () => { o.maybe = !o.maybe; changed(); });
       const completeBtn = row.querySelector('.complete-btn');
-      if (completeBtn) completeBtn.addEventListener('click', () => { o.completed = !o.completed; renderAheadList(); });
+      if (completeBtn) completeBtn.addEventListener('click', () => { o.completed = !o.completed; changed(); });
       row.querySelector('.edit-btn').addEventListener('click', () => {
         openOutcomeModal({
-          title: 'Edit outcome', name: o.t, type: o.type, tag: o.tag,
-          onSave: (name, type, tag) => { o.t = name; o.type = type; o.tag = tag; renderAheadList(); }
+          title: 'Edit outcome', name: o.t, type: o.type, tag: o.tag, budget: o.budget,
+          onSave: (name, type, tag, budget) => {
+            const cur = findOutcome(o.id);
+            if (!cur) return;
+            cur.t = name; cur.type = type; cur.tag = tag;
+            applyBudgetSpec(cur, budget);
+            changed();
+            if (cur.id === selectedOutcomeId) updateSelectionLabels();
+          }
         });
       });
       row.querySelector('.delete-btn').addEventListener('click', () => {
         openConfirmModal({
           title: 'Delete outcome?', message: '"' + o.t + '" — this can\'t be undone.',
           onOk: () => {
-            aheadOutcomes.splice(aheadOutcomes.indexOf(o), 1);
-            if (o.t === selectedOutcomeName) {
-              selectedOutcomeName = null; selectedSubOutcome = null;
-              document.getElementById('outcomeSummaryText').textContent = '';
-              document.querySelectorAll('#chunkChips .chip').forEach(c => c.classList.add('disabled'));
-              returnToIdle('Pick an outcome above to begin');
-              expandOutcomePicker();
-            }
-            renderAheadList();
+            outcomes = outcomes.filter(x => x.id !== o.id);
+            if (o.id === selectedOutcomeId) clearSelection();
+            changed();
           }
         });
       });
@@ -1707,9 +1952,11 @@ For God alone my soul waits in silence. — Psalm 62:1`;
   document.querySelector('.fab').addEventListener('click', () => {
     openOutcomeModal({
       title: 'New outcome',
-      onSave: (name, type, tag) => {
-        aheadOutcomes.push({ t: name, type, tag, budget: null, today: false, completed: false, maybe: false });
-        renderAheadList();
+      onSave: (name, type, tag, budget) => {
+        const o = makeOutcome(name, type, tag);
+        applyBudgetSpec(o, budget);
+        outcomes.push(o);
+        saveOutcomes(); renderAheadList(); renderOutcomePicker();
       }
     });
   });
@@ -1721,9 +1968,213 @@ For God alone my soul waits in silence. — Psalm 62:1`;
     window.addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => {}));
   }
 
+  // ===== settings -> UI (startup, and whenever synced data arrives) =====
+  function applySettingsToUI() {
+    const setVal = (id, v) => { const el = document.getElementById(id); if (el && el !== document.activeElement) el.value = v; };
+    const setChk = (id, v) => { const el = document.getElementById(id); if (el) el.checked = !!v; };
+    [['themeStep', '--step'], ['themeAhead', '--ahead'], ['themeAbide', '--abide']].forEach(([id, cssVar]) => {
+      setVal(id, settings[id]);
+      document.documentElement.style.setProperty(cssVar, settings[id]);
+    });
+    chunkSizes = settings.chunkSizes.slice(); refreshChunkSizeUI();
+    setVal('dayStartInput', settings.dayStart); setVal('dayEndInput', settings.dayEnd); applyDayHours();
+    autoOverrunEnabled = !!settings.autoOverrun; setChk('autoOverrunToggle', autoOverrunEnabled);
+    bumpMinutes = settings.bumpMinutes; setVal('bumpLengthInput', bumpMinutes); updateContinueLabel();
+    setVal('weekResetSelect', settings.weekReset);
+    voiceNotesEnabled = settings.voiceNotes !== false; setChk('voiceNotesToggle', voiceNotesEnabled); updateMicBtnVisibility();
+    ['step', 'ahead', 'abide'].forEach(m => {
+      setChk(MUSIC_ENABLE_INPUTS[m], settings.music[m].enabled);
+      setVal(MUSIC_URL_INPUTS[m], settings.music[m].url);
+    });
+    const verseText = settings.breathText || DEFAULT_BREATH_TEXT;
+    setVal('breathTextarea', verseText);
+    const parsed = parseVerses(verseText);
+    if (parsed.length) breathVerses = parsed;
+    breathDurationMin = settings.breathDurationMin || 0;
+    document.querySelectorAll('.breath-duration-chip').forEach(c => c.classList.toggle('selected', parseInt(c.dataset.min, 10) === breathDurationMin));
+    breathToneEnabled = !!settings.breathTone; breathToneBtn.classList.toggle('active', breathToneEnabled);
+    breathVoiceEnabled = !!settings.breathVoice; breathVoiceBtn.classList.toggle('active', breathVoiceEnabled);
+  }
+  document.getElementById('weekResetSelect').addEventListener('change', (e) => { settings.weekReset = e.target.value; saveSettings(); renderAheadList(); });
+
+  // re-read everything from storage after another device's changes land
+  function refreshFromStore() {
+    settings = loadSettings();
+    applySettingsToUI();
+    const fresh = store.get('outcomes', null);
+    if (Array.isArray(fresh)) { outcomes = fresh; if (normalizeOutcomes(outcomes)) store.set('outcomes', outcomes, { quiet: true }); }
+    const notesEl = document.getElementById('notesArea');
+    const editingNotes = document.activeElement === notesEl;
+    const typed = notesEl.value;
+    notesByKey = store.get('notes', {}) || {};
+    if (editingNotes && notesEl.dataset.key) notesByKey[notesEl.dataset.key] = typed; // don't clobber an in-progress note
+    else if (notesEl.dataset.key) notesEl.value = notesByKey[notesEl.dataset.key] || '';
+    const sel = selectedOutcome();
+    if (selectedOutcomeId && !sel) clearSelection();
+    else if (sel) {
+      if (selectedSubOutcome && !(sel.subs || []).includes(selectedSubOutcome)) selectedSubOutcome = null;
+      renderSubOutcomeRow(sel); updateSelectionLabels();
+    }
+    renderOutcomePicker(); renderAheadList();
+  }
+
+  // ===== Cloud Sync (optional) — FocusFlowFireBase's engine, adapted. localStorage stays
+  // the source of truth: signed out, offline, Firebase failing to load, or the rules
+  // refusing all just mean "saved on this device only" — nothing stops working. =====
+  const FIREBASE_CONFIG = {
+    apiKey: "AIzaSyCE28NOfXara7ARw9RIUvVHdWJoebxU-i8",
+    authDomain: "focusflowgeorge.firebaseapp.com",
+    projectId: "focusflowgeorge",
+    storageBucket: "focusflowgeorge.firebasestorage.app",
+    messagingSenderId: "735380295401",
+    appId: "1:735380295401:web:08bd07e9ce19a74c8b2a78"
+  };
+  const FIREBASE_SDK = 'https://www.gstatic.com/firebasejs/10.12.0/';
+  const cloudSync = {
+    docRef: null, pushTimer: null, paused: false, unsubscribe: null,
+    status(msg) { document.getElementById('syncStatus').textContent = msg; },
+    errorText(e) {
+      if (e && e.code === 'permission-denied') return 'Cloud sync blocked by Firestore rules (see AbidingSteps/SYNC-SETUP.md) — still saving on this device.';
+      return 'Sync error: ' + ((e && e.message) || e) + ' — still saving on this device.';
+    },
+    allData() {
+      const out = {};
+      for (let i = 0; i < localStorage.length; i++) {
+        const k = localStorage.key(i);
+        if (!k || !k.startsWith(STORE_PREFIX)) continue;
+        const short = k.slice(STORE_PREFIX.length);
+        if (!short.startsWith('__local_')) out[short] = localStorage.getItem(k);
+      }
+      return out;
+    },
+    dirtyAt() { return Number(store.get('__local_dirtyAt', 0)) || 0; },
+    markDirty() { store.set('__local_dirtyAt', Date.now()); },
+    queuePush() {
+      if (!this.docRef || this.paused) return;
+      clearTimeout(this.pushTimer);
+      this.pushTimer = setTimeout(() => this.pushNow(), 800);
+    },
+    pushNow() {
+      clearTimeout(this.pushTimer); this.pushTimer = null;
+      if (!this.docRef || this.paused) return;
+      const stamp = Date.now();
+      this.docRef.set({ data: this.allData(), updatedAt: stamp })
+        .then(() => {
+          if (this.dirtyAt() <= stamp) store.set('__local_dirtyAt', 0);
+          this.status('Synced ✓ ' + new Date().toLocaleTimeString());
+        })
+        .catch(e => this.status(this.errorText(e)));
+    },
+    applyRemote(data) {
+      let changed = false;
+      Object.keys(data || {}).forEach(k => {
+        if (k.startsWith('__local_') || typeof data[k] !== 'string') return;
+        try {
+          if (localStorage.getItem(STORE_PREFIX + k) !== data[k]) { localStorage.setItem(STORE_PREFIX + k, data[k]); changed = true; }
+        } catch (e) {}
+      });
+      if (changed) refreshFromStore();
+      this.status('Synced ✓ ' + new Date().toLocaleTimeString());
+    },
+    // first snapshot after sign-in: decide whether this device or the cloud wins
+    reconcile(remote, uid) {
+      const syncedBefore = store.get('__local_syncedUid', null) === uid;
+      const done = () => { this.paused = false; store.set('__local_syncedUid', uid); };
+      const useCloud = () => { done(); this.applyRemote(remote.data); store.set('__local_dirtyAt', 0); };
+      const useLocal = () => { done(); this.pushNow(); };
+      if (!remote || !remote.data) return useLocal();   // empty cloud: seed it from this device
+      const dirty = this.dirtyAt();
+      if (!dirty) return useCloud();                     // nothing unsynced here
+      if (syncedBefore) return dirty > (remote.updatedAt || 0) ? useLocal() : useCloud(); // offline edits: newest wins
+      // first sign-in on a device with its own unsynced edits — ask instead of silently wiping either side
+      this.paused = true;
+      this.status('Sync paused — choose which copy to keep (or reload to be asked again)');
+      openConfirmModal({
+        title: 'Which data should win?',
+        message: 'Your cloud account already has AbidingSteps data, and this device has changes that were never synced. The copy you don\'t pick gets replaced.',
+        okLabel: 'Use cloud data', cancelLabel: 'Keep this device',
+        onOk: useCloud, onCancel: useLocal,
+      });
+    },
+    loadScript(src) {
+      return new Promise((resolve, reject) => {
+        const el = document.createElement('script');
+        el.src = src; el.onload = resolve; el.onerror = reject;
+        document.head.appendChild(el);
+      });
+    },
+    async init() {
+      const signIn = document.getElementById('syncSignInBtn'), signOut = document.getElementById('syncSignOutBtn');
+      this.status('Saved on this device · not signed in');
+      try {
+        // loaded after the app is up, never blocking it — offline just means no sync
+        await this.loadScript(FIREBASE_SDK + 'firebase-app-compat.js');
+        await Promise.all([this.loadScript(FIREBASE_SDK + 'firebase-auth-compat.js'), this.loadScript(FIREBASE_SDK + 'firebase-firestore-compat.js')]);
+        firebase.initializeApp(FIREBASE_CONFIG);
+      } catch (e) {
+        this.status('Saved on this device · cloud sync unavailable right now');
+        return;
+      }
+      const auth = firebase.auth(), db = firebase.firestore();
+      firebase.firestore.setLogLevel('error');
+      try {
+        db.settings({ cache: firebase.firestore.persistentLocalCache({ tabManager: firebase.firestore.persistentMultipleTabManager() }) });
+      } catch (e) {
+        try { db.enablePersistence({ synchronizeTabs: true }); } catch (_) {}
+      }
+      signIn.disabled = false;
+      signIn.addEventListener('click', () => {
+        const provider = new firebase.auth.GoogleAuthProvider();
+        auth.signInWithPopup(provider).catch(e => {
+          // popups are often blocked in installed PWAs / iOS — fall back to redirect
+          if (['auth/popup-blocked', 'auth/cancelled-popup-request', 'auth/operation-not-supported-in-this-environment'].includes(e.code)) auth.signInWithRedirect(provider);
+          else this.status('Sign-in error: ' + e.message);
+        });
+      });
+      signOut.addEventListener('click', () => auth.signOut());
+      auth.onAuthStateChanged(user => {
+        signIn.style.display = user ? 'none' : '';
+        signOut.style.display = user ? '' : 'none';
+        if (this.unsubscribe) { this.unsubscribe(); this.unsubscribe = null; }
+        clearTimeout(this.pushTimer); this.pushTimer = null;
+        if (!user) { this.docRef = null; this.paused = false; this.status('Saved on this device · not signed in'); return; }
+        this.status('Signed in as ' + (user.email || user.uid) + ' · connecting…');
+        // its own doc, NOT FocusFlow's /users/{uid} — FocusFlow overwrites that whole doc on every push
+        this.docRef = db.collection('users').doc(user.uid).collection('apps').doc('abidingsteps');
+        let first = true;
+        this.unsubscribe = this.docRef.onSnapshot(snap => {
+          if (snap.metadata.hasPendingWrites) return; // echo of our own write
+          const remote = snap.exists ? snap.data() : null;
+          if (first) { first = false; this.reconcile(remote, user.uid); return; }
+          if (this.paused || this.pushTimer) return;  // a local change is about to push and win anyway
+          if (remote) this.applyRemote(remote.data);
+        }, e => { this.docRef = null; this.status(this.errorText(e)); });
+      });
+    },
+  };
+
+  // ===== startup — restore what this device saved, then (optionally) connect sync =====
+  applySettingsToUI();
+  (function restoreSelection() {
+    const sel = store.get('__local_selection', null);
+    if (sel && findOutcome(sel.id)) selectOutcome(sel.id, { restore: true, sub: sel.sub });
+    else switchNotesContext('_', null);
+  })();
+  store.onChange = () => { cloudSync.markDirty(); cloudSync.queuePush(); };
+  cloudSync.init();
+  // iOS can kill a backgrounded PWA at any moment — flush pending saves when hidden
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState !== 'hidden') return;
+    commitWork();
+    if (notesSaveTimer) { clearTimeout(notesSaveTimer); notesSaveTimer = null; store.set('notes', notesByKey); }
+    if (cloudSync.pushTimer) cloudSync.pushNow();
+  });
+  // warm the music player once the page settles, so the very first 🎵 tap plays
+  setTimeout(() => musicPlayer.preload(), 1500);
+
   // Keep in sync with the CACHE suffix in sw.js — shown here so a stale
   // install is easy to spot, and "Check for updates" has something real to bust.
-  const APP_VERSION = 'v13';
+  const APP_VERSION = 'v16';
   document.getElementById('appVersionLabel').textContent = 'AbidingSteps ' + APP_VERSION;
   document.getElementById('reloadAppBtn').addEventListener('click', async () => {
     const status = document.getElementById('reloadStatus');

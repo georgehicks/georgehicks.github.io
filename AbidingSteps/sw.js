@@ -1,6 +1,6 @@
 // Keep this version suffix in sync with any version marker shown in-app so a
 // stale cache is easy to spot and force-refresh.
-const CACHE = 'abidingsteps-v13';
+const CACHE = 'abidingsteps-v16';
 const ASSETS = ['./index.html', './manifest.json', './icon.svg'];
 
 self.addEventListener('install', e => {
@@ -20,6 +20,8 @@ self.addEventListener('activate', e => {
 self.addEventListener('fetch', e => {
   if (e.request.method !== 'GET') return;
   const req = e.request;
+  // cross-origin (Firebase, YouTube) goes straight to the network, untouched by this cache
+  if (new URL(req.url).origin !== self.location.origin) return;
   const isHTML = req.mode === 'navigate' || (req.headers.get('accept') || '').includes('text/html');
   if (isHTML) {
     e.respondWith(

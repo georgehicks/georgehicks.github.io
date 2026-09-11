@@ -1,4 +1,4 @@
-const CACHE_NAME = 'micro-sprint-v1';
+const CACHE = 'microsprint-v1';
 const urlsToCache = [
   './',
   './index.html',
@@ -7,7 +7,7 @@ const urlsToCache = [
 
 self.addEventListener('install', (event) => {
   event.waitUntil(
-    caches.open(CACHE_NAME)
+    caches.open(CACHE)
       .then((cache) => cache.addAll(urlsToCache))
   );
 });
@@ -24,7 +24,7 @@ self.addEventListener('activate', (event) => {
     caches.keys().then((cacheNames) => {
       return Promise.all(
         cacheNames.map((cacheName) => {
-          if (cacheName !== CACHE_NAME) {
+          if (cacheName !== CACHE) {
             return caches.delete(cacheName);
           }
         })
