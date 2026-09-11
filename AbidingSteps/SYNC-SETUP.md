@@ -14,8 +14,18 @@ AbidingSteps stores its data in its **own** document, `users/{uid}/apps/abidings
 not FocusFlow's `users/{uid}` doc. FocusFlow overwrites that whole doc on every save,
 which would wipe AbidingSteps data (and the reverse).
 
-The existing FocusFlow rule only covers `users/{uid}`, not documents under it. In the
-Firebase Console → Firestore Database → **Rules**, add the `apps` block and **Publish**:
+The existing FocusFlow rule only covers `users/{uid}` itself, not documents nested under
+it. In the Firebase Console → Firestore Database → **Rules**, **don't replace your rules**.
+Add only this nested `apps` block *inside* the existing `match /users/{userId} { ... }` block,
+leave every other `match` block (e.g. `abidingflow_users`) as it is, then **Publish**:
+
+```
+      match /apps/{appId} {
+        allow read, write: if request.auth != null && request.auth.uid == userId;
+      }
+```
+
+For example, with the FocusFlow and AbidingFlow rules already in place, the result is:
 
 ```
 rules_version = '2';
@@ -27,6 +37,9 @@ service cloud.firestore {
       match /apps/{appId} {
         allow read, write: if request.auth != null && request.auth.uid == userId;
       }
+    }
+    match /abidingflow_users/{userId} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
     }
   }
 }

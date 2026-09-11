@@ -356,6 +356,15 @@
   .modal-budget-row .unit { font-size: 0.78rem; color: var(--text-dim); }
   .modal-budget-row .modal-toggle-row { margin-bottom: 0; margin-left: auto; flex-wrap: nowrap; }
   .budget-label.over { color: var(--accent); }
+  /* Step: budget progress for the selected outcome, under the action block */
+  .step-budget { margin-top: 12px; }
+  .step-budget .budget-bar-wrap { margin-top: 0; }
+  .step-budget .budget-label { text-align: center; }
+  .step-budget.over .budget-label { color: var(--accent); }
+  /* Step picker chips: a hairline budget track along the bottom edge */
+  .outcome-chip.has-budget { position: relative; overflow: hidden; }
+  .outcome-chip .chip-budget-track { position: absolute; left: 0; right: 0; bottom: 0; height: 2px; background: var(--border); }
+  .outcome-chip .chip-budget-fill { position: absolute; left: 0; bottom: 0; height: 2px; background: var(--accent); }
 
   /* ===== tab bar ===== */
   .tabbar {
@@ -440,6 +449,10 @@
           </div>
           <div class="action-focus" id="actionFocus">Working on —</div>
           <div class="timer-sub" id="timerSub"></div>
+        </div>
+        <div class="step-budget" id="stepBudget" hidden>
+          <div class="budget-bar-wrap"><div class="budget-bar" id="stepBudgetBar"></div></div>
+          <div class="budget-label" id="stepBudgetLabel"></div>
         </div>
         <div class="overrun-tray" id="overrunTray">
           <div class="headline">Time's up — still going?</div>
@@ -1411,10 +1424,32 @@ For God alone my soul waits in silence. — Psalm 62:1`;
     o.budget.acc = budgetAcc(o) + mins;
     o.budget.countedAt = now;
     saveOutcomes();
-    renderAheadList();
+    renderAheadList(); renderOutcomePicker();
   }
   function startWork() { commitWork(); workSeg = selectedOutcomeId ? { outcomeId: selectedOutcomeId, since: Date.now() } : null; }
   function stopWork() { commitWork(); workSeg = null; }
+  // live minutes = what's saved + the not-yet-committed part of a running chunk,
+  // so Step's numbers tick up every second instead of jumping once a minute
+  function liveBudgetAcc(o) {
+    let acc = budgetAcc(o);
+    if (workSeg && workSeg.outcomeId === o.id) acc += (Date.now() - workSeg.since) / 60000;
+    return acc;
+  }
+  function budgetSummary(o, acc) {
+    const target = o.budget.target;
+    return fmtMins(acc) + ' / ' + fmtMins(target) + (o.budget.period === 'total' ? ' total' : ' this week')
+      + ' · ' + (acc >= target ? 'reached ✓' : fmtMins(Math.ceil(target - acc)) + ' left');
+  }
+  function renderStepBudget() {
+    const el = document.getElementById('stepBudget');
+    const o = selectedOutcome();
+    if (!o || !o.budget) { el.hidden = true; return; }
+    const acc = liveBudgetAcc(o);
+    el.hidden = false;
+    el.classList.toggle('over', acc >= o.budget.target);
+    document.getElementById('stepBudgetBar').style.width = Math.min(100, (acc / o.budget.target) * 100) + '%';
+    document.getElementById('stepBudgetLabel').textContent = budgetSummary(o, acc);
+  }
 
   function startChunk(minutes) {
     startWork();
@@ -1435,6 +1470,7 @@ For God alone my soul waits in silence. — Psalm 62:1`;
 
   function tick() {
     if (workSeg && Date.now() - workSeg.since >= 60000) commitWork();
+    renderStepBudget();
     const remainMs = endsAt - Date.now();
     if (remainMs > 0) {
       document.getElementById('timerDisplay').textContent = fmt(remainMs);
@@ -1682,6 +1718,13 @@ For God alone my soul waits in silence. — Psalm 62:1`;
     chip.className = 'outcome-chip ' + String(o.type).toLowerCase() + (o.id === selectedOutcomeId ? ' selected' : '');
     chip.innerHTML = '<span class="type-dot"></span>';
     chip.appendChild(document.createTextNode(o.t));
+    if (o.budget) {
+      const acc = liveBudgetAcc(o);
+      chip.classList.add('has-budget');
+      chip.title = budgetSummary(o, acc);
+      chip.insertAdjacentHTML('beforeend', '<span class="chip-budget-track"></span><span class="chip-budget-fill" style="width:'
+        + Math.min(100, (acc / o.budget.target) * 100) + '%"></span>');
+    }
     chip.addEventListener('click', () => selectOutcome(o.id));
     return chip;
   }
@@ -1717,6 +1760,7 @@ For God alone my soul waits in silence. — Psalm 62:1`;
       });
     });
     document.getElementById('outcomesOther').appendChild(addChip);
+    renderStepBudget();
   }
 
   function selectOutcome(id, opts) {
@@ -1745,6 +1789,7 @@ For God alone my soul waits in silence. — Psalm 62:1`;
     expandOutcomePicker();
     switchNotesContext('_', null);
     store.set('__local_selection', null);
+    renderStepBudget();
   }
 
   function renderSubOutcomeRow(o) {
@@ -1788,6 +1833,7 @@ For God alone my soul waits in silence. — Psalm 62:1`;
     document.getElementById('actionIdleLabel').textContent = 'Choose a length';
     switchNotesContext(o.id + (selectedSubOutcome ? '|' + selectedSubOutcome : ''), label);
     store.set('__local_selection', { id: o.id, sub: selectedSubOutcome });
+    renderStepBudget();
   }
   // after a rename (here or synced from another device), refresh every place the name shows
   function updateSelectionLabels() {
@@ -1995,7 +2041,7 @@ For God alone my soul waits in silence. — Psalm 62:1`;
     breathToneEnabled = !!settings.breathTone; breathToneBtn.classList.toggle('active', breathToneEnabled);
     breathVoiceEnabled = !!settings.breathVoice; breathVoiceBtn.classList.toggle('active', breathVoiceEnabled);
   }
-  document.getElementById('weekResetSelect').addEventListener('change', (e) => { settings.weekReset = e.target.value; saveSettings(); renderAheadList(); });
+  document.getElementById('weekResetSelect').addEventListener('change', (e) => { settings.weekReset = e.target.value; saveSettings(); renderAheadList(); renderOutcomePicker(); });
 
   // re-read everything from storage after another device's changes land
   function refreshFromStore() {
@@ -2174,7 +2220,7 @@ For God alone my soul waits in silence. — Psalm 62:1`;
 
   // Keep in sync with the CACHE suffix in sw.js — shown here so a stale
   // install is easy to spot, and "Check for updates" has something real to bust.
-  const APP_VERSION = 'v16';
+  const APP_VERSION = 'v17';
   document.getElementById('appVersionLabel').textContent = 'AbidingSteps ' + APP_VERSION;
   document.getElementById('reloadAppBtn').addEventListener('click', async () => {
     const status = document.getElementById('reloadStatus');
