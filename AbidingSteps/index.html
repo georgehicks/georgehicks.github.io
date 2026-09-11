@@ -230,6 +230,17 @@
   .music-row:last-child { border-bottom: none; }
   .music-row-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
   .music-row-head .name { font-weight: 600; font-size: 0.85rem; }
+  .settings-row input[type=range] { accent-color: var(--accent); }
+  .music-local { margin-bottom: 4px; }
+  .music-local-summary { font-size: 0.72rem; color: var(--text-dim); }
+  .music-local-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-top: 6px; }
+  .btn.small { padding: 5px 10px; font-size: 0.74rem; border-radius: 8px; }
+  .music-local-status { font-size: 0.7rem; color: var(--accent); margin-top: 6px; }
+  .music-track-list { margin-top: 6px; max-height: 200px; overflow-y: auto; border: 1px solid var(--border); border-radius: 8px; padding: 4px 8px; }
+  .music-track { display: flex; align-items: center; justify-content: space-between; gap: 8px; font-size: 0.74rem; color: var(--text-dim); padding: 3px 0; }
+  .music-track span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .link-btn.danger { color: var(--danger); padding: 6px 0 2px; }
+  .music-yt-label { font-size: 0.68rem; color: var(--text-faint); margin: 8px 0 4px; }
   .music-row input[type=text] {
     width: 100%; background: var(--bg-elevated); border: 1px solid var(--border); color: var(--text-dim);
     border-radius: 6px; padding: 6px 8px; font-size: 0.75rem;
@@ -525,18 +536,33 @@
 
       <div class="settings-section">
         <h3>Focus Music</h3>
+        <p style="font-size:0.72rem; color:var(--text-faint); margin:0 0 4px;">Add your own songs for each mode — they're stored privately on this device and never uploaded. A mode with no songs plays its YouTube link instead.</p>
         <div class="music-row">
           <div class="music-row-head"><span class="name" style="color:var(--step)">Step</span><input type="checkbox" id="musicEnable_step" checked></div>
-          <input type="text" id="musicUrl_step" value="https://www.youtube.com/playlist?list=PLfd0VTIoVYk1UTLrj9ARhBpmhUBkth1Px">
+          <div class="music-local" id="musicLocal_step"></div>
+          <div class="music-yt-label">YouTube backup — used when this mode has no songs</div>
+          <input type="text" id="musicUrl_step" placeholder="YouTube playlist link" value="https://www.youtube.com/playlist?list=PLfd0VTIoVYk1UTLrj9ARhBpmhUBkth1Px">
         </div>
         <div class="music-row">
           <div class="music-row-head"><span class="name" style="color:var(--ahead)">Ahead</span><input type="checkbox" id="musicEnable_ahead" checked></div>
-          <input type="text" id="musicUrl_ahead" value="https://www.youtube.com/playlist?list=PLfd0VTIoVYk2mLoNsO36ULCr3XZUPwAZw">
+          <div class="music-local" id="musicLocal_ahead"></div>
+          <div class="music-yt-label">YouTube backup — used when this mode has no songs</div>
+          <input type="text" id="musicUrl_ahead" placeholder="YouTube playlist link" value="https://www.youtube.com/playlist?list=PLfd0VTIoVYk2mLoNsO36ULCr3XZUPwAZw">
         </div>
         <div class="music-row">
           <div class="music-row-head"><span class="name" style="color:var(--abide)">Abide</span><input type="checkbox" id="musicEnable_abide" checked></div>
-          <input type="text" id="musicUrl_abide" value="https://www.youtube.com/playlist?list=PLfd0VTIoVYk0ElEwgDLPMkSuIIoZ1LED0">
+          <div class="music-local" id="musicLocal_abide"></div>
+          <div class="music-yt-label">YouTube backup — used when this mode has no songs</div>
+          <input type="text" id="musicUrl_abide" placeholder="YouTube playlist link" value="https://www.youtube.com/playlist?list=PLfd0VTIoVYk0ElEwgDLPMkSuIIoZ1LED0">
         </div>
+        <div class="settings-row" style="margin-top:6px;">
+          <span>Volume</span>
+          <div style="display:flex; align-items:center; gap:8px; width:55%;">
+            <input type="range" id="musicVolume" min="0" max="100" step="5" value="40" style="flex:1;">
+            <span id="musicVolumeLabel" style="font-size:0.76rem; color:var(--text-dim); min-width:34px; text-align:right;">40%</span>
+          </div>
+        </div>
+        <p style="font-size:0.68rem; color:var(--text-faint); margin:4px 0 0;">Music volume relative to your device volume. iPhone/iPad ignore this — use the side buttons there.</p>
       </div>
 
       <div class="settings-section">
@@ -609,7 +635,7 @@
         </div>
       </div>
       <div class="abide-anchor">
-        <div class="tally-summary">Today so far: 2h 15m Step · 40m Ahead · 15m Abide</div>
+        <div class="tally-summary" id="tallySummary">Today so far: 0m Step · 0m Ahead · 0m Abide</div>
         <div class="abide-actions">
           <button class="btn" onclick="switchTab('ahead')">Continue to Ahead</button>
           <button class="btn primary" onclick="switchTab('step')">Continue to Step</button>
@@ -718,6 +744,7 @@
     },
     breathText: null, // null = the built-in verse list
     breathDurationMin: 0, breathTone: false, breathVoice: false,
+    musicVolume: 40, // percent of device volume — background music should sit under your thinking, not over it
   };
   function loadSettings() {
     const saved = store.get('settings', null) || {};
@@ -741,6 +768,8 @@
     updateMusicBtn();
     if (musicPlaying && (tab === 'step' || tab === 'ahead' || tab === 'abide')) musicPlayer.playForMode(tab);
     if (tab === 'abide') startBreathCue(); else stopBreathCue();
+    updateModeTracking();
+    if (tab === 'abide') renderTally();
   }
 
   // ===== Abide breath cue — whole scripture verses, paced to soak in, not read fast =====
@@ -1057,8 +1086,156 @@ For God alone my soul waits in silence. — Psalm 62:1`;
     musicBtn.title = (musicPlaying ? 'Pause ' : 'Play ') + currentModeLabel() + ' music';
   }
   function currentMode() { return document.documentElement.getAttribute('data-mode') || 'step'; }
+
+  // ===== songs on this device — IndexedDB, never synced or uploaded (they're your own
+  // files, and a public site can't legally host purchased music). YouTube is the backup
+  // for any mode without songs. Metadata and audio live in separate stores so listing
+  // songs never has to load the audio itself. =====
+  const localTracks = { step: [], ahead: [], abide: [] };
+  let musicStorageOk = null;
+  function hasLocalTracks(mode) { return !!(localTracks[mode] && localTracks[mode].length); }
+  const musicDB = {
+    dbp: null,
+    open() {
+      if (!this.dbp) this.dbp = new Promise((resolve, reject) => {
+        if (!window.indexedDB) { reject(new Error('IndexedDB not available')); return; }
+        const req = indexedDB.open('abidingsteps-music', 1);
+        req.onupgradeneeded = () => {
+          req.result.createObjectStore('tracks', { keyPath: 'id' });
+          req.result.createObjectStore('blobs');
+        };
+        req.onsuccess = () => resolve(req.result);
+        req.onerror = () => reject(req.error);
+      });
+      return this.dbp;
+    },
+    req(r) { return new Promise((res, rej) => { r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error); }); },
+    done(tx) { return new Promise((res, rej) => { tx.oncomplete = () => res(); tx.onerror = tx.onabort = () => rej(tx.error || new Error('Save aborted')); }); },
+    async all() { const db = await this.open(); return this.req(db.transaction('tracks').objectStore('tracks').getAll()); },
+    async getBlob(id) { const db = await this.open(); return this.req(db.transaction('blobs').objectStore('blobs').get(id)); },
+    async add(meta, blob) {
+      const db = await this.open();
+      const tx = db.transaction(['tracks', 'blobs'], 'readwrite');
+      tx.objectStore('blobs').put(blob, meta.id);
+      tx.objectStore('tracks').put(meta);
+      return this.done(tx);
+    },
+    async remove(ids) {
+      const db = await this.open();
+      const tx = db.transaction(['tracks', 'blobs'], 'readwrite');
+      ids.forEach(id => { tx.objectStore('tracks').delete(id); tx.objectStore('blobs').delete(id); });
+      return this.done(tx);
+    },
+  };
+  async function loadLocalTracks() {
+    try {
+      const all = await musicDB.all();
+      ['step', 'ahead', 'abide'].forEach(m => { localTracks[m] = all.filter(t => t.mode === m).sort((a, b) => a.name.localeCompare(b.name)); });
+      musicStorageOk = true;
+    } catch (e) { musicStorageOk = false; }
+    ['step', 'ahead', 'abide'].forEach(renderMusicLocal);
+  }
+
+  const AUDIO_EXT = /\.(mp3|m4a|aac|wav|ogg|oga|opus|flac|webm)$/i;
+  const AUDIO_TYPES = { mp3: 'audio/mpeg', m4a: 'audio/mp4', aac: 'audio/aac', wav: 'audio/wav', ogg: 'audio/ogg', oga: 'audio/ogg', opus: 'audio/ogg', flac: 'audio/flac', webm: 'audio/webm' };
+  const musicLocalStatus = {}, musicListOpen = {};
+  async function addLocalSongs(mode, fileList) {
+    const files = [...fileList].filter(f => (f.type && f.type.startsWith('audio/')) || AUDIO_EXT.test(f.name));
+    if (!files.length) { musicLocalStatus[mode] = 'No audio files in that selection.'; renderMusicLocal(mode); return; }
+    let added = 0, skipped = 0, failed = 0, quota = false;
+    for (let i = 0; i < files.length; i++) {
+      const f = files[i];
+      if (localTracks[mode].some(t => t.name === f.name && t.size === f.size)) { skipped++; continue; }
+      musicLocalStatus[mode] = 'Adding ' + (i + 1) + ' of ' + files.length + '…';
+      renderMusicLocal(mode);
+      try {
+        const ext = ((f.name.match(/\.([^.]+)$/) || [])[1] || '').toLowerCase();
+        // copy the bytes in — iOS hands the page a temporary file that can vanish later
+        const blob = new Blob([await f.arrayBuffer()], { type: f.type || AUDIO_TYPES[ext] || 'audio/mpeg' });
+        const meta = { id: 't' + Date.now().toString(36) + Math.random().toString(36).slice(2, 7), mode, name: f.name, size: f.size, addedAt: Date.now() };
+        await musicDB.add(meta, blob);
+        localTracks[mode].push(meta);
+        added++;
+      } catch (e) {
+        if (e && e.name === 'QuotaExceededError') { quota = true; break; }
+        failed++;
+      }
+    }
+    localTracks[mode].sort((a, b) => a.name.localeCompare(b.name));
+    musicLocalStatus[mode] = (quota ? 'This device ran out of room for songs. ' : '')
+      + 'Added ' + added + (added === 1 ? ' song' : ' songs')
+      + (skipped ? ' · ' + skipped + ' already here' : '') + (failed ? ' · ' + failed + " couldn't be read" : '');
+    // ask the browser not to clear these under storage pressure (no prompt on Safari/Chrome)
+    if (added && navigator.storage && navigator.storage.persist) navigator.storage.persist().catch(() => {});
+    renderMusicLocal(mode);
+    if (added) musicPlayer.localTracksChanged(mode);
+  }
+  async function removeLocalSongs(mode, ids) {
+    try { await musicDB.remove(ids); }
+    catch (e) { musicLocalStatus[mode] = "Couldn't remove: " + ((e && e.message) || e); renderMusicLocal(mode); return; }
+    localTracks[mode] = localTracks[mode].filter(t => !ids.includes(t.id));
+    musicLocalStatus[mode] = '';
+    renderMusicLocal(mode);
+    musicPlayer.localTracksChanged(mode);
+  }
+
+  const IS_IOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+  function fmtBytes(n) { return n >= 1048576 ? (n / 1048576).toFixed(n >= 10485760 ? 0 : 1) + ' MB' : Math.max(1, Math.round(n / 1024)) + ' KB'; }
+  function pickSongFiles(mode, folder) {
+    // attached to the page until used — iOS can drop the change event of a detached input
+    const input = document.createElement('input');
+    input.type = 'file'; input.multiple = true; input.style.display = 'none';
+    if (folder) input.webkitdirectory = true;
+    else input.accept = 'audio/*,.mp3,.m4a,.aac,.wav,.ogg,.opus,.flac';
+    input.addEventListener('change', () => {
+      if (input.files && input.files.length) addLocalSongs(mode, input.files);
+      input.remove();
+    });
+    document.body.appendChild(input);
+    input.click();
+  }
+  function renderMusicLocal(mode) {
+    const host = document.getElementById('musicLocal_' + mode);
+    if (!host) return;
+    const tracks = localTracks[mode];
+    const label = mode.charAt(0).toUpperCase() + mode.slice(1);
+    let summary;
+    if (musicStorageOk === false) summary = "Songs on this device aren't available in this browser — using YouTube.";
+    else if (tracks.length) summary = tracks.length + (tracks.length === 1 ? ' song' : ' songs') + ' on this device · ' + fmtBytes(tracks.reduce((n, t) => n + (t.size || 0), 0)) + ' · plays instead of YouTube';
+    else summary = 'No songs on this device yet';
+    host.innerHTML = '<div class="music-local-summary">' + escapeHtml(summary) + '</div>'
+      + (musicStorageOk === false ? '' : '<div class="music-local-actions">'
+        + '<button type="button" class="btn small" data-act="add">+ Add songs</button>'
+        + (IS_IOS ? '' : '<button type="button" class="btn small" data-act="folder">+ Add folder</button>')
+        + (tracks.length ? '<button type="button" class="link-btn" data-act="list">' + (musicListOpen[mode] ? 'hide list' : 'show list') + '</button>' : '')
+        + '</div>')
+      + (musicLocalStatus[mode] ? '<div class="music-local-status">' + escapeHtml(musicLocalStatus[mode]) + '</div>' : '')
+      + (tracks.length && musicListOpen[mode] ? '<div class="music-track-list">'
+        + tracks.map(t => '<div class="music-track"><span title="' + escapeHtml(t.name) + '">' + escapeHtml(t.name) + '</span>'
+          + '<button type="button" class="row-icon-btn" data-remove="' + t.id + '" title="Remove from this device">×</button></div>').join('')
+        + '<button type="button" class="link-btn danger" data-act="clear">Remove all ' + tracks.length + '</button></div>' : '');
+    host.onclick = (e) => {
+      const btn = e.target.closest('button');
+      if (!btn) return;
+      if (btn.dataset.remove) { removeLocalSongs(mode, [btn.dataset.remove]); return; }
+      const act = btn.dataset.act;
+      if (act === 'add') pickSongFiles(mode, false);
+      else if (act === 'folder') pickSongFiles(mode, true);
+      else if (act === 'list') { musicListOpen[mode] = !musicListOpen[mode]; renderMusicLocal(mode); }
+      else if (act === 'clear') {
+        openConfirmModal({
+          title: 'Remove all ' + tracks.length + ' ' + label + ' songs?',
+          message: 'Deletes them from this device only — your original files are untouched.',
+          onOk: () => removeLocalSongs(mode, tracks.map(t => t.id)),
+        });
+      }
+    };
+  }
+
   const musicPlayer = {
     yt: null, ready: false, loadedId: null, started: false, apiLoading: false, pendingCb: null,
+    audio: null, source: null, localMode: null, localStarted: false, currentUrl: null, currentTrackId: null,
+    preloaded: {}, queues: {}, errorStreak: 0,
     extractPlaylistId(url) {
       const trimmed = (url || '').trim();
       if (!trimmed) return null;
@@ -1094,18 +1271,25 @@ For God alone my soul waits in silence. — Psalm 62:1`;
     // no longer counts it as a user gesture and blocks autoplay, so the first tap on
     // Step silently did nothing and only a *later* tap (e.g. opening Abide) played.
     preload() {
+      // same reason for songs on this device: one ready blob URL per mode, so the tap can play it synchronously
+      ['step', 'ahead', 'abide'].forEach(m => this.preloadLocal(m));
       if (this.yt) return;
-      const mode = [currentMode(), 'step', 'ahead', 'abide'].find(m => this.modeEnabled(m) && this.extractPlaylistId(this.urlForMode(m)));
+      const mode = [currentMode(), 'step', 'ahead', 'abide'].find(m => this.modeEnabled(m) && !hasLocalTracks(m) && this.extractPlaylistId(this.urlForMode(m)));
       if (!mode) return;
       const id = this.extractPlaylistId(this.urlForMode(mode));
       this.ensureApi(() => { if (!this.yt) this.createPlayer(id, false); });
     },
     playForMode(mode) {
       if (!this.modeEnabled(mode)) { this.pause(); return; }
+      // songs added on this device win; YouTube is the backup for modes without any
+      if (hasLocalTracks(mode)) { this.pauseYouTube(); this.playLocal(mode); return; }
+      this.pauseLocal();
+      this.source = 'youtube';
       const id = this.extractPlaylistId(this.urlForMode(mode));
       if (!id) { this.pause(); return; }
       if (!this.yt) { this.ensureApi(() => { if (!this.yt) this.createPlayer(id, true); }); return; }
       if (!this.ready) return; // onReady re-runs this once the player can take commands
+      this.applyVolume();
       if (id !== this.loadedId) {
         this.loadedId = id; this.started = true;
         this.yt.loadPlaylist({ list: id, listType: 'playlist' });
@@ -1131,6 +1315,7 @@ For God alone my soul waits in silence. — Psalm 62:1`;
         events: {
           onReady: () => {
             this.ready = true;
+            this.applyVolume();
             if (musicPlaying && !musicAutoPaused) this.playForMode(currentMode());
           },
         },
@@ -1143,8 +1328,134 @@ For God alone my soul waits in silence. — Psalm 62:1`;
       } catch (e) {}
       try { this.yt.playVideo(); } catch (e) {}
     },
-    pause() { if (this.yt && this.ready) { try { this.yt.pauseVideo(); } catch (e) {} } },
-    resume() { if (this.yt && this.ready) { try { this.yt.playVideo(); } catch (e) {} } },
+    // volume for both sources (0-100), applied on ready and before each play; iOS ignores
+    // programmatic volume entirely (hardware buttons only), so there it's a no-op
+    applyVolume() {
+      const raw = Math.max(0, Math.min(100, Number(settings.musicVolume)));
+      const v = Number.isFinite(raw) ? raw : 40;
+      if (this.audio) this.audio.volume = v / 100;
+      if (!this.yt || !this.ready) return;
+      try { this.yt.setVolume(v); } catch (e) {}
+    },
+
+    // ---- songs on this device ----
+    audioEl() {
+      if (!this.audio) {
+        const a = this.audio = new Audio();
+        a.preload = 'auto';
+        a.addEventListener('ended', () => this.nextLocal(this.localMode));
+        a.addEventListener('playing', () => { this.errorStreak = 0; });
+        a.addEventListener('error', () => {
+          // unplayable file (corrupt, or a format this browser can't decode) — skip it, but never spin forever
+          if (!a.getAttribute('src')) return;
+          this.errorStreak++;
+          if (this.localMode && this.errorStreak < (localTracks[this.localMode] || []).length) this.nextLocal(this.localMode);
+        });
+        this.applyVolume();
+      }
+      return this.audio;
+    },
+    // shuffled, and no repeats until every song in the mode has played
+    nextTrackId(mode) {
+      const ids = (localTracks[mode] || []).map(t => t.id);
+      let q = (this.queues[mode] || []).filter(id => ids.includes(id));
+      if (!q.length) {
+        q = ids.slice();
+        for (let i = q.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [q[i], q[j]] = [q[j], q[i]]; }
+        if (q.length > 1 && q[0] === this.currentTrackId) q.push(q.shift());
+      }
+      const id = q.shift();
+      this.queues[mode] = q;
+      return id;
+    },
+    async loadTrack(mode) {
+      const id = this.nextTrackId(mode);
+      if (!id) return null;
+      const blob = await musicDB.getBlob(id);
+      if (!blob) return null;
+      const meta = (localTracks[mode] || []).find(t => t.id === id) || {};
+      return { mode, id, name: meta.name || 'Song', url: URL.createObjectURL(blob) };
+    },
+    async preloadLocal(mode) {
+      if (!hasLocalTracks(mode) || this.preloaded[mode]) return;
+      this.preloaded[mode] = 'loading';
+      let t = null;
+      try { t = await this.loadTrack(mode); } catch (e) {}
+      if (t && this.preloaded[mode] === 'loading') { this.preloaded[mode] = t; return; }
+      if (t) URL.revokeObjectURL(t.url);                       // tracks changed while loading
+      if (this.preloaded[mode] === 'loading') delete this.preloaded[mode];
+    },
+    playLocal(mode) {
+      const a = this.audioEl();
+      this.source = 'local';
+      if (this.localMode === mode && this.localStarted && a.getAttribute('src')) { a.play().catch(() => {}); return; }
+      this.localMode = mode; this.localStarted = true;
+      const ready = this.preloaded[mode];
+      if (ready && ready !== 'loading') {
+        delete this.preloaded[mode];
+        this.startTrack(ready);   // synchronous, inside the tap — iPhone only allows audio to start that way
+        this.preloadLocal(mode);  // line up the next one
+        return;
+      }
+      this.nextLocal(mode);
+    },
+    async nextLocal(mode) {
+      if (!mode) return;
+      let t = null;
+      const ready = this.preloaded[mode];
+      if (ready && ready !== 'loading') { delete this.preloaded[mode]; t = ready; }
+      else { try { t = await this.loadTrack(mode); } catch (e) {} }
+      if (!t) return;
+      if (this.localMode !== mode || this.source !== 'local') { URL.revokeObjectURL(t.url); return; }
+      this.startTrack(t);
+      this.preloadLocal(mode);
+    },
+    startTrack(t) {
+      const a = this.audioEl();
+      if (this.currentUrl) URL.revokeObjectURL(this.currentUrl);
+      this.currentUrl = t.url; this.currentTrackId = t.id;
+      a.src = t.url;
+      this.applyVolume();
+      if (musicPlaying && !musicAutoPaused) {
+        a.play().catch(err => {
+          // started outside a tap before this device ever unlocked audio (iPhone) — show it as
+          // off so the next 🎵 tap starts it properly instead of looking stuck "on"
+          if (err && err.name === 'NotAllowedError') { musicPlaying = false; updateMusicBtn(); }
+        });
+      }
+      if ('mediaSession' in navigator && window.MediaMetadata) {
+        try {
+          navigator.mediaSession.metadata = new MediaMetadata({
+            title: t.name.replace(/\.[^.]+$/, ''),
+            artist: 'AbidingSteps · ' + t.mode.charAt(0).toUpperCase() + t.mode.slice(1),
+          });
+        } catch (e) {}
+      }
+    },
+    // songs for a mode were added or removed — drop stale preloads/shuffle, switch source if needed
+    localTracksChanged(mode) {
+      const p = this.preloaded[mode];
+      if (p && p !== 'loading') URL.revokeObjectURL(p.url);
+      delete this.preloaded[mode];
+      delete this.queues[mode];
+      const ids = (localTracks[mode] || []).map(t => t.id);
+      if (this.localMode === mode && this.currentTrackId && !ids.includes(this.currentTrackId)) {
+        this.localStarted = false; // the song that was playing got removed
+        if (this.audio) { this.audio.pause(); this.audio.removeAttribute('src'); this.audio.load(); }
+        if (this.currentUrl) { URL.revokeObjectURL(this.currentUrl); this.currentUrl = null; }
+        this.currentTrackId = null;
+      }
+      this.preload();
+      if (musicPlaying && currentMode() === mode) this.playForMode(mode);
+    },
+
+    pauseYouTube() { if (this.yt && this.ready) { try { this.yt.pauseVideo(); } catch (e) {} } },
+    pauseLocal() { if (this.audio) this.audio.pause(); },
+    pause() { this.pauseYouTube(); this.pauseLocal(); },
+    resume() {
+      if (this.source === 'local') { if (this.audio && this.audio.getAttribute('src')) this.audio.play().catch(() => {}); }
+      else if (this.yt && this.ready) { try { this.yt.playVideo(); } catch (e) {} }
+    },
   };
   musicBtn.addEventListener('click', () => {
     musicPlaying = !musicPlaying;
@@ -1153,6 +1464,14 @@ For God alone my soul waits in silence. — Psalm 62:1`;
     if (musicPlaying) musicPlayer.playForMode(currentMode()); else musicPlayer.pause();
   });
   updateMusicBtn();
+  // lock screen / Control Center / headphone buttons drive the same on/off state as 🎵
+  if ('mediaSession' in navigator) {
+    try {
+      navigator.mediaSession.setActionHandler('play', () => { if (!musicPlaying) musicBtn.click(); else musicPlayer.resume(); });
+      navigator.mediaSession.setActionHandler('pause', () => { if (musicPlaying) musicBtn.click(); });
+      navigator.mediaSession.setActionHandler('nexttrack', () => { if (musicPlayer.source === 'local') musicPlayer.nextLocal(musicPlayer.localMode); });
+    } catch (e) {}
+  }
   // editing a playlist URL or its enable checkbox takes effect immediately if that
   // mode is the one currently playing, rather than needing a tab switch to notice
   ['step', 'ahead', 'abide'].forEach(mode => {
@@ -1167,6 +1486,15 @@ For God alone my soul waits in silence. — Psalm 62:1`;
     });
   });
 
+  const musicVolumeInput = document.getElementById('musicVolume');
+  const musicVolumeLabel = document.getElementById('musicVolumeLabel');
+  musicVolumeInput.addEventListener('input', () => {
+    settings.musicVolume = parseInt(musicVolumeInput.value, 10);
+    musicVolumeLabel.textContent = settings.musicVolume + '%';
+    musicPlayer.applyVolume();
+  });
+  musicVolumeInput.addEventListener('change', saveSettings);
+
   // ===== auto-pause music during decision moments (ported from FocusFlowFireBase) =====
   // Pauses while any modal/tray is open or a text field is focused — a decision
   // moment shouldn't compete with background music — and resumes after, but only
@@ -1177,6 +1505,7 @@ For God alone my soul waits in silence. — Psalm 62:1`;
       document.getElementById(id).classList.contains('show'))) return true;
     if (document.getElementById('overrunTray').classList.contains('show')) return true;
     const el = document.activeElement;
+    if (el && el.tagName === 'INPUT' && (el.type === 'range' || el.type === 'checkbox')) return false;
     return !!(el && ['INPUT', 'TEXTAREA', 'SELECT'].includes(el.tagName));
   }
   function updateMusicPauseState() {
@@ -1419,6 +1748,7 @@ For God alone my soul waits in silence. — Psalm 62:1`;
     const now = Date.now();
     const mins = (now - workSeg.since) / 60000;
     workSeg.since = now;
+    addTally('step', mins);
     const o = findOutcome(workSeg.outcomeId);
     if (!o || !o.budget || mins <= 0) return;
     o.budget.acc = budgetAcc(o) + mins;
@@ -1426,8 +1756,8 @@ For God alone my soul waits in silence. — Psalm 62:1`;
     saveOutcomes();
     renderAheadList(); renderOutcomePicker();
   }
-  function startWork() { commitWork(); workSeg = selectedOutcomeId ? { outcomeId: selectedOutcomeId, since: Date.now() } : null; }
-  function stopWork() { commitWork(); workSeg = null; }
+  function startWork() { commitWork(); workSeg = selectedOutcomeId ? { outcomeId: selectedOutcomeId, since: Date.now() } : null; updateModeTracking(); }
+  function stopWork() { commitWork(); workSeg = null; updateModeTracking(); }
   // live minutes = what's saved + the not-yet-committed part of a running chunk,
   // so Step's numbers tick up every second instead of jumping once a minute
   function liveBudgetAcc(o) {
@@ -1449,6 +1779,68 @@ For God alone my soul waits in silence. — Psalm 62:1`;
     el.classList.toggle('over', acc >= o.budget.target);
     document.getElementById('stepBudgetBar').style.width = Math.min(100, (acc / o.budget.target) * 100) + '%';
     document.getElementById('stepBudgetLabel').textContent = budgetSummary(o, acc);
+  }
+
+  // ===== today-so-far tally (shown on Abide) — real minutes per mode.
+  // Step  = time a chunk is actually running, whatever screen you're on (same as budgets).
+  // Ahead / Abide = time that screen is open with the app in front and no chunk running.
+  // An idle Step screen, Settings, and a backgrounded app don't count. Each device writes
+  // only its own key and the display sums every device's, so two devices syncing at once
+  // never overwrite each other's minutes. =====
+  function dayKey(d) {
+    d = d || new Date();
+    return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+  }
+  function deviceId() {
+    let id = store.get('__local_deviceId', null);
+    if (!id) { id = 'd' + Math.random().toString(36).slice(2, 10); store.set('__local_deviceId', id); }
+    return id;
+  }
+  const TALLY_KEY = 'tally_' + deviceId();
+  function addTally(mode, mins) {
+    if (!(mins > 0)) return;
+    const t = store.get(TALLY_KEY, {}) || {};
+    const today = dayKey();
+    t[today] = t[today] || { step: 0, ahead: 0, abide: 0 };
+    t[today][mode] = (t[today][mode] || 0) + mins;
+    const cutoff = dayKey(new Date(Date.now() - 14 * 864e5)); // keep two weeks, for a future day export
+    Object.keys(t).forEach(k => { if (k < cutoff) delete t[k]; });
+    store.set(TALLY_KEY, t);
+  }
+  let modeSeg = null; // { mode: 'ahead' | 'abide', since } while that screen is being used
+  function commitMode() {
+    if (!modeSeg) return;
+    const now = Date.now();
+    addTally(modeSeg.mode, (now - modeSeg.since) / 60000);
+    modeSeg.since = now;
+  }
+  function trackedMode() {
+    if (workSeg || document.visibilityState === 'hidden') return null; // running chunk = Step time
+    const view = (document.querySelector('.view.active') || {}).id;
+    return view === 'view-ahead' ? 'ahead' : view === 'view-abide' ? 'abide' : null;
+  }
+  function updateModeTracking() {
+    const mode = trackedMode();
+    if ((modeSeg && modeSeg.mode) === mode) return;
+    commitMode();
+    modeSeg = mode ? { mode, since: Date.now() } : null;
+  }
+  function renderTally() {
+    const today = dayKey();
+    const totals = { step: 0, ahead: 0, abide: 0 };
+    try {
+      for (let i = 0; i < localStorage.length; i++) {
+        const k = localStorage.key(i);
+        if (!k || !k.startsWith(STORE_PREFIX + 'tally_')) continue;
+        const day = (store.get(k.slice(STORE_PREFIX.length), {}) || {})[today];
+        if (day) Object.keys(totals).forEach(m => { totals[m] += day[m] || 0; });
+      }
+    } catch (e) {}
+    // plus the live, not-yet-committed part of whatever is being tracked right now
+    if (workSeg) totals.step += (Date.now() - workSeg.since) / 60000;
+    if (modeSeg) totals[modeSeg.mode] += (Date.now() - modeSeg.since) / 60000;
+    document.getElementById('tallySummary').textContent = 'Today so far: '
+      + fmtMins(totals.step) + ' Step · ' + fmtMins(totals.ahead) + ' Ahead · ' + fmtMins(totals.abide) + ' Abide';
   }
 
   function startChunk(minutes) {
@@ -2032,6 +2424,9 @@ For God alone my soul waits in silence. — Psalm 62:1`;
       setChk(MUSIC_ENABLE_INPUTS[m], settings.music[m].enabled);
       setVal(MUSIC_URL_INPUTS[m], settings.music[m].url);
     });
+    setVal('musicVolume', settings.musicVolume);
+    document.getElementById('musicVolumeLabel').textContent = settings.musicVolume + '%';
+    musicPlayer.applyVolume();
     const verseText = settings.breathText || DEFAULT_BREATH_TEXT;
     setVal('breathTextarea', verseText);
     const parsed = parseVerses(verseText);
@@ -2062,6 +2457,7 @@ For God alone my soul waits in silence. — Psalm 62:1`;
       renderSubOutcomeRow(sel); updateSelectionLabels();
     }
     renderOutcomePicker(); renderAheadList();
+    renderTally(); // another device's minutes count toward today too
   }
 
   // ===== Cloud Sync (optional) — FocusFlowFireBase's engine, adapted. localStorage stays
@@ -2208,19 +2604,26 @@ For God alone my soul waits in silence. — Psalm 62:1`;
   })();
   store.onChange = () => { cloudSync.markDirty(); cloudSync.queuePush(); };
   cloudSync.init();
+  renderTally();
+  // save Ahead/Abide time once a minute, and keep the tally live while Abide is open
+  setInterval(() => {
+    if (modeSeg && Date.now() - modeSeg.since >= 60000) commitMode();
+    if (document.getElementById('view-abide').classList.contains('active')) renderTally();
+  }, 5000);
   // iOS can kill a backgrounded PWA at any moment — flush pending saves when hidden
   document.addEventListener('visibilitychange', () => {
+    updateModeTracking(); // hidden stops Ahead/Abide time; coming back starts it again
     if (document.visibilityState !== 'hidden') return;
     commitWork();
     if (notesSaveTimer) { clearTimeout(notesSaveTimer); notesSaveTimer = null; store.set('notes', notesByKey); }
     if (cloudSync.pushTimer) cloudSync.pushNow();
   });
   // warm the music player once the page settles, so the very first 🎵 tap plays
-  setTimeout(() => musicPlayer.preload(), 1500);
+  loadLocalTracks().then(() => setTimeout(() => musicPlayer.preload(), 1500));
 
   // Keep in sync with the CACHE suffix in sw.js — shown here so a stale
   // install is easy to spot, and "Check for updates" has something real to bust.
-  const APP_VERSION = 'v17';
+  const APP_VERSION = 'v18';
   document.getElementById('appVersionLabel').textContent = 'AbidingSteps ' + APP_VERSION;
   document.getElementById('reloadAppBtn').addEventListener('click', async () => {
     const status = document.getElementById('reloadStatus');
