@@ -1493,19 +1493,16 @@ For God alone my soul waits in silence. — Psalm 62:1`;
   });
   musicVolumeInput.addEventListener('change', saveSettings);
 
-  // ===== auto-pause music during decision moments (ported from FocusFlowFireBase) =====
-  // Pauses while the overrun tray is open or a text field outside a dialog is
-  // focused — but never for the New/Edit outcome, rename, or confirm dialogs
-  // themselves, since music shouldn't stop just because one is open — and
-  // resumes after, but only if music was actually on; never auto-starts music
-  // the user turned off.
+  // ===== auto-pause music during real decision moments =====
+  // Only the overrun tray (a forced stop-and-choose) and active voice-note
+  // recording (the mic would otherwise pick up the app's own music and feed
+  // it back into the transcript) pause music. Typing anywhere else — notes,
+  // a dialog, Settings — never touches it. Resumes after, but only if music
+  // was actually on; never auto-starts music the user turned off.
   let musicAutoPaused = false;
   function anyDecisionMomentOpen() {
     if (document.getElementById('overrunTray').classList.contains('show')) return true;
-    const el = document.activeElement;
-    if (el && el.closest && el.closest('.modal-overlay')) return false;
-    if (el && el.tagName === 'INPUT' && (el.type === 'range' || el.type === 'checkbox')) return false;
-    return !!(el && ['INPUT', 'TEXTAREA', 'SELECT'].includes(el.tagName));
+    return !!recording;
   }
   function updateMusicPauseState() {
     if (!musicPlaying) return;
@@ -1517,8 +1514,6 @@ For God alone my soul waits in silence. — Psalm 62:1`;
   }
   document.getElementById('overrunTray') && new MutationObserver(updateMusicPauseState)
     .observe(document.getElementById('overrunTray'), { attributes: true, attributeFilter: ['class'] });
-  document.addEventListener('focusin', updateMusicPauseState, true);
-  document.addEventListener('focusout', () => setTimeout(updateMusicPauseState, 0), true);
 
   // ===== L1 week strip + full date =====
   function renderWeekStrip() {
@@ -2281,7 +2276,7 @@ For God alone my soul waits in silence. — Psalm 62:1`;
       notesArea.value += (notesArea.value ? ' ' : '') + text.trim();
       captureNotes();
     };
-    recognizer.onend = () => { recording = false; micBtn.classList.remove('recording'); };
+    recognizer.onend = () => { recording = false; micBtn.classList.remove('recording'); updateMusicPauseState(); };
   }
   let voiceNotesEnabled = true;
   const voiceNotesToggle = document.getElementById('voiceNotesToggle');
@@ -2289,7 +2284,7 @@ For God alone my soul waits in silence. — Psalm 62:1`;
   voiceNotesToggle.addEventListener('change', () => {
     voiceNotesEnabled = voiceNotesToggle.checked;
     settings.voiceNotes = voiceNotesEnabled; saveSettings();
-    if (!voiceNotesEnabled && recording) { recording = false; micBtn.classList.remove('recording'); recognizer.stop(); }
+    if (!voiceNotesEnabled && recording) { recording = false; micBtn.classList.remove('recording'); recognizer.stop(); updateMusicPauseState(); }
     updateMicBtnVisibility();
   });
   updateMicBtnVisibility();
@@ -2301,7 +2296,10 @@ For God alone my soul waits in silence. — Psalm 62:1`;
     }
     recording = !recording;
     micBtn.classList.toggle('recording', recording);
-    if (recording) recognizer.start(); else recognizer.stop();
+    // pause the music before starting capture — otherwise the mic hears the app's
+    // own playback and the recognizer keeps "hearing" it as speech
+    updateMusicPauseState();
+    try { if (recording) recognizer.start(); else recognizer.stop(); } catch (e) { recording = false; micBtn.classList.remove('recording'); updateMusicPauseState(); }
   });
 
   // ===== Ahead list — the star is the deliberate "add to today" path =====
