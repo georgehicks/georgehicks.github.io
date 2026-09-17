@@ -137,8 +137,12 @@
      & McGill's graphical-perception ranking), and it costs far less vertical space
      than the old 190px ring did. */
   .timer-display { font-size: 2.1rem; font-weight: 700; font-variant-numeric: tabular-nums; letter-spacing: 0.01em; color: var(--text); margin-bottom: 14px; }
-  .time-bar-wrap { width: 100%; height: 18px; border-radius: 9px; background: var(--bg-raised); overflow: hidden; }
-  .time-bar-fill { height: 100%; border-radius: 9px; background: var(--accent); width: 100%; transition: width 1s linear, background 0.3s ease; }
+  /* the track's border is what reads as "this is the whole chunk" at a glance —
+     without it the empty portion blends into the card and the container disappears
+     as the fill drains, which defeats the point of showing capacity at all */
+  .time-bar-wrap { width: 100%; height: 20px; border-radius: 10px; background: var(--bg-raised); border: 1.5px solid var(--border); overflow: hidden; }
+  .time-bar-fill { height: 100%; background: var(--accent); width: 100%; transition: width 1s linear, background 0.3s ease; }
+  .action-block.overrun .time-bar-wrap { border-color: var(--danger); }
   .action-block.overrun .time-bar-fill { background: var(--danger); }
   .action-focus { font-size: 1.02rem; font-weight: 600; margin-top: 14px; }
   .timer-sub { font-size: 0.78rem; color: var(--text-dim); margin-top: 6px; min-height: 1.1em; }
