@@ -73,7 +73,7 @@
 
   /* ===== L1 week strip — subdued context, shows progression through the week ===== */
   .week-strip { display: flex; gap: 5px; margin: 8px 0 6px; }
-  .week-day { flex: 1; text-align: center; padding: 7px 0 6px; border-radius: 9px; background: var(--bg-elevated); border: 1px solid var(--border); }
+  .week-day { flex: 1; text-align: center; padding: 7px 0 6px; border-radius: 9px; background: var(--bg-elevated); border: 1px solid var(--border); cursor: pointer; }
   .week-day .wd { font-size: 0.6rem; color: var(--text-faint); text-transform: uppercase; letter-spacing: 0.03em; }
   .week-day .dn { font-size: 0.85rem; color: var(--text-dim); margin-top: 2px; }
   .week-day.past { opacity: 0.4; }
@@ -100,6 +100,21 @@
   .next-appt .accent { color: var(--accent); font-weight: 600; }
   .event-popover { display: none; margin-top: 8px; padding: 10px 12px; background: var(--bg-raised); border: 1px solid var(--border); border-radius: 8px; font-size: 0.8rem; }
   .event-popover.show { display: block; }
+  .day-plan-tray { max-height: 260px; overflow-y: auto; border: 1px solid var(--border); border-radius: 10px; margin-top: 8px; -webkit-overflow-scrolling: touch; }
+  .day-plan-header { font-size: 0.68rem; font-weight: 600; color: var(--text-dim); padding: 7px 10px; border-bottom: 1px solid var(--border); position: sticky; top: 0; background: var(--bg-elevated); }
+  .day-plan-row { display: flex; align-items: center; gap: 8px; padding: 6px 10px; border-bottom: 1px solid var(--border); }
+  .day-plan-row:last-child { border-bottom: none; }
+  .day-plan-row.past { opacity: 0.4; }
+  .day-plan-row.now { background: color-mix(in srgb, var(--accent) 10%, transparent); }
+  .day-plan-time { font-size: 0.66rem; color: var(--text-faint); width: 3.4rem; flex-shrink: 0; font-variant-numeric: tabular-nums; }
+  .day-plan-row.now .day-plan-time { color: var(--accent); font-weight: 600; }
+  .day-plan-events { display: flex; gap: 4px; flex-wrap: wrap; flex-shrink: 0; }
+  .day-plan-event-chip { font-size: 0.6rem; padding: 2px 6px; border-radius: 6px; background: var(--bg-raised); color: var(--text-dim); white-space: nowrap; border-left: 3px solid var(--accent); }
+  .day-plan-input {
+    flex: 1; min-width: 0; background: none; border: none; border-bottom: 1px dashed var(--border);
+    color: var(--text); font-size: 16px; padding: 2px 0; font-family: inherit;
+  }
+  .day-plan-input::placeholder { color: var(--text-faint); }
 
   /* ===== Outcome picker — sits above Action; collapses to a single subdued line once chosen ===== */
   .outcome-picker { margin-bottom: 14px; }
@@ -432,6 +447,7 @@
         <div class="day-bar-ticks" id="dayBarTicks"></div>
         <div class="next-appt" id="nextAppt"></div>
         <div class="event-popover" id="eventPopover"></div>
+        <div class="day-plan-tray" id="dayPlanTray" style="display:none;"></div>
       </div>
 
       <div class="outcome-picker" id="outcomePicker">
@@ -1602,6 +1618,7 @@ For God alone my soul waits in silence. — Psalm 62:1`;
       const cell = document.createElement('div');
       cell.className = 'week-day' + (i === dow ? ' today' : i < dow ? ' past' : '');
       cell.innerHTML = '<div class="wd">' + d.toLocaleDateString('en-US', { weekday: 'narrow' }) + '</div><div class="dn">' + d.getDate() + '</div>';
+      cell.addEventListener('click', () => toggleDayPlan(dateKeyFor(d)));
       el.appendChild(cell);
     }
   }
@@ -1708,7 +1725,58 @@ For God alone my soul waits in silence. — Psalm 62:1`;
       : 'Next: ' + escapeHtml(upcoming.title) + ' in <span class="accent">' + fmtCountdown((upcoming.start - nowH) * 60) + '</span>';
   }
   renderDayBar(); renderDayStats(); renderNextAppointment();
-  setInterval(() => { renderDayBar(); renderDayStats(); renderNextAppointment(); }, 30000);
+  setInterval(() => {
+    renderDayBar(); renderDayStats(); renderNextAppointment();
+    // never rebuild out from under an active keystroke
+    if (dayPlanOpenDate && !(document.activeElement && document.activeElement.classList.contains('day-plan-input'))) renderDayPlanTray();
+  }, 30000);
+
+  // ===== Day plan tray — a rough hour-by-hour plan, opened by tapping the bar (today)
+  // or a week-day cell (any day this week). Keyed per date so it's not just today's. =====
+  let dayPlan = store.get('dayPlan', {}) || {};
+  let dayPlanSaveTimer = null;
+  function dateKeyFor(d) { return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); }
+  function todayKeyLocal() { return dateKeyFor(new Date()); }
+  function dayPlanFor(dateKey) { return dayPlan[dateKey] || (dayPlan[dateKey] = {}); }
+  function saveDayPlanDebounced() { clearTimeout(dayPlanSaveTimer); dayPlanSaveTimer = setTimeout(() => store.set('dayPlan', dayPlan), 400); }
+  function dayOffsetFromToday(dateKey) {
+    const [y, m, d] = dateKey.split('-').map(Number);
+    const target = new Date(y, m - 1, d);
+    const today = new Date(); today.setHours(0, 0, 0, 0);
+    return Math.round((target - today) / 86400000);
+  }
+  let dayPlanOpenDate = null;
+  function toggleDayPlan(dateKey) {
+    dayPlanOpenDate = (dayPlanOpenDate === dateKey) ? null : dateKey;
+    renderDayPlanTray();
+  }
+  function renderDayPlanTray() {
+    const tray = document.getElementById('dayPlanTray');
+    if (!dayPlanOpenDate) { tray.style.display = 'none'; tray.innerHTML = ''; return; }
+    tray.style.display = 'block';
+    const offset = dayOffsetFromToday(dayPlanOpenDate);
+    // a past day is entirely "past", a future day never is — only today has a real "now"
+    const nowH = offset === 0 ? (new Date().getHours() + new Date().getMinutes() / 60) : (offset < 0 ? Infinity : -Infinity);
+    const plan = dayPlanFor(dayPlanOpenDate);
+    const [y, m, d] = dayPlanOpenDate.split('-').map(Number);
+    const label = offset === 0 ? 'Today' : new Date(y, m - 1, d).toLocaleDateString(undefined, { weekday: 'long', month: 'short', day: 'numeric' });
+    let html = '<div class="day-plan-header">' + escapeHtml(label) + '</div>';
+    for (let h = Math.floor(DAY_START_H); h < Math.ceil(DAY_END_H); h++) {
+      const isPast = nowH >= h + 1;
+      const isNow = nowH >= h && nowH < h + 1;
+      const evs = mockEvents.filter(ev => ev.start < h + 1 && ev.end > h);
+      html += '<div class="day-plan-row' + (isPast ? ' past' : '') + (isNow ? ' now' : '') + '">'
+        + '<span class="day-plan-time">' + hourLabel(h) + '</span>'
+        + (evs.length ? '<span class="day-plan-events">' + evs.map(ev => '<span class="day-plan-event-chip">' + escapeHtml(ev.title) + '</span>').join('') + '</span>' : '')
+        + '<input type="text" class="day-plan-input" data-hour="' + h + '" placeholder="…" value="' + escapeHtml(plan[h] || '') + '">'
+        + '</div>';
+    }
+    tray.innerHTML = html;
+    tray.querySelectorAll('.day-plan-input').forEach(inp => {
+      inp.addEventListener('input', () => { dayPlanFor(dayPlanOpenDate)[inp.dataset.hour] = inp.value; saveDayPlanDebounced(); });
+    });
+  }
+  document.getElementById('dayBar').addEventListener('click', () => toggleDayPlan(todayKeyLocal()));
 
   // ===== Action block — ONLY the choice (idle) or the counter + focus (running) =====
   let selectedOutcomeId = null, selectedSubOutcome = null;
@@ -2736,7 +2804,7 @@ For God alone my soul waits in silence. — Psalm 62:1`;
 
   // Keep in sync with the CACHE suffix in sw.js — shown here so a stale
   // install is easy to spot, and "Check for updates" has something real to bust.
-  const APP_VERSION = 'v23';
+  const APP_VERSION = 'v24';
   document.getElementById('appVersionLabel').textContent = 'AbidingSteps ' + APP_VERSION;
   document.getElementById('reloadAppBtn').addEventListener('click', async () => {
     const status = document.getElementById('reloadStatus');
