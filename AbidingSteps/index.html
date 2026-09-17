@@ -197,7 +197,9 @@
 
   /* ===== Ahead view ===== */
   .filter-row { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 6px; }
-  .role-subtitle { font-size: 0.74rem; color: var(--text-faint); min-height: 1.2em; margin-bottom: 14px; }
+  .ahead-subtitle-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 14px; }
+  .role-subtitle { font-size: 0.74rem; color: var(--text-faint); min-height: 1.2em; }
+  #clearDoneBtn { flex-shrink: 0; white-space: nowrap; }
   .outcome-row {
     background: var(--bg-elevated); border: 1px solid var(--border); border-radius: 12px;
     padding: 12px 14px; margin-bottom: 10px; cursor: pointer;
@@ -527,7 +529,10 @@
         <span class="chip" data-role="Reality">Reality</span>
         <span class="chip maybe-filter-chip" data-role="Maybe">Maybe</span>
       </div>
-      <div class="role-subtitle" id="roleSubtitle"></div>
+      <div class="ahead-subtitle-row">
+        <div class="role-subtitle" id="roleSubtitle"></div>
+        <button type="button" class="link-btn" id="clearDoneBtn" style="display:none;">Clear done</button>
+      </div>
       <div id="aheadList"></div>
       <button class="fab" title="Add outcome">+</button>
     </section>
@@ -2729,6 +2734,10 @@ For God alone my soul waits in silence. — Psalm 62:1`;
     autoStarDueOutcomes();
     aheadList.innerHTML = '';
     const role = activeRoleFilter();
+    const doneInFilter = outcomes.filter(o => o.completed && outcomeMatchesFilter(o, role));
+    const clearDoneBtn = document.getElementById('clearDoneBtn');
+    clearDoneBtn.textContent = 'Clear ' + doneInFilter.length + ' done';
+    clearDoneBtn.style.display = doneInFilter.length ? '' : 'none';
     outcomes.forEach(o => {
       const row = document.createElement('div');
       row.className = 'outcome-row' + (o.completed ? ' completed' : '') + (o.maybe ? ' maybe' : '');
@@ -2800,6 +2809,21 @@ For God alone my soul waits in silence. — Psalm 62:1`;
       aheadList.appendChild(row);
     });
   }
+  document.getElementById('clearDoneBtn').addEventListener('click', () => {
+    const role = activeRoleFilter();
+    const toRemove = outcomes.filter(o => o.completed && outcomeMatchesFilter(o, role));
+    if (!toRemove.length) return;
+    openConfirmModal({
+      title: 'Clear ' + toRemove.length + ' done outcome' + (toRemove.length === 1 ? '' : 's') + '?',
+      message: (role && role !== 'All' ? 'Only the ones matching "' + role + '"' : 'Across all filters') + " — this can't be undone.",
+      onOk: () => {
+        const ids = new Set(toRemove.map(o => o.id));
+        outcomes = outcomes.filter(o => !ids.has(o.id));
+        if (selectedOutcomeId && ids.has(selectedOutcomeId)) clearSelection();
+        saveOutcomes(); renderAheadList(); renderOutcomePicker();
+      }
+    });
+  });
   renderAheadList();
 
   document.querySelector('.fab').addEventListener('click', () => {
@@ -3043,7 +3067,7 @@ For God alone my soul waits in silence. — Psalm 62:1`;
 
   // Keep in sync with the CACHE suffix in sw.js — shown here so a stale
   // install is easy to spot, and "Check for updates" has something real to bust.
-  const APP_VERSION = 'v31';
+  const APP_VERSION = 'v32';
   document.getElementById('appVersionLabel').textContent = 'AbidingSteps ' + APP_VERSION;
   document.getElementById('reloadAppBtn').addEventListener('click', async () => {
     const status = document.getElementById('reloadStatus');
