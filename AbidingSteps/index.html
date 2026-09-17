@@ -79,6 +79,8 @@
   .week-day.past { opacity: 0.4; }
   .week-day.today { background: var(--accent); border-color: var(--accent); }
   .week-day.today .wd, .week-day.today .dn { color: #10131c; font-weight: 700; }
+  .week-day.selected:not(.today) { border-color: var(--accent); border-width: 1.5px; }
+  .week-day.selected:not(.today) .dn { color: var(--text); font-weight: 700; }
   .full-date { font-size: 0.72rem; color: var(--text-faint); margin: 8px 0 14px; letter-spacing: 0.04em; }
 
   /* ===== L2 day bar — subdued context; passed/left must be unmistakable ===== */
@@ -441,7 +443,7 @@
       <div class="day-bar-wrap">
         <div class="day-stats">
           <div class="stat"><span class="stat-value" id="timePassedStat">--</span><span class="stat-label">passed</span></div>
-          <div class="stat right"><span class="stat-value accent" id="timeLeftStat">--</span><span class="stat-label">left today</span></div>
+          <div class="stat right"><span class="stat-value accent" id="timeLeftStat">--</span><span class="stat-label" id="timeLeftLabel">left today</span></div>
         </div>
         <div class="day-bar" id="dayBar"></div>
         <div class="day-bar-ticks" id="dayBarTicks"></div>
@@ -1606,6 +1608,18 @@ For God alone my soul waits in silence. — Psalm 62:1`;
   document.getElementById('overrunTray') && new MutationObserver(updateMusicPauseState)
     .observe(document.getElementById('overrunTray'), { attributes: true, attributeFilter: ['class'] });
 
+  // ===== date-key helpers + the one "which day is shown" state, needed before the
+  // week strip and day bar so both can key off the same selected day =====
+  function dateKeyFor(d) { return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); }
+  function todayKeyLocal() { return dateKeyFor(new Date()); }
+  function dayOffsetFromToday(dateKey) {
+    const [y, m, d] = dateKey.split('-').map(Number);
+    const target = new Date(y, m - 1, d);
+    const today = new Date(); today.setHours(0, 0, 0, 0);
+    return Math.round((target - today) / 86400000);
+  }
+  let selectedDateKey = todayKeyLocal();
+
   // ===== L1 week strip + full date =====
   function renderWeekStrip() {
     const el = document.getElementById('weekStrip');
@@ -1615,29 +1629,38 @@ For God alone my soul waits in silence. — Psalm 62:1`;
     const monday = new Date(today); monday.setDate(today.getDate() - dow);
     for (let i = 0; i < 7; i++) {
       const d = new Date(monday); d.setDate(monday.getDate() + i);
+      const key = dateKeyFor(d);
       const cell = document.createElement('div');
-      cell.className = 'week-day' + (i === dow ? ' today' : i < dow ? ' past' : '');
+      cell.className = 'week-day' + (i === dow ? ' today' : i < dow ? ' past' : '') + (key === selectedDateKey ? ' selected' : '');
       cell.innerHTML = '<div class="wd">' + d.toLocaleDateString('en-US', { weekday: 'narrow' }) + '</div><div class="dn">' + d.getDate() + '</div>';
-      cell.addEventListener('click', () => toggleDayPlan(dateKeyFor(d)));
+      cell.addEventListener('click', () => toggleDayPlan(key));
       el.appendChild(cell);
     }
   }
   function renderDateLine() {
-    const d = new Date();
+    const [y, m, d] = selectedDateKey.split('-').map(Number);
     const opts = { year: 'numeric', month: 'short', day: '2-digit', weekday: 'short' };
-    const parts = d.toLocaleDateString('en-US', opts).toUpperCase().replace(',', '');
+    const parts = new Date(y, m - 1, d).toLocaleDateString('en-US', opts).toUpperCase().replace(',', '');
     document.getElementById('dateLine').textContent = parts;
   }
   renderWeekStrip(); renderDateLine();
 
-  // ===== L2 day bar — passed/left must be unmistakable, not a footnote =====
-  // Hours range is Settings-owned, not fixed — defaults to a typical waking day.
+  // ===== L2 day bar — passed/left must be unmistakable, not a footnote. Follows
+  // whichever day is selected, not always today (a future day is 0% passed, a past
+  // day is 100% — only the selected day being today gives it a real "now"). =====
   let DAY_START_H = 6, DAY_END_H = 22;
   const mockEvents = [
     { title: 'Team standup', start: 9.5, end: 10, color: '#4fd1c5' },
     { title: 'Dentist', start: 13, end: 14, color: '#e0b168' },
     { title: 'Review w/ Sam', start: 16, end: 16.75, color: '#9db4f8' },
   ];
+  // the hour-of-day to treat as "now" for whichever day is selected
+  function refHourFor(dateKey) {
+    const offset = dayOffsetFromToday(dateKey);
+    if (offset < 0) return DAY_END_H;   // a past day: entirely behind us
+    if (offset > 0) return DAY_START_H; // a future day: nothing behind us yet
+    return new Date().getHours() + new Date().getMinutes() / 60 + new Date().getSeconds() / 3600;
+  }
   function hourToPct(h) { return Math.max(0, Math.min(100, ((h - DAY_START_H) / (DAY_END_H - DAY_START_H)) * 100)); }
   function renderDayBarTicks() {
     const row = document.getElementById('dayBarTicks');
@@ -1667,13 +1690,13 @@ For God alone my soul waits in silence. — Psalm 62:1`;
   function renderDayBar() {
     const bar = document.getElementById('dayBar');
     bar.innerHTML = '';
-    const nowH = new Date().getHours() + new Date().getMinutes() / 60;
-    const nowPct = hourToPct(nowH);
+    const refH = refHourFor(selectedDateKey);
+    const nowPct = hourToPct(refH);
     bar.style.background = 'linear-gradient(to right, var(--bg-elevated) 0%, var(--bg-elevated) ' + nowPct +
       '%, color-mix(in srgb, var(--accent) 32%, var(--bg-elevated)) ' + nowPct + '%, color-mix(in srgb, var(--accent) 32%, var(--bg-elevated)) 100%)';
     mockEvents.forEach(ev => {
       const el = document.createElement('div');
-      const isPast = ev.end <= nowH;
+      const isPast = ev.end <= refH;
       el.className = 'day-bar-block' + (isPast ? ' past' : '');
       el.style.left = hourToPct(ev.start) + '%';
       el.style.width = (hourToPct(ev.end) - hourToPct(ev.start)) + '%';
@@ -1688,10 +1711,12 @@ For God alone my soul waits in silence. — Psalm 62:1`;
       });
       bar.appendChild(el);
     });
-    const now = document.createElement('div');
-    now.className = 'day-bar-now';
-    now.style.left = nowPct + '%';
-    bar.appendChild(now);
+    if (dayOffsetFromToday(selectedDateKey) === 0) {
+      const now = document.createElement('div');
+      now.className = 'day-bar-now';
+      now.style.left = nowPct + '%';
+      bar.appendChild(now);
+    }
   }
   function hourLabel(h) {
     const hh = Math.floor(h), mm = Math.round((h - hh) * 60);
@@ -1700,16 +1725,17 @@ For God alone my soul waits in silence. — Psalm 62:1`;
     return h12 + (mm ? ':' + String(mm).padStart(2, '0') : '') + ' ' + period;
   }
   function renderDayStats() {
-    const now = new Date();
-    const nowH = now.getHours() + now.getMinutes() / 60 + now.getSeconds() / 3600;
-    const passedH = Math.max(0, Math.min(DAY_END_H - DAY_START_H, nowH - DAY_START_H));
-    const leftH = Math.max(0, DAY_END_H - nowH);
+    const refH = refHourFor(selectedDateKey);
+    const passedH = Math.max(0, Math.min(DAY_END_H - DAY_START_H, refH - DAY_START_H));
+    const leftH = Math.max(0, DAY_END_H - refH);
     const fmtH = (hrs) => { const totalMin = Math.round(hrs * 60); return Math.floor(totalMin / 60) + 'h ' + (totalMin % 60) + 'm'; };
     document.getElementById('timePassedStat').textContent = fmtH(passedH);
     document.getElementById('timeLeftStat').textContent = fmtH(leftH);
+    document.getElementById('timeLeftLabel').textContent = dayOffsetFromToday(selectedDateKey) === 0 ? 'left today' : 'left that day';
   }
   // small live countdown to whatever's next on mockEvents — same placeholder
-  // schedule the day bar draws from until real calendar import lands
+  // schedule the day bar draws from until real calendar import lands. Only makes
+  // sense for today; another selected day has no "now" to count down from.
   function fmtCountdown(mins) {
     mins = Math.max(0, Math.round(mins));
     const h = Math.floor(mins / 60), m = mins % 60;
@@ -1717,12 +1743,17 @@ For God alone my soul waits in silence. — Psalm 62:1`;
   }
   function renderNextAppointment() {
     const el = document.getElementById('nextAppt');
+    if (dayOffsetFromToday(selectedDateKey) !== 0) { el.textContent = ''; return; }
     const nowH = new Date().getHours() + new Date().getMinutes() / 60 + new Date().getSeconds() / 3600;
     const upcoming = mockEvents.filter(ev => ev.end > nowH).sort((a, b) => a.start - b.start)[0];
     if (!upcoming) { el.textContent = ''; return; }
     el.innerHTML = upcoming.start <= nowH
       ? 'Now: ' + escapeHtml(upcoming.title) + ' — ends in <span class="accent">' + fmtCountdown((upcoming.end - nowH) * 60) + '</span>'
       : 'Next: ' + escapeHtml(upcoming.title) + ' in <span class="accent">' + fmtCountdown((upcoming.start - nowH) * 60) + '</span>';
+  }
+  function selectDate(dateKey) {
+    selectedDateKey = dateKey;
+    renderDateLine(); renderDayBar(); renderDayStats(); renderNextAppointment(); renderWeekStrip();
   }
   renderDayBar(); renderDayStats(); renderNextAppointment();
   setInterval(() => {
@@ -1731,23 +1762,20 @@ For God alone my soul waits in silence. — Psalm 62:1`;
     if (dayPlanOpenDate && !(document.activeElement && document.activeElement.classList.contains('day-plan-input'))) renderDayPlanTray();
   }, 30000);
 
-  // ===== Day plan tray — a rough hour-by-hour plan, opened by tapping the bar (today)
-  // or a week-day cell (any day this week). Keyed per date so it's not just today's. =====
+  // ===== Day plan tray — a rough hour-by-hour plan, opened by tapping the bar (the
+  // selected day) or a week-day cell (switches selection to that day too). Keyed per
+  // date so it's not just today's. =====
   let dayPlan = store.get('dayPlan', {}) || {};
   let dayPlanSaveTimer = null;
-  function dateKeyFor(d) { return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); }
-  function todayKeyLocal() { return dateKeyFor(new Date()); }
   function dayPlanFor(dateKey) { return dayPlan[dateKey] || (dayPlan[dateKey] = {}); }
   function saveDayPlanDebounced() { clearTimeout(dayPlanSaveTimer); dayPlanSaveTimer = setTimeout(() => store.set('dayPlan', dayPlan), 400); }
-  function dayOffsetFromToday(dateKey) {
-    const [y, m, d] = dateKey.split('-').map(Number);
-    const target = new Date(y, m - 1, d);
-    const today = new Date(); today.setHours(0, 0, 0, 0);
-    return Math.round((target - today) / 86400000);
-  }
   let dayPlanOpenDate = null;
+  let dayPlanAutoScrolled = false;
   function toggleDayPlan(dateKey) {
-    dayPlanOpenDate = (dayPlanOpenDate === dateKey) ? null : dateKey;
+    const switchingDay = selectedDateKey !== dateKey;
+    if (switchingDay) selectDate(dateKey);
+    dayPlanOpenDate = switchingDay ? dateKey : (dayPlanOpenDate === dateKey ? null : dateKey);
+    dayPlanAutoScrolled = false;
     renderDayPlanTray();
   }
   function renderDayPlanTray() {
@@ -1775,8 +1803,13 @@ For God alone my soul waits in silence. — Psalm 62:1`;
     tray.querySelectorAll('.day-plan-input').forEach(inp => {
       inp.addEventListener('input', () => { dayPlanFor(dayPlanOpenDate)[inp.dataset.hour] = inp.value; saveDayPlanDebounced(); });
     });
+    if (!dayPlanAutoScrolled) {
+      const nowRow = tray.querySelector('.day-plan-row.now');
+      if (nowRow) nowRow.scrollIntoView({ block: 'center' });
+      dayPlanAutoScrolled = true;
+    }
   }
-  document.getElementById('dayBar').addEventListener('click', () => toggleDayPlan(todayKeyLocal()));
+  document.getElementById('dayBar').addEventListener('click', () => toggleDayPlan(selectedDateKey));
 
   // ===== Action block — ONLY the choice (idle) or the counter + focus (running) =====
   let selectedOutcomeId = null, selectedSubOutcome = null;
@@ -2804,7 +2837,7 @@ For God alone my soul waits in silence. — Psalm 62:1`;
 
   // Keep in sync with the CACHE suffix in sw.js — shown here so a stale
   // install is easy to spot, and "Check for updates" has something real to bust.
-  const APP_VERSION = 'v24';
+  const APP_VERSION = 'v25';
   document.getElementById('appVersionLabel').textContent = 'AbidingSteps ' + APP_VERSION;
   document.getElementById('reloadAppBtn').addEventListener('click', async () => {
     const status = document.getElementById('reloadStatus');

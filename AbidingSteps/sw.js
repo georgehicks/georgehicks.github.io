@@ -1,6 +1,6 @@
 // Keep this version suffix in sync with any version marker shown in-app so a
 // stale cache is easy to spot and force-refresh.
-const CACHE = 'abidingsteps-v24';
+const CACHE = 'abidingsteps-v25';
 const ASSETS = ['./index.html', './manifest.json', './icon.svg'];
 // George's own bundled background tracks — precached at install so they play with
 // zero network hit. Cached with allSettled (not part of the main addAll) so one
