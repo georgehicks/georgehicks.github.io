@@ -132,15 +132,15 @@
   .chip.selected { background: var(--accent); color: #10131c; border-color: var(--accent); font-weight: 600; }
   .chip.disabled { opacity: 0.3; pointer-events: none; }
 
-  /* the ring's remaining arc IS the countdown — glance, don't read */
-  .ring-wrap { position: relative; width: 190px; height: 190px; margin: 0 auto; }
-  .ring-wrap svg { width: 100%; height: 100%; }
-  .ring-track { fill: none; stroke: var(--bg-raised); stroke-width: 14; }
-  .ring-progress { fill: none; stroke: var(--accent); stroke-width: 14; stroke-linecap: round; transition: stroke-dashoffset 1s linear, stroke 0.3s ease; }
-  .action-block.overrun .ring-progress { stroke: var(--danger); }
-  .ring-center { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; }
-  .timer-display { font-size: 1.5rem; font-weight: 700; font-variant-numeric: tabular-nums; letter-spacing: 0.01em; color: var(--text-dim); }
-  .action-focus { font-size: 1.02rem; font-weight: 600; margin-top: 10px; }
+  /* linear beats radial for reading remaining capacity at a glance — a shrinking
+     length is a more accurate quantity judgment than a shrinking angle (Cleveland
+     & McGill's graphical-perception ranking), and it costs far less vertical space
+     than the old 190px ring did. */
+  .timer-display { font-size: 2.1rem; font-weight: 700; font-variant-numeric: tabular-nums; letter-spacing: 0.01em; color: var(--text); margin-bottom: 14px; }
+  .time-bar-wrap { width: 100%; height: 18px; border-radius: 9px; background: var(--bg-raised); overflow: hidden; }
+  .time-bar-fill { height: 100%; border-radius: 9px; background: var(--accent); width: 100%; transition: width 1s linear, background 0.3s ease; }
+  .action-block.overrun .time-bar-fill { background: var(--danger); }
+  .action-focus { font-size: 1.02rem; font-weight: 600; margin-top: 14px; }
   .timer-sub { font-size: 0.78rem; color: var(--text-dim); margin-top: 6px; min-height: 1.1em; }
   .overrun-tray { display: none; margin-top: 16px; padding-top: 14px; border-top: 1px dashed var(--border); }
   .overrun-tray.show { display: block; }
@@ -448,17 +448,8 @@
           <div class="chip-row" id="chunkChips"></div>
         </div>
         <div class="action-running" id="actionRunning" style="display:none;">
-          <div class="ring-wrap">
-            <svg viewBox="0 0 200 200">
-              <g transform="rotate(-90 100 100)">
-                <circle class="ring-track" cx="100" cy="100" r="86"></circle>
-                <circle class="ring-progress" id="ringProgress" cx="100" cy="100" r="86"></circle>
-              </g>
-            </svg>
-            <div class="ring-center">
-              <div class="timer-display" id="timerDisplay">--:--</div>
-            </div>
-          </div>
+          <div class="timer-display" id="timerDisplay">--:--</div>
+          <div class="time-bar-wrap"><div class="time-bar-fill" id="timeBarFill"></div></div>
           <div class="action-focus" id="actionFocus">Working on —</div>
           <div class="timer-sub" id="timerSub"></div>
         </div>
@@ -1711,13 +1702,11 @@ For God alone my soul waits in silence. — Psalm 62:1`;
     autoOverrunEnabled = e.target.checked;
     settings.autoOverrun = autoOverrunEnabled; saveSettings();
   });
-  const RING_R = 86, RING_C = 2 * Math.PI * RING_R;
-  const ringEl = document.getElementById('ringProgress');
-  ringEl.setAttribute('stroke-dasharray', RING_C);
+  const timeBarFillEl = document.getElementById('timeBarFill');
 
-  function setRing(fractionRemaining) {
+  function setTimeBar(fractionRemaining) {
     const f = Math.max(0, Math.min(1, fractionRemaining));
-    ringEl.setAttribute('stroke-dashoffset', RING_C * (1 - f));
+    timeBarFillEl.style.width = (f * 100) + '%';
   }
 
   // ===== time budgets — minutes actually spent in running chunks count toward the
@@ -1869,10 +1858,10 @@ For God alone my soul waits in silence. — Psalm 62:1`;
     const remainMs = endsAt - Date.now();
     if (remainMs > 0) {
       document.getElementById('timerDisplay').textContent = fmt(remainMs);
-      setRing(remainMs / chunkTotalMs);
+      setTimeBar(remainMs / chunkTotalMs);
     } else {
       document.getElementById('timerDisplay').textContent = '+' + fmt(-remainMs);
-      setRing(1); // full ring, colored red via .overrun — the glance-value now means "over," not "remaining"
+      setTimeBar(1); // full bar, colored red via .overrun — the glance-value now means "over," not "remaining"
       if (overrunState === 'none') enterOverrun();
     }
   }
