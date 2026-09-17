@@ -3043,7 +3043,7 @@ For God alone my soul waits in silence. — Psalm 62:1`;
 
   // Keep in sync with the CACHE suffix in sw.js — shown here so a stale
   // install is easy to spot, and "Check for updates" has something real to bust.
-  const APP_VERSION = 'v30';
+  const APP_VERSION = 'v31';
   document.getElementById('appVersionLabel').textContent = 'AbidingSteps ' + APP_VERSION;
   document.getElementById('reloadAppBtn').addEventListener('click', async () => {
     const status = document.getElementById('reloadStatus');
@@ -3051,7 +3051,9 @@ For God alone my soul waits in silence. — Psalm 62:1`;
     try {
       if ('caches' in window) {
         const keys = await caches.keys();
-        await Promise.all(keys.filter(k => k.startsWith('abidingsteps-')).map(k => caches.delete(k)));
+        // never nuke the music cache here — that's the whole point of keeping it
+        // separate from the versioned app cache this button is meant to clear
+        await Promise.all(keys.filter(k => k.startsWith('abidingsteps-') && k !== 'abidingsteps-music').map(k => caches.delete(k)));
       }
       if ('serviceWorker' in navigator) {
         const regs = await navigator.serviceWorker.getRegistrations();
