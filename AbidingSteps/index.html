@@ -515,6 +515,7 @@
       <div class="date-line">Ahead</div>
       <div class="filter-row" id="roleFilterRow">
         <span class="chip selected" data-role="All">All</span>
+        <span class="chip" data-role="Today">Today</span>
         <span class="chip" data-role="Roots">Roots</span>
         <span class="chip" data-role="Resources">Resources</span>
         <span class="chip" data-role="Reach">Reach</span>
@@ -2508,6 +2509,7 @@ For God alone my soul waits in silence. — Psalm 62:1`;
   // ===== Ahead list — the star is the deliberate "add to today" path =====
   // shareable with people unfamiliar with the shorthand — spelled out per role
   const ROLE_SUBTITLES = {
+    'Today': 'Drawn into today\'s Step picker',
     'Roots': 'Faith, Family, Friends, Fellowship',
     'Resources': 'Finances, Home, Possessions, Stewardship',
     'Reality': 'Fitness, Health, Work, Obligations',
@@ -2530,6 +2532,7 @@ For God alone my soul waits in silence. — Psalm 62:1`;
   function outcomeMatchesFilter(o, role) {
     if (role === 'Maybe') return !!o.maybe;
     if (o.maybe) return false; // maybe items stay out of the way — only the Maybe filter shows them
+    if (role === 'Today') return !!o.today;
     if (!role || role === 'All') return true;
     return o.tag === role;
   }
@@ -2837,7 +2840,7 @@ For God alone my soul waits in silence. — Psalm 62:1`;
 
   // Keep in sync with the CACHE suffix in sw.js — shown here so a stale
   // install is easy to spot, and "Check for updates" has something real to bust.
-  const APP_VERSION = 'v25';
+  const APP_VERSION = 'v26';
   document.getElementById('appVersionLabel').textContent = 'AbidingSteps ' + APP_VERSION;
   document.getElementById('reloadAppBtn').addEventListener('click', async () => {
     const status = document.getElementById('reloadStatus');
