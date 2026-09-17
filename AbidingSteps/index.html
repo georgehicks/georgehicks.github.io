@@ -144,7 +144,9 @@
   .time-bar-fill { height: 100%; background: var(--accent); width: 100%; transition: width 1s linear, background 0.3s ease; }
   .action-block.overrun .time-bar-wrap { border-color: var(--danger); }
   .action-block.overrun .time-bar-fill { background: var(--danger); }
-  .action-focus { font-size: 1.02rem; font-weight: 600; margin-top: 14px; }
+  .action-focus-row { display: flex; align-items: center; justify-content: center; gap: 10px; margin-top: 14px; }
+  .action-focus { font-size: 1.02rem; font-weight: 600; }
+  #markDoneBtn { font-weight: 600; }
   .timer-sub { font-size: 0.78rem; color: var(--text-dim); margin-top: 6px; min-height: 1.1em; }
   .overrun-tray { display: none; margin-top: 16px; padding-top: 14px; border-top: 1px dashed var(--border); }
   .overrun-tray.show { display: block; }
@@ -454,7 +456,10 @@
         <div class="action-running" id="actionRunning" style="display:none;">
           <div class="timer-display" id="timerDisplay">--:--</div>
           <div class="time-bar-wrap"><div class="time-bar-fill" id="timeBarFill"></div></div>
-          <div class="action-focus" id="actionFocus">Working on —</div>
+          <div class="action-focus-row">
+            <span class="action-focus" id="actionFocus">Working on —</span>
+            <button type="button" class="link-btn" id="markDoneBtn" title="Mark this outcome complete">✓ Done</button>
+          </div>
           <div class="timer-sub" id="timerSub"></div>
         </div>
         <div class="step-budget" id="stepBudget" hidden>
@@ -2165,17 +2170,26 @@ For God alone my soul waits in silence. — Psalm 62:1`;
     updateSelectionLabels();
   }
 
-  function clearSelection() {
+  function clearSelection(label) {
     selectedOutcomeId = null; selectedSubOutcome = null;
     document.getElementById('outcomeSummaryText').textContent = '';
     document.getElementById('subOutcomeRow').innerHTML = '';
     document.querySelectorAll('#chunkChips .chip').forEach(c => c.classList.add('disabled'));
-    returnToIdle('Pick an outcome above to begin');
+    returnToIdle(label || 'Pick an outcome above to begin');
     expandOutcomePicker();
     switchNotesContext('_', null);
     store.set('__local_selection', null);
     renderStepBudget();
   }
+
+  document.getElementById('markDoneBtn').addEventListener('click', () => {
+    const o = selectedOutcome();
+    if (!o) return;
+    o.completed = true;
+    saveOutcomes();
+    renderAheadList(); renderOutcomePicker();
+    clearSelection('✓ Marked done — pick your next outcome');
+  });
 
   function renderSubOutcomeRow(o) {
     const row = document.getElementById('subOutcomeRow');
@@ -2219,6 +2233,7 @@ For God alone my soul waits in silence. — Psalm 62:1`;
     switchNotesContext(o.id + (selectedSubOutcome ? '|' + selectedSubOutcome : ''), label);
     store.set('__local_selection', { id: o.id, sub: selectedSubOutcome });
     renderStepBudget();
+    document.getElementById('markDoneBtn').style.display = o.type === 'Deliverable' ? '' : 'none';
   }
   // after a rename (here or synced from another device), refresh every place the name shows
   function updateSelectionLabels() {
@@ -2228,6 +2243,7 @@ For God alone my soul waits in silence. — Psalm 62:1`;
     document.getElementById('outcomeSummaryText').textContent = label;
     if (document.getElementById('actionRunning').style.display !== 'none') document.getElementById('actionFocus').textContent = 'Working on ' + label;
     document.getElementById('notesArea').placeholder = 'Notes for ' + label + '…';
+    document.getElementById('markDoneBtn').style.display = o.type === 'Deliverable' ? '' : 'none';
   }
 
   // ===== notes are scoped to whatever outcome (+ sub-outcome) is current, not global.
