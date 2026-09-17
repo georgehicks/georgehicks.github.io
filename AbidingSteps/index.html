@@ -622,8 +622,12 @@
       </div>
 
       <div class="settings-section">
-        <h3>Calendar</h3>
-        <button class="btn" disabled style="opacity:0.5; width:100%;">Connect Google Calendar — not yet built</button>
+        <h3>Calendar (ICS)</h3>
+        <p style="font-size:0.72rem; color:var(--text-faint); margin:0 0 8px;">Paste any calendar's .ics feed link — Google, Outlook, iCloud, or any other. One per line. Most providers block a browser from fetching the feed directly (CORS) — if pulling fails, put a CORS proxy URL in front of it below.</p>
+        <textarea id="icsUrls" style="width:100%; min-height:56px; background:var(--bg-elevated); border:1px solid var(--border); border-radius:8px; color:var(--text); padding:10px; font-size:16px; font-family:inherit; resize:vertical; margin-bottom:8px;" placeholder="One .ics feed URL per line"></textarea>
+        <input type="text" id="icsProxy" style="width:100%; background:var(--bg-elevated); border:1px solid var(--border); border-radius:8px; color:var(--text); padding:8px 10px; font-size:16px; margin-bottom:8px;" placeholder="Optional CORS proxy URL (ends with ?url=)">
+        <button class="btn" id="icsPullBtn" style="width:100%;">Pull calendar now</button>
+        <div id="icsStatus" style="font-size:0.72rem; color:var(--text-dim); margin-top:6px;"></div>
       </div>
 
       <div class="settings-section">
@@ -744,6 +748,9 @@
   </nav>
 </div>
 
+<!-- ICS calendar parser -->
+<script src="https://cdn.jsdelivr.net/npm/ical.js@1.5.0/build/ical.min.js"></script>
+
 <script>
   // ===== storage — localStorage is the source of truth, always. Cloud sync (bottom of
   // this script) is optional and only mirrors these keys, so the app works fully
@@ -784,6 +791,7 @@
     breathText: null, // null = the built-in verse list
     breathDurationMin: 0, breathTone: false, breathVoice: false,
     musicVolume: 40, // percent of device volume — background music should sit under your thinking, not over it
+    icsUrls: '', icsProxy: '',
   };
   function loadSettings() {
     const saved = store.get('settings', null) || {};
@@ -1660,6 +1668,100 @@ For God alone my soul waits in silence. — Psalm 62:1`;
     { title: 'Dentist', start: 13, end: 14, color: '#e0b168' },
     { title: 'Review w/ Sam', start: 16, end: 16.75, color: '#9db4f8' },
   ];
+  // once a real ICS pull has ever succeeded, calendarEvents is a real (possibly empty
+  // per-date) object and takes over completely — no more mixing in the demo events
+  let calendarEvents = store.get('calendarEvents', null);
+  function eventsForDate(dateKey) { return calendarEvents ? (calendarEvents[dateKey] || []) : mockEvents; }
+
+  // ===== ICS calendar import — works with any provider's feed link (Google, Outlook,
+  // iCloud, ...). Ported from AbidingFlow's proven pull, generalized from "today only"
+  // to a multi-week range since this app's day bar can show any day, not just today. =====
+  function registerIcsTimezones(comp) {
+    comp.getAllSubcomponents('vtimezone').forEach(vt => {
+      try { ICAL.TimezoneService.register(vt); } catch (e) {}
+    });
+  }
+  // walks one event's span day by day across [rangeStart, rangeEnd), clamping each
+  // day's slice to that day's own 0–24h window (an overnight event becomes two rows,
+  // one on each day, same as a real calendar would show it)
+  function parseEventsInRange(icsText, rangeStart, rangeEnd) {
+    const comp = new ICAL.Component(ICAL.parse(icsText));
+    registerIcsTimezones(comp);
+    const results = [];
+    function addSpan(startJs, endJs, summary, uid) {
+      if (startJs >= rangeEnd || endJs <= rangeStart) return;
+      let cursor = new Date(Math.max(startJs.getTime(), rangeStart.getTime()));
+      cursor.setHours(0, 0, 0, 0);
+      while (cursor < endJs && cursor < rangeEnd) {
+        const dayStart = new Date(cursor);
+        const dayEnd = new Date(cursor); dayEnd.setDate(dayEnd.getDate() + 1);
+        const segStart = startJs > dayStart ? startJs : dayStart;
+        const segEnd = endJs < dayEnd ? endJs : dayEnd;
+        if (segEnd > segStart) {
+          const s = segStart.getHours() + segStart.getMinutes() / 60;
+          const e = segEnd.getTime() === dayEnd.getTime() ? 24 : (segEnd.getHours() + segEnd.getMinutes() / 60);
+          results.push({ dateKey: dateKeyFor(dayStart), uid, start: s, end: e, text: summary || '(busy)' });
+        }
+        cursor = dayEnd;
+      }
+    }
+    comp.getAllSubcomponents('vevent').forEach(ve => {
+      const event = new ICAL.Event(ve);
+      if (event.startDate && event.startDate.isDate) return; // all-day events have no hour-of-day to place on the bar
+      if (event.isRecurring()) {
+        const it = event.iterator();
+        let next, guard = 0;
+        while ((next = it.next()) && guard++ < 3000) {
+          const startJs = next.toJSDate();
+          if (startJs >= rangeEnd) break;
+          const det = event.getOccurrenceDetails(next);
+          const endJs = det.endDate.toJSDate();
+          if (endJs > rangeStart) addSpan(startJs, endJs, event.summary, (event.uid || 'e') + '_' + next.toUnixTime());
+        }
+      } else {
+        addSpan(event.startDate.toJSDate(), event.endDate.toJSDate(), event.summary, event.uid || ('e' + Math.random().toString(36).slice(2)));
+      }
+    });
+    return results;
+  }
+  async function pullCalendar() {
+    const urlsRaw = document.getElementById('icsUrls').value || '';
+    const urls = urlsRaw.split('\n').map(s => s.trim()).filter(Boolean);
+    const proxy = (document.getElementById('icsProxy').value || '').trim();
+    settings.icsUrls = urlsRaw; settings.icsProxy = proxy; saveSettings();
+    const statusEl = document.getElementById('icsStatus');
+    if (!urls.length) { statusEl.textContent = 'Enter at least one calendar .ics URL.'; return; }
+    if (typeof ICAL === 'undefined') { statusEl.textContent = 'Calendar library still loading — try again in a moment.'; return; }
+    statusEl.textContent = 'Fetching…';
+    const rangeStart = new Date(); rangeStart.setHours(0, 0, 0, 0); rangeStart.setDate(rangeStart.getDate() - 7);
+    const rangeEnd = new Date(rangeStart); rangeEnd.setDate(rangeEnd.getDate() + 28);
+    let all = [], ok = 0, failed = 0;
+    for (const url of urls) {
+      try {
+        const res = await fetch(proxy ? proxy + encodeURIComponent(url) : url);
+        if (!res.ok) throw new Error('HTTP ' + res.status);
+        const text = await res.text();
+        all = all.concat(parseEventsInRange(text, rangeStart, rangeEnd));
+        ok++;
+      } catch (e) { failed++; }
+    }
+    if (ok === 0) { statusEl.textContent = 'All fetches failed — check the URL(s) and proxy.'; return; }
+    const seen = new Set();
+    const merged = all.filter(ev => {
+      const k = ev.dateKey + '|' + ev.start + '|' + ev.end + '|' + ev.text;
+      if (seen.has(k)) return false;
+      seen.add(k); return true;
+    });
+    calendarEvents = {};
+    merged.forEach(ev => { (calendarEvents[ev.dateKey] || (calendarEvents[ev.dateKey] = [])).push({ title: ev.text, start: ev.start, end: ev.end }); });
+    store.set('calendarEvents', calendarEvents);
+    statusEl.textContent = 'Imported ' + merged.length + ' event' + (merged.length === 1 ? '' : 's') + ' from ' + ok + ' calendar' + (ok === 1 ? '' : 's')
+      + (failed ? (', ' + failed + ' failed') : '') + ' · ' + new Date().toLocaleTimeString();
+    renderDayBar(); renderDayStats(); renderNextAppointment();
+    if (dayPlanOpenDate) renderDayPlanTray();
+  }
+  document.getElementById('icsPullBtn').addEventListener('click', pullCalendar);
+
   // the hour-of-day to treat as "now" for whichever day is selected
   function refHourFor(dateKey) {
     const offset = dayOffsetFromToday(dateKey);
@@ -1700,13 +1802,13 @@ For God alone my soul waits in silence. — Psalm 62:1`;
     const nowPct = hourToPct(refH);
     bar.style.background = 'linear-gradient(to right, var(--bg-elevated) 0%, var(--bg-elevated) ' + nowPct +
       '%, color-mix(in srgb, var(--accent) 32%, var(--bg-elevated)) ' + nowPct + '%, color-mix(in srgb, var(--accent) 32%, var(--bg-elevated)) 100%)';
-    mockEvents.forEach(ev => {
+    eventsForDate(selectedDateKey).forEach(ev => {
       const el = document.createElement('div');
       const isPast = ev.end <= refH;
       el.className = 'day-bar-block' + (isPast ? ' past' : '');
       el.style.left = hourToPct(ev.start) + '%';
       el.style.width = (hourToPct(ev.end) - hourToPct(ev.start)) + '%';
-      el.style.background = ev.color;
+      el.style.background = ev.color || 'var(--accent)';
       el.title = ev.title;
       el.addEventListener('click', (e) => {
         e.stopPropagation();
@@ -1739,9 +1841,9 @@ For God alone my soul waits in silence. — Psalm 62:1`;
     document.getElementById('timeLeftStat').textContent = fmtH(leftH);
     document.getElementById('timeLeftLabel').textContent = dayOffsetFromToday(selectedDateKey) === 0 ? 'left today' : 'left that day';
   }
-  // small live countdown to whatever's next on mockEvents — same placeholder
-  // schedule the day bar draws from until real calendar import lands. Only makes
-  // sense for today; another selected day has no "now" to count down from.
+  // small live countdown to whatever's next today — from the real pulled calendar
+  // once one exists, otherwise the placeholder demo events. Only makes sense for
+  // today; another selected day has no "now" to count down from.
   function fmtCountdown(mins) {
     mins = Math.max(0, Math.round(mins));
     const h = Math.floor(mins / 60), m = mins % 60;
@@ -1751,7 +1853,7 @@ For God alone my soul waits in silence. — Psalm 62:1`;
     const el = document.getElementById('nextAppt');
     if (dayOffsetFromToday(selectedDateKey) !== 0) { el.textContent = ''; return; }
     const nowH = new Date().getHours() + new Date().getMinutes() / 60 + new Date().getSeconds() / 3600;
-    const upcoming = mockEvents.filter(ev => ev.end > nowH).sort((a, b) => a.start - b.start)[0];
+    const upcoming = eventsForDate(selectedDateKey).filter(ev => ev.end > nowH).sort((a, b) => a.start - b.start)[0];
     if (!upcoming) { el.textContent = ''; return; }
     el.innerHTML = upcoming.start <= nowH
       ? 'Now: ' + escapeHtml(upcoming.title) + ' — ends in <span class="accent">' + fmtCountdown((upcoming.end - nowH) * 60) + '</span>'
@@ -1794,11 +1896,12 @@ For God alone my soul waits in silence. — Psalm 62:1`;
     const plan = dayPlanFor(dayPlanOpenDate);
     const [y, m, d] = dayPlanOpenDate.split('-').map(Number);
     const label = offset === 0 ? 'Today' : new Date(y, m - 1, d).toLocaleDateString(undefined, { weekday: 'long', month: 'short', day: 'numeric' });
+    const dayEvents = eventsForDate(dayPlanOpenDate);
     let html = '<div class="day-plan-header">' + escapeHtml(label) + '</div>';
     for (let h = Math.floor(DAY_START_H); h < Math.ceil(DAY_END_H); h++) {
       const isPast = nowH >= h + 1;
       const isNow = nowH >= h && nowH < h + 1;
-      const evs = mockEvents.filter(ev => ev.start < h + 1 && ev.end > h);
+      const evs = dayEvents.filter(ev => ev.start < h + 1 && ev.end > h);
       html += '<div class="day-plan-row' + (isPast ? ' past' : '') + (isNow ? ' now' : '') + '">'
         + '<span class="day-plan-time">' + hourLabel(h) + '</span>'
         + (evs.length ? '<span class="day-plan-events">' + evs.map(ev => '<span class="day-plan-event-chip">' + escapeHtml(ev.title) + '</span>').join('') + '</span>' : '')
@@ -2667,6 +2770,7 @@ For God alone my soul waits in silence. — Psalm 62:1`;
     bumpMinutes = settings.bumpMinutes; setVal('bumpLengthInput', bumpMinutes); updateContinueLabel();
     setVal('weekResetSelect', settings.weekReset);
     voiceNotesEnabled = settings.voiceNotes !== false; setChk('voiceNotesToggle', voiceNotesEnabled); updateMicBtnVisibility();
+    setVal('icsUrls', settings.icsUrls); setVal('icsProxy', settings.icsProxy);
     ['step', 'ahead', 'abide'].forEach(m => {
       setChk(MUSIC_ENABLE_INPUTS[m], settings.music[m].enabled);
       setVal(MUSIC_URL_INPUTS[m], settings.music[m].url);
@@ -2871,7 +2975,7 @@ For God alone my soul waits in silence. — Psalm 62:1`;
 
   // Keep in sync with the CACHE suffix in sw.js — shown here so a stale
   // install is easy to spot, and "Check for updates" has something real to bust.
-  const APP_VERSION = 'v27';
+  const APP_VERSION = 'v28';
   document.getElementById('appVersionLabel').textContent = 'AbidingSteps ' + APP_VERSION;
   document.getElementById('reloadAppBtn').addEventListener('click', async () => {
     const status = document.getElementById('reloadStatus');
