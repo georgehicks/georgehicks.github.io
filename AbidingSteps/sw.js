@@ -1,11 +1,14 @@
 // Keep this version suffix in sync with any version marker shown in-app so a
 // stale cache is easy to spot and force-refresh.
-const CACHE = 'abidingsteps-v29';
+const CACHE = 'abidingsteps-v30';
 const ASSETS = ['./index.html', './manifest.json', './icon.svg'];
-// George's own bundled background tracks — precached at install so they play with
-// zero network hit. Cached with allSettled (not part of the main addAll) so one
-// slow/dropped track on a bad connection can't fail the whole service-worker install;
-// any that miss here still get cached on first play via the fetch handler below.
+// George's own bundled background tracks. These live in a SEPARATE, unversioned
+// cache — MUSIC_CACHE, not CACHE — specifically so a normal app-version bump (which
+// deletes every cache except the current CACHE) never touches them. Music only ever
+// needs downloading once per device, not once per update. Self-heals on every
+// activate (not just install), so a partial download from a bad connection keeps
+// getting retried instead of silently staying incomplete forever.
+const MUSIC_CACHE = 'abidingsteps-music';
 const MUSIC_ASSETS = [
   'music/step/sanctum-pulse.mp3',
   'music/step/sanctum-pulse-2.mp3',
@@ -18,21 +21,22 @@ const MUSIC_ASSETS = [
   'music/ahead/its-good-to-be-yours.mp3',
   'music/abide/here-in-the-withness.mp3',
 ];
+function fillMusicCache() {
+  return caches.open(MUSIC_CACHE).then(c =>
+    Promise.all(MUSIC_ASSETS.map(url => c.match(url).then(hit => hit || c.add(url).catch(() => {}))))
+  );
+}
 
 self.addEventListener('install', e => {
-  e.waitUntil(
-    caches.open(CACHE).then(c =>
-      c.addAll(ASSETS).then(() => Promise.allSettled(MUSIC_ASSETS.map(url => c.add(url))))
-    )
-  );
+  e.waitUntil(Promise.all([caches.open(CACHE).then(c => c.addAll(ASSETS)), fillMusicCache()]));
   self.skipWaiting();
 });
 
 self.addEventListener('activate', e => {
   e.waitUntil(
     caches.keys().then(keys =>
-      Promise.all(keys.filter(k => k.startsWith('abidingsteps-') && k !== CACHE).map(k => caches.delete(k)))
-    )
+      Promise.all(keys.filter(k => k.startsWith('abidingsteps-') && k !== CACHE && k !== MUSIC_CACHE).map(k => caches.delete(k)))
+    ).then(fillMusicCache)
   );
   self.clients.claim();
 });
@@ -43,6 +47,7 @@ self.addEventListener('fetch', e => {
   // cross-origin (Firebase, YouTube) goes straight to the network, untouched by this cache
   if (new URL(req.url).origin !== self.location.origin) return;
   const isHTML = req.mode === 'navigate' || (req.headers.get('accept') || '').includes('text/html');
+  const isMusic = req.url.includes('/music/');
   if (isHTML) {
     e.respondWith(
       fetch(req).then(res => {
@@ -54,8 +59,9 @@ self.addEventListener('fetch', e => {
   } else {
     e.respondWith(
       caches.match(req).then(cached => cached || fetch(req).then(res => {
-        // self-heal any precache miss (e.g. a bundled track skipped during install)
-        if (res.ok) { const copy = res.clone(); caches.open(CACHE).then(c => c.put(req, copy)); }
+        // self-heal any cache miss — music goes to the stable, version-proof
+        // cache so it's never re-downloaded just because the app updated
+        if (res.ok) { const copy = res.clone(); caches.open(isMusic ? MUSIC_CACHE : CACHE).then(c => c.put(req, copy)); }
         return res;
       }))
     );

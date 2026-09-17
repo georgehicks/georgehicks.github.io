@@ -571,6 +571,10 @@
       <div class="settings-section">
         <h3>Focus Music</h3>
         <p style="font-size:0.72rem; color:var(--text-faint); margin:0 0 4px;">Add your own songs for each mode — they're stored privately on this device and never uploaded. A mode with no songs plays its YouTube link instead.</p>
+        <div class="settings-row">
+          <span id="musicCacheStatus" style="font-size:0.76rem; color:var(--text-dim);">Checking built-in music downloads…</span>
+          <button class="link-btn" id="musicCacheRetryBtn" style="display:none;">Download now</button>
+        </div>
         <div class="music-row">
           <div class="music-row-head"><span class="name" style="color:var(--step)">Step</span><input type="checkbox" id="musicEnable_step" checked></div>
           <div class="music-local" id="musicLocal_step"></div>
@@ -1175,6 +1179,42 @@ For God alone my soul waits in silence. — Psalm 62:1`;
     musicPlayer.localTracksChanged(mode);
     renderMusicLocal(mode);
   }
+  function allBundledPaths() {
+    const paths = [];
+    Object.keys(BUNDLED_TRACKS).forEach(mode => (BUNDLED_TRACKS[mode] || []).forEach(t => paths.push('music/' + mode + '/' + t.file)));
+    return [...new Set(paths)];
+  }
+  // reads Cache Storage directly — true once the service worker (or a manual
+  // retry below) has actually finished downloading a track, not just "should have"
+  async function checkMusicCacheStatus() {
+    const statusEl = document.getElementById('musicCacheStatus');
+    const retryBtn = document.getElementById('musicCacheRetryBtn');
+    if (!('caches' in window)) { statusEl.textContent = ''; return; }
+    const paths = allBundledPaths();
+    let cached = 0;
+    for (const p of paths) { if (await caches.match(p)) cached++; }
+    if (cached === paths.length) {
+      statusEl.textContent = 'Built-in music: all ' + paths.length + ' tracks downloaded for offline play';
+      retryBtn.style.display = 'none';
+    } else {
+      statusEl.textContent = 'Built-in music: ' + cached + '/' + paths.length + ' downloaded — the rest stream live until then';
+      retryBtn.style.display = '';
+    }
+  }
+  async function retryMusicDownload() {
+    const statusEl = document.getElementById('musicCacheStatus');
+    const paths = allBundledPaths();
+    const cache = await caches.open('abidingsteps-music');
+    let done = 0;
+    for (const p of paths) {
+      if (!(await cache.match(p))) { try { await cache.add(p); } catch (e) {} }
+      done++;
+      statusEl.textContent = 'Downloading… ' + done + '/' + paths.length;
+    }
+    checkMusicCacheStatus();
+  }
+  document.getElementById('musicCacheRetryBtn').addEventListener('click', retryMusicDownload);
+  checkMusicCacheStatus();
 
   // ===== songs on this device — IndexedDB, never synced or uploaded (they're your own
   // files, and a public site can't legally host purchased music). Metadata and audio
@@ -3003,7 +3043,7 @@ For God alone my soul waits in silence. — Psalm 62:1`;
 
   // Keep in sync with the CACHE suffix in sw.js — shown here so a stale
   // install is easy to spot, and "Check for updates" has something real to bust.
-  const APP_VERSION = 'v29';
+  const APP_VERSION = 'v30';
   document.getElementById('appVersionLabel').textContent = 'AbidingSteps ' + APP_VERSION;
   document.getElementById('reloadAppBtn').addEventListener('click', async () => {
     const status = document.getElementById('reloadStatus');
