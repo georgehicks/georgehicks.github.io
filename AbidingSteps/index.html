@@ -247,6 +247,9 @@
   .music-track-list { margin-top: 6px; max-height: 200px; overflow-y: auto; border: 1px solid var(--border); border-radius: 8px; padding: 4px 8px; }
   .music-track { display: flex; align-items: center; justify-content: space-between; gap: 8px; font-size: 0.74rem; color: var(--text-dim); padding: 3px 0; }
   .music-track span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .music-track-name { display: flex; align-items: center; gap: 6px; }
+  .music-track input[type=checkbox] { accent-color: var(--accent); flex-shrink: 0; }
+  .music-bundled-list { margin-bottom: 8px; }
   .link-btn.danger { color: var(--danger); padding: 6px 0 2px; }
   .music-yt-label { font-size: 0.68rem; color: var(--text-faint); margin: 8px 0 4px; }
   .music-row input[type=text] {
@@ -748,6 +751,9 @@
       ahead: { enabled: true, url: 'https://www.youtube.com/playlist?list=PLfd0VTIoVYk2mLoNsO36ULCr3XZUPwAZw' },
       abide: { enabled: true, url: 'https://www.youtube.com/playlist?list=PLfd0VTIoVYk0ElEwgDLPMkSuIIoZ1LED0' },
     },
+    // filenames turned OFF per mode — storing the off-list (not an on-list) means any
+    // bundled track added later defaults to on, no backfill needed
+    bundledOff: { step: [], ahead: [], abide: [] },
     breathText: null, // null = the built-in verse list
     breathDurationMin: 0, breathTone: false, breathVoice: false,
     musicVolume: 40, // percent of device volume — background music should sit under your thinking, not over it
@@ -758,6 +764,8 @@
     st.chunkSizes = (Array.isArray(saved.chunkSizes) ? saved.chunkSizes : DEFAULT_SETTINGS.chunkSizes).slice();
     st.music = {};
     ['step', 'ahead', 'abide'].forEach(m => { st.music[m] = Object.assign({}, DEFAULT_SETTINGS.music[m], (saved.music || {})[m]); });
+    st.bundledOff = {};
+    ['step', 'ahead', 'abide'].forEach(m => { st.bundledOff[m] = Array.isArray((saved.bundledOff || {})[m]) ? saved.bundledOff[m].slice() : []; });
     return st;
   }
   let settings = loadSettings();
@@ -1093,13 +1101,54 @@ For God alone my soul waits in silence. — Psalm 62:1`;
   }
   function currentMode() { return document.documentElement.getAttribute('data-mode') || 'step'; }
 
+  // ===== built-in songs — George's own tracks, shipped in the repo and precached by
+  // the service worker at install so they play with no network hit. Each is toggleable
+  // per mode in Settings and mixes into the same shuffle as songs added on this device
+  // (not a fallback tier — both play from one combined pool). YouTube is the backup
+  // only when a mode ends up with nothing enabled in the pool at all. =====
+  const BUNDLED_TRACKS = {
+    step: [
+      { file: 'sanctum-pulse.mp3', title: 'Sanctum Pulse' },
+      { file: 'sanctum-pulse-2.mp3', title: 'Sanctum Pulse (alt)' },
+      { file: 'quiet-way-i-live.mp3', title: 'Quiet Way I Live' },
+      { file: 'tape-delay-crescendo.mp3', title: 'Tape Delay Crescendo' },
+      { file: 'what-next-lord-2.mp3', title: 'What Next, Lord' },
+      { file: 'welling-up.mp3', title: 'Welling Up' },
+      { file: 'here-in-the-withness.mp3', title: 'Here in the Withness' },
+    ],
+    ahead: [
+      { file: 'quiet-way-i-live.mp3', title: 'Quiet Way I Live' },
+      { file: 'its-good-to-be-yours.mp3', title: "It's Good to Be Yours" },
+    ],
+    abide: [
+      { file: 'here-in-the-withness.mp3', title: 'Here in the Withness' },
+    ],
+  };
+  function bundledTrackId(mode, file) { return 'b:' + mode + ':' + file; }
+  function bundledEnabled(mode, file) { return !(settings.bundledOff[mode] || []).includes(file); }
+  function toggleBundled(mode, file) {
+    const off = settings.bundledOff[mode] = settings.bundledOff[mode] || [];
+    const i = off.indexOf(file);
+    if (i === -1) off.push(file); else off.splice(i, 1);
+    saveSettings();
+    musicPlayer.localTracksChanged(mode);
+    renderMusicLocal(mode);
+  }
+
   // ===== songs on this device — IndexedDB, never synced or uploaded (they're your own
-  // files, and a public site can't legally host purchased music). YouTube is the backup
-  // for any mode without songs. Metadata and audio live in separate stores so listing
-  // songs never has to load the audio itself. =====
+  // files, and a public site can't legally host purchased music). Metadata and audio
+  // live in separate stores so listing songs never has to load the audio itself. =====
   const localTracks = { step: [], ahead: [], abide: [] };
   let musicStorageOk = null;
-  function hasLocalTracks(mode) { return !!(localTracks[mode] && localTracks[mode].length); }
+  // the combined rotation for a mode: enabled built-in tracks + whatever's on this device
+  function poolTracks(mode) {
+    const bundled = (BUNDLED_TRACKS[mode] || [])
+      .filter(t => bundledEnabled(mode, t.file))
+      .map(t => ({ id: bundledTrackId(mode, t.file), name: t.title, kind: 'bundled', file: t.file }));
+    const local = (localTracks[mode] || []).map(t => ({ id: t.id, name: t.name, kind: 'local' }));
+    return bundled.concat(local);
+  }
+  function hasPoolTracks(mode) { return poolTracks(mode).length > 0; }
   const musicDB = {
     dbp: null,
     open() {
@@ -1203,17 +1252,27 @@ For God alone my soul waits in silence. — Psalm 62:1`;
   function renderMusicLocal(mode) {
     const host = document.getElementById('musicLocal_' + mode);
     if (!host) return;
+    const bundled = BUNDLED_TRACKS[mode] || [];
+    const bundledOnCount = bundled.filter(t => bundledEnabled(mode, t.file)).length;
     const tracks = localTracks[mode];
     const label = mode.charAt(0).toUpperCase() + mode.slice(1);
+    const total = bundledOnCount + tracks.length;
     let summary;
-    if (musicStorageOk === false) summary = "Songs on this device aren't available in this browser — using YouTube.";
-    else if (tracks.length) summary = tracks.length + (tracks.length === 1 ? ' song' : ' songs') + ' on this device · ' + fmtBytes(tracks.reduce((n, t) => n + (t.size || 0), 0)) + ' · plays instead of YouTube';
-    else summary = 'No songs on this device yet';
+    if (musicStorageOk === false && !bundled.length) summary = "Songs on this device aren't available in this browser — using YouTube.";
+    else summary = (bundled.length ? bundledOnCount + ' built-in' : '')
+      + (bundled.length && tracks.length ? ' · ' : '')
+      + (tracks.length ? tracks.length + ' on this device (' + fmtBytes(tracks.reduce((n, t) => n + (t.size || 0), 0)) + ')' : '')
+      + (total ? ' · ' + total + ' in rotation' : (bundled.length ? 'Nothing enabled — using YouTube' : 'No songs yet — using YouTube'));
     host.innerHTML = '<div class="music-local-summary">' + escapeHtml(summary) + '</div>'
+      + (bundled.length ? '<div class="music-track-list music-bundled-list">' + bundled.map(t =>
+          '<label class="music-track"><span class="music-track-name"><input type="checkbox" data-bundled="' + escapeHtml(t.file) + '"'
+          + (bundledEnabled(mode, t.file) ? ' checked' : '') + '>' + escapeHtml(t.title) + '</span>'
+          + '<span class="badge">built-in</span></label>'
+        ).join('') + '</div>' : '')
       + (musicStorageOk === false ? '' : '<div class="music-local-actions">'
         + '<button type="button" class="btn small" data-act="add">+ Add songs</button>'
         + (IS_IOS ? '' : '<button type="button" class="btn small" data-act="folder">+ Add folder</button>')
-        + (tracks.length ? '<button type="button" class="link-btn" data-act="list">' + (musicListOpen[mode] ? 'hide list' : 'show list') + '</button>' : '')
+        + (tracks.length ? '<button type="button" class="link-btn" data-act="list">' + (musicListOpen[mode] ? 'hide my songs' : 'show my songs') + '</button>' : '')
         + '</div>')
       + (musicLocalStatus[mode] ? '<div class="music-local-status">' + escapeHtml(musicLocalStatus[mode]) + '</div>' : '')
       + (tracks.length && musicListOpen[mode] ? '<div class="music-track-list">'
@@ -1221,6 +1280,8 @@ For God alone my soul waits in silence. — Psalm 62:1`;
           + '<button type="button" class="row-icon-btn" data-remove="' + t.id + '" title="Remove from this device">×</button></div>').join('')
         + '<button type="button" class="link-btn danger" data-act="clear">Remove all ' + tracks.length + '</button></div>' : '');
     host.onclick = (e) => {
+      const cb = e.target.closest('input[data-bundled]');
+      if (cb) { toggleBundled(mode, cb.dataset.bundled); return; }
       const btn = e.target.closest('button');
       if (!btn) return;
       if (btn.dataset.remove) { removeLocalSongs(mode, [btn.dataset.remove]); return; }
@@ -1277,18 +1338,18 @@ For God alone my soul waits in silence. — Psalm 62:1`;
     // no longer counts it as a user gesture and blocks autoplay, so the first tap on
     // Step silently did nothing and only a *later* tap (e.g. opening Abide) played.
     preload() {
-      // same reason for songs on this device: one ready blob URL per mode, so the tap can play it synchronously
+      // same reason for the mix: one ready track per mode, so the tap can play it synchronously
       ['step', 'ahead', 'abide'].forEach(m => this.preloadLocal(m));
       if (this.yt) return;
-      const mode = [currentMode(), 'step', 'ahead', 'abide'].find(m => this.modeEnabled(m) && !hasLocalTracks(m) && this.extractPlaylistId(this.urlForMode(m)));
+      const mode = [currentMode(), 'step', 'ahead', 'abide'].find(m => this.modeEnabled(m) && !hasPoolTracks(m) && this.extractPlaylistId(this.urlForMode(m)));
       if (!mode) return;
       const id = this.extractPlaylistId(this.urlForMode(mode));
       this.ensureApi(() => { if (!this.yt) this.createPlayer(id, false); });
     },
     playForMode(mode) {
       if (!this.modeEnabled(mode)) { this.pause(); return; }
-      // songs added on this device win; YouTube is the backup for modes without any
-      if (hasLocalTracks(mode)) { this.pauseYouTube(); this.playLocal(mode); return; }
+      // the built-in + on-device mix plays first; YouTube is only the backup for a mode with nothing enabled
+      if (hasPoolTracks(mode)) { this.pauseYouTube(); this.playLocal(mode); return; }
       this.pauseLocal();
       this.source = 'youtube';
       const id = this.extractPlaylistId(this.urlForMode(mode));
@@ -1355,15 +1416,15 @@ For God alone my soul waits in silence. — Psalm 62:1`;
           // unplayable file (corrupt, or a format this browser can't decode) — skip it, but never spin forever
           if (!a.getAttribute('src')) return;
           this.errorStreak++;
-          if (this.localMode && this.errorStreak < (localTracks[this.localMode] || []).length) this.nextLocal(this.localMode);
+          if (this.localMode && this.errorStreak < poolTracks(this.localMode).length) this.nextLocal(this.localMode);
         });
         this.applyVolume();
       }
       return this.audio;
     },
-    // shuffled, and no repeats until every song in the mode has played
+    // shuffled, and no repeats until every song in the pool has played
     nextTrackId(mode) {
-      const ids = (localTracks[mode] || []).map(t => t.id);
+      const ids = poolTracks(mode).map(t => t.id);
       let q = (this.queues[mode] || []).filter(id => ids.includes(id));
       if (!q.length) {
         q = ids.slice();
@@ -1377,13 +1438,15 @@ For God alone my soul waits in silence. — Psalm 62:1`;
     async loadTrack(mode) {
       const id = this.nextTrackId(mode);
       if (!id) return null;
+      const track = poolTracks(mode).find(t => t.id === id);
+      if (!track) return null;
+      if (track.kind === 'bundled') return { mode, id, name: track.name, url: 'music/' + mode + '/' + track.file };
       const blob = await musicDB.getBlob(id);
       if (!blob) return null;
-      const meta = (localTracks[mode] || []).find(t => t.id === id) || {};
-      return { mode, id, name: meta.name || 'Song', url: URL.createObjectURL(blob) };
+      return { mode, id, name: track.name || 'Song', url: URL.createObjectURL(blob) };
     },
     async preloadLocal(mode) {
-      if (!hasLocalTracks(mode) || this.preloaded[mode]) return;
+      if (!hasPoolTracks(mode) || this.preloaded[mode]) return;
       this.preloaded[mode] = 'loading';
       let t = null;
       try { t = await this.loadTrack(mode); } catch (e) {}
@@ -1438,13 +1501,14 @@ For God alone my soul waits in silence. — Psalm 62:1`;
         } catch (e) {}
       }
     },
-    // songs for a mode were added or removed — drop stale preloads/shuffle, switch source if needed
+    // the pool for a mode changed (added/removed on-device, or a built-in was toggled) —
+    // drop stale preloads/shuffle, switch source if needed
     localTracksChanged(mode) {
       const p = this.preloaded[mode];
       if (p && p !== 'loading') URL.revokeObjectURL(p.url);
       delete this.preloaded[mode];
       delete this.queues[mode];
-      const ids = (localTracks[mode] || []).map(t => t.id);
+      const ids = poolTracks(mode).map(t => t.id);
       if (this.localMode === mode && this.currentTrackId && !ids.includes(this.currentTrackId)) {
         this.localStarted = false; // the song that was playing got removed
         if (this.audio) { this.audio.pause(); this.audio.removeAttribute('src'); this.audio.load(); }
@@ -2469,6 +2533,7 @@ For God alone my soul waits in silence. — Psalm 62:1`;
       setChk(MUSIC_ENABLE_INPUTS[m], settings.music[m].enabled);
       setVal(MUSIC_URL_INPUTS[m], settings.music[m].url);
     });
+    ['step', 'ahead', 'abide'].forEach(renderMusicLocal);
     setVal('musicVolume', settings.musicVolume);
     document.getElementById('musicVolumeLabel').textContent = settings.musicVolume + '%';
     musicPlayer.applyVolume();
@@ -2668,7 +2733,7 @@ For God alone my soul waits in silence. — Psalm 62:1`;
 
   // Keep in sync with the CACHE suffix in sw.js — shown here so a stale
   // install is easy to spot, and "Check for updates" has something real to bust.
-  const APP_VERSION = 'v21';
+  const APP_VERSION = 'v22';
   document.getElementById('appVersionLabel').textContent = 'AbidingSteps ' + APP_VERSION;
   document.getElementById('reloadAppBtn').addEventListener('click', async () => {
     const status = document.getElementById('reloadStatus');
