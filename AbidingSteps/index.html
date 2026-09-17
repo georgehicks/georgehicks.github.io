@@ -96,6 +96,8 @@
   .day-bar-now { position: absolute; top: -3px; bottom: -3px; width: 2px; background: var(--accent); z-index: 3; box-shadow: 0 0 6px var(--accent); }
   .day-bar-ticks { display: flex; justify-content: space-between; margin-top: 4px; }
   .day-bar-ticks span { font-size: 0.58rem; color: var(--text-faint); }
+  .next-appt { font-size: 0.72rem; color: var(--text-dim); margin-top: 8px; text-align: center; }
+  .next-appt .accent { color: var(--accent); font-weight: 600; }
   .event-popover { display: none; margin-top: 8px; padding: 10px 12px; background: var(--bg-raised); border: 1px solid var(--border); border-radius: 8px; font-size: 0.8rem; }
   .event-popover.show { display: block; }
 
@@ -422,6 +424,7 @@
         </div>
         <div class="day-bar" id="dayBar"></div>
         <div class="day-bar-ticks" id="dayBarTicks"></div>
+        <div class="next-appt" id="nextAppt"></div>
         <div class="event-popover" id="eventPopover"></div>
       </div>
 
@@ -1621,8 +1624,24 @@ For God alone my soul waits in silence. — Psalm 62:1`;
     document.getElementById('timePassedStat').textContent = fmtH(passedH);
     document.getElementById('timeLeftStat').textContent = fmtH(leftH);
   }
-  renderDayBar(); renderDayStats();
-  setInterval(() => { renderDayBar(); renderDayStats(); }, 30000);
+  // small live countdown to whatever's next on mockEvents — same placeholder
+  // schedule the day bar draws from until real calendar import lands
+  function fmtCountdown(mins) {
+    mins = Math.max(0, Math.round(mins));
+    const h = Math.floor(mins / 60), m = mins % 60;
+    return (h > 0 ? h + 'h ' : '') + m + 'm';
+  }
+  function renderNextAppointment() {
+    const el = document.getElementById('nextAppt');
+    const nowH = new Date().getHours() + new Date().getMinutes() / 60 + new Date().getSeconds() / 3600;
+    const upcoming = mockEvents.filter(ev => ev.end > nowH).sort((a, b) => a.start - b.start)[0];
+    if (!upcoming) { el.textContent = ''; return; }
+    el.innerHTML = upcoming.start <= nowH
+      ? 'Now: ' + escapeHtml(upcoming.title) + ' — ends in <span class="accent">' + fmtCountdown((upcoming.end - nowH) * 60) + '</span>'
+      : 'Next: ' + escapeHtml(upcoming.title) + ' in <span class="accent">' + fmtCountdown((upcoming.start - nowH) * 60) + '</span>';
+  }
+  renderDayBar(); renderDayStats(); renderNextAppointment();
+  setInterval(() => { renderDayBar(); renderDayStats(); renderNextAppointment(); }, 30000);
 
   // ===== Action block — ONLY the choice (idle) or the counter + focus (running) =====
   let selectedOutcomeId = null, selectedSubOutcome = null;
@@ -2649,7 +2668,7 @@ For God alone my soul waits in silence. — Psalm 62:1`;
 
   // Keep in sync with the CACHE suffix in sw.js — shown here so a stale
   // install is easy to spot, and "Check for updates" has something real to bust.
-  const APP_VERSION = 'v20';
+  const APP_VERSION = 'v21';
   document.getElementById('appVersionLabel').textContent = 'AbidingSteps ' + APP_VERSION;
   document.getElementById('reloadAppBtn').addEventListener('click', async () => {
     const status = document.getElementById('reloadStatus');
