@@ -3,6 +3,8 @@
   "short_name": "Charisma",
   "description": "Daily charisma training: spot opportunity moments, practice micro-challenges, level up presence, rapport, and calm under pressure.",
   "start_url": "./index.html",
+  "scope": "./",
+  "id": "./",
   "display": "standalone",
   "orientation": "portrait",
   "background_color": "#14171C",

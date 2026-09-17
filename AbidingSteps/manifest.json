@@ -3,6 +3,8 @@
   "short_name": "AbidingSteps",
   "description": "Low-friction, moment-to-moment navigation for ADHD time blindness, done with God — one step at a time.",
   "start_url": "./index.html",
+  "scope": "./",
+  "id": "./",
   "display": "standalone",
   "orientation": "portrait",
   "background_color": "#0e1016",

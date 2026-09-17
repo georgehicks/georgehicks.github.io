@@ -3,6 +3,8 @@
   "short_name": "FocusFlow Sync",
   "description": "ADHD focus aid with Google sign-in cloud sync — analog clock, appointments, block timeline, audio cues",
   "start_url": "./focus-flow.html",
+  "scope": "./",
+  "id": "./",
   "display": "standalone",
   "orientation": "portrait",
   "background_color": "#0f1117",

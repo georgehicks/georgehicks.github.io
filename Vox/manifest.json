@@ -3,6 +3,8 @@
   "short_name": "Vox",
   "description": "Pitch matching, warm-ups, range tracking, and speech delivery feedback — all from the microphone, nothing uploaded.",
   "start_url": "./index.html",
+  "scope": "./",
+  "id": "./",
   "display": "standalone",
   "orientation": "portrait",
   "background_color": "#14171C",

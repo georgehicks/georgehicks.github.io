@@ -2,6 +2,8 @@
   "name": "MindTree Todo",
   "short_name": "MindTree",
   "start_url": "./",
+  "scope": "./",
+  "id": "./",
   "display": "standalone",
   "background_color": "#111827",
   "theme_color": "#1f2937",
