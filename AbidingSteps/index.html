@@ -156,7 +156,7 @@
   .notes-wrap { margin-top: 16px; position: relative; }
   textarea.notes {
     width: 100%; min-height: 64px; background: var(--bg-elevated); border: 1px solid var(--border);
-    border-radius: 10px; color: var(--text); padding: 10px 44px 10px 12px; font-size: 0.85rem;
+    border-radius: 10px; color: var(--text); padding: 10px 44px 10px 12px; font-size: 16px;
     font-family: inherit; resize: vertical;
   }
   .mic-btn {
@@ -220,7 +220,7 @@
   .settings-row:last-child { border-bottom: none; }
   .settings-row input[type=text], .settings-row input[type=number], .settings-row input[type=time], .settings-row select {
     background: var(--bg-elevated); border: 1px solid var(--border); color: var(--text);
-    border-radius: 6px; padding: 6px 8px; font-size: 0.82rem; width: 55%;
+    border-radius: 6px; padding: 6px 8px; font-size: 16px; width: 55%;
   }
   .settings-row input[type=color] {
     width: 40px; height: 28px; padding: 0; border: 1px solid var(--border); border-radius: 6px;
@@ -243,7 +243,7 @@
   .music-yt-label { font-size: 0.68rem; color: var(--text-faint); margin: 8px 0 4px; }
   .music-row input[type=text] {
     width: 100%; background: var(--bg-elevated); border: 1px solid var(--border); color: var(--text-dim);
-    border-radius: 6px; padding: 6px 8px; font-size: 0.75rem;
+    border-radius: 6px; padding: 6px 8px; font-size: 16px;
   }
 
   /* ===== Abide view ===== */
@@ -351,8 +351,9 @@
   .modal-card h3 { margin: 0 0 14px; font-size: 1rem; color: var(--text); }
   .modal-input {
     width: 100%; background: var(--bg-raised); border: 1px solid var(--border); color: var(--text);
-    border-radius: 8px; padding: 10px 12px; font-size: 0.9rem; font-family: inherit; margin-bottom: 14px;
+    border-radius: 8px; padding: 10px 12px; font-size: 16px; font-family: inherit; margin-bottom: 14px;
   }
+  textarea.modal-input { resize: vertical; }
   .modal-field-label { font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-faint); margin-bottom: 6px; }
   .modal-toggle-row { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 14px; }
   .modal-toggle-btn {
@@ -568,7 +569,7 @@
       <div class="settings-section">
         <h3>Abide Scripture</h3>
         <p style="font-size:0.72rem; color:var(--text-faint); margin:0 0 8px;">One whole verse per line: quote — reference. "Abide in me" (John 15:4) always shows first; 21 defaults included — replace any or all of them.</p>
-        <textarea id="breathTextarea" style="width:100%; min-height:160px; background:var(--bg-elevated); border:1px solid var(--border); border-radius:8px; color:var(--text); padding:10px; font-size:0.76rem; font-family:inherit; resize:vertical;"></textarea>
+        <textarea id="breathTextarea" style="width:100%; min-height:160px; background:var(--bg-elevated); border:1px solid var(--border); border-radius:8px; color:var(--text); padding:10px; font-size:16px; font-family:inherit; resize:vertical;"></textarea>
         <div class="settings-row" style="margin-top:10px;">
           <span>Voice for read-aloud</span>
           <div style="display:flex; gap:6px; width:55%;">
@@ -663,6 +664,8 @@
         <button type="button" class="modal-toggle-btn" data-tag="Reach">Reach</button>
         <button type="button" class="modal-toggle-btn" data-tag="Reality">Reality</button>
       </div>
+      <div class="modal-field-label">Notes <span class="optional">— optional, pulled up when you work this</span></div>
+      <textarea id="outcomeModalNotes" class="modal-input" style="min-height:56px; resize:vertical;" placeholder="Details to remember…"></textarea>
       <div class="modal-field-label">Time budget <span class="optional">— optional, blank = none</span></div>
       <div class="modal-budget-row">
         <input type="number" id="outcomeModalBudget" class="modal-input" placeholder="None" min="1" inputmode="numeric">
@@ -2024,6 +2027,7 @@ For God alone my soul waits in silence. — Psalm 62:1`;
     outcomeModalName.value = opts.name || '';
     setModalToggle('type', opts.type || 'Deliverable');
     setModalToggle('tag', opts.tag || 'Reach');
+    document.getElementById('outcomeModalNotes').value = opts.notes || '';
     document.getElementById('outcomeModalBudget').value = opts.budget ? opts.budget.target : '';
     setModalToggle('period', opts.budget ? opts.budget.period : 'week');
     outcomeModalOnSave = opts.onSave;
@@ -2046,9 +2050,10 @@ For God alone my soul waits in silence. — Psalm 62:1`;
     const target = parseInt(document.getElementById('outcomeModalBudget').value, 10);
     const period = (document.querySelector('.modal-toggle-btn[data-period].selected') || {}).dataset?.period || 'week';
     const budget = target > 0 ? { target, period } : null;
+    const notes = document.getElementById('outcomeModalNotes').value;
     const cb = outcomeModalOnSave;
     closeOutcomeModal();
-    if (cb) cb(name, type, tag, budget);
+    if (cb) cb(name, type, tag, budget, notes);
   });
   outcomeModalOverlay.addEventListener('click', (e) => { if (e.target === outcomeModalOverlay) closeOutcomeModal(); });
 
@@ -2249,6 +2254,16 @@ For God alone my soul waits in silence. — Psalm 62:1`;
     clearTimeout(notesSaveTimer);
     notesSaveTimer = setTimeout(() => { notesSaveTimer = null; store.set('notes', notesByKey); }, 400);
   }
+  // set from the Add/Edit outcome modal — keyed the same as the bare outcome (no
+  // sub-outcome), so it's exactly what surfaces in Notes when that outcome is worked
+  function setOutcomeNotes(id, notes) {
+    const val = notes || '';
+    if (!val && !(id in notesByKey)) return;
+    if (val) notesByKey[id] = val; else delete notesByKey[id];
+    store.set('notes', notesByKey);
+    const notesEl = document.getElementById('notesArea');
+    if (notesEl.dataset.key === id) notesEl.value = val;
+  }
   function switchNotesContext(newKey, label) {
     const notesEl = document.getElementById('notesArea');
     captureNotes();
@@ -2359,12 +2374,13 @@ For God alone my soul waits in silence. — Psalm 62:1`;
       if (completeBtn) completeBtn.addEventListener('click', () => { o.completed = !o.completed; changed(); });
       row.querySelector('.edit-btn').addEventListener('click', () => {
         openOutcomeModal({
-          title: 'Edit outcome', name: o.t, type: o.type, tag: o.tag, budget: o.budget,
-          onSave: (name, type, tag, budget) => {
+          title: 'Edit outcome', name: o.t, type: o.type, tag: o.tag, budget: o.budget, notes: notesByKey[o.id],
+          onSave: (name, type, tag, budget, notes) => {
             const cur = findOutcome(o.id);
             if (!cur) return;
             cur.t = name; cur.type = type; cur.tag = tag;
             applyBudgetSpec(cur, budget);
+            setOutcomeNotes(cur.id, notes);
             changed();
             if (cur.id === selectedOutcomeId) updateSelectionLabels();
           }
@@ -2388,11 +2404,14 @@ For God alone my soul waits in silence. — Psalm 62:1`;
   renderAheadList();
 
   document.querySelector('.fab').addEventListener('click', () => {
+    const filterRole = activeRoleFilter();
     openOutcomeModal({
       title: 'New outcome',
-      onSave: (name, type, tag, budget) => {
+      tag: ROLE_TAGS.includes(filterRole) ? filterRole : undefined,
+      onSave: (name, type, tag, budget, notes) => {
         const o = makeOutcome(name, type, tag);
         applyBudgetSpec(o, budget);
+        setOutcomeNotes(o.id, notes);
         outcomes.push(o);
         saveOutcomes(); renderAheadList(); renderOutcomePicker();
       }
@@ -2623,7 +2642,7 @@ For God alone my soul waits in silence. — Psalm 62:1`;
 
   // Keep in sync with the CACHE suffix in sw.js — shown here so a stale
   // install is easy to spot, and "Check for updates" has something real to bust.
-  const APP_VERSION = 'v18';
+  const APP_VERSION = 'v19';
   document.getElementById('appVersionLabel').textContent = 'AbidingSteps ' + APP_VERSION;
   document.getElementById('reloadAppBtn').addEventListener('click', async () => {
     const status = document.getElementById('reloadStatus');
