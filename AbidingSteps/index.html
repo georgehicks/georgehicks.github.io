@@ -481,6 +481,7 @@
   <div class="topbar">
     <div class="brand">AbidingSteps</div>
     <div class="topbar-actions">
+      <button class="music-btn" id="downloadTallyBtn" title="Download today's focus summary">⬇</button>
       <button class="music-btn" id="musicBtn" title="Play music">🎵</button>
       <button class="abide-btn" id="abideBtn">🕊 Abide</button>
     </div>
@@ -842,7 +843,7 @@
 
   const DEFAULT_SETTINGS = {
     themeStep: '#4fd1c5', themeAhead: '#9db4f8', themeAbide: '#8fbf7a',
-    chunkSizes: [5, 10, 15, 20, 30, 60, 90],
+    chunkSizes: [2, 5, 10, 15, 20, 30, 60, 90],
     dayStart: '06:00', dayEnd: '22:00',
     autoOverrun: false, bumpMinutes: 10, weekReset: 'Monday',
     voiceNotes: true,
@@ -2122,7 +2123,7 @@ For God alone my soul waits in silence. — Psalm 62:1`;
 
   // chunk sizes are Settings-owned state — Step's chips and the overrun "add time"
   // chips both render from this one array, so editing it in Settings updates both live
-  let chunkSizes = [5, 10, 15, 20, 30, 60, 90];
+  let chunkSizes = [2, 5, 10, 15, 20, 30, 60, 90];
 
   function renderChunkChips() {
     const chipRow = document.getElementById('chunkChips');
@@ -2238,6 +2239,7 @@ For God alone my soul waits in silence. — Psalm 62:1`;
     const mins = (now - workSeg.since) / 60000;
     workSeg.since = now;
     addTally('step', mins);
+    addOutcomeTally(workSeg.outcomeId, mins);
     const o = findOutcome(workSeg.outcomeId);
     if (!o || !o.budget || mins <= 0) return;
     o.budget.acc = budgetAcc(o) + mins;
@@ -2296,6 +2298,19 @@ For God alone my soul waits in silence. — Psalm 62:1`;
     Object.keys(t).forEach(k => { if (k < cutoff) delete t[k]; });
     store.set(TALLY_KEY, t);
   }
+  // per-outcome minutes, same multi-device-safe shape as the per-mode tally above —
+  // this is what the "download today's summary" button reads from
+  const OUTCOME_TALLY_KEY = 'outcomeTally_' + deviceId();
+  function addOutcomeTally(outcomeId, mins) {
+    if (!outcomeId || !(mins > 0)) return;
+    const t = store.get(OUTCOME_TALLY_KEY, {}) || {};
+    const today = dayKey();
+    t[today] = t[today] || {};
+    t[today][outcomeId] = (t[today][outcomeId] || 0) + mins;
+    const cutoff = dayKey(new Date(Date.now() - 14 * 864e5));
+    Object.keys(t).forEach(k => { if (k < cutoff) delete t[k]; });
+    store.set(OUTCOME_TALLY_KEY, t);
+  }
   let modeSeg = null; // { mode: 'ahead' | 'abide', since } while that screen is being used
   function commitMode() {
     if (!modeSeg) return;
@@ -2331,6 +2346,49 @@ For God alone my soul waits in silence. — Psalm 62:1`;
     document.getElementById('tallySummary').textContent = 'Today so far: '
       + fmtMins(totals.step) + ' Step · ' + fmtMins(totals.ahead) + ' Ahead · ' + fmtMins(totals.abide) + ' Abide';
   }
+
+  // ===== today's focus summary — a plain per-outcome minutes readout for your own
+  // records, not a full segment-by-segment log (that's a bigger, separate feature) =====
+  function todayOutcomeTotals() {
+    const today = dayKey();
+    const totals = {};
+    try {
+      for (let i = 0; i < localStorage.length; i++) {
+        const k = localStorage.key(i);
+        if (!k || !k.startsWith(STORE_PREFIX + 'outcomeTally_')) continue;
+        const day = (store.get(k.slice(STORE_PREFIX.length), {}) || {})[today];
+        if (day) Object.keys(day).forEach(id => { totals[id] = (totals[id] || 0) + day[id]; });
+      }
+    } catch (e) {}
+    // plus whatever's running right now but not yet committed to the tally
+    if (workSeg) totals[workSeg.outcomeId] = (totals[workSeg.outcomeId] || 0) + (Date.now() - workSeg.since) / 60000;
+    return totals;
+  }
+  function downloadTodaySummary() {
+    const totals = todayOutcomeTotals();
+    const rows = Object.keys(totals)
+      .map(id => ({ title: (findOutcome(id) || {}).t || '(deleted outcome)', mins: totals[id] }))
+      .filter(r => r.mins >= 0.5)
+      .sort((a, b) => b.mins - a.mins);
+    const totalMins = rows.reduce((sum, r) => sum + r.mins, 0);
+    const today = dayKey();
+    const dateLabel = new Date().toLocaleDateString(undefined, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+    let md = '# AbidingSteps — ' + dateLabel + '\n\n';
+    if (!rows.length) {
+      md += '_No focus time logged today._\n';
+    } else {
+      md += '| Outcome | Time |\n|---|---|\n';
+      rows.forEach(r => { md += '| ' + r.title.replace(/\|/g, '\\|') + ' | ' + fmtMins(r.mins) + ' |\n'; });
+      md += '\n**Total: ' + fmtMins(totalMins) + '**\n';
+    }
+    const blob = new Blob([md], { type: 'text/markdown' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = 'AbidingSteps-' + today + '.md';
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+  }
+  document.getElementById('downloadTallyBtn').addEventListener('click', downloadTodaySummary);
 
   function startChunk(minutes) {
     startWork();
@@ -3228,7 +3286,7 @@ For God alone my soul waits in silence. — Psalm 62:1`;
 
   // Keep in sync with the CACHE suffix in sw.js — shown here so a stale
   // install is easy to spot, and "Check for updates" has something real to bust.
-  const APP_VERSION = 'v34';
+  const APP_VERSION = 'v35';
   document.getElementById('appVersionLabel').textContent = 'AbidingSteps ' + APP_VERSION;
   document.getElementById('reloadAppBtn').addEventListener('click', async () => {
     const status = document.getElementById('reloadStatus');
