@@ -1810,6 +1810,9 @@ For God alone my soul waits in silence. — Psalm 62:1`;
     return Math.round((target - today) / 86400000);
   }
   let selectedDateKey = todayKeyLocal();
+  // declared here (ahead of the rest of the day-plan-tray section, further down) so
+  // renderNextAppointment can read the current hour's typed intention at initial render
+  let dayPlan = store.get('dayPlan', {}) || {};
 
   // ===== L1 week strip + full date =====
   function renderWeekStrip() {
@@ -1972,6 +1975,11 @@ For God alone my soul waits in silence. — Psalm 62:1`;
     settings.dayStart = dayStartInput.value; settings.dayEnd = dayEndInput.value; saveSettings();
   }));
   renderDayBarTicks();
+  function showEventPopover(ev) {
+    const pop = document.getElementById('eventPopover');
+    pop.innerHTML = '<b>' + escapeHtml(ev.title) + '</b><br>' + hourLabel(ev.start) + ' – ' + hourLabel(ev.end);
+    pop.classList.add('show');
+  }
   function renderDayBar() {
     const bar = document.getElementById('dayBar');
     bar.innerHTML = '';
@@ -1986,14 +1994,11 @@ For God alone my soul waits in silence. — Psalm 62:1`;
       el.style.left = hourToPct(ev.start) + '%';
       el.style.width = (hourToPct(ev.end) - hourToPct(ev.start)) + '%';
       el.style.background = ev.color || 'var(--accent)';
-      el.title = ev.title;
-      el.addEventListener('click', (e) => {
-        e.stopPropagation();
-        const pop = document.getElementById('eventPopover');
-        const startStr = hourLabel(ev.start), endStr = hourLabel(ev.end);
-        pop.innerHTML = '<b>' + ev.title + '</b><br>' + startStr + ' – ' + endStr;
-        pop.classList.add('show');
-      });
+      // mouse: hover previews and clears on its own; click still opens it (and leaves
+      // it open) for touch, where hover events never fire at all
+      el.addEventListener('mouseenter', () => showEventPopover(ev));
+      el.addEventListener('mouseleave', () => document.getElementById('eventPopover').classList.remove('show'));
+      el.addEventListener('click', (e) => { e.stopPropagation(); showEventPopover(ev); });
       bar.appendChild(el);
     });
     if (dayOffsetFromToday(selectedDateKey) === 0) {
@@ -2026,15 +2031,27 @@ For God alone my soul waits in silence. — Psalm 62:1`;
     const h = Math.floor(mins / 60), m = mins % 60;
     return (h > 0 ? h + 'h ' : '') + m + 'm';
   }
+  // the hour-by-hour text typed into the day-plan tray for whatever hour it is right
+  // now — blank on most hours (it's opt-in), so it's left out entirely rather than
+  // shown as an empty "Intention: —" prompt
+  function currentHourIntention() {
+    if (dayOffsetFromToday(selectedDateKey) !== 0) return '';
+    const h = Math.floor(new Date().getHours() + new Date().getMinutes() / 60);
+    const plan = dayPlan[selectedDateKey];
+    const text = plan && plan[h];
+    return text ? text.trim() : '';
+  }
   function renderNextAppointment() {
     const el = document.getElementById('nextAppt');
     if (dayOffsetFromToday(selectedDateKey) !== 0) { el.textContent = ''; return; }
+    const intention = currentHourIntention();
+    const intentionHtml = intention ? '<b>Intention:</b> ' + escapeHtml(intention) : '';
     const nowH = new Date().getHours() + new Date().getMinutes() / 60 + new Date().getSeconds() / 3600;
     const upcoming = eventsForDate(selectedDateKey).filter(ev => ev.end > nowH).sort((a, b) => a.start - b.start)[0];
-    if (!upcoming) { el.textContent = ''; return; }
-    el.innerHTML = upcoming.start <= nowH
+    const nextHtml = !upcoming ? '' : (upcoming.start <= nowH
       ? 'Now: ' + escapeHtml(upcoming.title) + ' — ends in <span class="accent">' + fmtCountdown((upcoming.end - nowH) * 60) + '</span>'
-      : 'Next: ' + escapeHtml(upcoming.title) + ' in <span class="accent">' + fmtCountdown((upcoming.start - nowH) * 60) + '</span>';
+      : 'Next: ' + escapeHtml(upcoming.title) + ' in <span class="accent">' + fmtCountdown((upcoming.start - nowH) * 60) + '</span>');
+    el.innerHTML = [intentionHtml, nextHtml].filter(Boolean).join(' · ');
   }
   function selectDate(dateKey) {
     selectedDateKey = dateKey;
@@ -2049,8 +2066,8 @@ For God alone my soul waits in silence. — Psalm 62:1`;
 
   // ===== Day plan tray — a rough hour-by-hour plan, opened by tapping the bar (the
   // selected day) or a week-day cell (switches selection to that day too). Keyed per
-  // date so it's not just today's. =====
-  let dayPlan = store.get('dayPlan', {}) || {};
+  // date so it's not just today's. (dayPlan itself is declared earlier, alongside
+  // selectedDateKey, so renderNextAppointment can read it too.) =====
   let dayPlanSaveTimer = null;
   function dayPlanFor(dateKey) { return dayPlan[dateKey] || (dayPlan[dateKey] = {}); }
   function saveDayPlanDebounced() { clearTimeout(dayPlanSaveTimer); dayPlanSaveTimer = setTimeout(() => store.set('dayPlan', dayPlan), 400); }
@@ -2087,7 +2104,10 @@ For God alone my soul waits in silence. — Psalm 62:1`;
     }
     tray.innerHTML = html;
     tray.querySelectorAll('.day-plan-input').forEach(inp => {
-      inp.addEventListener('input', () => { dayPlanFor(dayPlanOpenDate)[inp.dataset.hour] = inp.value; saveDayPlanDebounced(); });
+      inp.addEventListener('input', () => {
+        dayPlanFor(dayPlanOpenDate)[inp.dataset.hour] = inp.value; saveDayPlanDebounced();
+        renderNextAppointment(); // live-updates the "Intention: …" line if this is the current hour
+      });
     });
     if (!dayPlanAutoScrolled) {
       const nowRow = tray.querySelector('.day-plan-row.now');
@@ -3208,7 +3228,7 @@ For God alone my soul waits in silence. — Psalm 62:1`;
 
   // Keep in sync with the CACHE suffix in sw.js — shown here so a stale
   // install is easy to spot, and "Check for updates" has something real to bust.
-  const APP_VERSION = 'v33';
+  const APP_VERSION = 'v34';
   document.getElementById('appVersionLabel').textContent = 'AbidingSteps ' + APP_VERSION;
   document.getElementById('reloadAppBtn').addEventListener('click', async () => {
     const status = document.getElementById('reloadStatus');
