@@ -1,6 +1,6 @@
 // Keep this version suffix in sync with any version marker shown in-app so a
 // stale cache is easy to spot and force-refresh.
-const CACHE = 'abidingsteps-v36';
+const CACHE = 'abidingsteps-v37';
 const ASSETS = ['./index.html', './manifest.json', './icon.svg'];
 // George's own bundled background tracks. These live in a SEPARATE, unversioned
 // cache — MUSIC_CACHE, not CACHE — specifically so a normal app-version bump (which

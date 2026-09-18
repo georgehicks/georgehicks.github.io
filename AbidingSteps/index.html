@@ -3197,6 +3197,25 @@ For God alone my soul waits in silence. — Psalm 62:1`;
   }
   document.getElementById('weekResetSelect').addEventListener('change', (e) => { settings.weekReset = e.target.value; saveSettings(); renderAheadList(); renderOutcomePicker(); });
 
+  // ===== single-device control — only one device tracks time at once. Any real
+  // interaction on a device claims control (synced, so it propagates to the others);
+  // a device that discovers it's lost control stops its own running chunk rather than
+  // silently continuing to accrue minutes alongside whichever device took over. =====
+  function claimControlIfNeeded() {
+    const ctrl = store.get('activeControl', null);
+    if (ctrl && ctrl.deviceId === deviceId()) return; // already ours — nothing to push
+    store.set('activeControl', { deviceId: deviceId(), since: Date.now() });
+  }
+  ['pointerdown', 'keydown'].forEach(evt => {
+    document.addEventListener(evt, claimControlIfNeeded, { passive: true, capture: true });
+  });
+  function checkActiveControl() {
+    const ctrl = store.get('activeControl', null);
+    if (!ctrl || ctrl.deviceId === deviceId()) return; // unclaimed, or still ours
+    if (workSeg) returnToIdle('Paused — control moved to your other device');
+    if (modeSeg) { commitMode(); modeSeg = null; }
+  }
+
   // re-read everything from storage after another device's changes land
   function refreshFromStore() {
     settings = loadSettings();
@@ -3215,6 +3234,7 @@ For God alone my soul waits in silence. — Psalm 62:1`;
       if (selectedSubOutcome && !(sel.subs || []).includes(selectedSubOutcome)) selectedSubOutcome = null;
       renderSubOutcomeRow(sel); updateSelectionLabels();
     }
+    checkActiveControl();
     renderOutcomePicker(); renderAheadList();
     renderTally(); // another device's minutes count toward today too
   }
@@ -3382,7 +3402,7 @@ For God alone my soul waits in silence. — Psalm 62:1`;
 
   // Keep in sync with the CACHE suffix in sw.js — shown here so a stale
   // install is easy to spot, and "Check for updates" has something real to bust.
-  const APP_VERSION = 'v36';
+  const APP_VERSION = 'v37';
   document.getElementById('appVersionLabel').textContent = 'AbidingSteps ' + APP_VERSION;
   document.getElementById('reloadAppBtn').addEventListener('click', async () => {
     const status = document.getElementById('reloadStatus');
