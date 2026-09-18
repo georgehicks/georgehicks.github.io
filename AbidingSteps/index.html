@@ -42,6 +42,14 @@
   }
   .app { max-width: 480px; margin: 0 auto; min-height: 100vh; display: flex; flex-direction: column; }
 
+  /* ===== elegant, unobtrusive scrollbars (desktop/trackpad; iOS uses its own overlay bars) ===== */
+  * { scrollbar-width: thin; scrollbar-color: var(--border) transparent; }
+  *::-webkit-scrollbar { width: 6px; height: 6px; }
+  *::-webkit-scrollbar-track { background: transparent; }
+  *::-webkit-scrollbar-thumb { background: var(--border); border-radius: 999px; }
+  *::-webkit-scrollbar-thumb:hover { background: var(--text-faint); }
+  *::-webkit-scrollbar-corner { background: transparent; }
+
   /* topbar */
   .topbar {
     display: flex; align-items: center; justify-content: space-between;
@@ -64,15 +72,44 @@
   }
   .music-btn.playing { color: var(--accent); border-color: var(--accent); }
 
-  main { flex: 1; padding: 4px 16px calc(90px + env(safe-area-inset-bottom)); }
+  main { flex: 1; min-height: 0; padding: 4px 16px calc(90px + env(safe-area-inset-bottom)); display: flex; flex-direction: column; }
   .view { display: none; }
   .view.active { display: block; }
+  /* Step only: a flex column so notes can absorb whatever vertical space the rest of
+     the screen doesn't need, instead of leaving it as dead space above the tab bar —
+     notes are the functionally important surface here, everything above it is fixed-size */
+  #view-step.active { display: flex; flex-direction: column; flex: 1; min-height: 0; }
+  #view-step.active > .week-strip,
+  #view-step.active > .full-date,
+  #view-step.active > .day-bar-wrap,
+  #view-step.active > .outcome-picker,
+  #view-step.active > .action-block { flex-shrink: 0; }
+
+  /* ===== Ahead idle nudge — gentle tether back to Step, not a blocking popup =====
+     mirrors the Step overrun idiom (visual cue first, quiet auto-action later) rather
+     than a "Switch or stay?" popup — a long planning session isn't a failure, so this
+     stays a nudge. Dims everything except the banner itself; music fades under it
+     rather than cutting. */
+  #view-ahead.idle-dim > *:not(#aheadIdleNudge) { opacity: 0.5; transition: opacity 1.2s ease; }
+  .idle-nudge {
+    display: none; align-items: center; justify-content: space-between; gap: 10px;
+    background: var(--bg-raised); border: 1px solid var(--border); border-radius: 10px;
+    padding: 10px 14px; margin: 0 0 14px; font-size: 0.8rem; color: var(--text-dim);
+  }
+  .idle-nudge.show { display: flex; }
+  .idle-nudge button {
+    background: none; border: none; color: var(--accent); font-weight: 600;
+    font-size: 0.8rem; cursor: pointer; padding: 0; flex-shrink: 0;
+  }
 
   /* ===== L1 date line (reused as generic section header elsewhere) ===== */
-  .date-line { font-size: 0.8rem; color: var(--text-dim); letter-spacing: 0.06em; margin: 6px 0 14px; }
+  .date-line { font-size: 0.8rem; color: var(--text-dim); letter-spacing: 0.06em; margin: 4px 0 10px; }
 
-  /* ===== L1 week strip — subdued context, shows progression through the week ===== */
-  .week-strip { display: flex; gap: 5px; margin: 8px 0 6px; }
+  /* ===== L1 week strip — subdued context, shows progression through the week =====
+     kept compact on purpose: this is the least important visual weight on the screen
+     (see .day-bar comment below), and Today's outcome list now grows tall when it
+     wraps, so the space it needs comes from trimming these margins, not Today's. */
+  .week-strip { display: flex; gap: 5px; margin: 6px 0 5px; }
   .week-day { flex: 1; text-align: center; padding: 7px 0 6px; border-radius: 9px; background: var(--bg-elevated); border: 1px solid var(--border); cursor: pointer; }
   .week-day .wd { font-size: 0.6rem; color: var(--text-faint); text-transform: uppercase; letter-spacing: 0.03em; }
   .week-day .dn { font-size: 0.85rem; color: var(--text-dim); margin-top: 2px; }
@@ -81,11 +118,11 @@
   .week-day.today .wd, .week-day.today .dn { color: #10131c; font-weight: 700; }
   .week-day.selected:not(.today) { border-color: var(--accent); border-width: 1.5px; }
   .week-day.selected:not(.today) .dn { color: var(--text); font-weight: 700; }
-  .full-date { font-size: 0.72rem; color: var(--text-faint); margin: 8px 0 14px; letter-spacing: 0.04em; }
+  .full-date { font-size: 0.72rem; color: var(--text-faint); margin: 6px 0 10px; letter-spacing: 0.04em; }
 
   /* ===== L2 day bar — subdued context; passed/left must be unmistakable ===== */
-  .day-bar-wrap { margin-bottom: 16px; }
-  .day-stats { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 5px; }
+  .day-bar-wrap { margin-bottom: 12px; }
+  .day-stats { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 4px; }
   .stat { display: flex; flex-direction: row; align-items: baseline; gap: 4px; }
   .stat.right { flex-direction: row-reverse; }
   .stat-value { font-size: 0.74rem; font-weight: 600; color: var(--text-dim); font-variant-numeric: tabular-nums; line-height: 1.1; }
@@ -123,11 +160,14 @@
   .outcome-summary { display: flex; align-items: center; justify-content: space-between; background: var(--bg-elevated); border: 1px solid var(--border); border-radius: 10px; padding: 10px 12px; font-size: 0.84rem; color: var(--text-dim); }
   .outcome-summary b { color: var(--text); font-weight: 600; }
   .link-btn { background: none; border: none; color: var(--accent); font-size: 0.76rem; cursor: pointer; padding: 4px; }
-  .section-label { font-size: 0.66rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-faint); margin: 10px 0 6px; }
-  .outcome-group { margin-bottom: 8px; }
-  .outcome-group-title { font-size: 0.66rem; color: var(--text-faint); margin-bottom: 5px; }
+  .section-label { font-size: 0.66rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-faint); margin: 8px 0 5px; }
+  .outcome-group { margin-bottom: 6px; }
+  .outcome-group-title { font-size: 0.66rem; color: var(--text-faint); margin-bottom: 4px; }
   /* one compact row per group — scrolls sideways instead of wrapping and growing tall */
   .outcome-list { display: flex; flex-wrap: nowrap; overflow-x: auto; gap: 6px; padding-bottom: 3px; scrollbar-width: thin; -webkit-overflow-scrolling: touch; }
+  /* Today is the working set for right now — every one of them should stay visible at a
+     glance, not hidden behind a horizontal scroll, so it wraps and grows tall instead */
+  .outcome-list.wrap { flex-wrap: wrap; overflow-x: visible; -webkit-overflow-scrolling: auto; }
   .outcome-chip { background: var(--bg-elevated); border: 1px solid var(--border); color: var(--text-faint); border-radius: 8px; padding: 5px 9px; font-size: 0.74rem; cursor: pointer; display: flex; align-items: center; gap: 5px; white-space: nowrap; flex: 0 0 auto; }
   .outcome-chip.selected { border-color: var(--accent); color: var(--accent); }
   .outcome-chip .type-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--text-faint); }
@@ -144,6 +184,9 @@
   }
   .action-block.overrun { background: #2a1a1a; border-color: var(--danger); animation: pulse 1.4s ease-in-out infinite; }
   @keyframes pulse { 0%,100% { box-shadow: 0 0 0 rgba(226,100,92,0); } 50% { box-shadow: 0 0 28px rgba(226,100,92,0.55); } }
+  /* running/overrun costs far less padding than the idle picker needs — notes below
+     are the functionally important surface now, not this glance-value readout */
+  .action-block.running { padding: 12px 20px; }
   .action-idle-label { font-size: 0.92rem; color: var(--text-dim); margin-bottom: 2px; }
   /* single scrollable row, not a wrapping grid — the choice shouldn't dominate the block */
   .chip-row { display: flex; flex-wrap: nowrap; overflow-x: auto; gap: 6px; justify-content: flex-start; margin-top: 14px; padding-bottom: 2px; scrollbar-width: thin; -webkit-overflow-scrolling: touch; }
@@ -155,22 +198,22 @@
      length is a more accurate quantity judgment than a shrinking angle (Cleveland
      & McGill's graphical-perception ranking), and it costs far less vertical space
      than the old 190px ring did. */
-  .timer-display { font-size: 2.1rem; font-weight: 700; font-variant-numeric: tabular-nums; letter-spacing: 0.01em; color: var(--text); margin-bottom: 14px; }
+  .timer-display { font-size: 1.1rem; font-weight: 700; font-variant-numeric: tabular-nums; letter-spacing: 0.01em; color: var(--text); margin-bottom: 4px; }
   /* the track's border is what reads as "this is the whole chunk" at a glance —
      without it the empty portion blends into the card and the container disappears
      as the fill drains, which defeats the point of showing capacity at all */
-  .time-bar-wrap { width: 100%; height: 20px; border-radius: 10px; background: var(--bg-raised); border: 1.5px solid var(--border); overflow: hidden; }
+  .time-bar-wrap { width: 100%; height: 8px; border-radius: 6px; background: var(--bg-raised); border: 1.5px solid var(--border); overflow: hidden; }
   .time-bar-fill { height: 100%; background: var(--accent); width: 100%; transition: width 1s linear, background 0.3s ease; }
   .action-block.overrun .time-bar-wrap { border-color: var(--danger); }
   .action-block.overrun .time-bar-fill { background: var(--danger); }
-  .action-focus-row { display: flex; align-items: center; justify-content: center; gap: 10px; margin-top: 14px; }
+  .action-focus-row { display: flex; align-items: center; justify-content: center; gap: 10px; margin-top: 8px; }
   .action-focus { font-size: 1.02rem; font-weight: 600; }
   .done-chip {
     background: var(--bg-raised); border: 1px solid var(--border); color: var(--text-dim);
     border-radius: 999px; padding: 4px 10px; font-size: 0.72rem; cursor: pointer; white-space: nowrap; flex-shrink: 0;
   }
   .done-chip.done { background: var(--accent); color: #10131c; border-color: var(--accent); font-weight: 600; }
-  .timer-sub { font-size: 0.78rem; color: var(--text-dim); margin-top: 6px; min-height: 1.1em; }
+  .timer-sub { font-size: 0.78rem; color: var(--text-dim); margin-top: 3px; min-height: 1em; }
   .overrun-tray { display: none; margin-top: 16px; padding-top: 14px; border-top: 1px dashed var(--border); }
   .overrun-tray.show { display: block; }
   .overrun-tray .headline { font-size: 0.9rem; font-weight: 600; color: var(--danger); margin-bottom: 10px; }
@@ -182,11 +225,14 @@
   .notes-wrap.subdued { opacity: 0.85; }
 
   /* ===== L6 notes ===== */
-  .notes-wrap { margin-top: 16px; position: relative; }
+  /* flex:1 lets it absorb whatever vertical space Step's fixed-size sections above
+     don't use, instead of leaving it as dead space above the tab bar; min-height is
+     the floor for when there's little room left (a long Today list, an open tray) */
+  .notes-wrap { margin-top: 16px; position: relative; flex: 1; display: flex; flex-direction: column; min-height: 64px; }
   textarea.notes {
-    width: 100%; min-height: 64px; background: var(--bg-elevated); border: 1px solid var(--border);
+    width: 100%; flex: 1; min-height: 64px; background: var(--bg-elevated); border: 1px solid var(--border);
     border-radius: 10px; color: var(--text); padding: 10px 44px 10px 12px; font-size: 16px;
-    font-family: inherit; resize: vertical;
+    font-family: inherit;
   }
   .mic-btn {
     position: absolute; right: 8px; top: 8px; width: 30px; height: 30px; border-radius: 50%;
@@ -472,7 +518,7 @@
           </div>
           <div class="outcome-group">
             <div class="outcome-group-title">Today</div>
-            <div class="outcome-list" id="outcomesToday"></div>
+            <div class="outcome-list wrap" id="outcomesToday"></div>
           </div>
           <div class="outcome-group">
             <div class="outcome-group-title">Other</div>
@@ -492,6 +538,7 @@
           <div class="time-bar-wrap"><div class="time-bar-fill" id="timeBarFill"></div></div>
           <div class="action-focus-row">
             <span class="action-focus" id="actionFocus">Working on —</span>
+            <button type="button" class="link-btn" id="changeOutcomeRunningBtn">change</button>
             <button type="button" class="done-chip" id="markDoneBtn" title="Mark this outcome complete">✓ Done</button>
           </div>
           <div class="timer-sub" id="timerSub"></div>
@@ -520,6 +567,10 @@
     <!-- ========== AHEAD (Planning) ========== -->
     <section id="view-ahead" class="view">
       <div class="date-line">Ahead</div>
+      <div class="idle-nudge" id="aheadIdleNudge">
+        <span>Still planning? It's been a while.</span>
+        <button type="button" id="aheadIdleGoStep">→ Step</button>
+      </div>
       <div class="filter-row" id="roleFilterRow">
         <span class="chip selected" data-role="All">All</span>
         <span class="chip" data-role="Today">Today</span>
@@ -832,6 +883,7 @@
     updateMusicBtn();
     if (musicPlaying && (tab === 'step' || tab === 'ahead' || tab === 'abide')) musicPlayer.playForMode(tab);
     if (tab === 'abide') startBreathCue(); else stopBreathCue();
+    if (tab === 'ahead') startAheadIdleWatch(); else stopAheadIdleWatch();
     updateModeTracking();
     if (tab === 'abide') renderTally();
   }
@@ -1673,6 +1725,80 @@ For God alone my soul waits in silence. — Psalm 62:1`;
   document.getElementById('overrunTray') && new MutationObserver(updateMusicPauseState)
     .observe(document.getElementById('overrunTray'), { attributes: true, attributeFilter: ['class'] });
 
+  // ===== Ahead idle nudge — gentle tether back to Step, not a blocking popup =====
+  // Mirrors the Step overrun idiom (visual cue first, then a soft signal, then a quiet
+  // auto-action) rather than a "Switch or stay?" popup — a planning session that runs
+  // long isn't a failure, so this stays a nudge, never a scold, and defers instead of
+  // firing while a modal is actually open (that's engagement, not idle).
+  const AHEAD_IDLE_DIM_DELAY = 10 * 60 * 1000;  // 10m idle: dim view, fade music, show banner
+  const AHEAD_IDLE_AUTO_DELAY = 5 * 60 * 1000;  // +5m more idle after that: quiet auto-nudge to Step
+  const AHEAD_MUSIC_FADE_MS = 3000;
+  let aheadDimTimer = null, aheadAutoTimer = null, aheadFadeInterval = null, aheadMusicFaded = false;
+
+  function aheadShouldDefer() { return anyDecisionMomentOpen() || !!document.querySelector('.modal-overlay.show'); }
+
+  function aheadFadeMusicOut() {
+    if (!musicPlaying || aheadMusicFaded || anyDecisionMomentOpen()) return;
+    aheadMusicFaded = true;
+    clearInterval(aheadFadeInterval);
+    const steps = 20, stepMs = AHEAD_MUSIC_FADE_MS / steps;
+    const baseVol = Math.max(0, Math.min(100, Number(settings.musicVolume) || 40));
+    let i = steps;
+    aheadFadeInterval = setInterval(() => {
+      i--;
+      const factor = Math.max(0, i / steps);
+      if (musicPlayer.audio) musicPlayer.audio.volume = (baseVol / 100) * factor;
+      if (musicPlayer.yt && musicPlayer.ready) { try { musicPlayer.yt.setVolume(Math.round(baseVol * factor)); } catch (e) {} }
+      if (i <= 0) { clearInterval(aheadFadeInterval); musicPlayer.pause(); }
+    }, stepMs);
+  }
+  function aheadFadeMusicIn() {
+    clearInterval(aheadFadeInterval);
+    if (!aheadMusicFaded) return;
+    aheadMusicFaded = false;
+    if (musicPlaying && !anyDecisionMomentOpen()) musicPlayer.resume();
+    musicPlayer.applyVolume();
+  }
+
+  function aheadShowIdleNudge() {
+    document.getElementById('view-ahead').classList.add('idle-dim');
+    document.getElementById('aheadIdleNudge').classList.add('show');
+    aheadFadeMusicOut();
+  }
+  function aheadHideIdleNudge() {
+    document.getElementById('view-ahead').classList.remove('idle-dim');
+    document.getElementById('aheadIdleNudge').classList.remove('show');
+    aheadFadeMusicIn();
+  }
+
+  function aheadResetIdleTimers() {
+    clearTimeout(aheadDimTimer); clearTimeout(aheadAutoTimer);
+    aheadHideIdleNudge();
+    if (currentMode() !== 'ahead') return;
+    aheadDimTimer = setTimeout(() => {
+      if (aheadShouldDefer()) { aheadResetIdleTimers(); return; }
+      aheadShowIdleNudge();
+    }, AHEAD_IDLE_DIM_DELAY);
+    aheadAutoTimer = setTimeout(() => {
+      if (aheadShouldDefer()) { aheadResetIdleTimers(); return; }
+      switchTab('step'); // quiet auto-nudge, same "keep going quietly" spirit as overrun auto-bump
+    }, AHEAD_IDLE_DIM_DELAY + AHEAD_IDLE_AUTO_DELAY);
+  }
+  function startAheadIdleWatch() { aheadResetIdleTimers(); }
+  function stopAheadIdleWatch() {
+    clearTimeout(aheadDimTimer); clearTimeout(aheadAutoTimer);
+    aheadDimTimer = aheadAutoTimer = null;
+    aheadHideIdleNudge();
+  }
+  ['pointerdown', 'keydown', 'input', 'scroll'].forEach(evt => {
+    // skip the banner itself — collapsing it out from under a tap on its own "Step"
+    // button (pointerdown fires before click) would eat the tap before it registers
+    document.addEventListener(evt, (e) => {
+      if (currentMode() === 'ahead' && !document.getElementById('aheadIdleNudge').contains(e.target)) aheadResetIdleTimers();
+    }, { passive: true, capture: true });
+  });
+  document.getElementById('aheadIdleGoStep').addEventListener('click', () => switchTab('step'));
+
   // ===== date-key helpers + the one "which day is shown" state, needed before the
   // week strip and day bar so both can key off the same selected day =====
   function dateKeyFor(d) { return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); }
@@ -2193,9 +2319,14 @@ For God alone my soul waits in silence. — Psalm 62:1`;
     endsAt = Date.now() + chunkTotalMs;
     overrunState = 'none';
     document.getElementById('actionBlock').classList.remove('overrun');
+    document.getElementById('actionBlock').classList.add('running');
     document.getElementById('overrunTray').classList.remove('show');
     document.getElementById('actionIdle').style.display = 'none';
     document.getElementById('actionRunning').style.display = 'block';
+    // the running timer's own focus line already says "Working on X" — the collapsed
+    // outcome-summary bar above would just repeat it and waste vertical space, so it
+    // hides for the duration of the chunk and comes back once idle
+    document.getElementById('outcomeSummary').style.display = 'none';
     document.getElementById('actionFocus').textContent = 'Working on ' + ((selectedOutcome() || {}).t || '—') + (selectedSubOutcome ? ' › ' + selectedSubOutcome : '');
     document.getElementById('timerSub').textContent = '';
     if (tickHandle) clearInterval(tickHandle);
@@ -2266,17 +2397,27 @@ For God alone my soul waits in silence. — Psalm 62:1`;
     clearOverrunTimers();
     if (tickHandle) clearInterval(tickHandle);
     overrunState = 'none';
-    document.getElementById('actionBlock').classList.remove('overrun');
+    document.getElementById('actionBlock').classList.remove('overrun', 'running');
     document.getElementById('overrunTray').classList.remove('show');
     document.getElementById('actionRunning').style.display = 'none';
     document.getElementById('actionIdle').style.display = 'block';
     document.getElementById('actionIdleLabel').textContent = label;
     document.querySelectorAll('#chunkChips .chip').forEach(c => c.classList.remove('selected'));
+    // bring the collapsed outcome-summary bar back now that the running focus line
+    // (which stood in for it) is gone — only if an outcome is still selected
+    if (selectedOutcome()) collapseOutcomePicker();
   }
 
   document.getElementById('btnContinue').addEventListener('click', () => acknowledgeOverrun(bumpMinutes));
   document.getElementById('btnBreak').addEventListener('click', () => returnToIdle('On a break — pick a length to resume'));
   document.getElementById('btnSwitch').addEventListener('click', () => {
+    returnToIdle('Pick an outcome above to begin');
+    expandOutcomePicker();
+  });
+  // same "stop and reopen the picker" action as Switch outcome above, just reachable
+  // without waiting for an overrun — sits next to Done since both are the subtle,
+  // secondary actions for a running chunk
+  document.getElementById('changeOutcomeRunningBtn').addEventListener('click', () => {
     returnToIdle('Pick an outcome above to begin');
     expandOutcomePicker();
   });
@@ -3067,7 +3208,7 @@ For God alone my soul waits in silence. — Psalm 62:1`;
 
   // Keep in sync with the CACHE suffix in sw.js — shown here so a stale
   // install is easy to spot, and "Check for updates" has something real to bust.
-  const APP_VERSION = 'v32';
+  const APP_VERSION = 'v33';
   document.getElementById('appVersionLabel').textContent = 'AbidingSteps ' + APP_VERSION;
   document.getElementById('reloadAppBtn').addEventListener('click', async () => {
     const status = document.getElementById('reloadStatus');
