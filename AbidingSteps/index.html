@@ -118,7 +118,11 @@
   .week-day.today .wd, .week-day.today .dn { color: #10131c; font-weight: 700; }
   .week-day.selected:not(.today) { border-color: var(--accent); border-width: 1.5px; }
   .week-day.selected:not(.today) .dn { color: var(--text); font-weight: 700; }
-  .full-date { font-size: 0.72rem; color: var(--text-faint); margin: 6px 0 10px; letter-spacing: 0.04em; }
+  .full-date { display: flex; align-items: center; gap: 6px; font-size: 0.72rem; color: var(--text-faint); margin: 6px 0 10px; letter-spacing: 0.04em; }
+  .refresh-cal-btn { background: none; border: none; color: var(--text-faint); font-size: 0.8rem; line-height: 1; padding: 2px; cursor: pointer; display: inline-flex; }
+  .refresh-cal-btn:active { color: var(--accent); }
+  .refresh-cal-btn.spinning { animation: spin 0.8s linear infinite; color: var(--accent); }
+  @keyframes spin { to { transform: rotate(360deg); } }
 
   /* ===== L2 day bar — subdued context; passed/left must be unmistakable ===== */
   .day-bar-wrap { margin-bottom: 12px; }
@@ -492,7 +496,10 @@
     <!-- ========== STEP ========== -->
     <section id="view-step" class="view active">
       <div class="week-strip" id="weekStrip"></div>
-      <div class="full-date" id="dateLine"></div>
+      <div class="full-date">
+        <span id="dateLine"></span>
+        <button type="button" class="refresh-cal-btn" id="refreshCalBtn" title="Refresh calendar">↻</button>
+      </div>
 
       <div class="day-bar-wrap">
         <div class="day-stats">
@@ -689,6 +696,13 @@
         <input type="text" id="icsProxy" style="width:100%; background:var(--bg-elevated); border:1px solid var(--border); border-radius:8px; color:var(--text); padding:8px 10px; font-size:16px; margin-bottom:8px;" placeholder="Optional CORS proxy URL (ends with ?url=)">
         <button class="btn" id="icsPullBtn" style="width:100%;">Pull calendar now</button>
         <div id="icsStatus" style="font-size:0.72rem; color:var(--text-dim); margin-top:6px;"></div>
+      </div>
+
+      <div class="settings-section">
+        <h3>Weekly Review</h3>
+        <p style="font-size:0.72rem; color:var(--text-faint); margin:0 0 8px;">A deliberate step you take on your own schedule, not something that happens automatically. Downloads a per-outcome summary covering everything since your last reset, then clears the accumulated tallies so the next stretch starts fresh.</p>
+        <div id="weeklyReviewRange" style="font-size:0.76rem; color:var(--text-dim); margin-bottom:8px;"></div>
+        <button class="btn" id="weeklyReviewBtn" style="width:100%;">Download summary &amp; reset</button>
       </div>
 
       <div class="settings-section">
@@ -1942,6 +1956,24 @@ For God alone my soul waits in silence. — Psalm 62:1`;
     if (dayPlanOpenDate) renderDayPlanTray();
   }
   document.getElementById('icsPullBtn').addEventListener('click', pullCalendar);
+  // same pull, reachable without a trip to Settings — spins while fetching as the
+  // only feedback (subtle by design); the real status text still lands in Settings'
+  // icsStatus for whenever someone goes looking for it
+  document.getElementById('refreshCalBtn').addEventListener('click', async (e) => {
+    e.currentTarget.classList.add('spinning');
+    try { await pullCalendar(); } finally { e.currentTarget.classList.remove('spinning'); }
+  });
+  // opening the hour-by-hour tray auto-refreshes the calendar at most once per day,
+  // per device (deliberately __local_ — not synced — so each device runs its own
+  // fetch rather than one device's pull silently covering for another's)
+  function autoPullCalendarOnce() {
+    const today = dayKey();
+    if (store.get('__local_lastCalendarPullDay', null) === today) return;
+    store.set('__local_lastCalendarPullDay', today); // claim first so rapid re-opens can't stack fetches
+    const btn = document.getElementById('refreshCalBtn');
+    btn.classList.add('spinning');
+    pullCalendar().finally(() => btn.classList.remove('spinning'));
+  }
 
   // the hour-of-day to treat as "now" for whichever day is selected
   function refHourFor(dateKey) {
@@ -2080,6 +2112,7 @@ For God alone my soul waits in silence. — Psalm 62:1`;
     dayPlanOpenDate = switchingDay ? dateKey : (dayPlanOpenDate === dateKey ? null : dateKey);
     dayPlanAutoScrolled = false;
     renderDayPlanTray();
+    if (dayPlanOpenDate) autoPullCalendarOnce();
   }
   function renderDayPlanTray() {
     const tray = document.getElementById('dayPlanTray');
@@ -2364,31 +2397,94 @@ For God alone my soul waits in silence. — Psalm 62:1`;
     if (workSeg) totals[workSeg.outcomeId] = (totals[workSeg.outcomeId] || 0) + (Date.now() - workSeg.since) / 60000;
     return totals;
   }
-  function downloadTodaySummary() {
-    const totals = todayOutcomeTotals();
+  // shared by the daily and weekly summaries below — a totals map (outcomeId → mins)
+  // in, a "| Outcome | Time |" markdown table out
+  function outcomeTotalsMarkdownTable(totals) {
     const rows = Object.keys(totals)
       .map(id => ({ title: (findOutcome(id) || {}).t || '(deleted outcome)', mins: totals[id] }))
       .filter(r => r.mins >= 0.5)
       .sort((a, b) => b.mins - a.mins);
+    if (!rows.length) return '_No focus time logged in this period._\n';
     const totalMins = rows.reduce((sum, r) => sum + r.mins, 0);
-    const today = dayKey();
-    const dateLabel = new Date().toLocaleDateString(undefined, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
-    let md = '# AbidingSteps — ' + dateLabel + '\n\n';
-    if (!rows.length) {
-      md += '_No focus time logged today._\n';
-    } else {
-      md += '| Outcome | Time |\n|---|---|\n';
-      rows.forEach(r => { md += '| ' + r.title.replace(/\|/g, '\\|') + ' | ' + fmtMins(r.mins) + ' |\n'; });
-      md += '\n**Total: ' + fmtMins(totalMins) + '**\n';
-    }
+    let md = '| Outcome | Time |\n|---|---|\n';
+    rows.forEach(r => { md += '| ' + r.title.replace(/\|/g, '\\|') + ' | ' + fmtMins(r.mins) + ' |\n'; });
+    md += '\n**Total: ' + fmtMins(totalMins) + '**\n';
+    return md;
+  }
+  function triggerMarkdownDownload(filename, md) {
     const blob = new Blob([md], { type: 'text/markdown' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
-    a.href = url; a.download = 'AbidingSteps-' + today + '.md';
+    a.href = url; a.download = filename;
     document.body.appendChild(a); a.click(); document.body.removeChild(a);
     setTimeout(() => URL.revokeObjectURL(url), 1000);
   }
+  function downloadTodaySummary() {
+    const dateLabel = new Date().toLocaleDateString(undefined, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+    const md = '# AbidingSteps — ' + dateLabel + '\n\n' + outcomeTotalsMarkdownTable(todayOutcomeTotals());
+    triggerMarkdownDownload('AbidingSteps-' + dayKey() + '.md', md);
+  }
   document.getElementById('downloadTallyBtn').addEventListener('click', downloadTodaySummary);
+
+  // ===== weekly review — a deliberate, user-triggered ritual (not an automatic job):
+  // download everything accumulated since the last reset, then clear the tallies so
+  // the next week starts fresh. Keeps the per-day/per-outcome tally data small over
+  // time through your own periodic discipline, rather than an unattended cron-style
+  // purge quietly deleting history you never got to look at. =====
+  function rangeOutcomeTotals(sinceMs) {
+    const sinceDay = sinceMs ? dayKey(new Date(sinceMs)) : null;
+    const totals = {};
+    try {
+      for (let i = 0; i < localStorage.length; i++) {
+        const k = localStorage.key(i);
+        if (!k || !k.startsWith(STORE_PREFIX + 'outcomeTally_')) continue;
+        const days = store.get(k.slice(STORE_PREFIX.length), {}) || {};
+        Object.keys(days).forEach(d => {
+          if (sinceDay && d < sinceDay) return;
+          Object.keys(days[d]).forEach(id => { totals[id] = (totals[id] || 0) + days[d][id]; });
+        });
+      }
+    } catch (e) {}
+    if (workSeg) totals[workSeg.outcomeId] = (totals[workSeg.outcomeId] || 0) + (Date.now() - workSeg.since) / 60000;
+    return totals;
+  }
+  function lastWeeklyResetAt() { return Number(store.get('lastWeeklyResetAt', 0)) || 0; }
+  function weeklyRangeLabel() {
+    const since = lastWeeklyResetAt();
+    const fmt = (ms) => new Date(ms).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+    return since ? ('Covers ' + fmt(since) + ' – ' + fmt(Date.now()) + ' (since your last reset)')
+      : 'Covers everything recorded so far — no reset yet';
+  }
+  function renderWeeklyReviewRange() { document.getElementById('weeklyReviewRange').textContent = weeklyRangeLabel(); }
+  function downloadWeeklySummary() {
+    const since = lastWeeklyResetAt();
+    const fmtFull = (ms) => new Date(ms).toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' });
+    const heading = since ? (fmtFull(since) + ' – ' + fmtFull(Date.now())) : 'Everything recorded so far';
+    const md = '# AbidingSteps — Weekly Summary\n\n' + heading + '\n\n' + outcomeTotalsMarkdownTable(rangeOutcomeTotals(since));
+    triggerMarkdownDownload('AbidingSteps-Week-' + dayKey() + '.md', md);
+  }
+  function resetTallies() {
+    try {
+      for (let i = 0; i < localStorage.length; i++) {
+        const k = localStorage.key(i);
+        if (k && (k.startsWith(STORE_PREFIX + 'tally_') || k.startsWith(STORE_PREFIX + 'outcomeTally_'))) {
+          store.set(k.slice(STORE_PREFIX.length), {});
+        }
+      }
+    } catch (e) {}
+    store.set('lastWeeklyResetAt', Date.now());
+    renderWeeklyReviewRange();
+    renderTally();
+  }
+  document.getElementById('weeklyReviewBtn').addEventListener('click', () => {
+    openConfirmModal({
+      title: 'Download summary & reset?',
+      message: weeklyRangeLabel() + '. Downloads that summary, then clears the accumulated tallies so next week starts fresh. This can\'t be undone.',
+      okLabel: 'Download & reset',
+      onOk: () => { downloadWeeklySummary(); resetTallies(); },
+    });
+  });
+  renderWeeklyReviewRange();
 
   function startChunk(minutes) {
     startWork();
@@ -3286,7 +3382,7 @@ For God alone my soul waits in silence. — Psalm 62:1`;
 
   // Keep in sync with the CACHE suffix in sw.js — shown here so a stale
   // install is easy to spot, and "Check for updates" has something real to bust.
-  const APP_VERSION = 'v35';
+  const APP_VERSION = 'v36';
   document.getElementById('appVersionLabel').textContent = 'AbidingSteps ' + APP_VERSION;
   document.getElementById('reloadAppBtn').addEventListener('click', async () => {
     const status = document.getElementById('reloadStatus');
