@@ -602,7 +602,11 @@
     }
     return 'Custom';
   }
-  function updateListBadge() { listBadgeEl.textContent = computeListName(state.words); }
+  function updateListBadge() {
+    var name = computeListName(state.words);
+    listBadgeEl.textContent = name;
+    document.title = name === 'Custom' ? 'Notice — A Noticing Exercise' : name + ' — Notice';
+  }
   var measureCanvas = document.createElement('canvas');
   var measureCtx = measureCanvas.getContext('2d');
 
