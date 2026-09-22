@@ -168,6 +168,11 @@
   }
   .insight-section.light h3 { color: var(--accent); }
   .insight-section p { margin: 0; font-size: 0.92rem; line-height: 1.55; color: var(--ink); }
+  .insight-more-link {
+    display: inline-block; margin-top: 0.5rem; font-size: 0.78rem; color: var(--ink-faint);
+    text-decoration: underline; text-decoration-color: var(--border); text-underline-offset: 2px;
+  }
+  .insight-more-link:hover { color: var(--ink-muted); }
   .insight-fallback { margin: 0.9rem 0 0; font-size: 0.9rem; font-style: italic; color: var(--ink-muted); }
 
   @media (prefers-reduced-motion: reduce) {
@@ -202,6 +207,7 @@
     <div class="insight-section judgment" id="insight-judgment-section" style="display:none">
       <h3>Feeling or judgment?</h3>
       <p id="insight-judgment-text"></p>
+      <a class="insight-more-link" id="insight-more-link" href="https://a.co/d/06qSg5e8" target="_blank" rel="noopener noreferrer">This idea comes from Nonviolent Communication — more info ↗</a>
     </div>
     <blockquote class="insight-scripture" id="insight-scripture" style="display:none">
       <p id="insight-scripture-text"></p>
@@ -247,8 +253,8 @@
   var LS_THEME = 'notice-theme';
 
   var PRESETS = {
-    emotions: ['Abandoned','Betrayed','Rejected','Attacked','Manipulated','Judged','Unappreciated','Ignored','Misunderstood','Neglected','Controlled','Unwanted','Used','Disrespected','Unheard','Trapped','Humiliated','Dismissed','Threatened','Pressured','Excluded','Belittled','Accused','Intimidated','Patronized','Cheated','Violated','Criticized'],
-    realemotions: ['Joyful','Angry','Grateful','Sad','Hopeful','Afraid','Calm','Ashamed','Peaceful','Guilty','Excited','Lonely','Loved','Overwhelmed','Content','Resentful'],
+    emotions: ['Abandoned','Betrayed','Rejected','Attacked','Manipulated','Judged','Unappreciated','Ignored','Misunderstood','Neglected','Controlled','Unwanted','Used','Disrespected','Unheard','Trapped','Humiliated','Dismissed','Threatened','Pressured','Excluded','Belittled','Accused','Intimidated','Patronized','Cheated','Violated','Criticized','Loved','Resentful'],
+    realemotions: ['Joyful','Angry','Grateful','Sad','Hopeful','Afraid','Calm','Ashamed','Peaceful','Guilty','Excited','Lonely','Safe','Overwhelmed','Content','Hurt'],
     needs: ['Connection','Autonomy','Rest','Recognition','Clarity','Trust','Space','Purpose','Belonging','Control','Safety','Growth'],
     values: ['Honesty','Courage','Balance','Freedom','Integrity','Creativity','Stability','Justice','Compassion','Loyalty','Ambition','Humility'],
     identity: ['Chosen','Lost','Beloved','Condemned','Forgiven','Unworthy','Redeemed','Free','Rejected','Righteous','Orphaned','Powerful','Convicted','Strong','Jealous','Unforgiveness','Worry','Doubt','Fear','Shame','Despair','Pride','Divided','Hopeful','Whole','Deceived','Hate']
@@ -267,6 +273,9 @@
     sad: { scripture: { ref: "Psalm 34:18", text: "The Lord is near to the brokenhearted and saves the crushed in spirit." },
       dark: "Sadness numbed or hidden becomes a wall between you and everyone around you.",
       light: "Sadness brought honestly to God is met, not judged — He stays close to the brokenhearted." },
+    hurt: { scripture: { ref: "Psalm 147:3", text: "He heals the brokenhearted and binds up their wounds." },
+      dark: "Hurt left untended doesn't disappear — it just waits, and usually comes out sideways as anger or distance.",
+      light: "Named honestly, hurt is exactly what God says He binds up — He's not put off by the wound, He moves toward it." },
     hopeful: { scripture: { ref: "Romans 15:13", text: "May the God of hope fill you with all joy and peace in believing." },
       dark: "Hope pinned to one outcome you can't control will eventually break your heart.",
       light: "Hope anchored in God doesn't need the outcome to arrive to already be steady." },
@@ -291,7 +300,11 @@
     lonely: { scripture: { ref: "Deuteronomy 31:6", text: "He will not leave you or forsake you." },
       dark: "Loneliness can convince you that you're the only one, and that no one would understand.",
       light: "Loneliness is an invitation to reach — toward God first, who has promised never to leave you." },
+    safe: { scripture: { ref: "Psalm 4:8", text: "In peace I will both lie down and sleep; for you alone, O Lord, make me dwell in safety." },
+      dark: "Safety chased through control tries to engineer certainty out of a world that was never going to hand it over.",
+      light: "Real safety was never about eliminating risk — it's resting in the hands of the One who holds you regardless of what happens." },
     loved: { scripture: { ref: "1 John 4:19", text: "We love because he first loved us." },
+      judgment: "\"Loved\" is actually a belief about someone else's heart toward you, not a feeling in you — the feeling underneath is usually warmth, safety, or joy, and it can be true even on the days you don't feel it at all.",
       dark: "\"Loved\" can get reduced to being needed or approved of — a love you must keep earning.",
       light: "Before you did anything, you were loved. That love isn't performance-based, and it isn't going anywhere." },
     overwhelmed: { scripture: { ref: "Psalm 61:2", text: "From the ends of the earth, I cry to you for help when my heart is overwhelmed. Lead me to the towering rock of safety." },
@@ -301,6 +314,7 @@
       dark: "Contentment can slide into complacency — settling instead of still hoping and growing.",
       light: "Contentment learned in Christ isn't about having enough — it's about already having Him." },
     resentful: { scripture: { ref: "Hebrews 12:15", text: "no 'root of bitterness' springs up and causes trouble, and by it many become defiled." },
+      judgment: "\"Resentful\" carries a verdict already attached — that someone wronged you and hasn't paid for it. The feeling underneath is usually anger, or the hurt that's still waiting to be grieved.",
       dark: "Resentment keeps score. Left alone, it roots into a bitterness that poisons everything it touches.",
       light: "Naming resentment honestly opens the door to forgive — not to excuse it, but to hand it over." },
 
