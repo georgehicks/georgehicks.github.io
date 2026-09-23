@@ -236,7 +236,7 @@
       <button class="preset-btn" data-preset="values" type="button">Values</button>
     </div>
     <textarea id="words-textarea" class="words-textarea" placeholder="One word per line" spellcheck="false"></textarea>
-    <p class="modal-hint">One word per line (or comma-separated). Up to 30.</p>
+    <p class="modal-hint">One word per line (or comma-separated). Up to 35.</p>
     <div class="modal-actions">
       <button class="btn-secondary" id="cancel-btn" type="button">Cancel</button>
       <button class="btn-primary" id="save-btn" type="button">Save &amp; drift</button>
@@ -253,7 +253,7 @@
   var LS_THEME = 'notice-theme';
 
   var PRESETS = {
-    emotions: ['Abandoned','Betrayed','Rejected','Attacked','Manipulated','Judged','Unappreciated','Ignored','Misunderstood','Neglected','Controlled','Unwanted','Used','Disrespected','Unheard','Trapped','Humiliated','Dismissed','Threatened','Pressured','Excluded','Belittled','Accused','Intimidated','Patronized','Cheated','Violated','Criticized','Loved','Resentful'],
+    emotions: ['Abandoned','Betrayed','Rejected','Attacked','Manipulated','Judged','Unappreciated','Ignored','Misunderstood','Neglected','Controlled','Unwanted','Used','Disrespected','Unheard','Trapped','Humiliated','Dismissed','Threatened','Pressured','Excluded','Belittled','Accused','Intimidated','Patronized','Cheated','Violated','Criticized','Loved','Resentful','Lost'],
     realemotions: ['Joyful','Angry','Grateful','Sad','Hopeful','Afraid','Calm','Ashamed','Peaceful','Guilty','Excited','Lonely','Safe','Overwhelmed','Content','Hurt'],
     needs: ['Connection','Autonomy','Rest','Recognition','Clarity','Trust','Space','Purpose','Belonging','Control','Safety','Growth'],
     values: ['Honesty','Courage','Balance','Freedom','Integrity','Creativity','Stability','Justice','Compassion','Loyalty','Ambition','Humility'],
@@ -504,9 +504,10 @@
     chosen: { scripture: { ref: "Ephesians 1:4", text: "he chose us in him before the foundation of the world." },
       dark: "\"Chosen\" can curdle into exclusivity — a status that looks down on who wasn't picked.",
       light: "You were chosen before you did anything to earn it — that's grace, not superiority." },
-    lost: { scripture: { ref: "Luke 15:4", text: "does not leave the ninety-nine… and go after the one that is lost, until he finds it?" },
-      dark: "Feeling lost can convince you that no one is looking for you.",
-      light: "The whole story of the Shepherd is that He goes after the one who's lost — including you." },
+    lost: { scripture: { ref: "Luke 19:10", text: "For the Son of Man came to seek and to save the lost." },
+      judgment: "\"Lost\" is a conditional assessment of your own state, not a feeling itself — it usually travels with fear, guilt, or shame doing the actual feeling underneath it.",
+      dark: "Feeling lost can convince you there's a map everyone else got that you somehow missed — so instead of taking the next step, you freeze.",
+      light: "You're not stuck finding your own way back — Jesus said that seeking you out, specifically, was the whole reason He came." },
     beloved: { scripture: { ref: "Matthew 3:17", text: "This is my beloved Son, with whom I am well pleased." },
       dark: "Beloved can be twisted into needing to be someone's favorite to feel secure.",
       light: "You are beloved the same way Jesus was — before any accomplishment, simply because you're His." },
@@ -881,7 +882,7 @@
         out.push(w);
       });
     });
-    return out.slice(0, 30);
+    return out.slice(0, 35);
   }
 
   document.getElementById('edit-btn').addEventListener('click', openModal);
