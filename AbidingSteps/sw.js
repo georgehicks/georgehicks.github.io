@@ -1,6 +1,6 @@
 // The single source of the app version — Settings reads it back from this cache
 // name, so bump only here.
-const CACHE = 'abidingsteps-v49';
+const CACHE = 'abidingsteps-v50';
 const ASSETS = ['./index.html', './manifest.json', './icon.svg'];
 // George's own bundled background tracks. These live in a SEPARATE, unversioned
 // cache — MUSIC_CACHE, not CACHE — specifically so a normal app-version bump (which
@@ -18,6 +18,7 @@ const MUSIC_ASSETS = [
   'music/step/welling-up.mp3',
   'music/step/here-in-the-withness.mp3',
   'music/step/with-you-from-you-for-you.mp3',
+  'music/step/its-good-to-be-yours.mp3',
   'music/ahead/quiet-way-i-live.mp3',
   'music/ahead/its-good-to-be-yours.mp3',
   'music/ahead/with-you-from-you-for-you.mp3',
