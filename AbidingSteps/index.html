@@ -167,7 +167,10 @@
     background: var(--bg-elevated); border: 1.5px solid var(--accent); border-radius: 18px;
     padding: 10px 14px 12px; box-shadow: 0 0 30px color-mix(in srgb, var(--accent) 25%, transparent);
   }
-  #outcomeFull > .section-label:first-child { color: var(--accent); margin-top: 2px; }
+  #outcomeFull > .section-label { color: var(--accent); margin-top: 2px; }
+  /* short confirmation of what just happened (e.g. "✓ Marked done") — lives here since
+     the Action block that used to carry it is hidden while the picker is open */
+  .picker-notice { font-size: 0.8rem; color: var(--text-dim); margin: 2px 0 6px; }
   .outcome-summary { display: flex; align-items: center; justify-content: space-between; background: var(--bg-elevated); border: 1px solid var(--border); border-radius: 10px; padding: 10px 12px; font-size: 0.84rem; color: var(--text-dim); }
   .outcome-summary b { color: var(--text); font-weight: 600; }
   .link-btn { background: none; border: none; color: var(--accent); font-size: 0.76rem; cursor: pointer; padding: 4px; }
@@ -526,6 +529,7 @@
           <button class="link-btn" id="changeOutcomeBtn">change</button>
         </div>
         <div id="outcomeFull">
+          <div class="picker-notice" id="pickerNotice" hidden></div>
           <div class="section-label">Outcome — pick this first</div>
           <div class="outcome-group">
             <div class="outcome-group-title">Recent</div>
@@ -2631,6 +2635,7 @@ For God alone my soul waits in silence. — Psalm 62:1`;
   }
   function collapseOutcomePicker() {
     if (otherExpanded) { otherExpanded = false; renderOutcomePicker(); } // next open starts short again
+    document.getElementById('pickerNotice').hidden = true; // a notice is for this one open only
     document.getElementById('outcomeSummary').style.display = 'flex';
     document.getElementById('outcomeFull').style.display = 'none';
     document.getElementById('actionBlock').style.display = '';
@@ -2892,6 +2897,9 @@ For God alone my soul waits in silence. — Psalm 62:1`;
     document.querySelectorAll('#chunkChips .chip').forEach(c => c.classList.add('disabled'));
     returnToIdle(label || 'Pick an outcome above to begin');
     expandOutcomePicker();
+    const notice = document.getElementById('pickerNotice');
+    notice.textContent = label || '';
+    notice.hidden = !label;
     switchNotesContext('_', null);
     store.set('__local_selection', null);
     renderStepBudget();
@@ -2903,7 +2911,7 @@ For God alone my soul waits in silence. — Psalm 62:1`;
     o.completed = true;
     saveOutcomes();
     renderAheadList(); renderOutcomePicker();
-    clearSelection('✓ Marked done — pick your next outcome');
+    clearSelection('✓ Marked done');
   });
 
   function renderSubOutcomeRow(o) {
