@@ -536,7 +536,7 @@
         </div>
       </div>
 
-      <div class="action-block" id="actionBlock">
+      <div class="action-block" id="actionBlock" style="display:none;">
         <div class="action-idle" id="actionIdle">
           <div class="action-idle-label" id="actionIdleLabel">Pick an outcome above to begin</div>
           <div class="chip-row" id="chunkChips"></div>
@@ -2613,13 +2613,18 @@ For God alone my soul waits in silence. — Psalm 62:1`;
   }
 
   // ===== Outcome picker (mock) — lives above Action, collapses once chosen =====
+  // one decision on screen at a time: while the outcome list is open, the Action block
+  // (length chips) is hidden entirely rather than shown greyed-out beneath it — for
+  // time blindness / ADHD focus, visible-but-unusable options are still clutter
   function expandOutcomePicker() {
     document.getElementById('outcomeSummary').style.display = 'none';
     document.getElementById('outcomeFull').style.display = 'block';
+    document.getElementById('actionBlock').style.display = 'none';
   }
   function collapseOutcomePicker() {
     document.getElementById('outcomeSummary').style.display = 'flex';
     document.getElementById('outcomeFull').style.display = 'none';
+    document.getElementById('actionBlock').style.display = '';
   }
   document.getElementById('changeOutcomeBtn').addEventListener('click', expandOutcomePicker);
 

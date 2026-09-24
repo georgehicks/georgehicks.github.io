@@ -174,9 +174,12 @@ picker once collapsed) is visually subdued.
 - **Action block** — the chunk timer. Two states, deliberately never both
   visible at once:
   - *Idle* (no outcome yet, or outcome chosen but no length picked): only
-    the choice itself — a prompt and the duration chips. Chips are
-    disabled/greyed until an outcome is selected (a real guardrail, not
-    just ordering — you can't start an unlabeled timer).
+    the choice itself — a prompt and the duration chips. The whole block is
+    hidden while the outcome picker is open (no outcome yet, or "change"
+    tapped), so only one set of options is ever on screen — greyed-out
+    chips below the picker were still clutter for a time-blindness/ADHD
+    tool. It appears once an outcome is chosen (a real guardrail, not just
+    ordering — you can't start an unlabeled timer).
   - *Running*: a circular "disappearing wedge" ring (Time Timer-style) whose
     remaining arc drains as the chunk elapses — glanceable without reading
     digits — with the mm:ss shown small in the center, not as dominant type.
