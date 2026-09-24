@@ -168,9 +168,26 @@
     padding: 10px 14px 12px; box-shadow: 0 0 30px color-mix(in srgb, var(--accent) 25%, transparent);
   }
   #outcomeFull > .section-label { color: var(--accent); margin-top: 2px; }
+  .morning-review {
+    background: var(--bg-elevated); border: 1.5px solid var(--accent); border-radius: 18px; margin-bottom: 14px;
+    padding: 10px 14px 8px; box-shadow: 0 0 30px color-mix(in srgb, var(--accent) 25%, transparent);
+  }
+  .morning-review > .section-label { color: var(--accent); margin-top: 2px; }
+  .morning-review .mr-sub { font-size: 0.72rem; color: var(--text-faint); margin-bottom: 8px; }
+  .mr-row { padding: 8px 0; border-top: 1px solid var(--border); }
+  .mr-name { font-size: 0.86rem; margin-bottom: 6px; }
+  .mr-chips { display: flex; gap: 5px; flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; }
+  .mr-chips .chip { padding: 3px 9px; font-size: 0.72rem; flex-shrink: 0; }
+  .mr-chips .chip.keep { border-color: var(--accent); color: var(--accent); }
+  /* one decision at a time: while the morning look is up, it IS Step's content */
+  #view-step.reviewing .outcome-picker, #view-step.reviewing .action-block { display: none !important; }
+  /* passive "full day" expectation note beside Today — information, never a warning */
+  .today-load { font-size: 0.62rem; color: var(--text-faint); font-style: italic; margin-left: 4px; }
   /* short confirmation of what just happened (e.g. "✓ Marked done") — lives here since
      the Action block that used to carry it is hidden while the picker is open */
   .picker-notice { font-size: 0.8rem; color: var(--text-dim); margin: 2px 0 6px; }
+  /* a pause offered at the natural seam between tasks — optional, never automatic */
+  .abide-nudge { color: var(--abide); font-size: 0.74rem; padding: 2px 4px; }
   .outcome-summary { display: flex; align-items: center; justify-content: space-between; background: var(--bg-elevated); border: 1px solid var(--border); border-radius: 10px; padding: 10px 12px; font-size: 0.84rem; color: var(--text-dim); }
   .outcome-summary b { color: var(--text); font-weight: 600; }
   .link-btn { background: none; border: none; color: var(--accent); font-size: 0.76rem; cursor: pointer; padding: 4px; }
@@ -207,6 +224,10 @@
   .chip { background: var(--bg-raised); border: 1px solid var(--border); color: var(--text-dim); border-radius: 999px; padding: 6px 11px; font-size: 0.78rem; cursor: pointer; white-space: nowrap; flex: 0 0 auto; }
   .chip.selected { background: var(--accent); color: #10131c; border-color: var(--accent); font-weight: 600; }
   .chip.disabled { opacity: 0.3; pointer-events: none; }
+  /* would run past the next meeting — dashed + faint, still tappable */
+  .chip.runs-into { border-style: dashed; color: var(--text-faint); opacity: 0.55; }
+  .chunk-meeting-hint { font-size: 0.68rem; color: var(--text-faint); margin-top: 6px; }
+  .chunk-meeting-hint:empty { display: none; }
 
   /* linear beats radial for reading remaining capacity at a glance — a shrinking
      length is a more accurate quantity judgment than a shrinking angle (Cleveland
@@ -292,6 +313,8 @@
   .snooze-clear { background: none; border: none; color: var(--text-faint); font-size: 0.68rem; padding: 0 2px; cursor: pointer; text-decoration: underline; }
   .today-star { background: none; border: none; cursor: pointer; font-size: 1rem; color: var(--text-faint); padding: 0; line-height: 1; }
   .today-star.active { color: var(--accent); }
+  .today-star svg { display: block; fill: none; }
+  .today-star.active svg { fill: currentColor; }
   .maybe-toggle {
     background: none; border: 1px dashed var(--border); color: var(--text-faint); cursor: pointer;
     font-size: 0.62rem; padding: 0; line-height: 1; width: 16px; height: 16px; border-radius: 50%;
@@ -442,6 +465,7 @@
     border-radius: 999px; padding: 5px 11px; font-size: 0.72rem; cursor: pointer;
   }
   .breath-audio-btn.active { color: var(--abide); border-color: var(--abide); }
+  .breath-audio-btn { display: inline-flex; align-items: center; gap: 5px; }
   .tally-summary { background: var(--bg-elevated); border: 1px solid var(--border); border-radius: 12px; padding: 14px; font-size: 0.85rem; color: var(--text-dim); margin-bottom: 26px; }
   .abide-actions { display: flex; gap: 10px; justify-content: center; }
   /* pinned to the bottom of the page (Tone/Voice, durations, tally, continue) so
@@ -556,7 +580,7 @@
       <div class="week-strip" id="weekStrip"></div>
       <div class="full-date">
         <span id="dateLine"></span>
-        <button type="button" class="refresh-cal-btn" id="refreshCalBtn" title="Refresh calendar">↻</button>
+        <button type="button" class="refresh-cal-btn" id="refreshCalBtn" title="Refresh calendar" aria-label="Refresh calendar"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 11a8 8 0 1 0-2.3 5.7"/><path d="M20 4v7h-7"/></svg></button>
       </div>
 
       <div class="day-bar-wrap">
@@ -569,6 +593,15 @@
         <div class="next-appt" id="nextAppt"></div>
         <div class="event-popover" id="eventPopover"></div>
         <div class="day-plan-tray" id="dayPlanTray" style="display:none;"></div>
+      </div>
+
+      <!-- once a day: starred outcomes still here from an earlier day, decided one at a
+           time, so Today keeps meaning today. Stands in for the picker until finished. -->
+      <div class="morning-review" id="morningReview" hidden>
+        <div class="section-label">Still on Today from before</div>
+        <div class="mr-sub">Keep what's still today's — send the rest to Later.</div>
+        <div id="morningReviewList"></div>
+        <button type="button" class="link-btn" id="morningReviewKeepAll">Keep the rest</button>
       </div>
 
       <div class="outcome-picker" id="outcomePicker">
@@ -584,7 +617,7 @@
             <div class="outcome-list" id="outcomesRecent"></div>
           </div>
           <div class="outcome-group">
-            <div class="outcome-group-title">Today</div>
+            <div class="outcome-group-title">Today<span class="today-load" id="todayLoadNote"></span></div>
             <div class="outcome-list wrap" id="outcomesToday"></div>
           </div>
           <div class="outcome-group" id="outcomesOtherGroup">
@@ -599,7 +632,9 @@
       <div class="action-block" id="actionBlock" style="display:none;">
         <div class="action-idle" id="actionIdle">
           <div class="action-idle-label" id="actionIdleLabel">Pick an outcome above to begin</div>
+          <button type="button" class="link-btn abide-nudge" id="breakAbideNudge" hidden>1-min Abide?</button>
           <div class="chip-row" id="chunkChips"></div>
+          <div class="chunk-meeting-hint" id="chunkMeetingHint"></div>
         </div>
         <div class="action-running" id="actionRunning" style="display:none;">
           <div class="timer-display" id="timerDisplay">--:--</div>
@@ -628,7 +663,7 @@
 
       <div class="notes-wrap subdued">
         <textarea class="notes" id="notesArea" placeholder="Notes for this chunk…"></textarea>
-        <button class="mic-btn" id="micBtn" title="Push to record">🎙</button>
+        <button class="mic-btn" id="micBtn" title="Push to record" aria-label="Push to record"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5.5 11a6.5 6.5 0 0 0 13 0M12 17.5V21"/></svg></button>
       </div>
     </section>
 
@@ -798,8 +833,8 @@
       </div>
       <div class="abide-anchor">
         <div class="breath-audio-row">
-          <button class="breath-audio-btn" id="breathToneBtn" title="Breathing tone">🔉 Tone</button>
-          <button class="breath-audio-btn" id="breathVoiceBtn" title="Read scripture aloud">🗣️ Voice</button>
+          <button class="breath-audio-btn" id="breathToneBtn" title="Breathing tone"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 9.5h3.5L12 5.5v13l-4.5-4H4z"/><path d="M15.5 9a4 4 0 0 1 0 6"/></svg>Tone</button>
+          <button class="breath-audio-btn" id="breathVoiceBtn" title="Read scripture aloud"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 5.5h16v10H10l-4.5 3.5v-3.5H4z"/><path d="M8 9.5h8M8 12h5"/></svg>Voice</button>
         </div>
         <div class="breath-duration-row" id="breathDurationRow">
           <span class="breath-duration-chip selected" data-min="0">Free</span>
@@ -840,7 +875,7 @@
       <div class="modal-toggle-row">
         <button type="button" class="modal-toggle-btn" id="outcomeModalMaybe" title="Trying it on, not committed">Maybe</button>
       </div>
-      <div class="modal-field-label">Next action date <span class="optional">— optional, auto-adds to Today when it arrives</span></div>
+      <div class="modal-field-label">Later <span class="optional">— optional, back on Today that morning</span></div>
       <input type="date" id="outcomeModalNextDate" class="modal-input">
       <div class="modal-field-label">Notes <span class="optional">— optional, pulled up when you work this</span></div>
       <textarea id="outcomeModalNotes" class="modal-input" style="min-height:56px; resize:vertical;" placeholder="Details to remember…"></textarea>
@@ -2220,7 +2255,7 @@ For God alone my soul waits in silence. — Psalm 62:1`;
   }
   renderDayBar(); renderDayStats(); renderNextAppointment();
   setInterval(() => {
-    renderDayBar(); renderDayStats(); renderNextAppointment();
+    renderDayBar(); renderDayStats(); renderNextAppointment(); updateChunkMeetingHints();
     // never rebuild out from under an active keystroke
     if (dayPlanOpenDate && !(document.activeElement && document.activeElement.classList.contains('day-plan-input'))) renderDayPlanTray();
   }, 30000);
@@ -2293,9 +2328,31 @@ For God alone my soul waits in silence. — Psalm 62:1`;
       const c = document.createElement('span');
       c.className = 'chip' + (selectedOutcomeId ? '' : ' disabled');
       c.textContent = min + 'm';
+      c.dataset.min = min;
       c.addEventListener('click', () => { if (selectedOutcomeId) startChunk(min); });
       chipRow.appendChild(c);
     });
+    updateChunkMeetingHints();
+  }
+  // #2 — lengths that would run into the next calendar event are marked (still
+  // tappable — a nudge, not a lock), and the prompt says how long until it
+  function nextEventToday() {
+    const nowH = new Date().getHours() + new Date().getMinutes() / 60;
+    const ev = eventsForDate(todayKeyLocal()).filter(e => e.start > nowH).sort((a, b) => a.start - b.start)[0];
+    return ev ? { title: ev.title, mins: Math.round((ev.start - nowH) * 60) } : null;
+  }
+  function updateChunkMeetingHints() {
+    const next = (typeof eventsForDate === 'function') ? nextEventToday() : null;
+    document.querySelectorAll('#chunkChips .chip').forEach(c => {
+      const hits = next && +c.dataset.min > next.mins;
+      c.classList.toggle('runs-into', !!hits);
+      c.title = hits ? 'Runs into ' + next.title : '';
+    });
+    // only speak up when it's close and actually rules lengths out — the "Next:" line
+    // above already carries the countdown the rest of the time
+    const hint = document.getElementById('chunkMeetingHint');
+    const anyHit = next && chunkSizes.some(m => m > next.mins);
+    if (hint) hint.textContent = (anyHit && next.mins <= 60) ? 'Dashed lengths run into ' + next.title : '';
   }
   function renderOverrunChips() {
     const row = document.getElementById('overrunChips');
@@ -2705,13 +2762,23 @@ For God alone my soul waits in silence. — Psalm 62:1`;
     document.getElementById('actionIdle').style.display = 'block';
     document.getElementById('actionIdleLabel').textContent = label;
     document.querySelectorAll('#chunkChips .chip').forEach(c => c.classList.remove('selected'));
+    document.getElementById('breakAbideNudge').hidden = true;
     // bring the collapsed outcome-summary bar back now that the running focus line
     // (which stood in for it) is gone — only if an outcome is still selected
     if (selectedOutcome()) collapseOutcomePicker();
   }
 
   document.getElementById('btnContinue').addEventListener('click', () => acknowledgeOverrun(bumpMinutes));
-  document.getElementById('btnBreak').addEventListener('click', () => returnToIdle('On a break — pick a length to resume'));
+  document.getElementById('btnBreak').addEventListener('click', () => {
+    returnToIdle('On a break — pick a length to resume');
+    document.getElementById('breakAbideNudge').hidden = false;
+  });
+  function goAbideOneMinute() {
+    switchTab('abide');
+    const one = document.querySelector('.breath-duration-chip[data-min="1"]');
+    if (one) one.click();
+  }
+  document.getElementById('breakAbideNudge').addEventListener('click', goAbideOneMinute);
   document.getElementById('btnSwitch').addEventListener('click', () => {
     returnToIdle('Pick an outcome above to begin');
     expandOutcomePicker();
@@ -2763,8 +2830,13 @@ For God alone my soul waits in silence. — Psalm 62:1`;
   // nothing was saved anywhere, so a restart reset both.) =====
   function newId() { return 'o' + Date.now().toString(36) + Math.random().toString(36).slice(2, 7); }
   function makeOutcome(t, type, tag, extra) {
-    return Object.assign({ id: newId(), t, type, tag, budget: null, today: false, completed: false, maybe: false, nextActionDate: null, subs: [], lastWorked: null }, extra);
+    const o = Object.assign({ id: newId(), t, type, tag, budget: null, today: false, completed: false, maybe: false, nextActionDate: null, subs: [], lastWorked: null }, extra);
+    if (o.today) o.starredOn = todayKeyLocal();
+    return o;
   }
+  // every path onto Today goes through here — starredOn is what lets the morning look
+  // tell "still here from an earlier day" apart from "put here today"
+  function starToday(o) { o.today = true; o.starredOn = todayKeyLocal(); }
   // a real state change, not a computed check — once a scheduled next-action date
   // arrives, the outcome gets actually starred (sticky, same as starring it by hand),
   // so the star icon itself lights up and it behaves identically from then on
@@ -2772,7 +2844,7 @@ For God alone my soul waits in silence. — Psalm 62:1`;
     const tk = todayKeyLocal();
     let changed = false;
     outcomes.forEach(o => {
-      if (!o.today && o.nextActionDate && o.nextActionDate <= tk) { o.today = true; changed = true; }
+      if (!o.today && o.nextActionDate && o.nextActionDate <= tk) { starToday(o); changed = true; }
     });
     if (changed) saveOutcomes();
     return changed;
@@ -2807,6 +2879,9 @@ For God alone my soul waits in silence. — Psalm 62:1`;
     let changed = false;
     list.forEach(o => {
       if (o.budget && !o.budget.period) { o.budget = makeBudget(o.budget.target, 'week'); changed = true; }
+      // stars from before starredOn existed count as today's — so the first morning
+      // look comes tomorrow instead of re-asking about everything on the update day
+      if (o.today && !o.starredOn) { o.starredOn = todayKeyLocal(); changed = true; }
     });
     return changed;
   }
@@ -2934,6 +3009,54 @@ For God alone my soul waits in silence. — Psalm 62:1`;
     return chip;
   }
   const RECENT_WINDOW_MS = 7 * 864e5;
+  // #6 — passive expectation, not a limit: say what a Today list this size tends to mean
+  function todayLoadText() {
+    const n = outcomes.filter(o => o.today && !o.completed).length;
+    if (n >= 7) return n + ' — more than a day usually holds; some will slide, and that\'s okay';
+    if (n >= 4) return n + ' — looks like a full day';
+    return '';
+  }
+
+  // ===== #1 morning look — once per day (synced, so one device covers it) =====
+  const isChunkRunning = () => document.getElementById('actionRunning').style.display !== 'none';
+  function leftoverTodayOutcomes() {
+    const tk = todayKeyLocal();
+    return outcomes.filter(o => o.today && !o.completed && (o.starredOn || '') < tk);
+  }
+  function renderMorningReview() {
+    const box = document.getElementById('morningReview');
+    const tk = todayKeyLocal();
+    const left = (store.get('reviewedDay', null) === tk || isChunkRunning()) ? [] : leftoverTodayOutcomes();
+    box.hidden = !left.length;
+    document.getElementById('view-step').classList.toggle('reviewing', left.length > 0);
+    if (!left.length) return;
+    const list = document.getElementById('morningReviewList');
+    const laterOpts = snoozeOptions().slice(0, 3);
+    list.innerHTML = left.map(o => '<div class="mr-row" data-id="' + o.id + '"><div class="mr-name">' + escapeHtml(o.t) + '</div><div class="mr-chips">'
+      + '<span class="chip keep" data-act="keep">Keep</span>'
+      + laterOpts.map(([label, key]) => '<span class="chip" data-act="' + key + '">' + label + '</span>').join('')
+      + '<span class="chip" data-act="drop">Drop</span></div></div>').join('');
+  }
+  function finishMorningReviewIfDone() {
+    if (!leftoverTodayOutcomes().length) store.set('reviewedDay', todayKeyLocal());
+  }
+  document.getElementById('morningReviewList').addEventListener('click', (e) => {
+    const chip = e.target.closest('[data-act]');
+    if (!chip) return;
+    const o = findOutcome(chip.closest('.mr-row').dataset.id);
+    if (!o) return;
+    const act = chip.dataset.act;
+    if (act === 'keep') starToday(o);
+    else if (act === 'drop') { o.today = false; o.nextActionDate = null; }
+    else snoozeOutcome(o, act);
+    saveOutcomes(); finishMorningReviewIfDone();
+    renderOutcomePicker(); renderAheadList();
+  });
+  document.getElementById('morningReviewKeepAll').addEventListener('click', () => {
+    leftoverTodayOutcomes().forEach(starToday);
+    saveOutcomes(); store.set('reviewedDay', todayKeyLocal());
+    renderOutcomePicker(); renderAheadList();
+  });
   // the backlog ("Other") stays behind a "more…" tap — Recent + Today are the working
   // set, and the whole backlog on screen is exactly the clutter this tool exists to cut
   let otherExpanded = false;
@@ -2944,6 +3067,8 @@ For God alone my soul waits in silence. — Psalm 62:1`;
     outcomes.forEach(o => {
       if (o.completed) return;
       if (o.today) groups.outcomesToday.push(o);
+      // set for Later → not a quick pick right now; still reachable under "more…"
+      else if (o.nextActionDate && o.nextActionDate > todayKeyLocal()) groups.outcomesOther.push(o);
       else if (o.lastWorked && o.lastWorked > recentCutoff) groups.outcomesRecent.push(o);
       else if (!o.maybe) groups.outcomesOther.push(o); // maybe items stay out of the way, same as Ahead
     });
@@ -2986,6 +3111,9 @@ For God alone my soul waits in silence. — Psalm 62:1`;
       }
       moreRow.appendChild(addChip);
     }
+    const load = todayLoadText();
+    document.getElementById('todayLoadNote').textContent = load ? ' · ' + load : '';
+    renderMorningReview();
     renderStepBudget();
   }
 
@@ -2996,7 +3124,7 @@ For God alone my soul waits in silence. — Psalm 62:1`;
     selectedSubOutcome = (opts && opts.sub && (o.subs || []).includes(opts.sub)) ? opts.sub : null;
     // choosing to work on it now IS choosing it for today — no separate promote step
     if (!(opts && opts.restore)) {
-      o.today = true; o.lastWorked = Date.now();
+      starToday(o); o.lastWorked = Date.now();
       saveOutcomes();
     }
     if (workSeg && workSeg.outcomeId !== id) startWork();
@@ -3006,7 +3134,7 @@ For God alone my soul waits in silence. — Psalm 62:1`;
     updateSelectionLabels();
   }
 
-  function clearSelection(label) {
+  function clearSelection(label, opts) {
     selectedOutcomeId = null; selectedSubOutcome = null;
     document.getElementById('outcomeSummaryText').textContent = '';
     document.getElementById('subOutcomeRow').innerHTML = '';
@@ -3016,6 +3144,12 @@ For God alone my soul waits in silence. — Psalm 62:1`;
     const notice = document.getElementById('pickerNotice');
     notice.textContent = label || '';
     notice.hidden = !label;
+    if (label && opts && opts.abideNudge) {
+      const b = document.createElement('button');
+      b.type = 'button'; b.className = 'link-btn abide-nudge'; b.textContent = '1-min Abide?';
+      b.addEventListener('click', goAbideOneMinute);
+      notice.append(' · ', b);
+    }
     switchNotesContext('_', null);
     store.set('__local_selection', null);
     renderStepBudget();
@@ -3027,7 +3161,7 @@ For God alone my soul waits in silence. — Psalm 62:1`;
     o.completed = true;
     saveOutcomes();
     renderAheadList(); renderOutcomePicker();
-    clearSelection('✓ Marked done');
+    clearSelection('✓ Marked done', { abideNudge: true });
   });
 
   function renderSubOutcomeRow(o) {
@@ -3046,7 +3180,7 @@ For God alone my soul waits in silence. — Psalm 62:1`;
     const addSub = document.createElement('span'); addSub.className = 'chip add-chip'; addSub.textContent = '+ sub-step';
     addSub.addEventListener('click', () => {
       openTextModal({
-        title: 'New sub-outcome for ' + o.t,
+        title: 'New sub-step for ' + o.t,
         onSave: (s) => {
           const cur = findOutcome(o.id);
           if (!cur) return;
@@ -3217,16 +3351,22 @@ For God alone my soul waits in silence. — Psalm 62:1`;
     return opts.filter(([, k]) => !seen.has(k) && seen.add(k));
   }
   function snoozeOutcome(o, key) {
-    if (!key || key <= todayKeyLocal()) { o.today = true; o.nextActionDate = null; }
+    if (!key || key <= todayKeyLocal()) { starToday(o); o.nextActionDate = null; }
     else { o.today = false; o.nextActionDate = key; }
   }
   const snoozedUntil = (o) => (o.nextActionDate && o.nextActionDate > todayKeyLocal()) ? o.nextActionDate : null;
+
+  const STAR_SVG = '<svg width="17" height="17" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round" aria-hidden="true"><path d="M12 3.2l2.7 5.5 6.1.9-4.4 4.3 1 6.1L12 17.1 6.6 20l1-6.1-4.4-4.3 6.1-.9z"/></svg>';
 
   // rows with their inline notes expanded — a plain Set survives renderAheadList's
   // full innerHTML rebuild since it lives outside the function
   const expandedNotesIds = new Set();
   function renderAheadList() {
     autoStarDueOutcomes();
+    if (activeRoleFilter() === 'Today') {
+      const load = todayLoadText();
+      document.getElementById('roleSubtitle').textContent = ROLE_SUBTITLES['Today'] + (load ? ' · ' + load : '');
+    }
     aheadList.innerHTML = '';
     const role = activeRoleFilter();
     const doneInFilter = outcomes.filter(o => o.completed && outcomeMatchesFilter(o, role));
@@ -3243,7 +3383,7 @@ For God alone my soul waits in silence. — Psalm 62:1`;
       row.dataset.tag = o.tag;
       const expanded = expandedNotesIds.has(o.id);
       let html = '<div class="outcome-row-top">'
-        + '<div class="outcome-row-title"><button class="today-star' + (o.today ? ' active' : '') + '" title="Add to today">' + (o.today ? '★' : '☆') + '</button>'
+        + '<div class="outcome-row-title"><button class="today-star' + (o.today ? ' active' : '') + '" title="' + (o.today ? 'On Today — tap to remove' : 'Add to Today') + '" aria-label="' + (o.today ? 'On Today' : 'Add to Today') + '">' + STAR_SVG + '</button>'
         + '<button class="maybe-toggle' + (o.maybe ? ' active' : '') + '" title="Maybe — trying it on, not committed">?</button>'
         + '<span class="outcome-name' + (o.completed ? ' completed' : '') + '">' + escapeHtml(o.t) + '</span></div>'
         + '<div class="outcome-row-actions">'
@@ -3252,7 +3392,7 @@ For God alone my soul waits in silence. — Psalm 62:1`;
         + '<button class="row-icon-btn delete-btn" title="Delete">×</button>'
         + '</div></div>'
         + '<div class="outcome-row-meta"><span class="badge">' + o.type + ' · ' + o.tag
-        + (snoozedUntil(o) ? ' · until ' + escapeHtml(shortDateLabel(snoozedUntil(o))) : '') + '</span></div>';
+        + (snoozedUntil(o) ? ' · later ' + escapeHtml(shortDateLabel(snoozedUntil(o))) : '') + '</span></div>';
       if (o.budget) {
         const acc = budgetAcc(o), target = o.budget.target;
         const pct = Math.min(100, (acc / target) * 100);
@@ -3264,13 +3404,13 @@ For God alone my soul waits in silence. — Psalm 62:1`;
       // no popup, so you can fly through items jotting next steps without leaving the list
       html += '<div class="outcome-row-notes"' + (expanded ? '' : ' style="display:none;"') + '>'
         + '<textarea class="outcome-row-notes-input" placeholder="Notes — pulled up when you work this…">' + escapeHtml(notesByKey[o.id] || '') + '</textarea>'
-        + (o.completed ? '' : '<div class="snooze-row" title="Punt forward — off Today until then">'
+        + (o.completed ? '' : '<div class="snooze-row" title="Later — off Today until then">'
           + (o.today && !snoozedUntil(o) ? '' : '<span class="chip" data-snooze="today">Today</span>')
           + snoozeOptions().map(([label, key]) => '<span class="chip' + (o.nextActionDate === key ? ' selected' : '') + '" data-snooze="' + key + '">' + label + '</span>').join('')
           + '<span class="chip snooze-pick' + (snoozedUntil(o) && !snoozeOptions().some(([, k]) => k === o.nextActionDate) ? ' selected' : '') + '" title="Pick a date">'
           + '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3.5" y="5" width="17" height="15.5" rx="2.5"/><path d="M3.5 10h17M8 3v4M16 3v4"/></svg>'
           + '<input type="date" aria-label="Pick a date" min="' + addDaysKey(1) + '"></span></div>'
-          + (snoozedUntil(o) ? '<div class="snooze-status">Next action ' + escapeHtml(shortDateLabel(snoozedUntil(o))) + ' · off Today till then'
+          + (snoozedUntil(o) ? '<div class="snooze-status">Later · ' + escapeHtml(shortDateLabel(snoozedUntil(o))) + ' — off Today till then'
             + '<button type="button" class="snooze-clear">clear</button></div>' : ''))
         + '</div>';
       row.innerHTML = html;
@@ -3291,7 +3431,7 @@ For God alone my soul waits in silence. — Psalm 62:1`;
       // clear = drop the date only; it stays off Today until starred (or Today tapped)
       const clearSnooze = row.querySelector('.snooze-clear');
       if (clearSnooze) clearSnooze.addEventListener('click', () => { o.nextActionDate = null; changed(); });
-      row.querySelector('.today-star').addEventListener('click', () => { o.today = !o.today; changed(); });
+      row.querySelector('.today-star').addEventListener('click', () => { if (o.today) o.today = false; else starToday(o); changed(); });
       row.querySelector('.maybe-toggle').addEventListener('click', () => { o.maybe = !o.maybe; changed(); });
       const completeBtn = row.querySelector('.complete-btn');
       if (completeBtn) completeBtn.addEventListener('click', () => { o.completed = !o.completed; changed(); });

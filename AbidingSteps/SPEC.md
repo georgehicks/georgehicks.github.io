@@ -175,6 +175,11 @@ picker once collapsed) is visually subdued.
   freeing the space for Action to dominate.
 - **Action block** — the chunk timer. Two states, deliberately never both
   visible at once:
+  - *Meeting-aware lengths (2026-09-24):* chips longer than the time to
+    the next calendar event go dashed/faint (still tappable — a nudge, not
+    a lock); within an hour of it, a line names the event.
+  - *Abide at the seams (2026-09-24):* after ✓ Done or choosing Break, a
+    quiet "1-min Abide?" link opens Abide with the 1-minute timer set.
   - *Idle* (no outcome yet, or outcome chosen but no length picked): only
     the choice itself — a prompt and the duration chips. The whole block is
     hidden while the outcome picker is open (no outcome yet, or "change"
@@ -217,6 +222,19 @@ picker once collapsed) is visually subdued.
 
 - Flat list of Outcomes (no deep hierarchy), filterable by role tag and by
   type (Directive/Deliverable), active/complete/archived.
+- **Vocabulary (2026-09-24):** one name per idea — **Today** (the star),
+  **Later** (a date it comes back to Today; the snooze chips and the Edit
+  modal's "Later" field are the same `nextActionDate`), **sub-step** (a
+  piece of an outcome). Starred sort first, done sink last.
+- **Morning look (2026-09-24):** first open of a day, any starred outcome
+  from an earlier day (`starredOn` < today, not done) is offered once in a
+  card that stands in for Step's picker: Keep · Tomorrow · Sat · Mon ·
+  Drop, or "Keep the rest". `reviewedDay` is synced, so one device covers
+  it. Keeps Today meaning today instead of silently accumulating.
+- **Full-day note (2026-09-24):** passive, never blocking — 4+ on Today
+  reads "looks like a full day"; 7+ "more than a day usually holds; some
+  will slide, and that's okay". Beside Step's Today heading and in Ahead's
+  Today subtitle.
 - **Quick snooze (2026-09-24):** an expanded row (tap to open its notes)
   shows "Punt to: Today · Tomorrow · Sat · Mon · +1 week · Pick date…".
   Snoozing unstars it from Today and sets `nextActionDate`; the existing
