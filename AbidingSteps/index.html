@@ -613,12 +613,12 @@
           <div class="picker-notice" id="pickerNotice" hidden></div>
           <div class="section-label">Outcome — pick this first</div>
           <div class="outcome-group">
-            <div class="outcome-group-title">Recent</div>
-            <div class="outcome-list" id="outcomesRecent"></div>
-          </div>
-          <div class="outcome-group">
             <div class="outcome-group-title">Today<span class="today-load" id="todayLoadNote"></span></div>
             <div class="outcome-list wrap" id="outcomesToday"></div>
+          </div>
+          <div class="outcome-group">
+            <div class="outcome-group-title">Recent</div>
+            <div class="outcome-list" id="outcomesRecent"></div>
           </div>
           <div class="outcome-group" id="outcomesOtherGroup">
             <div class="outcome-group-title">Other</div>
@@ -3069,8 +3069,9 @@ For God alone my soul waits in silence. — Psalm 62:1`;
       if (o.today) groups.outcomesToday.push(o);
       // set for Later → not a quick pick right now; still reachable under "more…"
       else if (o.nextActionDate && o.nextActionDate > todayKeyLocal()) groups.outcomesOther.push(o);
+      else if (o.maybe) return; // maybe items stay out of the way (Recent and Other), same as Ahead
       else if (o.lastWorked && o.lastWorked > recentCutoff) groups.outcomesRecent.push(o);
-      else if (!o.maybe) groups.outcomesOther.push(o); // maybe items stay out of the way, same as Ahead
+      else groups.outcomesOther.push(o);
     });
     groups.outcomesRecent.sort((a, b) => b.lastWorked - a.lastWorked);
     Object.keys(groups).forEach(id => {

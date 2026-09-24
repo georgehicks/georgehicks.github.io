@@ -1,6 +1,6 @@
 // The single source of the app version — Settings reads it back from this cache
 // name, so bump only here.
-const CACHE = 'abidingsteps-v66';
+const CACHE = 'abidingsteps-v67';
 const ASSETS = ['./index.html', './manifest.json', './icon.svg'];
 // George's own bundled background tracks. These live in a SEPARATE, unversioned
 // cache — MUSIC_CACHE, not CACHE — specifically so a normal app-version bump (which
