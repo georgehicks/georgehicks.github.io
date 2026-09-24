@@ -336,7 +336,9 @@
   .music-track span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .music-track-name { display: flex; align-items: center; gap: 6px; }
   .music-track input[type=checkbox] { accent-color: var(--accent); flex-shrink: 0; }
-  .music-bundled-list { margin-bottom: 8px; }
+  /* built-ins are a short, fixed list — show them all rather than hiding the newest
+     at the bottom of a scroll box (only user-added lists can grow long) */
+  .music-bundled-list { margin-bottom: 8px; max-height: none; overflow-y: visible; }
   .link-btn.danger { color: var(--danger); padding: 6px 0 2px; }
   .music-yt-label { font-size: 0.68rem; color: var(--text-faint); margin: 8px 0 4px; }
   .music-row input[type=text] {
