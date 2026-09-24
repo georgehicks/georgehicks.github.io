@@ -44,14 +44,37 @@
     padding: calc(0.9rem + env(safe-area-inset-top,0px)) 0.9rem calc(0.9rem + env(safe-area-inset-bottom,0px));
   }
 
-  .topbar { display: flex; align-items: center; justify-content: space-between; flex-shrink: 0; }
-  .wordmark-group { display: flex; align-items: baseline; gap: 0.55rem; min-width: 0; }
+  .topbar { display: flex; align-items: center; justify-content: space-between; flex-shrink: 0; position: relative; }
+  .wordmark-group {
+    display: flex; align-items: baseline; gap: 0.55rem; min-width: 0;
+    background: none; border: none; padding: 0.2rem 0.3rem; margin: -0.2rem -0.3rem; border-radius: 10px;
+    font: inherit; cursor: pointer;
+  }
+  .wordmark-group:hover { background: var(--surface); }
   .wordmark { font-family: var(--font-display); font-size: 1.15rem; letter-spacing: 0.02em; color: var(--ink-muted); flex-shrink: 0; }
   .list-badge {
     font-family: var(--font-body); font-size: 0.66rem; font-weight: 600; letter-spacing: 0.07em; text-transform: uppercase;
     color: var(--ink-faint); background: var(--surface); border: 1px solid var(--border); border-radius: 999px;
     padding: 0.22rem 0.6rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
   }
+  .quick-switch-caret {
+    color: var(--ink-faint); font-size: 0.75rem; transition: transform 0.2s ease; flex-shrink: 0;
+  }
+  .wordmark-group[aria-expanded="true"] .quick-switch-caret { transform: rotate(180deg); }
+  .quick-switch {
+    position: absolute; top: calc(100% + 0.5rem); left: 0; z-index: 9; min-width: 11rem;
+    background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 0.35rem;
+    display: flex; flex-direction: column; gap: 0.1rem; box-shadow: 0 14px 34px rgba(0,0,0,0.28);
+    opacity: 0; transform: translateY(-6px) scale(0.98); pointer-events: none;
+    transition: opacity 0.18s ease, transform 0.18s ease;
+  }
+  .quick-switch.open { opacity: 1; transform: translateY(0) scale(1); pointer-events: auto; }
+  .quick-switch-item {
+    background: none; border: none; text-align: left; padding: 0.55rem 0.7rem; border-radius: 9px;
+    font-family: var(--font-body); font-size: 0.88rem; color: var(--ink-muted); cursor: pointer;
+  }
+  .quick-switch-item:hover { background: var(--surface-2); color: var(--ink); }
+  .quick-switch-item.is-current { color: var(--accent-strong); font-weight: 600; }
   .topbar-actions { display: flex; gap: 0.6rem; }
   .icon-btn {
     background: var(--surface); border: 1px solid var(--border); border-radius: 8px;
@@ -184,10 +207,12 @@
 <div class="page">
 
   <div class="topbar">
-    <div class="wordmark-group">
+    <button class="wordmark-group" id="quick-switch-btn" type="button" aria-haspopup="listbox" aria-expanded="false">
       <span class="wordmark">Notice</span>
       <span class="list-badge" id="list-badge"></span>
-    </div>
+      <span class="quick-switch-caret" aria-hidden="true">⌄</span>
+    </button>
+    <div class="quick-switch" id="quick-switch" role="listbox" aria-hidden="true"></div>
     <div class="topbar-actions">
       <button class="icon-btn" id="edit-btn" type="button" aria-label="Edit words">✎</button>
       <button class="icon-btn" id="theme-toggle" type="button" aria-label="Toggle theme">◐</button>
@@ -640,6 +665,53 @@
     selectedId: null
   };
   if (presetFromHash()) saveWords(state.words);
+
+  /* ---------------- quick switch ---------------- */
+  var PRESET_ORDER = ['identity', 'emotions', 'realemotions', 'needs', 'values'];
+  var quickSwitchBtn = document.getElementById('quick-switch-btn');
+  var quickSwitchMenu = document.getElementById('quick-switch');
+
+  PRESET_ORDER.forEach(function (key) {
+    var btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'quick-switch-item';
+    btn.setAttribute('role', 'option');
+    btn.textContent = PRESET_LABELS[key];
+    btn.addEventListener('click', function () { selectPreset(key); });
+    quickSwitchMenu.appendChild(btn);
+  });
+
+  function selectPreset(key) {
+    if (state.frozen) unfreeze();
+    state.words = PRESETS[key].slice();
+    saveWords(state.words);
+    rebuildStage();
+    closeQuickSwitch();
+  }
+  function openQuickSwitch() {
+    var currentName = computeListName(state.words);
+    Array.prototype.forEach.call(quickSwitchMenu.children, function (btn, i) {
+      btn.classList.toggle('is-current', PRESET_LABELS[PRESET_ORDER[i]] === currentName);
+    });
+    quickSwitchMenu.classList.add('open');
+    quickSwitchMenu.setAttribute('aria-hidden', 'false');
+    quickSwitchBtn.setAttribute('aria-expanded', 'true');
+  }
+  function closeQuickSwitch() {
+    quickSwitchMenu.classList.remove('open');
+    quickSwitchMenu.setAttribute('aria-hidden', 'true');
+    quickSwitchBtn.setAttribute('aria-expanded', 'false');
+  }
+  quickSwitchBtn.addEventListener('click', function (e) {
+    e.stopPropagation();
+    if (quickSwitchMenu.classList.contains('open')) closeQuickSwitch(); else openQuickSwitch();
+  });
+  document.addEventListener('click', function (e) {
+    if (!quickSwitchMenu.contains(e.target) && e.target !== quickSwitchBtn) closeQuickSwitch();
+  });
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape') closeQuickSwitch();
+  });
 
   /* ---------------- animation clock ---------------- */
   var rafId = null;
