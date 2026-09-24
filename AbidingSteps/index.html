@@ -335,6 +335,9 @@
   .music-track { display: flex; align-items: center; justify-content: space-between; gap: 8px; font-size: 0.74rem; color: var(--text-dim); padding: 3px 0; }
   .music-track span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .music-track-name { display: flex; align-items: center; gap: 6px; }
+  .music-order-row { display: flex; align-items: center; gap: 6px; margin-top: 8px; font-size: 0.72rem; color: var(--text-faint); }
+  .music-order-row .chip { padding: 3px 10px; font-size: 0.72rem; }
+  .track-move { display: flex; gap: 2px; flex-shrink: 0; }
   .music-track input[type=checkbox] { accent-color: var(--accent); flex-shrink: 0; }
   /* built-ins are a short, fixed list — show them all rather than hiding the newest
      at the bottom of a scroll box (only user-added lists can grow long) */
@@ -883,6 +886,11 @@
     // filenames turned OFF per mode — storing the off-list (not an on-list) means any
     // bundled track added later defaults to on, no backfill needed
     bundledOff: { step: [], ahead: [], abide: [] },
+    // per mode: 'shuffle' (no repeats until all have played) or 'order' (straight
+    // down the list, then wrap). trackOrder = song ids in the order you arranged them;
+    // anything not listed (newly added) falls in after, in its natural order
+    musicOrder: { step: 'shuffle', ahead: 'shuffle', abide: 'shuffle' },
+    trackOrder: { step: [], ahead: [], abide: [] },
     breathText: null, // null = the built-in verse list
     breathDurationMin: 0, breathTone: false, breathVoice: false,
     musicVolume: 40, // percent of device volume — background music should sit under your thinking, not over it
@@ -896,6 +904,11 @@
     ['step', 'ahead', 'abide'].forEach(m => { st.music[m] = Object.assign({}, DEFAULT_SETTINGS.music[m], (saved.music || {})[m]); });
     st.bundledOff = {};
     ['step', 'ahead', 'abide'].forEach(m => { st.bundledOff[m] = Array.isArray((saved.bundledOff || {})[m]) ? saved.bundledOff[m].slice() : []; });
+    st.musicOrder = {}; st.trackOrder = {};
+    ['step', 'ahead', 'abide'].forEach(m => {
+      st.musicOrder[m] = (saved.musicOrder || {})[m] === 'order' ? 'order' : 'shuffle';
+      st.trackOrder[m] = Array.isArray((saved.trackOrder || {})[m]) ? saved.trackOrder[m].slice() : [];
+    });
     return st;
   }
   let settings = loadSettings();
@@ -1310,11 +1323,32 @@ For God alone my soul waits in silence. — Psalm 62:1`;
   const localTracks = { step: [], ahead: [], abide: [] };
   let musicStorageOk = null;
   // the combined rotation for a mode: enabled built-in tracks + whatever's on this device
+  // arranged order first, then anything not yet arranged in its natural order
+  function sortByTrackOrder(mode, items, idOf) {
+    const order = settings.trackOrder[mode] || [];
+    const rank = (x) => { const i = order.indexOf(idOf(x)); return i === -1 ? Infinity : i; };
+    return items.map((x, n) => [x, n]).sort((a, b) => (rank(a[0]) - rank(b[0])) || (a[1] - b[1])).map(p => p[0]);
+  }
+  function sortedBundled(mode) { return sortByTrackOrder(mode, BUNDLED_TRACKS[mode] || [], t => bundledTrackId(mode, t.file)); }
+  function sortedLocal(mode) { return sortByTrackOrder(mode, localTracks[mode] || [], t => t.id); }
+  // swap a song with its neighbour within its own list (built-ins or on-device);
+  // play order is built-ins first, then on-device songs
+  function moveTrack(mode, id, dir) {
+    const ids = [...sortedBundled(mode).map(t => bundledTrackId(mode, t.file)), ...sortedLocal(mode).map(t => t.id)];
+    const sameKind = (a) => a.startsWith('b:') === id.startsWith('b:');
+    const i = ids.indexOf(id), j = i + dir;
+    if (i === -1 || j < 0 || j >= ids.length || !sameKind(ids[j])) return;
+    [ids[i], ids[j]] = [ids[j], ids[i]];
+    settings.trackOrder[mode] = ids;
+    saveSettings();
+    musicPlayer.orderChanged(mode);
+    renderMusicLocal(mode);
+  }
   function poolTracks(mode) {
-    const bundled = (BUNDLED_TRACKS[mode] || [])
+    const bundled = sortedBundled(mode)
       .filter(t => bundledEnabled(mode, t.file))
       .map(t => ({ id: bundledTrackId(mode, t.file), name: t.title, kind: 'bundled', file: t.file }));
-    const local = (localTracks[mode] || []).map(t => ({ id: t.id, name: t.name, kind: 'local' }));
+    const local = sortedLocal(mode).map(t => ({ id: t.id, name: t.name, kind: 'local' }));
     return bundled.concat(local);
   }
   function hasPoolTracks(mode) { return poolTracks(mode).length > 0; }
@@ -1421,9 +1455,13 @@ For God alone my soul waits in silence. — Psalm 62:1`;
   function renderMusicLocal(mode) {
     const host = document.getElementById('musicLocal_' + mode);
     if (!host) return;
-    const bundled = BUNDLED_TRACKS[mode] || [];
+    const bundled = sortedBundled(mode);
     const bundledOnCount = bundled.filter(t => bundledEnabled(mode, t.file)).length;
-    const tracks = localTracks[mode];
+    const tracks = sortedLocal(mode);
+    const inOrder = settings.musicOrder[mode] === 'order';
+    // up/down arrows only while "In order" is on — in shuffle the order means nothing
+    const arrows = (id) => inOrder ? '<span class="track-move"><button type="button" class="row-icon-btn" data-move="-1" data-id="' + escapeHtml(id) + '" title="Move up">↑</button>'
+      + '<button type="button" class="row-icon-btn" data-move="1" data-id="' + escapeHtml(id) + '" title="Move down">↓</button></span>' : '';
     const label = mode.charAt(0).toUpperCase() + mode.slice(1);
     const total = bundledOnCount + tracks.length;
     let summary;
@@ -1433,10 +1471,13 @@ For God alone my soul waits in silence. — Psalm 62:1`;
       + (tracks.length ? tracks.length + ' on this device (' + fmtBytes(tracks.reduce((n, t) => n + (t.size || 0), 0)) + ')' : '')
       + (total ? ' · ' + total + ' in rotation' : (bundled.length ? 'Nothing enabled — using YouTube' : 'No songs yet — using YouTube'));
     host.innerHTML = '<div class="music-local-summary">' + escapeHtml(summary) + '</div>'
+      + (total > 1 ? '<div class="music-order-row"><span>Play</span>'
+        + '<span class="chip' + (inOrder ? '' : ' selected') + '" data-order="shuffle">Shuffle</span>'
+        + '<span class="chip' + (inOrder ? ' selected' : '') + '" data-order="order">In order</span></div>' : '')
       + (bundled.length ? '<div class="music-track-list music-bundled-list">' + bundled.map(t =>
           '<label class="music-track"><span class="music-track-name"><input type="checkbox" data-bundled="' + escapeHtml(t.file) + '"'
           + (bundledEnabled(mode, t.file) ? ' checked' : '') + '>' + escapeHtml(t.title) + '</span>'
-          + '<span class="badge">built-in</span></label>'
+          + (inOrder ? arrows(bundledTrackId(mode, t.file)) : '<span class="badge">built-in</span>') + '</label>'
         ).join('') + '</div>' : '')
       + (musicStorageOk === false ? '' : '<div class="music-local-actions">'
         + '<button type="button" class="btn small" data-act="add">+ Add songs</button>'
@@ -1446,13 +1487,23 @@ For God alone my soul waits in silence. — Psalm 62:1`;
       + (musicLocalStatus[mode] ? '<div class="music-local-status">' + escapeHtml(musicLocalStatus[mode]) + '</div>' : '')
       + (tracks.length && musicListOpen[mode] ? '<div class="music-track-list">'
         + tracks.map(t => '<div class="music-track"><span title="' + escapeHtml(t.name) + '">' + escapeHtml(t.name) + '</span>'
-          + '<button type="button" class="row-icon-btn" data-remove="' + t.id + '" title="Remove from this device">×</button></div>').join('')
+          + arrows(t.id) + '<button type="button" class="row-icon-btn" data-remove="' + t.id + '" title="Remove from this device">×</button></div>').join('')
         + '<button type="button" class="link-btn danger" data-act="clear">Remove all ' + tracks.length + '</button></div>' : '');
     host.onclick = (e) => {
       const cb = e.target.closest('input[data-bundled]');
       if (cb) { toggleBundled(mode, cb.dataset.bundled); return; }
+      const orderChip = e.target.closest('[data-order]');
+      if (orderChip) {
+        if (settings.musicOrder[mode] === orderChip.dataset.order) return;
+        settings.musicOrder[mode] = orderChip.dataset.order;
+        saveSettings();
+        musicPlayer.orderChanged(mode);
+        renderMusicLocal(mode);
+        return;
+      }
       const btn = e.target.closest('button');
       if (!btn) return;
+      if (btn.dataset.move) { e.preventDefault(); moveTrack(mode, btn.dataset.id, +btn.dataset.move); return; }
       if (btn.dataset.remove) { removeLocalSongs(mode, [btn.dataset.remove]); return; }
       const act = btn.dataset.act;
       if (act === 'add') pickSongFiles(mode, false);
@@ -1471,7 +1522,7 @@ For God alone my soul waits in silence. — Psalm 62:1`;
   const musicPlayer = {
     yt: null, ready: false, loadedId: null, started: false, apiLoading: false, pendingCb: null,
     audio: null, source: null, localMode: null, localStarted: false, currentUrl: null, currentTrackId: null,
-    preloaded: {}, queues: {}, errorStreak: 0,
+    preloaded: {}, queues: {}, cursor: {}, errorStreak: 0,
     extractPlaylistId(url) {
       const trimmed = (url || '').trim();
       if (!trimmed) return null;
@@ -1591,9 +1642,15 @@ For God alone my soul waits in silence. — Psalm 62:1`;
       }
       return this.audio;
     },
-    // shuffled, and no repeats until every song in the pool has played
+    // shuffled, and no repeats until every song in the pool has played — or, in
+    // "In order" mode, the song after the last one handed out (wrapping to the top)
     nextTrackId(mode) {
       const ids = poolTracks(mode).map(t => t.id);
+      if (settings.musicOrder[mode] === 'order') {
+        const id = ids[(ids.indexOf(this.cursor[mode]) + 1) % ids.length]; // not found → -1 → first
+        this.cursor[mode] = id;
+        return id;
+      }
       let q = (this.queues[mode] || []).filter(id => ids.includes(id));
       if (!q.length) {
         q = ids.slice();
@@ -1605,14 +1662,15 @@ For God alone my soul waits in silence. — Psalm 62:1`;
       return id;
     },
     async loadTrack(mode) {
+      const prevCursor = this.cursor[mode];
       const id = this.nextTrackId(mode);
       if (!id) return null;
       const track = poolTracks(mode).find(t => t.id === id);
       if (!track) return null;
-      if (track.kind === 'bundled') return { mode, id, name: track.name, url: 'music/' + mode + '/' + track.file };
+      if (track.kind === 'bundled') return { mode, id, prevCursor, name: track.name, url: 'music/' + mode + '/' + track.file };
       const blob = await musicDB.getBlob(id);
       if (!blob) return null;
-      return { mode, id, name: track.name || 'Song', url: URL.createObjectURL(blob) };
+      return { mode, id, prevCursor, name: track.name || 'Song', url: URL.createObjectURL(blob) };
     },
     async preloadLocal(mode) {
       if (!hasPoolTracks(mode) || this.preloaded[mode]) return;
@@ -1670,11 +1728,21 @@ For God alone my soul waits in silence. — Psalm 62:1`;
         } catch (e) {}
       }
     },
+    // shuffle/in-order switched or songs rearranged — re-pick the lined-up next song
+    // without interrupting the one playing. Un-handing-out the dropped preload keeps
+    // "In order" from skipping it.
+    orderChanged(mode) {
+      const p = this.preloaded[mode];
+      if (p && p !== 'loading') { URL.revokeObjectURL(p.url); this.cursor[mode] = p.prevCursor; }
+      delete this.preloaded[mode];
+      delete this.queues[mode];
+      this.preloadLocal(mode);
+    },
     // the pool for a mode changed (added/removed on-device, or a built-in was toggled) —
     // drop stale preloads/shuffle, switch source if needed
     localTracksChanged(mode) {
       const p = this.preloaded[mode];
-      if (p && p !== 'loading') URL.revokeObjectURL(p.url);
+      if (p && p !== 'loading') { URL.revokeObjectURL(p.url); this.cursor[mode] = p.prevCursor; }
       delete this.preloaded[mode];
       delete this.queues[mode];
       const ids = poolTracks(mode).map(t => t.id);
