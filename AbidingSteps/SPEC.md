@@ -217,6 +217,12 @@ picker once collapsed) is visually subdued.
 
 - Flat list of Outcomes (no deep hierarchy), filterable by role tag and by
   type (Directive/Deliverable), active/complete/archived.
+- **Quick snooze (2026-09-24):** an expanded row (tap to open its notes)
+  shows "Punt to: Today · Tomorrow · Sat · Mon · +1 week · Pick date…".
+  Snoozing unstars it from Today and sets `nextActionDate`; the existing
+  auto-star brings it back to Today the morning that date arrives, so a
+  punt never needs remembering. Duplicate dates collapse (on Friday, Sat =
+  Tomorrow). The row badge shows "until Sat 9/26" while snoozed.
 - **Role tags (locked 2026-09-10):** Roots, Resources, Reach, Reality —
   Covey-style "roles" rather than generic life-area categories, chosen
   because Directives map to a role much more naturally than to a category
@@ -351,7 +357,8 @@ applied live on change, no save button needed. The old separate static
 verse block below the animation is gone; the breath caption is now the
 single place scripture appears, not a duplicate of it.
 
-**Bottom anchor (2026-09-10):** the tally summary and Continue-to-Ahead/
+**Bottom anchor (2026-09-10; widened 2026-09-24 to also hold Tone/Voice and
+the duration chips, with the verse in a fixed 4-line box):** the tally summary and Continue-to-Ahead/
 Continue-to-Step buttons are `position: fixed` at the bottom of the screen
 (just above the tab bar), not in normal document flow below the verse.
 Two reasons: verses vary a lot in length (John 15:4's full quote vs. a
