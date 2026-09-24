@@ -3233,8 +3233,10 @@ For God alone my soul waits in silence. — Psalm 62:1`;
     const clearDoneBtn = document.getElementById('clearDoneBtn');
     clearDoneBtn.textContent = 'Clear ' + doneInFilter.length + ' done';
     clearDoneBtn.style.display = doneInFilter.length ? '' : 'none';
-    // starred (Today) float to the top of every filter; otherwise keep the saved order
-    const ordered = outcomes.filter(o => o.today).concat(outcomes.filter(o => !o.today));
+    // starred (Today) float to the top of every filter, done items sink to the bottom;
+    // otherwise keep the saved order
+    const rank = o => o.completed ? 2 : (o.today ? 0 : 1);
+    const ordered = outcomes.map((o, i) => [o, i]).sort((a, b) => (rank(a[0]) - rank(b[0])) || (a[1] - b[1])).map(p => p[0]);
     ordered.forEach(o => {
       const row = document.createElement('div');
       row.className = 'outcome-row' + (o.completed ? ' completed' : '') + (o.maybe ? ' maybe' : '');
