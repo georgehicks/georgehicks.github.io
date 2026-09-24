@@ -495,6 +495,30 @@
 </style>
 </head>
 <body>
+<!-- dove + olive branch, drawn in the style of Apple's 🕊 so it looks the same in every
+     browser (the emoji renders plainly outside Apple devices). Defined once, <use>d where
+     needed. Sized 0×0 rather than display:none — hidden SVGs break gradient refs in Chrome. -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <linearGradient id="dvB" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffffff"/><stop offset="1" stop-color="#d7dbe2"/></linearGradient>
+    <linearGradient id="dvW" x1="0" y1="1" x2="1" y2="0"><stop offset="0" stop-color="#e9ecf1"/><stop offset="1" stop-color="#ffffff"/></linearGradient>
+    <symbol id="dove" viewBox="0 0 32 32">
+      <path d="M15 12.5 C15.5 8.5 18 5 22.5 3.2 C22.3 5 23.2 5.8 24.8 5.4 C24 7.2 24.8 8.3 26.6 8.2 C25 11.3 22 13.8 17.5 14.5 Z" fill="#c9ced6"/>
+      <path d="M6.2 12.8 C6.2 10.4 8.2 8.9 10.6 9.4 C12.6 9.9 13.8 11.8 15.4 13.3 C18.3 15.8 22.4 16.4 27.2 15.8 L30.2 14.6 C28.8 17.9 26.2 20.4 22.2 21.5 C17.2 22.8 11.6 21.6 8.6 18.6 C7 17 6.2 15 6.2 12.8 Z" fill="url(#dvB)" stroke="#9aa2ae" stroke-width="0.5"/>
+      <path d="M12.5 14.5 C12.8 10 15.2 6.2 19.6 4.4 C19.5 6.2 20.5 7 22 6.6 C21.4 8.5 22.3 9.5 24 9.4 C22.6 13 19.8 16 15.4 17.2 C13.8 17.4 12.6 16.4 12.5 14.5 Z" fill="url(#dvW)" stroke="#9aa2ae" stroke-width="0.5"/>
+      <path d="M23.6 17.9 L28.8 15.6 M22.6 19.8 L27.6 17.7" stroke="#b3bac4" stroke-width="0.5" stroke-linecap="round" fill="none"/>
+      <path d="M15.6 13.4 C17.2 11.8 19.6 10.6 22.2 10.4" stroke="#c3c9d2" stroke-width="0.5" stroke-linecap="round" fill="none"/>
+      <path d="M6.4 12.3 L3.6 13.4 L6.5 14.1 Z" fill="#a8927a"/>
+      <circle cx="9.3" cy="11.8" r="0.8" fill="#2b2f38"/>
+      <path d="M4.6 13.6 C4 16 3.3 18.2 2.2 21" fill="none" stroke="#4f7d34" stroke-width="1" stroke-linecap="round"/>
+      <ellipse cx="2.5" cy="15.5" rx="2.4" ry="1.1" transform="rotate(-35 2.5 15.5)" fill="#7cc152"/>
+      <ellipse cx="5.8" cy="17.4" rx="2.4" ry="1.1" transform="rotate(40 5.8 17.4)" fill="#5aa83a"/>
+      <ellipse cx="1.7" cy="19.3" rx="2.2" ry="1" transform="rotate(-50 1.7 19.3)" fill="#5aa83a"/>
+      <ellipse cx="4.5" cy="20.9" rx="2.1" ry="0.95" transform="rotate(55 4.5 20.9)" fill="#7cc152"/>
+    </symbol>
+  </defs>
+</svg>
+
 <div class="app">
 
   <div class="topbar">
@@ -502,7 +526,7 @@
     <div class="topbar-actions">
       <button class="music-btn" id="downloadTallyBtn" title="Download today's focus summary" aria-label="Download today's focus summary"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v11"/><path d="M7 10l5 5 5-5"/><path d="M5 20h14"/></svg></button>
       <button class="music-btn" id="musicBtn" title="Play music" aria-label="Play music"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18V5l11-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="17" cy="16" r="3"/></svg></button>
-      <button class="abide-btn" id="abideBtn">🕊 Abide</button>
+      <button class="abide-btn" id="abideBtn"><svg width="20" height="20" aria-hidden="true"><use href="#dove"/></svg>Abide</button>
     </div>
   </div>
 
@@ -733,7 +757,7 @@
     <!-- ========== ABIDE ========== -->
     <section id="view-abide" class="view">
       <div class="abide-view">
-        <div class="glyph">🕊</div>
+        <div class="glyph"><svg width="44" height="44" aria-hidden="true"><use href="#dove"/></svg></div>
         <h2>Abide</h2>
         <div class="breath-wrap">
           <div class="breath-bloom">
