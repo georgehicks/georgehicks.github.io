@@ -282,12 +282,14 @@
     border-radius: 8px; color: var(--text); padding: 8px 10px; font-size: 16px; font-family: inherit; resize: vertical;
   }
   /* quick snooze: off Today now, auto-starred back when the date arrives (nextActionDate) */
-  .snooze-row { display: flex; flex-wrap: wrap; align-items: center; gap: 5px; margin-top: 8px; }
-  .snooze-row .snooze-label { font-size: 0.66rem; color: var(--text-faint); margin-right: 2px; }
-  .snooze-row .chip { padding: 3px 9px; font-size: 0.7rem; }
-  .snooze-row .snooze-pick { position: relative; overflow: hidden; }
+  .snooze-row { display: flex; flex-wrap: nowrap; align-items: center; gap: 5px; margin-top: 8px; overflow-x: auto; scrollbar-width: none; }
+  .snooze-row::-webkit-scrollbar { display: none; }
+  .snooze-row .chip { flex-shrink: 0; }
+  .snooze-row .chip { padding: 3px 8px; font-size: 0.7rem; }
+  .snooze-row .snooze-pick { position: relative; overflow: hidden; display: flex; align-items: center; padding: 3px 8px; }
   .snooze-row .snooze-pick input { position: absolute; inset: 0; opacity: 0; width: 100%; cursor: pointer; }
-  .snooze-status { font-size: 0.68rem; color: var(--text-dim); margin-top: 6px; }
+  .snooze-status { display: flex; align-items: center; gap: 6px; font-size: 0.68rem; color: var(--text-faint); margin-top: 6px; }
+  .snooze-clear { background: none; border: none; color: var(--text-faint); font-size: 0.68rem; padding: 0 2px; cursor: pointer; text-decoration: underline; }
   .today-star { background: none; border: none; cursor: pointer; font-size: 1rem; color: var(--text-faint); padding: 0; line-height: 1; }
   .today-star.active { color: var(--accent); }
   .maybe-toggle {
@@ -358,8 +360,10 @@
 
   /* ===== Abide view ===== */
   .abide-view { text-align: center; padding-top: 26px; }
-  .abide-view .glyph { font-size: 2.2rem; margin-bottom: 6px; }
-  .abide-view h2 { color: var(--abide); margin: 4px 0 18px; font-weight: 600; }
+  /* grapes sized to span the word "Abide" and sit right on top of it, one unit
+     (the drawing leaves some empty space at its bottom, hence the negative margin) */
+  .abide-view .glyph svg { display: block; margin: 0 auto -8px; }
+  .abide-view h2 { color: var(--abide); margin: 0 0 18px; font-weight: 600; }
   /* short phones (SE-size): the bottom-pinned controls would otherwise meet the verse */
   @media (max-height: 700px) {
     .abide-view { padding-top: 6px; }
@@ -772,7 +776,7 @@
     <!-- ========== ABIDE ========== -->
     <section id="view-abide" class="view">
       <div class="abide-view">
-        <div class="glyph"><svg width="48" height="48" aria-hidden="true"><use href="#vine"/></svg></div>
+        <div class="glyph"><svg width="70" height="70" aria-hidden="true"><use href="#vine"/></svg></div>
         <h2>Abide</h2>
         <div class="breath-wrap">
           <div class="breath-bloom">
@@ -3207,7 +3211,7 @@ For God alone my soul waits in silence. — Psalm 62:1`;
     return dt.toLocaleDateString(undefined, { weekday: 'short' }) + ' ' + m + '/' + d;
   }
   function snoozeOptions() {
-    const opts = [['Tomorrow', addDaysKey(1)], ['Sat', nextWeekdayKey(6)], ['Mon', nextWeekdayKey(1)], ['+1 week', addDaysKey(7)]];
+    const opts = [['Tomorrow', addDaysKey(1)], ['Sat', nextWeekdayKey(6)], ['Mon', nextWeekdayKey(1)], ['+1 wk', addDaysKey(7)]];
     const seen = new Set();
     // drop duplicates (e.g. on Friday, Sat = Tomorrow) — first label wins
     return opts.filter(([, k]) => !seen.has(k) && seen.add(k));
@@ -3256,11 +3260,14 @@ For God alone my soul waits in silence. — Psalm 62:1`;
       // no popup, so you can fly through items jotting next steps without leaving the list
       html += '<div class="outcome-row-notes"' + (expanded ? '' : ' style="display:none;"') + '>'
         + '<textarea class="outcome-row-notes-input" placeholder="Notes — pulled up when you work this…">' + escapeHtml(notesByKey[o.id] || '') + '</textarea>'
-        + (o.completed ? '' : '<div class="snooze-row"><span class="snooze-label">Punt to</span>'
+        + (o.completed ? '' : '<div class="snooze-row" title="Punt forward — off Today until then">'
           + (o.today && !snoozedUntil(o) ? '' : '<span class="chip" data-snooze="today">Today</span>')
           + snoozeOptions().map(([label, key]) => '<span class="chip' + (o.nextActionDate === key ? ' selected' : '') + '" data-snooze="' + key + '">' + label + '</span>').join('')
-          + '<span class="chip snooze-pick">Pick date…<input type="date" min="' + addDaysKey(1) + '"></span></div>'
-          + (snoozedUntil(o) ? '<div class="snooze-status">Off Today until ' + escapeHtml(shortDateLabel(snoozedUntil(o))) + ' — comes back on its own</div>' : ''))
+          + '<span class="chip snooze-pick' + (snoozedUntil(o) && !snoozeOptions().some(([, k]) => k === o.nextActionDate) ? ' selected' : '') + '" title="Pick a date">'
+          + '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3.5" y="5" width="17" height="15.5" rx="2.5"/><path d="M3.5 10h17M8 3v4M16 3v4"/></svg>'
+          + '<input type="date" aria-label="Pick a date" min="' + addDaysKey(1) + '"></span></div>'
+          + (snoozedUntil(o) ? '<div class="snooze-status">Next action ' + escapeHtml(shortDateLabel(snoozedUntil(o))) + ' · off Today till then'
+            + '<button type="button" class="snooze-clear">clear</button></div>' : ''))
         + '</div>';
       row.innerHTML = html;
 
@@ -3277,6 +3284,9 @@ For God alone my soul waits in silence. — Psalm 62:1`;
       }));
       const pick = row.querySelector('.snooze-pick input');
       if (pick) pick.addEventListener('change', () => { if (pick.value) { snoozeOutcome(o, pick.value); changed(); } });
+      // clear = drop the date only; it stays off Today until starred (or Today tapped)
+      const clearSnooze = row.querySelector('.snooze-clear');
+      if (clearSnooze) clearSnooze.addEventListener('click', () => { o.nextActionDate = null; changed(); });
       row.querySelector('.today-star').addEventListener('click', () => { o.today = !o.today; changed(); });
       row.querySelector('.maybe-toggle').addEventListener('click', () => { o.maybe = !o.maybe; changed(); });
       const completeBtn = row.querySelector('.complete-btn');
