@@ -353,6 +353,11 @@
   .abide-view { text-align: center; padding-top: 26px; }
   .abide-view .glyph { font-size: 2.2rem; margin-bottom: 6px; }
   .abide-view h2 { color: var(--abide); margin: 4px 0 18px; font-weight: 600; }
+  /* short phones (SE-size): the bottom-pinned controls would otherwise meet the verse */
+  @media (max-height: 700px) {
+    .abide-view { padding-top: 6px; }
+    .abide-view h2 { margin-bottom: 8px; }
+  }
   /* a self-paced breath cue, not a timed meditation session — leave whenever ready.
      A soft radial bloom of petals (Apple Watch Breathe-style) rather than one flat circle. */
   .breath-wrap { margin: 6px 0 22px; position: relative; }
@@ -361,7 +366,7 @@
      dead-center outward. Circles stay full-size/opacity and blend with `screen`, so
      brightening-to-white at rest is real overlap math, not a gradient fake. */
   .breath-bloom {
-    position: relative; width: 160px; height: 160px; margin: 0 auto;
+    position: relative; width: 200px; height: 200px; margin: 0 auto;
     animation: bloom-spin 8s cubic-bezier(0.5, 0, 0.5, 1) infinite;
   }
   @keyframes bloom-spin {
@@ -369,7 +374,7 @@
     50% { transform: scale(1) rotate(0deg); }
   }
   .petal {
-    position: absolute; top: 50%; left: 50%; width: 56px; height: 56px; margin: -28px 0 0 -28px;
+    position: absolute; top: 50%; left: 50%; width: 70px; height: 70px; margin: -35px 0 0 -35px;
     border-radius: 50%; mix-blend-mode: screen; opacity: 0.62;
     background: var(--abide);
     transform: rotate(calc(var(--i) * 45deg)) translateY(0);
@@ -378,13 +383,13 @@
   .petal:nth-child(even) { background: color-mix(in srgb, var(--abide) 55%, white 45%); }
   @keyframes petal-spread {
     0%, 100% { transform: rotate(calc(var(--i) * 45deg)) translateY(0); }
-    50% { transform: rotate(calc(var(--i) * 45deg)) translateY(-46px); }
+    50% { transform: rotate(calc(var(--i) * 45deg)) translateY(-58px); }
   }
   /* revealed only at full blossom — hidden the rest of the cycle, not a fixed logo.
      Positioned OUTSIDE .breath-bloom's own rotate/scale (a sibling, not a child) so it
      never inherits that spin — a rotating cross reads as an X mid-sweep, not a cross. */
   .breath-cross {
-    position: absolute; top: 80px; left: 50%; width: 22px; height: 32px; margin: -16px 0 0 -11px;
+    position: absolute; top: 100px; left: 50%; width: 22px; height: 32px; margin: -16px 0 0 -11px;
     z-index: 2; animation: cross-reveal 8s ease-in-out infinite;
   }
   .cross-v, .cross-h { position: absolute; background: #fff; border-radius: 1.5px; box-shadow: 0 0 6px rgba(255,255,255,0.85); }
@@ -395,14 +400,17 @@
     0%, 25%, 75%, 100% { opacity: 0; }
     50% { opacity: 0.9; }
   }
+  /* fixed height (4 lines — fits the longest default verse, John 15:4) with the verse
+     centered in it, so short and long verses sit in the same spot */
   .breath-caption {
-    margin: 10px auto 26px; font-size: 0.95rem; color: var(--text); line-height: 1.5;
-    max-width: 320px; font-style: italic; min-height: 2.6em;
+    margin: 14px auto 0; font-size: 0.85rem; color: var(--text); line-height: 1.5;
+    max-width: 320px; font-style: italic; height: 6em;
+    display: flex; align-items: center; justify-content: center;
     opacity: 1; transition: opacity 0.6s ease;
   }
   .breath-caption.fade-out { opacity: 0; }
-  .breath-audio-row { display: flex; gap: 8px; justify-content: center; margin-top: 4px; }
-  .breath-duration-row { display: flex; gap: 6px; justify-content: center; margin-top: 10px; }
+  .breath-audio-row { display: flex; gap: 8px; justify-content: center; }
+  .breath-duration-row { display: flex; gap: 6px; justify-content: center; margin-bottom: 8px; }
   .breath-duration-chip {
     background: none; border: 1px solid var(--border); color: var(--text-faint); cursor: pointer;
     border-radius: 999px; padding: 4px 10px; font-size: 0.68rem;
@@ -425,8 +433,8 @@
   .breath-audio-btn.active { color: var(--abide); border-color: var(--abide); }
   .tally-summary { background: var(--bg-elevated); border: 1px solid var(--border); border-radius: 12px; padding: 14px; font-size: 0.85rem; color: var(--text-dim); margin-bottom: 26px; }
   .abide-actions { display: flex; gap: 10px; justify-content: center; }
-  /* pinned below the scripture/breathing so verse-length changes never shift it, and
-     kept quiet on purpose — the verse and the bloom should hold visual attention, not these */
+  /* pinned to the bottom of the page (Tone/Voice, durations, tally, continue) so
+     verse-length changes never shift any of it, and kept quiet on purpose — the verse and the bloom should hold visual attention, not these */
   .abide-anchor {
     position: fixed; left: 0; right: 0; bottom: calc(58px + env(safe-area-inset-bottom));
     max-width: 480px; margin: 0 auto;
@@ -772,23 +780,23 @@
           </div>
           <div class="breath-cross"><span class="cross-v"></span><span class="cross-h"></span></div>
           <div class="breath-caption" id="breathCaption">&nbsp;</div>
-          <div class="breath-audio-row">
-            <button class="breath-audio-btn" id="breathToneBtn" title="Breathing tone">🔉 Tone</button>
-            <button class="breath-audio-btn" id="breathVoiceBtn" title="Read scripture aloud">🗣️ Voice</button>
-          </div>
-          <div class="breath-duration-row" id="breathDurationRow">
-            <span class="breath-duration-chip selected" data-min="0">Free</span>
-            <span class="breath-duration-chip" data-min="1">1m</span>
-            <span class="breath-duration-chip" data-min="2">2m</span>
-            <span class="breath-duration-chip" data-min="3">3m</span>
-            <span class="breath-duration-chip" data-min="5">5m</span>
-          </div>
           <div class="breath-progress-track" id="breathProgressTrack">
             <div class="breath-progress-fill" id="breathProgressFill"></div>
           </div>
         </div>
       </div>
       <div class="abide-anchor">
+        <div class="breath-audio-row">
+          <button class="breath-audio-btn" id="breathToneBtn" title="Breathing tone">🔉 Tone</button>
+          <button class="breath-audio-btn" id="breathVoiceBtn" title="Read scripture aloud">🗣️ Voice</button>
+        </div>
+        <div class="breath-duration-row" id="breathDurationRow">
+          <span class="breath-duration-chip selected" data-min="0">Free</span>
+          <span class="breath-duration-chip" data-min="1">1m</span>
+          <span class="breath-duration-chip" data-min="2">2m</span>
+          <span class="breath-duration-chip" data-min="3">3m</span>
+          <span class="breath-duration-chip" data-min="5">5m</span>
+        </div>
         <div class="tally-summary" id="tallySummary">Today so far: 0m Step · 0m Ahead · 0m Abide</div>
         <div class="abide-actions">
           <button class="btn" onclick="switchTab('ahead')">Continue to Ahead</button>
