@@ -535,10 +535,11 @@
             <div class="outcome-group-title">Today</div>
             <div class="outcome-list wrap" id="outcomesToday"></div>
           </div>
-          <div class="outcome-group">
+          <div class="outcome-group" id="outcomesOtherGroup">
             <div class="outcome-group-title">Other</div>
             <div class="outcome-list" id="outcomesOther"></div>
           </div>
+          <div class="outcome-list" id="outcomesMoreRow"></div>
           <div class="sub-outcome-row" id="subOutcomeRow"></div>
         </div>
       </div>
@@ -2629,6 +2630,7 @@ For God alone my soul waits in silence. — Psalm 62:1`;
     document.getElementById('actionBlock').style.display = 'none';
   }
   function collapseOutcomePicker() {
+    if (otherExpanded) { otherExpanded = false; renderOutcomePicker(); } // next open starts short again
     document.getElementById('outcomeSummary').style.display = 'flex';
     document.getElementById('outcomeFull').style.display = 'none';
     document.getElementById('actionBlock').style.display = '';
@@ -2811,6 +2813,9 @@ For God alone my soul waits in silence. — Psalm 62:1`;
     return chip;
   }
   const RECENT_WINDOW_MS = 7 * 864e5;
+  // the backlog ("Other") stays behind a "more…" tap — Recent + Today are the working
+  // set, and the whole backlog on screen is exactly the clutter this tool exists to cut
+  let otherExpanded = false;
   function renderOutcomePicker() {
     autoStarDueOutcomes(); // self-heals across a date rollover if the app was left open
     const groups = { outcomesRecent: [], outcomesToday: [], outcomesOther: [] };
@@ -2843,7 +2848,23 @@ For God alone my soul waits in silence. — Psalm 62:1`;
         }
       });
     });
-    document.getElementById('outcomesOther').appendChild(addChip);
+    // nothing in Recent/Today → Other is the only thing to pick from, so just show it
+    const showOther = otherExpanded || !(groups.outcomesRecent.length || groups.outcomesToday.length);
+    const moreRow = document.getElementById('outcomesMoreRow');
+    moreRow.innerHTML = '';
+    document.getElementById('outcomesOtherGroup').style.display = showOther ? '' : 'none';
+    moreRow.style.display = showOther ? 'none' : '';
+    if (showOther) {
+      document.getElementById('outcomesOther').appendChild(addChip);
+    } else {
+      if (groups.outcomesOther.length) {
+        const more = document.createElement('div');
+        more.className = 'outcome-chip add-chip'; more.textContent = 'more… (' + groups.outcomesOther.length + ')';
+        more.addEventListener('click', () => { otherExpanded = true; renderOutcomePicker(); });
+        moreRow.appendChild(more);
+      }
+      moreRow.appendChild(addChip);
+    }
     renderStepBudget();
   }
 

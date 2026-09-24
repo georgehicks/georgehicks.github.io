@@ -164,7 +164,9 @@ picker once collapsed) is visually subdued.
   and secondary now — an early pass made them bold headline stats, which
   turned out to still be "text you have to read," not a glance. Tapping the
   bar opens the full calendar + upcoming appointments.
-- **Outcome picker** — recent/today/other outcomes, quick-add, inline
+- **Outcome picker** — recent/today outcomes, with the "Other" backlog
+  behind a "more… (N)" tap (auto-shown only when Recent and Today are both
+  empty; folds back each time the picker closes), quick-add, inline
   mark-complete; sub-outcome selection lives here too now (folded in,
   rather than a separate stack row). Suggestion is light-touch (deadline,
   most time-budget-behind, most recently worked) but never auto-picks.
