@@ -261,7 +261,7 @@
       <button class="preset-btn" data-preset="values" type="button">Values</button>
     </div>
     <textarea id="words-textarea" class="words-textarea" placeholder="One word per line" spellcheck="false"></textarea>
-    <p class="modal-hint">One word per line (or comma-separated). Up to 35.</p>
+    <p class="modal-hint">One word per line (or comma-separated). Up to 40.</p>
     <div class="modal-actions">
       <button class="btn-secondary" id="cancel-btn" type="button">Cancel</button>
       <button class="btn-primary" id="save-btn" type="button">Save &amp; drift</button>
@@ -278,11 +278,11 @@
   var LS_THEME = 'notice-theme';
 
   var PRESETS = {
-    emotions: ['Abandoned','Betrayed','Rejected','Attacked','Manipulated','Judged','Unappreciated','Ignored','Misunderstood','Neglected','Controlled','Unwanted','Used','Disrespected','Trapped','Humiliated','Threatened','Pressured','Excluded','Belittled','Cheated','Violated','Criticized','Loved','Resentful','Lost','Alone','Worthless','Broken','Hopeless','Unlovable','Failure','Powerless'],
-    realemotions: ['Joyful','Angry','Grateful','Sad','Hopeful','Afraid','Calm','Ashamed','Peaceful','Guilty','Excited','Lonely','Safe','Overwhelmed','Content','Hurt'],
-    needs: ['Connection','Autonomy','Rest','Recognition','Clarity','Trust','Space','Purpose','Belonging','Control','Safety','Growth'],
+    emotions: ['Abandoned','Betrayed','Rejected','Attacked','Manipulated','Judged','Unappreciated','Ignored','Misunderstood','Neglected','Controlled','Unwanted','Used','Disrespected','Trapped','Humiliated','Threatened','Pressured','Excluded','Belittled','Cheated','Violated','Criticized','Loved','Resentful','Lost','Alone','Worthless','Broken','Hopeless','Unlovable','Failure','Powerless','Hate','Unforgiveness','Jealous'],
+    realemotions: ['Joyful','Angry','Grateful','Sad','Hopeful','Afraid','Calm','Ashamed','Peaceful','Guilty','Excited','Lonely','Safe','Overwhelmed','Content','Hurt','Worried','Uncertain','Confused','Frustrated','Disappointed','Embarrassed','Anxious','Relieved','Pleased'],
+    needs: ['Connection','Autonomy','Rest','Recognition','Clarity','Trust','Space','Purpose','Belonging','Acceptance','Safety','Growth'],
     values: ['Honesty','Courage','Balance','Freedom','Integrity','Creativity','Stability','Justice','Compassion','Loyalty','Ambition','Humility'],
-    identity: ['Chosen','Lost','Beloved','Condemned','Forgiven','Unworthy','Redeemed','Free','Rejected','Righteous','Orphaned','Powerful','Convicted','Strong','Jealous','Unforgiveness','Worry','Doubt','Fear','Shame','Despair','Pride','Divided','Hopeful','Whole','Deceived','Hate']
+    identity: ['Chosen','Lost','Beloved','Condemned','Forgiven','Unworthy','Redeemed','Free','Rejected','Righteous','Orphaned','Powerful','Strong','Divided','Whole','Deceived']
   };
 
   var INSIGHTS = {
@@ -487,9 +487,9 @@
     belonging: { scripture: { ref: "Ephesians 2:19", text: "you are fellow citizens with the saints and members of the household of God." },
       dark: "The ache to belong can push you to shape-shift for whatever room you're standing in.",
       light: "You already have a household — you belong to God's family before any group decides." },
-    control: { scripture: { ref: "Proverbs 16:9", text: "The heart of man plans his way, but the Lord establishes his steps." },
-      dark: "Gripping for control is often fear wearing a competent disguise.",
-      light: "Loosening your grip isn't losing — it's trusting the hands that are actually steady." },
+    acceptance: { scripture: { ref: "Romans 15:7", text: "Therefore welcome one another as Christ has welcomed you, for the glory of God." },
+      dark: "Chasing acceptance can turn you into whoever a room needs you to be, just to avoid being turned away.",
+      light: "You've already been welcomed by Christ himself — that welcome was never waiting on anyone else's approval." },
     safety: { scripture: { ref: "Psalm 91:1-2", text: "He who dwells in the shelter of the Most High will abide in the shadow of the Almighty." },
       dark: "Chasing safety can shrink your life to only what feels certain — and certainty is never guaranteed.",
       light: "Real safety was never about circumstances — it's a Person you can run to no matter what happens." },
@@ -545,12 +545,14 @@
       dark: "Beloved can be twisted into needing to be someone's favorite to feel secure.",
       light: "You are beloved the same way Jesus was — before any accomplishment, simply because you're His." },
     condemned: { scripture: { ref: "Romans 8:1", text: "There is therefore now no condemnation for those who are in Christ Jesus." },
+      judgment: "\"Condemned\" is a verdict pronounced over you, not a feeling — the feeling underneath is usually shame, or the fear that you're disqualified for good.",
       dark: "A condemning voice insists you're disqualified — and once believed, you stop bringing anything to God at all.",
       light: "Conviction from God leads somewhere; condemnation doesn't. In Christ, the verdict has already changed." },
     forgiven: { scripture: { ref: "Psalm 103:12", text: "As far as the east is from the west, so far does he remove our transgressions from us." },
       dark: "Forgiveness can be presumed on — treated as a blank check rather than received with any weight.",
       light: "You're forgiven fully, not provisionally — the debt isn't reduced, it's gone." },
     unworthy: { scripture: { ref: "Romans 5:8", text: "while we were still sinners, Christ died for us." },
+      judgment: "\"Unworthy\" is a verdict about whether you've earned love — a different lie than worthless, which claims you have no value at all. Either way, the feeling underneath is usually shame.",
       dark: "Unworthy left unanswered becomes a reason to hide from God instead of run to Him.",
       light: "You were never worthy on your own merit — and God moved toward you anyway." },
     redeemed: { scripture: { ref: "Titus 2:14", text: "gave himself for us to redeem us from all lawlessness." },
@@ -567,41 +569,50 @@
       dark: "Righteous can slide into self-righteousness — measuring yourself against others instead of receiving grace.",
       light: "Righteousness isn't something you build — it's given to you in Christ, to walk in, not prove." },
     orphaned: { scripture: { ref: "Psalm 68:5", text: "Father of the fatherless and protector of widows is God in his holy habitation." },
+      judgment: "\"Orphaned\" is a verdict that you've been left to fend for yourself, not a feeling — the feeling underneath is usually fear, or the grief of feeling unclaimed.",
       dark: "Feeling orphaned can convince you that you have to fend for yourself, permanently.",
       light: "You've been adopted, not abandoned — God specifically promises He won't leave you as an orphan." },
     powerful: { scripture: { ref: "2 Corinthians 12:9", text: "My grace is sufficient for you, for my power is made perfect in weakness." },
       dark: "Chasing power can become control over people or outcomes that were never yours to control.",
       light: "Real power shows up most clearly in weakness offered to God, not strength gripped tightly." },
-    convicted: { scripture: { ref: "John 16:8", text: "he will convict the world concerning sin and righteousness and judgment." },
-      dark: "Conviction ignored hardens into a conscience that eventually stops speaking at all.",
-      light: "Conviction is a kindness — it's the Spirit steering you back, not punishing you for drifting." },
     strong: { scripture: { ref: "2 Corinthians 12:10", text: "when I am weak, then I am strong." },
       dark: "Strength can become a mask — staying \"strong\" so you never have to ask for help.",
       light: "The strength that actually holds isn't self-generated — it's Christ's strength met in your weakness." },
     jealous: { scripture: { ref: "Exodus 34:14", text: "the Lord, whose name is Jealous, is a jealous God." },
+      judgment: "\"Jealous\" assumes someone else is a threat to what's yours, not a feeling itself — the feeling underneath is usually fear, or grief over what feels at risk.",
       dark: "Human jealousy curdles into envy or possessiveness — wanting what isn't yours, or gripping what is.",
       light: "God's jealousy isn't insecurity — it's covenant love that won't share you with what will hurt you." },
     unforgiveness: { scripture: { ref: "Matthew 6:14-15", text: "if you do not forgive others their trespasses, neither will your Father forgive your trespasses." },
+      judgment: "\"Unforgiveness\" is a debt you're still holding against someone else, not a feeling — the feeling underneath is usually hurt, or anger that hasn't been grieved yet.",
       dark: "Unforgiveness feels like justice, but it keeps you chained to the very thing that hurt you.",
       light: "Forgiving doesn't mean it didn't matter — it means handing the debt to God instead of carrying it yourself." },
-    worry: { scripture: { ref: "Matthew 6:34", text: "do not be anxious about tomorrow, for tomorrow will be anxious for itself. Sufficient for the day is its own trouble." },
+    worried: { scripture: { ref: "Matthew 6:34", text: "do not be anxious about tomorrow, for tomorrow will be anxious for itself. Sufficient for the day is its own trouble." },
       dark: "Worry rehearses a future God hasn't handed you yet, again and again.",
       light: "Worry can become prayer the moment you actually say it out loud to Him." },
-    doubt: { scripture: { ref: "Mark 9:24", text: "I believe; help my unbelief!" },
-      dark: "Doubt suppressed instead of brought to God quietly hardens into distance.",
-      light: "Doubt honestly voiced to God is still faith — it's asking with one hand open." },
-    fear: { scripture: { ref: "1 John 4:18", text: "There is no fear in love, but perfect love casts out fear." },
-      dark: "Fear left to run the show narrates every decision from a place of self-protection.",
-      light: "You're not asked to have no fear — just to bring it to the One whose love casts it out." },
-    shame: { scripture: { ref: "Genesis 3:10", text: "I was afraid, because I was naked, and I hid myself." },
-      dark: "Shame's first move is always hiding — from others, and from God.",
-      light: "The move toward God, not away, is what shame most wants to prevent — and what actually heals it." },
-    despair: { scripture: { ref: "2 Corinthians 4:8", text: "We are afflicted in every way, but not crushed; perplexed, but not driven to despair." },
-      dark: "Despair quietly stops believing that anything can be good again.",
-      light: "Hope doesn't require you to feel it first — it just requires turning toward God anyway." },
-    pride: { scripture: { ref: "Proverbs 16:18", text: "Pride goes before destruction, and a haughty spirit before a fall." },
-      dark: "Pride says you don't need anyone — not even God — and it costs you the help that could've come.",
-      light: "The way down from pride is small and simple: ask for help. That's already grace at work." },
+    uncertain: { scripture: { ref: "Mark 9:24", text: "I believe; help my unbelief!" },
+      dark: "Uncertainty suppressed instead of brought to God quietly hardens into distance.",
+      light: "Uncertainty honestly voiced to God is still faith — it's asking with one hand open." },
+    confused: { scripture: { ref: "1 Corinthians 14:33", text: "For God is not a God of confusion but of peace." },
+      dark: "Confusion left alone can talk you into deciding nothing rather than risk deciding wrong.",
+      light: "God's own nature is peace, not confusion — you're allowed to wait for clarity instead of forcing an answer before it's time." },
+    frustrated: { scripture: { ref: "Psalm 13:1-2", text: "How long, O Lord? Will you forget me forever?… How long must I take counsel in my soul?" },
+      dark: "Frustration unspoken can leak out sideways, at people who had nothing to do with what's actually stuck.",
+      light: "David brought his \"how long\" straight to God instead of swallowing it — frustration voiced honestly is still worship." },
+    disappointed: { scripture: { ref: "Proverbs 13:12", text: "Hope deferred makes the heart sick, but a desire fulfilled is a tree of life." },
+      dark: "Disappointment buried instead of named can quietly talk you out of hoping again next time.",
+      light: "Scripture doesn't rush you past disappointment — it names the ache of a delayed hope as real, on the way to what's still coming." },
+    embarrassed: { scripture: { ref: "Psalm 25:2-3", text: "let me not be put to shame; let not my enemies exult over me. Indeed, none who wait for you shall be put to shame." },
+      dark: "Embarrassment can convince you to shrink from ever being seen trying again.",
+      light: "Being seen at your most awkward doesn't disqualify you — God isn't keeping score on the moments that made your face go red." },
+    anxious: { scripture: { ref: "Philippians 4:6-7", text: "do not be anxious about anything, but in everything by prayer and supplication with thanksgiving let your requests be made known to God." },
+      dark: "Left to run unchecked, anxiety narrates a hundred outcomes and treats the worst one as the most likely.",
+      light: "Anxiety handed over in prayer doesn't always disappear immediately, but it makes room for a peace that doesn't need every answer first." },
+    relieved: { scripture: { ref: "Psalm 30:11", text: "You have turned for me my mourning into dancing; you have loosed my sackcloth and clothed me with gladness." },
+      dark: "Relief can be treated as the finish line, when it's really just a place to exhale before the next thing.",
+      light: "God isn't stingy with relief — turning mourning into dancing is something He does, not just something that happens to you." },
+    pleased: { scripture: { ref: "Genesis 1:31", text: "And God saw everything that he had made, and behold, it was very good." },
+      dark: "Pleased can slide into needing every outcome to be impressive before you'll let yourself feel it.",
+      light: "God himself looked at what He made and called it good — pleasure in something done well isn't vanity, it's close to how He sees." },
     divided: { scripture: { ref: "James 1:8", text: "he is a double-minded man, unstable in all his ways." },
       dark: "A divided heart tries to serve two masters and ends up fully at rest in neither.",
       light: "Undivided doesn't mean perfect — it means one direction, kept coming back to God." },
@@ -609,9 +620,11 @@
       dark: "\"Whole\" chased through self-sufficiency becomes one more thing to achieve and maintain alone.",
       light: "Wholeness isn't the absence of brokenness — it's Jesus meeting you in it and calling you healed." },
     deceived: { scripture: { ref: "Genesis 3:13", text: "The serpent deceived me, and I ate." },
+      judgment: "\"Deceived\" names a verdict about what you've come to believe, not a feeling — the feeling underneath is usually fear, or the shame of having been fooled.",
       dark: "Deception doesn't feel like a lie while you're inside it — it feels like clarity, like you're finally seeing straight.",
       light: "Truth isn't just information, it's a Person. Staying close to Jesus is what keeps you from being led astray." },
     hate: { scripture: { ref: "1 John 4:20", text: "If anyone says, 'I love God,' and hates his brother, he is a liar." },
+      judgment: "\"Hate\" is a verdict that someone deserves your contempt, not a feeling itself — the feeling underneath is usually old anger, or a hurt that never got grieved.",
       dark: "Hate convinces you it's protecting something — but it always ends up destroying the one who carries it.",
       light: "You can't hate someone made in God's image and stay close to the God whose image they carry." }
   };
@@ -841,6 +854,7 @@
   var insightScriptureRefEl = document.getElementById('insight-scripture-ref');
   var insightJudgmentSection = document.getElementById('insight-judgment-section');
   var insightJudgmentText = document.getElementById('insight-judgment-text');
+  var insightMoreLink = document.getElementById('insight-more-link');
   var insightDarkSection = document.getElementById('insight-dark-section');
   var insightDarkText = document.getElementById('insight-dark-text');
   var insightLightSection = document.getElementById('insight-light-section');
@@ -854,6 +868,7 @@
       if (entry.judgment) {
         insightJudgmentText.textContent = entry.judgment;
         insightJudgmentSection.style.display = '';
+        insightMoreLink.style.display = computeListName(state.words) === PRESET_LABELS.emotions ? '' : 'none';
       } else {
         insightJudgmentSection.style.display = 'none';
       }
@@ -962,7 +977,7 @@
         out.push(w);
       });
     });
-    return out.slice(0, 35);
+    return out.slice(0, 40);
   }
 
   document.getElementById('edit-btn').addEventListener('click', openModal);
