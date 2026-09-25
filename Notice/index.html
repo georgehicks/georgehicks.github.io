@@ -633,8 +633,6 @@
   var HINT_DEFAULT = 'Notice which word pulls your attention. Tap it.';
   var HINT_FROZEN = 'Tap the word again, or tap anywhere else, to keep drifting.';
 
-  var reducedMotion = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
-
   function presetFromHash() {
     var key = (location.hash || '').replace(/^#/, '').trim().toLowerCase();
     return PRESETS.hasOwnProperty(key) ? key : null;
@@ -738,12 +736,11 @@
     for (var i = 0; i < state.items.length; i++) updateItem(state.items[i], t);
     rafId = requestAnimationFrame(loop);
   }
-  function startLoop() { if (!rafId && !reducedMotion) rafId = requestAnimationFrame(loop); }
   function pauseLoop() {
     if (rafId) { cancelAnimationFrame(rafId); rafId = null; pauseStart = performance.now(); }
   }
   function resumeLoop() {
-    if (rafId || reducedMotion) return;
+    if (rafId) return;
     if (pauseStart !== null) { pausedAccum += performance.now() - pauseStart; pauseStart = null; }
     rafId = requestAnimationFrame(loop);
   }
