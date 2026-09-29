@@ -54,7 +54,7 @@ const gearIcon = () => {
   s.innerHTML = '<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>';
   return s;
 };
-// "988" in the crisis copy becomes a tap-to-call link; the words themselves are unchanged
+// "988" in the danger line becomes a tap-to-call link; the words themselves are unchanged
 function withTel(text) {
   const parts = text.split('988');
   return parts.flatMap((p, i) => i === 0 ? [p] : [h('a', { class: 'tel', href: 'tel:988', text: '988' }), p]);
@@ -111,7 +111,7 @@ function render(requested) {
   breathLock = () => false;
   let route = requested;
   if (!(route in VIEWS)) route = 'here';
-  if (!isOnboarded() && route !== '' && route !== 'crisis') route = '';
+  if (!isOnboarded() && route !== '') route = '';
   if (route === '' && isOnboarded()) route = 'here';
   if (NEEDS_VISIT.includes(route) && !visit) route = 'here';
   if (route === 'pin' && !E.needsPin(visit.loc)) route = 'strategy';
@@ -192,8 +192,8 @@ const VIEWS = {
       card('body', bodyGroups),
       card('mind', [h('div', { class: 'grid' }, C.axes.mind.ticks.map(t => tick('mind', t))), flavorRow]),
       h('div', { class: 'footer' }, cta),
-      // deliberately quiet: reachable, but below the fold rather than beside the main action
-      h('div', { class: 'center help-link' }, link(C.copy.here.crisisLink, () => go('crisis'), 'small')),
+      // deliberately quiet: one plain line below the fold, not a screen or a button
+      h('p', { class: 'danger-line' }, withTel(C.crisis.line)),
     );
     update();
     return view;
@@ -386,22 +386,11 @@ const VIEWS = {
       toggle('tone', S.tone),
       toggle('keepAll', S.keepAll),
       h('div', { class: 'row' }, h('span', { class: 'row-label', text: S.log }), link('›', () => go('log'))),
-      h('div', { class: 'row' }, h('span', { class: 'row-label', text: C.copy.here.crisisLink }), link('›', () => go('crisis'))),
       h('div', { style: 'margin-top:22px' }, clear),
       h('p', { class: 'fine', text: S.scripture }),
       h('p', { class: 'fine', text: S.about }),
+      h('p', { class: 'fine' }, withTel(C.crisis.line)),
       version,
-    );
-  },
-
-  // ---------- /crisis (PRD §14): stand down, no locate widgets ----------
-  crisis() {
-    return h('section', { class: 'view crisis' },
-      h('div', { class: 'spacer' }),
-      h('h1', { text: C.crisis.title }),
-      h('p', {}, withTel(C.crisis.body)),
-      h('div', { class: 'spacer' }),
-      h('div', { class: 'center' }, link(C.crisis.returnLink, () => { store.set(KEY.onboarded, true); obStep = 0; resetToHere(); })),
     );
   },
 };

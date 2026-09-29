@@ -1,4 +1,4 @@
-const CACHE = 'iamhere-v2';
+const CACHE = 'iamhere-v4';
 const ASSETS = ['./', './index.html', './app.js', './engine.js', './content.json', './manifest.json', './icon.svg'];
 
 self.addEventListener('install', e => {
@@ -20,6 +20,9 @@ self.addEventListener('fetch', e => {
   if (e.request.method !== 'GET') return;
   const req = e.request;
   const isHTML = req.mode === 'navigate' || (req.headers.get('accept') || '').includes('text/html');
+  // only the app's own page refreshes the cached shell (not e.g. tests.html)
+  const isShell = /\/IAmHere\/(index\.html)?$/.test(new URL(req.url).pathname);
+  if (isHTML && !isShell) return;
   if (isHTML) {
     e.respondWith(
       fetch(req).then(res => {

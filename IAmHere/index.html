@@ -141,8 +141,7 @@
   .chip.pill[aria-pressed="true"] .lbl { font-weight: 600; }
   .chip.pill[aria-pressed="true"] .lbl::before { content: "✓ "; }
 
-  .help-link { margin-top: 28px; }
-  .help-link .link { color: var(--ink-faint); text-decoration-color: transparent; }
+  .danger-line { margin: 28px 8px 4px; text-align: center; font-size: 0.8rem; color: var(--ink-faint); }
 
   /* ---------- axis cards ---------- */
   .axis { border-radius: 18px; padding: 14px 14px 14px; margin-bottom: 12px; }
@@ -228,15 +227,14 @@
   .quiet-title { font-size: 1.45rem; font-weight: 500; text-align: center; }
   .end-text { font-size: 1.2rem; text-align: center; line-height: 1.5; max-width: 22ch; margin: 0 auto; }
 
-  /* ---------- onboarding / crisis ---------- */
+  /* ---------- onboarding ---------- */
   .onb { justify-content: center; }
   .onb h1 { margin-bottom: 14px; }
   .onb p { font-size: 1.08rem; color: var(--ink-dim); }
   .dots { display: flex; gap: 6px; justify-content: center; margin: 22px 0 18px; }
   .dots span { width: 6px; height: 6px; border-radius: 50%; background: var(--line); }
   .dots span.on { background: var(--ink-dim); }
-  .crisis p { font-size: 1.1rem; margin-top: 14px; }
-  a.tel { color: var(--accent); font-weight: 700; text-underline-offset: 3px; }
+  a.tel { color: inherit; text-underline-offset: 2px; }
 
   /* ---------- settings / log ---------- */
   .row {

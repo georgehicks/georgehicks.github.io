@@ -155,9 +155,7 @@
   ],
 
   "crisis": {
-    "title": "This app should stand down.",
-    "body": "If you are in danger now, or thinking of ending your life, get human help. In the US, call or text 988. If you are unsafe in the room you are in, leave if you can and contact someone you trust.",
-    "returnLink": "I am not in crisis"
+    "line": "If you are in danger, call or text 988 in the US."
   },
 
   "copy": {
@@ -166,8 +164,7 @@
     "back": "Back",
     "skip": "Skip",
     "here": {
-      "cta": "This is where I am",
-      "crisisLink": "Need human help?"
+      "cta": "This is where I am"
     },
     "pin": {
       "titleDying": "What would hurt most if it were true?",

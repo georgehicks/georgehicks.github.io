@@ -166,7 +166,9 @@ t('"streak"/"score" appear in content only inside onboarding\'s "No score. No st
   const s = JSON.stringify({ ...C, onboarding: C.onboarding.filter((_, i) => i !== 1) });
   return !/streak|score/i.test(s) && /No score\. No streak\./.test(C.onboarding[1].body);
 });
-t('help screen reachable from /here and settings, not pushed in onboarding', () => !!C.copy.here.crisisLink && (src[0].match(/go\('crisis'\)/g) || []).length === 2 && !/988|danger|ending your life/.test(JSON.stringify(C.onboarding)));
+t('danger line is one quiet sentence on /here and in settings; no crisis screen, nothing in onboarding', () =>
+  C.crisis.line === 'If you are in danger, call or text 988 in the US.' && (src[0].match(/withTel\(C\.crisis\.line\)/g) || []).length === 2
+  && !src[0].includes("go('crisis')") && !/human help|988|danger/i.test(JSON.stringify(C.onboarding) + JSON.stringify(C.copy)));
 
 document.getElementById('sum').textContent = `${pass} passed, ${fail} failed`;
 document.getElementById('sum').className = fail ? 'fail' : 'pass';
