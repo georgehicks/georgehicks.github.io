@@ -77,7 +77,7 @@ t('session record stores one pinId and no free text', () => {
 });
 
 // ---- proverb ----
-t('proverb strategy includes the not-in-Scripture note', () => eq(E.honestyNote(C, 'proverb'), 'That sentence is not in Scripture. It is the desk talking.'));
+t('proverb strategy includes the not-in-Scripture note', () => eq(E.honestyNote(C, 'proverb'), 'That sentence is not in Scripture. It is self-reliance talking.'));
 t('no other pin gets a note', () => [...C.dyingPins, ...C.managedPins].filter(p => p.id !== 'proverb').every(p => E.honestyNote(C, p.id) === null));
 t('proverb breath is Romans 5:6 fragments only', () => {
   const v = E.verseFor(C, { loc: L('managed', 'rest', 'present_open'), axis: 'spirit', pinId: 'proverb' });
@@ -89,6 +89,8 @@ t('proverb breath is Romans 5:6 fragments only', () => {
 const sel = (loc, axis, pinId) => E.verseFor(C, { loc, axis, pinId }).ref;
 t('blank → Rom 8:26 regardless of pin', () => { eq(sel(L('dying', 'fight', 'blank'), 'mind', 'unloved'), 'Romans 8:26'); eq(sel(L('rising', 'freeze', 'blank'), 'mind', null), 'Romans 8:26'); });
 t('blank path has 2 silent breaths', () => eq(E.breathPlan({ loc: L('rising', 'rest', 'blank') }).silent, 2));
+t('breath is 8 by default', () => eq(E.breathPlan({ loc: L('dying', 'rest', 'present_open') }).total, 8));
+t('no copy mentions a list or a desk', () => !/\blist\b|\bdesk\b/i.test(JSON.stringify(C)) || JSON.stringify(C).match(/.{30}\b(list|desk)\b.{30}/i)[0]);
 t('pin pair wins over axis (moving body, pinned)', () => eq(sel(L('dying', 'fight', 'present_open'), 'body', 'must_carry'), 'Psalm 55:22'));
 t('time-travel future → Matt 6:34', () => eq(sel(L('rising', 'rest', 'time_travel', 'future'), 'mind', null), 'Matthew 6:34'));
 t('time-travel past → Isa 43:19', () => eq(sel(L('rising', 'rest', 'time_travel', 'past'), 'mind', null), 'Isaiah 43:19'));

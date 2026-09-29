@@ -6,9 +6,10 @@ export const AXES = ['spirit', 'body', 'mind'];
 export const HOME = { spirit: 'rising', body: 'rest', mind: 'present_open' };
 export const TAKEN = ['fight', 'flight', 'freeze', 'collapse'];
 
-// PRD §12.1 — 4s in / 4s out, 8 breaths by default, "Done" after 6; the
-// already-home path (§5.1) ends after 4; blank mind (§2) gets 2 silent breaths first.
-export const BREATH = { inhaleMs: 4000, exhaleMs: 4000, total: 8, doneAfter: 6, homeTotal: 4, backAfter: 4, silentBlank: 2 };
+// PRD §12.1 — 4s in / 4s out, 8 breaths; the already-home path (§5.1) ends after 4;
+// blank mind (§2) gets 2 silent breaths first. (Leaving is allowed at any breath —
+// George's call over the PRD's "no back for 4, Done after 6".)
+export const BREATH = { inhaleMs: 4000, exhaleMs: 4000, total: 8, homeTotal: 4, silentBlank: 2 };
 
 export const isComplete = loc => AXES.every(a => !!loc[a]);
 export const isAllHome = loc => AXES.every(a => loc[a] === HOME[a]);
@@ -89,8 +90,8 @@ export function verseFor(C, { loc, axis, pinId, homePath }) {
 }
 
 export const breathPlan = ({ loc, homePath }) => homePath
-  ? { total: BREATH.homeTotal, doneAfter: BREATH.homeTotal, silent: 0 }
-  : { total: BREATH.total, doneAfter: BREATH.doneAfter, silent: loc.mind === 'blank' ? BREATH.silentBlank : 0 };
+  ? { total: BREATH.homeTotal, silent: 0 }
+  : { total: BREATH.total, silent: loc.mind === 'blank' ? BREATH.silentBlank : 0 };
 
 const uuid = () => (globalThis.crypto && crypto.randomUUID) ? crypto.randomUUID()
   : 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c => {

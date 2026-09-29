@@ -88,7 +88,7 @@ function startVisit() {
 function resetToHere() { visit = null; draft = freshDraft(); go('here'); }
 
 // ===================== router (hash routes so GitHub Pages serves one file) =====================
-let current = null, teardown = null, programmatic = false, breathLock = () => false;
+let current = null, teardown = null, programmatic = false;
 const parseRoute = () => location.hash.replace(/^#\/?/, '');
 function go(route) {
   programmatic = true;
@@ -96,11 +96,6 @@ function go(route) {
   else location.hash = '#/' + route;
 }
 window.addEventListener('hashchange', () => {
-  // PRD §12.1: no back during the first 4 breaths — undo a hardware/browser back
-  if ((current === 'breathe' || current === 'home-state') && !programmatic && breathLock()) {
-    history.pushState(null, '', '#/' + current);
-    return;
-  }
   programmatic = false;
   render(parseRoute());
 });
@@ -108,7 +103,6 @@ window.addEventListener('hashchange', () => {
 const NEEDS_VISIT = ['pin', 'strategy', 'breathe', 'home-state', 'again'];
 function render(requested) {
   if (teardown) { teardown(); teardown = null; }
-  breathLock = () => false;
   let route = requested;
   if (!(route in VIEWS)) route = 'here';
   if (!isOnboarded() && route !== '') route = '';
@@ -409,8 +403,12 @@ function breathView(homePath) {
   const fin = h('p', { class: 'frag', 'aria-hidden': 'true' });
   const fex = h('p', { class: 'frag', 'aria-hidden': 'true' });
   const ref = h('p', { class: 'ref' });
-  const back = link(C.copy.back, () => { stop(); go('strategy'); });
+  // leaving is always allowed: Back returns a step, Done ends the breath early
+  const back = link(C.copy.back, () => { stop(); go(homePath ? 'here' : 'strategy'); });
   const doneBtn = btn(C.copy.breathe.done, () => end(), 'quiet');
+  const dots = Array.from({ length: plan.total }, () => h('span'));
+  const progress = h('div', { class: 'breath-dots', role: 'progressbar', 'aria-label': C.copy.breathe.progress,
+    'aria-valuemin': '0', 'aria-valuemax': String(plan.total), 'aria-valuenow': '0' }, dots);
   const intro = homePath ? h('p', { class: 'home-intro', text: C.copy.home.text }) : null;
 
   let startT = null, pausedAt = null, pausedTotal = 0, raf = 0, lastBreath = -1, stopped = false, introTimer = 0;
@@ -419,8 +417,8 @@ function breathView(homePath) {
 
   function onBreathStart(n) {
     visit.breathsCompleted = n;
-    if (!homePath && n >= B.backAfter) back.classList.add('shown');
-    if (!homePath && n >= plan.doneAfter) doneBtn.classList.add('shown');
+    dots.forEach((d, i) => { d.className = i < n ? 'done' : i === n ? 'now' : ''; });
+    progress.setAttribute('aria-valuenow', String(n));
     if (n >= plan.silent) {
       if (n === plan.silent) { fin.textContent = verse.inhale; fex.textContent = verse.exhale; ref.textContent = verse.ref; ref.classList.add('shown'); }
       announce(verse.inhale + ' ' + verse.exhale);
@@ -437,6 +435,7 @@ function breathView(homePath) {
     const p = inhaling ? ease(ph / B.inhaleMs) : 1 - ease((ph - B.inhaleMs) / B.exhaleMs);
     bloom.style.setProperty('--p', p.toFixed(4));
     bar.style.opacity = (0.22 + 0.6 * p).toFixed(3);
+    dots[n].style.setProperty('--f', (ph / cycle).toFixed(3)); // the current dot fills over its breath
     tone.set(p);
 
     // PRD §12.1 text: inhale line 0→1 over the inhale; over the exhale it falls 1→0.15
@@ -485,7 +484,6 @@ function breathView(homePath) {
 
   document.addEventListener('visibilitychange', onVis);
   teardown = stop;
-  breathLock = () => !stopped && (homePath || lastBreath < B.backAfter);
   visit.breathsCompleted = 0;
   $announce.textContent = ''; // nothing from a previous visit lingers through silent breaths
   if (homePath) introTimer = setTimeout(begin, 1800); else begin();
@@ -498,7 +496,7 @@ function breathView(homePath) {
       bar,
       h('div', { class: 'fragments' }, fin, fex),
       ref),
-    h('div', { class: 'breathe-foot' }, homePath ? null : doneBtn),
+    h('div', { class: 'breathe-foot' }, progress, doneBtn),
   );
 }
 

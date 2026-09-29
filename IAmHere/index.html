@@ -187,8 +187,6 @@
   /* ---------- breathe (PRD §12) ---------- */
   .breathe { justify-content: center; align-items: center; text-align: center; padding: 8px 0; }
   .breathe-top { width: 100%; min-height: 44px; display: flex; justify-content: space-between; align-items: center; }
-  .breathe-top .link { visibility: hidden; }
-  .breathe-top .link.shown { visibility: visible; }
   .breathe-body { flex: 1; display: flex; flex-direction: column; justify-content: center; align-items: center; width: 100%; }
   .home-intro { font-size: 1.3rem; font-weight: 500; min-height: 1.6em; transition: opacity 1.2s ease; }
   .home-intro.gone { opacity: 0; }
@@ -219,9 +217,18 @@
   .frag { font-family: var(--serif); font-size: max(22px, 1.6rem); line-height: 1.25; opacity: 0; max-width: 22ch; margin: 0 auto; }
   .ref { font-size: 15px; color: var(--ink-dim); margin-top: 14px; opacity: 0; transition: opacity 1.5s ease; letter-spacing: 0.02em; }
   .ref.shown { opacity: 1; }
-  .breathe-foot { min-height: 64px; width: 100%; display: flex; align-items: center; justify-content: center; }
-  .breathe-foot .btn { max-width: 220px; opacity: 0; transition: opacity 1.2s ease; pointer-events: none; }
-  .breathe-foot .btn.shown { opacity: 1; pointer-events: auto; }
+  .breathe-foot { width: 100%; display: flex; flex-direction: column; align-items: center; gap: 16px; }
+  .breathe-foot .btn { max-width: 220px; }
+  /* one dot per breath: done = filled, current = fills like a clock over its 8 seconds */
+  .breath-dots { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }
+  .breath-dots span {
+    --f: 0; width: 10px; height: 10px; border-radius: 50%; border: 1.5px solid var(--line); box-sizing: border-box;
+  }
+  .breath-dots span.done { background: var(--ink-faint); border-color: var(--ink-faint); }
+  .breath-dots span.now {
+    border-color: var(--accent);
+    background: conic-gradient(var(--accent) calc(var(--f) * 360deg), transparent 0);
+  }
 
   /* ---------- after / end ---------- */
   .quiet-title { font-size: 1.45rem; font-weight: 500; text-align: center; }

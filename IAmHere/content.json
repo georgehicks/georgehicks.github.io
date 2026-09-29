@@ -6,7 +6,7 @@
       "home": "rising",
       "ticks": [
         { "id": "rising", "label": "Rising", "helper": "With. Received. Not self-supplied." },
-        { "id": "managed", "label": "Managed", "helper": "Correct words, then back to the list." },
+        { "id": "managed", "label": "Managed", "helper": "Correct words, then back to managing." },
         { "id": "dying", "label": "Dying", "helper": "Cut off. Anti-love is loud." }
       ]
     },
@@ -68,7 +68,7 @@
   ],
 
   "strategiesByBody": {
-    "control": "Set the list down for ten minutes. See if the hand reaches.",
+    "control": "Set down what you’re gripping for ten minutes. See if the hand reaches.",
     "fight": "One sentence before the case: “I’m reading attack. One minute.”",
     "flight": "Stay in this room five minutes. Screen after.",
     "freeze": "Feel the chair. Unclamp the jaw. Do not solve.",
@@ -92,7 +92,7 @@
     "alone": "One honest sentence to Him. No second half. Wait.",
     "must_carry": "Name the sting without absorbing anyone else’s weather.",
     "unknown_dying": "Sit. Do not solve. Let one true sentence form.",
-    "in_control": "Set the list down for ten minutes. Watch the hand reach.",
+    "in_control": "Set down what you’re gripping for ten minutes. Watch the hand reach.",
     "earned_place": "Receive one thing you did not provision.",
     "better_than": "Name the hidden second half (than whom). Drop the rank for sixty seconds.",
     "mine_to_manage": "Cross out what is not yours today. Say it out loud.",
@@ -100,7 +100,7 @@
     "proverb": "Do the one small act that is yours. Stop before you feel ready. Let the unfinished part stay unfinished in front of Him.",
     "abide_after": "Sit one minute after the amen. No second half.",
     "need_nothing": "Name one true need in a single clause.",
-    "unknown_managed": "Set the list down. Sit one minute."
+    "unknown_managed": "Set down what you’re holding. Sit one minute."
   },
 
   "verseByPin": {
@@ -168,7 +168,7 @@
     },
     "pin": {
       "titleDying": "What would hurt most if it were true?",
-      "titleManaged": "Which sentence is running the desk?",
+      "titleManaged": "Which sentence is in charge right now?",
       "instruction": "Pick one. None is allowed.",
       "followup": "Which would you least want confirmed right now — by a person, by tomorrow, or by God?",
       "thanWhom": "Than whom? (optional, stays on device)",
@@ -180,7 +180,7 @@
       "chooseOther": "Choose a different axis",
       "recapPin": "Pin",
       "recapMoving": "Moving",
-      "honestyProverb": "That sentence is not in Scripture. It is the desk talking.",
+      "honestyProverb": "That sentence is not in Scripture. It is self-reliance talking.",
       "cta": "Breathe this",
       "secondary": "Skip to breath"
     },
@@ -188,7 +188,8 @@
       "text": "Stay. Nothing to fix."
     },
     "breathe": {
-      "done": "Done"
+      "done": "Done",
+      "progress": "Breaths"
     },
     "again": {
       "title": "That is enough.",
