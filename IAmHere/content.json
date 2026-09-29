@@ -1,0 +1,244 @@
+{
+  "axes": {
+    "spirit": {
+      "label": "Spirit",
+      "question": "Is the line up, handled, or gone?",
+      "home": "rising",
+      "ticks": [
+        { "id": "rising", "label": "Rising", "helper": "With. Received. Not self-supplied." },
+        { "id": "managed", "label": "Managed", "helper": "Correct words, then back to the list." },
+        { "id": "dying", "label": "Dying", "helper": "Cut off. Anti-love is loud." }
+      ]
+    },
+    "body": {
+      "label": "Body",
+      "question": "Unmanaged, gripping, or taken?",
+      "home": "rest",
+      "ticks": [
+        { "id": "rest", "label": "Rest", "helper": "Jaw soft. The list can wait." },
+        { "id": "control", "label": "Control", "helper": "Grip. Scanning. Feels like agency." },
+        { "id": "fight", "label": "Fight", "helper": "Toward. Heat. Win." },
+        { "id": "flight", "label": "Flight", "helper": "Away. Screen, door, task as exit." },
+        { "id": "freeze", "label": "Freeze", "helper": "In the room. Cannot move." },
+        { "id": "collapse", "label": "Collapse", "helper": "Dropped. Numb. Heavy." }
+      ],
+      "groups": [
+        { "label": null, "ids": ["rest", "control"] },
+        { "label": "TAKEN", "ids": ["fight", "flight", "freeze", "collapse"] }
+      ]
+    },
+    "mind": {
+      "label": "Mind",
+      "question": "Where is attention, and is it open?",
+      "home": "present_open",
+      "ticks": [
+        { "id": "present_open", "label": "Present-open", "helper": "Here, and can be surprised." },
+        { "id": "present_narrowed", "label": "Present-narrowed", "helper": "Here, to prosecute, solve, or code." },
+        { "id": "time_travel", "label": "Time-travel", "helper": "Past storm or future swallow." },
+        { "id": "blank", "label": "Blank", "helper": "Zombie. Snow. Nobody home." }
+      ],
+      "timeTravelFlavors": [
+        { "id": "past", "label": "Past" },
+        { "id": "future", "label": "Future" }
+      ]
+    }
+  },
+
+  "dyingPins": [
+    { "id": "unloved", "label": "Love has turned. I am not wanted in this." },
+    { "id": "unworthy", "label": "I am bad, or only holdable if I get this right." },
+    { "id": "unsafe", "label": "If I stay, I will be swallowed or hurt." },
+    { "id": "not_enough", "label": "What this requires is already beyond me." },
+    { "id": "no_trust", "label": "There is no ground I can trust." },
+    { "id": "alone", "label": "I am alone in this, and I shouldn’t take up room." },
+    { "id": "must_carry", "label": "If I don’t carry it, it won’t be made right." },
+    { "id": "unknown_dying", "label": "I don’t know yet." }
+  ],
+
+  "managedPins": [
+    { "id": "in_control", "label": "I’m in control." },
+    { "id": "earned_place", "label": "I’ve earned my place." },
+    { "id": "better_than", "label": "I’m better than…" },
+    { "id": "mine_to_manage", "label": "It’s mine to manage." },
+    { "id": "up_to_me", "label": "It’s up to me." },
+    { "id": "proverb", "label": "God helps those who help themselves." },
+    { "id": "abide_after", "label": "I’ll abide after I finish this." },
+    { "id": "need_nothing", "label": "I don’t need anything right now." },
+    { "id": "unknown_managed", "label": "I don’t know yet." }
+  ],
+
+  "strategiesByBody": {
+    "control": "Set the list down for ten minutes. See if the hand reaches.",
+    "fight": "One sentence before the case: “I’m reading attack. One minute.”",
+    "flight": "Stay in this room five minutes. Screen after.",
+    "freeze": "Feel the chair. Unclamp the jaw. Do not solve.",
+    "collapse": "Name one sensation, or say “I’m gone.” Do not interpret.",
+    "rest": "Stay. Nothing to fix in the body."
+  },
+
+  "strategiesByMind": {
+    "present_open": "Stay. Nothing to fix.",
+    "present_narrowed": "Drop the verdict for sixty seconds. Look at this year’s face.",
+    "time_travel": "Come back to this room. If future: two columns, one action in 24 hours. If past: name the old broadcast.",
+    "blank": "Do not interpret. Body first. One word after two breaths: here."
+  },
+
+  "strategiesByPin": {
+    "unloved": "Look at this year’s face. Say: “This may be the old broadcast.”",
+    "unworthy": "Do not argue your case. Stay in the room as you are.",
+    "unsafe": "Stay one minute. Do not solve. Feel the chair.",
+    "not_enough": "Two columns. One action in 24 hours. Fog is not a verdict.",
+    "no_trust": "One honest sentence to Him. No second half. Wait.",
+    "alone": "One honest sentence to Him. No second half. Wait.",
+    "must_carry": "Name the sting without absorbing anyone else’s weather.",
+    "unknown_dying": "Sit. Do not solve. Let one true sentence form.",
+    "in_control": "Set the list down for ten minutes. Watch the hand reach.",
+    "earned_place": "Receive one thing you did not provision.",
+    "better_than": "Name the hidden second half (than whom). Drop the rank for sixty seconds.",
+    "mine_to_manage": "Cross out what is not yours today. Say it out loud.",
+    "up_to_me": "One task that is actually yours. The rest is not a moral.",
+    "proverb": "Do the one small act that is yours. Stop before you feel ready. Let the unfinished part stay unfinished in front of Him.",
+    "abide_after": "Sit one minute after the amen. No second half.",
+    "need_nothing": "Name one true need in a single clause.",
+    "unknown_managed": "Set the list down. Sit one minute."
+  },
+
+  "verseByPin": {
+    "unloved": { "inhale": "I have loved you", "exhale": "with an everlasting love", "ref": "Jeremiah 31:3" },
+    "unworthy": { "inhale": "while we were still sinners", "exhale": "Christ died for us", "ref": "Romans 5:8" },
+    "unsafe": { "inhale": "when you pass through the waters", "exhale": "I will be with you", "ref": "Isaiah 43:2" },
+    "not_enough": { "inhale": "My grace is sufficient", "exhale": "for you", "ref": "2 Corinthians 12:9" },
+    "no_trust": { "inhale": "When I am afraid", "exhale": "I put my trust in you", "ref": "Psalm 56:3" },
+    "alone": { "inhale": "I have called you by name", "exhale": "you are mine", "ref": "Isaiah 43:1" },
+    "must_carry": { "inhale": "Cast your burden on the Lord", "exhale": "and he will sustain you", "ref": "Psalm 55:22" },
+    "unknown_dying": { "inhale": "I have called you by name", "exhale": "you are mine", "ref": "Isaiah 43:1" },
+    "in_control": { "inhale": "Be still", "exhale": "and know that I am God", "ref": "Psalm 46:10" },
+    "earned_place": { "inhale": "What do you have", "exhale": "that you did not receive?", "ref": "1 Corinthians 4:7" },
+    "better_than": { "inhale": "What do you have", "exhale": "that you did not receive?", "ref": "1 Corinthians 4:7" },
+    "mine_to_manage": { "inhale": "Unless the Lord builds the house", "exhale": "those who build labor in vain", "ref": "Psalm 127:1" },
+    "up_to_me": { "inhale": "apart from me", "exhale": "you can do nothing", "ref": "John 15:5" },
+    "proverb": { "inhale": "while we were still weak", "exhale": "Christ died for the ungodly", "ref": "Romans 5:6" },
+    "abide_after": { "inhale": "Abide in me", "exhale": "and I in you", "ref": "John 15:4" },
+    "need_nothing": { "inhale": "The Lord is my shepherd", "exhale": "I shall not want", "ref": "Psalm 23:1" },
+    "unknown_managed": { "inhale": "Be still", "exhale": "and know that I am God", "ref": "Psalm 46:10" }
+  },
+
+  "verseByBody": {
+    "control": { "inhale": "Be still", "exhale": "and know that I am God", "ref": "Psalm 46:10" },
+    "fight": { "inhale": "slow to speak", "exhale": "slow to anger", "ref": "James 1:19" },
+    "flight": { "inhale": "Where shall I go", "exhale": "from your Spirit?", "ref": "Psalm 139:7" },
+    "freeze": { "inhale": "The Lord will fight for you", "exhale": "you have only to be silent", "ref": "Exodus 14:14" },
+    "collapse": { "inhale": "Come to me", "exhale": "I will give you rest", "ref": "Matthew 11:28" },
+    "rest": { "inhale": "As the Father has loved me", "exhale": "so have I loved you", "ref": "John 15:9" }
+  },
+
+  "verseByMind": {
+    "present_narrowed": { "inhale": "be quick to hear", "exhale": "slow to speak", "ref": "James 1:19" },
+    "time_travel_future": { "inhale": "do not be anxious", "exhale": "about tomorrow", "ref": "Matthew 6:34" },
+    "time_travel_past": { "inhale": "Behold, I am doing", "exhale": "a new thing", "ref": "Isaiah 43:19" },
+    "time_travel": { "inhale": "do not be anxious", "exhale": "about tomorrow", "ref": "Matthew 6:34" },
+    "blank": { "inhale": "The Spirit himself", "exhale": "intercedes for us", "ref": "Romans 8:26" },
+    "present_open": { "inhale": "As the Father has loved me", "exhale": "so have I loved you", "ref": "John 15:9" }
+  },
+
+  "onboarding": [
+    {
+      "title": "I Am Here",
+      "body": "Home is Spirit rising, body at rest, mind present and open. This app helps you notice when you have left, and take one step back.",
+      "cta": "Continue"
+    },
+    {
+      "title": "One breath. One sentence.",
+      "body": "You will tap where you are. If something is pinning you, you will name it. Then a short breath with a line of Scripture. No score. No streak.",
+      "cta": "Continue"
+    },
+    {
+      "title": "This is not for every kind of pain.",
+      "body": "If you are in danger now, or thinking of ending your life, this is not the tool. Use the stand-down screen or local help. In the US, call or text 988.",
+      "secondary": "I need help now",
+      "cta": "I am here"
+    }
+  ],
+
+  "crisis": {
+    "title": "This app should stand down.",
+    "body": "If you are in danger now, or thinking of ending your life, get human help. In the US, call or text 988. If you are unsafe in the room you are in, leave if you can and contact someone you trust.",
+    "returnLink": "I am not in crisis"
+  },
+
+  "copy": {
+    "wordmark": "I am here",
+    "offline": "Connect once to install.",
+    "back": "Back",
+    "skip": "Skip",
+    "here": {
+      "domains": [
+        { "id": "moment", "label": "This moment" },
+        { "id": "wife", "label": "Wife / closest" },
+        { "id": "future", "label": "Future" },
+        { "id": "work", "label": "Work" },
+        { "id": "body", "label": "Body" },
+        { "id": "God", "label": "God" },
+        { "id": "friend", "label": "Friend" }
+      ],
+      "cta": "This is where I am",
+      "crisisLink": "I am in present danger"
+    },
+    "pin": {
+      "titleDying": "What would hurt most if it were true?",
+      "titleManaged": "Which sentence is running the desk?",
+      "instruction": "Pick one. None is allowed.",
+      "followup": "Which would you least want confirmed right now — by a person, by tomorrow, or by God?",
+      "thanWhom": "Than whom? (optional, stays on device)",
+      "also": "also",
+      "cta": "Continue"
+    },
+    "strategy": {
+      "startWith": "Start with",
+      "chooseOther": "Choose a different axis",
+      "recapPin": "Pin",
+      "recapMoving": "Moving",
+      "honestyProverb": "That sentence is not in Scripture. It is the desk talking.",
+      "cta": "Breathe this",
+      "secondary": "Skip to breath"
+    },
+    "home": {
+      "text": "Stay. Nothing to fix."
+    },
+    "breathe": {
+      "done": "Done"
+    },
+    "again": {
+      "title": "That is enough.",
+      "locateAgain": "Locate again",
+      "save": "Save this locate",
+      "saved": "Saved",
+      "done": "I’m done",
+      "log": "Log"
+    },
+    "end": {
+      "text": "Home is Spirit rising, body rest, mind present-open.",
+      "link": "I am here"
+    },
+    "log": {
+      "title": "Log",
+      "empty": "Nothing saved.",
+      "moved": "Moved"
+    },
+    "settings": {
+      "title": "Settings",
+      "reminder": "Daily reminder",
+      "reminderOff": "Off",
+      "reminderAdd": "Add to calendar",
+      "reduceMotion": "Reduce motion",
+      "largeType": "Larger type",
+      "keepAll": "Keep all locates on this device",
+      "tone": "Breath tone",
+      "log": "Log",
+      "clear": "Clear all data",
+      "clearConfirm": "Tap again to clear everything",
+      "scripture": "Quotations are from the ESV.",
+      "about": "I Am Here helps a person notice where they are — spirit, body, and mind — and take one step back toward home. It is a flashlight in a doorway."
+    }
+  }
+}

@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#F6F3EC" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#14161B" media="(prefers-color-scheme: dark)">
+<meta name="color-scheme" content="light dark">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="I Am Here">
+<meta name="description" content="Notice where you are — spirit, body, and mind — and take one step back toward home.">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="icon.svg">
+<link rel="modulepreload" href="app.js">
+<link rel="modulepreload" href="engine.js">
+<title>I Am Here</title>
+<style>
+  /* PRD §16: quiet paper, ink, one deep navy accent; lilac / sage / slate washes
+     on the three axis cards only. Dark mode is the inverse (system preference). */
+  :root {
+    --paper: #F6F3EC;
+    --paper-raised: #FCFAF6;
+    --ink: #1E232B;
+    --ink-dim: #545B67;
+    --ink-faint: #858B96;
+    --line: #DCD7CB;
+    --accent: #1F3A5F;
+    --accent-ink: #FFFFFF;
+    --wash-spirit: #EDE9F5;
+    --wash-body: #E7EEE5;
+    --wash-mind: #E5E9EF;
+    --petal: #2B4A75;
+    --petal-blend: multiply;
+    --petal-opacity: 0.26;
+    --sans: Seravek, "Gill Sans Nova", Ubuntu, Calibri, "DejaVu Sans", source-sans-pro, -apple-system, BlinkMacSystemFont, sans-serif;
+    --serif: "Iowan Old Style", "Palatino Linotype", "URW Palladio L", P052, Georgia, serif;
+    color-scheme: light;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --paper: #14161B;
+      --paper-raised: #1B1E25;
+      --ink: #ECE8DF;
+      --ink-dim: #AEB3BC;
+      --ink-faint: #767C87;
+      --line: #2E323B;
+      --accent: #A9BCE4;
+      --accent-ink: #111726;
+      --wash-spirit: #211F2B;
+      --wash-body: #1B231E;
+      --wash-mind: #1C2029;
+      --petal: #7F97CC;
+      --petal-blend: screen;
+      --petal-opacity: 0.42;
+      color-scheme: dark;
+    }
+  }
+  html.large { font-size: 118.75%; }
+
+  * { box-sizing: border-box; }
+  [hidden] { display: none !important; }
+  html, body { margin: 0; background: var(--paper); color: var(--ink); }
+  body {
+    font-family: var(--sans); font-size: 1rem; line-height: 1.45;
+    -webkit-tap-highlight-color: transparent; -webkit-text-size-adjust: 100%;
+    overflow-x: hidden;
+  }
+  button, input, select { font: inherit; color: inherit; }
+  button { cursor: pointer; }
+  :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
+
+  /* PRD §16: max content width 440px, centered */
+  #app {
+    max-width: 440px; margin: 0 auto; min-height: 100vh; min-height: 100dvh;
+    padding: calc(12px + env(safe-area-inset-top)) 16px calc(16px + env(safe-area-inset-bottom));
+    display: flex; flex-direction: column;
+  }
+  .view { flex: 1; display: flex; flex-direction: column; animation: fade-in 0.28s ease; }
+  @keyframes fade-in { from { opacity: 0; } to { opacity: 1; } }
+  html.reduce-motion .view { animation: none; }
+
+  h1, h2 { font-weight: 600; letter-spacing: -0.005em; margin: 0; }
+  h1 { font-size: 1.6rem; line-height: 1.2; }
+  h2 { font-size: 1.3rem; line-height: 1.25; }
+  h1:focus, h2:focus { outline: none; }
+  p { margin: 0; }
+
+  /* ---------- buttons ---------- */
+  .btn {
+    display: flex; align-items: center; justify-content: center; width: 100%;
+    min-height: 52px; padding: 12px 18px; border-radius: 14px; border: 1px solid transparent;
+    background: var(--accent); color: var(--accent-ink); font-weight: 600; font-size: 1.02rem;
+  }
+  .btn:disabled { background: transparent; color: var(--ink-faint); border-color: var(--line); cursor: default; }
+  .btn.quiet { background: transparent; color: var(--ink); border-color: var(--line); font-weight: 500; }
+  .link {
+    background: none; border: none; padding: 10px 4px; min-height: 44px; color: var(--ink-dim);
+    text-decoration: underline; text-decoration-color: var(--line); text-underline-offset: 3px;
+    font-size: 0.95rem;
+  }
+  .link.small { font-size: 0.85rem; color: var(--ink-faint); }
+  .stack { display: flex; flex-direction: column; gap: 10px; }
+  .center { text-align: center; }
+  .spacer { flex: 1; }
+  .icon-btn {
+    width: 44px; height: 44px; display: inline-flex; align-items: center; justify-content: center;
+    border: none; background: none; color: var(--ink-dim); border-radius: 12px; padding: 0;
+  }
+  .back { align-self: flex-start; margin-left: -12px; }
+
+  /* ---------- top bar ---------- */
+  .topbar { display: flex; align-items: center; justify-content: space-between; min-height: 44px; margin-bottom: 8px; }
+  .wordmark { font-weight: 600; font-size: 1.05rem; letter-spacing: 0.01em; margin: 0; }
+
+  /* ---------- chips (PRD §16: min 44px tap targets; §18: aria-pressed, not colour-only) ---------- */
+  .chip {
+    position: relative; display: flex; flex-direction: column; align-items: flex-start; justify-content: center;
+    min-height: 52px; padding: 9px 12px 9px 34px; border-radius: 12px; text-align: left;
+    background: var(--paper-raised); border: 1px solid var(--line); color: var(--ink);
+  }
+  .chip .lbl { font-weight: 600; font-size: 1rem; line-height: 1.2; }
+  .chip .hlp { font-size: 0.8rem; color: var(--ink-dim); line-height: 1.3; margin-top: 2px; }
+  .chip::before {
+    content: ""; position: absolute; left: 11px; top: 50%; width: 14px; height: 14px; margin-top: -7px;
+    border-radius: 50%; border: 1.5px solid var(--ink-faint);
+  }
+  .chip[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
+  .chip[aria-pressed="true"] .hlp { color: var(--accent-ink); opacity: 0.85; }
+  /* a check mark in a filled dot — selection is never colour alone */
+  .chip[aria-pressed="true"]::before { border-color: var(--accent-ink); background: var(--accent-ink); }
+  .chip[aria-pressed="true"]::after {
+    content: ""; position: absolute; left: 14px; top: 50%; width: 7px; height: 4px; margin-top: -3.5px;
+    border-left: 2px solid var(--accent); border-bottom: 2px solid var(--accent); transform: rotate(-45deg);
+  }
+  .chip.pill { min-height: 44px; padding: 8px 14px; border-radius: 999px; flex-direction: row; align-items: center; }
+  .chip.pill::before, .chip.pill::after { display: none; }
+  .chip.pill .lbl { font-size: 0.92rem; font-weight: 500; }
+  .chip.pill[aria-pressed="true"] .lbl { font-weight: 600; }
+  .chip.pill[aria-pressed="true"] .lbl::before { content: "✓ "; }
+
+  /* optional, so it stays one quiet scrolling row rather than competing with the axes */
+  .domains {
+    display: flex; gap: 6px; margin: 2px -16px 12px; padding: 2px 16px 4px;
+    overflow-x: auto; scrollbar-width: none; -webkit-overflow-scrolling: touch;
+  }
+  .domains::-webkit-scrollbar { display: none; }
+  .domains .chip.pill { flex: none; background: transparent; }
+  .domains .chip.pill .lbl { font-size: 0.86rem; font-weight: 400; color: var(--ink-dim); }
+  .domains .chip.pill[aria-pressed="true"] { background: var(--accent); }
+  .domains .chip.pill[aria-pressed="true"] .lbl { color: var(--accent-ink); font-weight: 600; }
+
+  /* ---------- axis cards ---------- */
+  .axis { border-radius: 18px; padding: 14px 14px 14px; margin-bottom: 12px; }
+  .axis.spirit { background: var(--wash-spirit); }
+  .axis.body { background: var(--wash-body); }
+  .axis.mind { background: var(--wash-mind); }
+  .axis-head { margin: 0 2px 10px; }
+  .axis-name { font-size: 0.75rem; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: var(--ink-dim); }
+  .axis-q { font-size: 1.05rem; font-weight: 600; margin-top: 2px; }
+  .grid { display: grid; gap: 8px; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); }
+  .grid.one { grid-template-columns: 1fr; }
+  .group-label { font-size: 0.7rem; font-weight: 700; letter-spacing: 0.16em; color: var(--ink-faint); margin: 14px 2px 8px; }
+  /* PRD §8.2: Control must not share a visual bin with Rest */
+  .not-taken { display: grid; gap: 8px; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); }
+  .flavors { display: flex; gap: 8px; margin-top: 10px; flex-wrap: wrap; }
+
+  .footer {
+    position: sticky; bottom: 0; margin: 4px -16px 0; padding: 14px 16px calc(6px + env(safe-area-inset-bottom));
+    background: linear-gradient(to bottom, color-mix(in srgb, var(--paper) 0%, transparent), var(--paper) 22px);
+    display: flex; flex-direction: column; align-items: center;
+  }
+
+  /* ---------- pin ---------- */
+  .pin-list { display: flex; flex-direction: column; gap: 8px; margin: 16px 0; }
+  .pin-list .chip { min-height: 56px; }
+  .pin-list .chip .lbl { font-weight: 500; font-size: 1.02rem; }
+  .pin-list .chip[aria-pressed="true"] .lbl { font-weight: 600; }
+  .chip.also { border-style: dashed; border-color: var(--ink-faint); }
+  .also-tag { font-size: 0.72rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink-faint); margin-top: 3px; }
+  .text-input {
+    width: 100%; min-height: 48px; padding: 10px 12px; border-radius: 12px; border: 1px solid var(--line);
+    background: var(--paper-raised); font-size: 16px;
+  }
+  .field-label { display: block; font-size: 0.88rem; color: var(--ink-dim); margin: 0 2px 6px; }
+  .instruction { color: var(--ink-dim); margin-top: 8px; }
+
+  /* ---------- strategy ---------- */
+  .recap { font-size: 0.86rem; color: var(--ink-dim); line-height: 1.5; margin: 6px 0 22px; }
+  .strategy-text { font-size: 1.35rem; line-height: 1.4; margin-top: 12px; }
+  .note { margin-top: 16px; padding-left: 12px; border-left: 2px solid var(--line); color: var(--ink-dim); font-size: 0.95rem; }
+  .axis-choices { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; margin-bottom: 4px; }
+
+  /* ---------- breathe (PRD §12) ---------- */
+  .breathe { justify-content: center; align-items: center; text-align: center; padding: 8px 0; }
+  .breathe-top { width: 100%; min-height: 44px; display: flex; justify-content: space-between; align-items: center; }
+  .breathe-top .link { visibility: hidden; }
+  .breathe-top .link.shown { visibility: visible; }
+  .breathe-body { flex: 1; display: flex; flex-direction: column; justify-content: center; align-items: center; width: 100%; }
+  .home-intro { font-size: 1.3rem; font-weight: 500; min-height: 1.6em; transition: opacity 1.2s ease; }
+  .home-intro.gone { opacity: 0; }
+
+  /* the AbidingSteps petal bloom, recoloured for paper/navy and driven from one JS clock
+     (--p: 0 at the bottom of the exhale, 1 at the top of the inhale) so a backgrounded
+     tab pauses and resumes it exactly where it was (PRD §20) */
+  .bloom-wrap { --size: min(220px, 56vw, 32vh); width: var(--size); height: var(--size); position: relative; margin: 8px auto 26px; }
+  .bloom {
+    --p: 0; position: absolute; inset: 0;
+    transform: scale(calc(0.15 + 0.85 * var(--p))) rotate(calc((1 - var(--p)) * 180deg));
+  }
+  .petal {
+    position: absolute; top: 50%; left: 50%;
+    width: calc(var(--size) * 0.44); height: calc(var(--size) * 0.44);
+    margin: calc(var(--size) * -0.22) 0 0 calc(var(--size) * -0.22);
+    border-radius: 50%; background: var(--petal); opacity: var(--petal-opacity); mix-blend-mode: var(--petal-blend);
+    /* spread < petal radius, so the petals always overlap at the centre (no hole) */
+    transform: rotate(calc(var(--i) * 45deg)) translateY(calc(var(--p) * var(--size) * -0.2));
+  }
+  /* PRD §17: with reduce motion, no scale — a static bar; only opacity changes */
+  .breath-bar { display: none; width: min(180px, 50vw); height: 4px; border-radius: 4px; background: var(--petal); margin: 40px auto 48px; opacity: 0.3; }
+  html.reduce-motion .bloom-wrap { display: none; }
+  html.reduce-motion .breath-bar { display: block; }
+
+  .fragments { min-height: 7.6em; display: flex; flex-direction: column; justify-content: center; gap: 0.3em; padding: 0 4px; }
+  /* PRD §16: serif only for Scripture; §20: never below 22px, two lines per fragment allowed */
+  .frag { font-family: var(--serif); font-size: max(22px, 1.6rem); line-height: 1.25; opacity: 0; max-width: 22ch; margin: 0 auto; }
+  .ref { font-size: 15px; color: var(--ink-dim); margin-top: 14px; opacity: 0; transition: opacity 1.5s ease; letter-spacing: 0.02em; }
+  .ref.shown { opacity: 1; }
+  .breathe-foot { min-height: 64px; width: 100%; display: flex; align-items: center; justify-content: center; }
+  .breathe-foot .btn { max-width: 220px; opacity: 0; transition: opacity 1.2s ease; pointer-events: none; }
+  .breathe-foot .btn.shown { opacity: 1; pointer-events: auto; }
+
+  /* ---------- after / end ---------- */
+  .quiet-title { font-size: 1.45rem; font-weight: 500; text-align: center; }
+  .end-text { font-size: 1.2rem; text-align: center; line-height: 1.5; max-width: 22ch; margin: 0 auto; }
+
+  /* ---------- onboarding / crisis ---------- */
+  .onb { justify-content: center; }
+  .onb h1 { margin-bottom: 14px; }
+  .onb p { font-size: 1.08rem; color: var(--ink-dim); }
+  .dots { display: flex; gap: 6px; justify-content: center; margin: 22px 0 18px; }
+  .dots span { width: 6px; height: 6px; border-radius: 50%; background: var(--line); }
+  .dots span.on { background: var(--ink-dim); }
+  .crisis p { font-size: 1.1rem; margin-top: 14px; }
+  a.tel { color: var(--accent); font-weight: 700; text-underline-offset: 3px; }
+
+  /* ---------- settings / log ---------- */
+  .row {
+    display: flex; align-items: center; justify-content: space-between; gap: 12px;
+    min-height: 56px; padding: 8px 0; border-bottom: 1px solid var(--line);
+  }
+  .row label, .row .row-label { flex: 1; }
+  .switch {
+    flex: none; width: 52px; height: 32px; border-radius: 999px; border: 1px solid var(--line);
+    background: var(--paper-raised); position: relative; padding: 0;
+  }
+  .switch::after {
+    content: ""; position: absolute; top: 3px; left: 3px; width: 24px; height: 24px; border-radius: 50%;
+    background: var(--ink-faint); transition: transform 0.18s ease, background 0.18s ease;
+  }
+  .switch[aria-checked="true"] { background: var(--accent); border-color: var(--accent); }
+  .switch[aria-checked="true"]::after { transform: translateX(20px); background: var(--accent-ink); }
+  html.reduce-motion .switch::after { transition: none; }
+  select.select {
+    min-height: 44px; padding: 8px 10px; border-radius: 10px; border: 1px solid var(--line); background: var(--paper-raised);
+    font-size: 16px;
+  }
+  .fine { font-size: 0.86rem; color: var(--ink-dim); margin-top: 16px; line-height: 1.5; }
+  .version { font-size: 0.75rem; color: var(--ink-faint); margin-top: 18px; }
+  .log-item { padding: 14px 0; border-bottom: 1px solid var(--line); }
+  .log-when { font-size: 0.8rem; color: var(--ink-faint); }
+  .log-ticks { font-weight: 600; margin-top: 2px; }
+  .log-meta { font-size: 0.88rem; color: var(--ink-dim); margin-top: 2px; }
+
+  .offline { flex: 1; display: flex; align-items: center; justify-content: center; color: var(--ink-dim); }
+</style>
+</head>
+<body>
+<main id="app" aria-live="off"></main>
+<div id="announcer" class="sr-only" aria-live="polite" aria-atomic="true"></div>
+<noscript><p style="padding:24px">I Am Here needs JavaScript.</p></noscript>
+<script type="module" src="app.js"></script>
+<script>
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => {}));
+  }
+</script>
+</body>
+</html>

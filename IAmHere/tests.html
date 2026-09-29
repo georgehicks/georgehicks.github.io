@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>I Am Here — acceptance tests</title>
+<style>
+  body { font: 14px/1.45 -apple-system, system-ui, sans-serif; margin: 20px; max-width: 900px; }
+  .pass { color: #1d7a3e; } .fail { color: #b3261e; font-weight: 600; }
+  #sum { font-size: 18px; font-weight: 700; margin-bottom: 12px; }
+  li { margin: 2px 0; } code { font-size: 12px; }
+</style>
+</head>
+<body>
+<div id="sum">Running…</div>
+<ul id="out"></ul>
+<script type="module">
+// Dev-only page (not cached by sw.js, not linked from the app). PRD §22.
+import * as E from './engine.js';
+const C = E.deepFreeze(await (await fetch('content.json?_=' + Date.now())).json());
+const out = document.getElementById('out');
+let pass = 0, fail = 0;
+function t(name, fn) {
+  let ok = false, msg = '';
+  try { const r = fn(); ok = r === true || r === undefined; if (r !== true && r !== undefined) msg = String(r); }
+  catch (e) { msg = e.message; }
+  ok ? pass++ : fail++;
+  const li = document.createElement('li');
+  li.className = ok ? 'pass' : 'fail';
+  li.textContent = (ok ? '✓ ' : '✗ ') + name + (msg ? ' — ' + msg : '');
+  out.append(li);
+}
+const eq = (a, b, what = '') => { if (JSON.stringify(a) !== JSON.stringify(b)) throw new Error(`${what} expected ${JSON.stringify(b)}, got ${JSON.stringify(a)}`); };
+const L = (spirit, body, mind, timeTravelFlavor = null) => ({ spirit, body, mind, timeTravelFlavor, domain: 'moment' });
+
+// ---- §21 content shape ----
+t('content.json has exactly the §21 top-level keys', () => eq(Object.keys(C).sort(),
+  ['axes', 'copy', 'crisis', 'dyingPins', 'managedPins', 'onboarding', 'strategiesByBody', 'strategiesByMind', 'strategiesByPin', 'verseByBody', 'verseByMind', 'verseByPin'].sort()));
+t('content is frozen', () => Object.isFrozen(C) && Object.isFrozen(C.verseByPin.proverb));
+t('no markdown in content.json', () => !/[*_`#]{2}|\[[^\]]+\]\(/.test(JSON.stringify(C)) || 'markdown-like text found');
+
+// ---- §9 recommendation matrix ----
+const matrix = [
+  [L('dying', 'fight', 'blank'), 'mind'],                 // required by §22
+  [L('managed', 'control', 'time_travel'), 'spirit'],     // required by §22
+  [L('rising', 'flight', 'present_open'), 'body'],
+  [L('dying', 'rest', 'present_narrowed'), 'spirit'],
+  [L('rising', 'rest', 'time_travel'), 'mind'],
+  [L('rising', 'rest', 'present_narrowed'), 'mind'],
+  [L('rising', 'control', 'present_open'), 'body'],
+  [L('rising', 'rest', 'present_open'), 'spirit'],
+  [L('managed', 'collapse', 'present_open'), 'body'],
+  [L('rising', 'freeze', 'blank'), 'mind'],
+  [L('rising', 'control', 'time_travel'), 'mind'],
+];
+matrix.forEach(([loc, want]) => t(`recommend ${loc.spirit}+${loc.body}+${loc.mind} → ${want}`, () => eq(E.recommendAxis(loc), want)));
+
+// ---- pin gating ----
+t('dying shows only the dying list', () => { const l = L('dying', 'rest', 'present_open'); eq(E.pinListFor(l), 'dying'); eq(E.pinsFor(C, 'dying').map(p => p.id), C.dyingPins.map(p => p.id)); return E.needsPin(l); });
+t('managed shows only the managed list', () => { const l = L('managed', 'rest', 'present_open'); eq(E.pinListFor(l), 'managed'); eq(E.pinsFor(C, 'managed').map(p => p.id), C.managedPins.map(p => p.id)); return E.needsPin(l); });
+t('dying and managed lists share no ids', () => !C.dyingPins.some(d => C.managedPins.some(m => m.id === d.id)));
+t('blank skips the pin screen (spirit managed + mind blank)', () => { const l = L('managed', 'rest', 'blank'); eq(E.pinListFor(l), 'skipped_blank'); return !E.needsPin(l); });
+t('rising spirit never pins', () => !E.needsPin(L('rising', 'fight', 'time_travel')));
+t('home triple: all home, no pin', () => { const l = L('rising', 'rest', 'present_open'); return E.isAllHome(l) && !E.needsPin(l) && E.pinListFor(l) === null; });
+t('home triple breath is John 15:9, 4 breaths', () => { const v = E.verseFor(C, { loc: L('rising', 'rest', 'present_open'), homePath: true }); eq(v.ref, 'John 15:9'); eq(E.breathPlan({ loc: {}, homePath: true }).total, 4); });
+
+// ---- §2 one pin per visit ----
+t('three pin taps keep the first', () => {
+  let s = {}; s = E.tapPin(s, 'unloved'); s = E.tapPin(s, 'unsafe'); s = E.tapPin(s, 'alone');
+  eq(s, { primary: 'unloved', also: 'unsafe' });
+});
+t('session record stores one pinId and no free text', () => {
+  const v = { loc: L('managed', 'rest', 'present_open'), axis: 'spirit', pinId: 'better_than', thanWhom: 'Someone', verse: C.verseByPin.better_than, homePath: false };
+  const rec = E.buildSession(v, { breathsCompleted: 8, saved: true });
+  eq(Object.keys(rec).sort(), ['axisMoved', 'body', 'breathsCompleted', 'domain', 'id', 'mind', 'pinId', 'pinList', 'saved', 'spirit', 'timeTravelFlavor', 'ts', 'verseRef'].sort());
+  return !JSON.stringify(rec).includes('Someone') || 'than-whom text leaked into the record';
+});
+t('domain skipped stores moment', () => eq(E.buildSession({ loc: { ...L('dying', 'rest', 'present_open'), domain: null }, axis: 'spirit', pinId: 'alone', verse: C.verseByPin.alone }, { breathsCompleted: 6 }).domain, 'moment'));
+
+// ---- proverb ----
+t('proverb strategy includes the not-in-Scripture note', () => eq(E.honestyNote(C, 'proverb'), 'That sentence is not in Scripture. It is the desk talking.'));
+t('no other pin gets a note', () => [...C.dyingPins, ...C.managedPins].filter(p => p.id !== 'proverb').every(p => E.honestyNote(C, p.id) === null));
+t('proverb breath is Romans 5:6 fragments only', () => {
+  const v = E.verseFor(C, { loc: L('managed', 'rest', 'present_open'), axis: 'spirit', pinId: 'proverb' });
+  eq(v, { inhale: 'while we were still weak', exhale: 'Christ died for the ungodly', ref: 'Romans 5:6' });
+  return !JSON.stringify(v).includes('help themselves');
+});
+
+// ---- §12.2 selection rules ----
+const sel = (loc, axis, pinId) => E.verseFor(C, { loc, axis, pinId }).ref;
+t('blank → Rom 8:26 regardless of pin', () => { eq(sel(L('dying', 'fight', 'blank'), 'mind', 'unloved'), 'Romans 8:26'); eq(sel(L('rising', 'freeze', 'blank'), 'mind', null), 'Romans 8:26'); });
+t('blank path has 2 silent breaths', () => eq(E.breathPlan({ loc: L('rising', 'rest', 'blank') }).silent, 2));
+t('pin pair wins over axis (moving body, pinned)', () => eq(sel(L('dying', 'fight', 'present_open'), 'body', 'must_carry'), 'Psalm 55:22'));
+t('time-travel future → Matt 6:34', () => eq(sel(L('rising', 'rest', 'time_travel', 'future'), 'mind', null), 'Matthew 6:34'));
+t('time-travel past → Isa 43:19', () => eq(sel(L('rising', 'rest', 'time_travel', 'past'), 'mind', null), 'Isaiah 43:19'));
+t('time-travel no flavor → Matt 6:34', () => eq(sel(L('rising', 'rest', 'time_travel'), 'mind', null), 'Matthew 6:34'));
+t('present-narrowed → Jas 1:19 (quick to hear)', () => eq(E.verseFor(C, { loc: L('rising', 'rest', 'present_narrowed'), axis: 'mind' }).inhale, 'be quick to hear'));
+t('body only (spirit rising) → pair by body tick', () => {
+  const want = { control: 'Psalm 46:10', fight: 'James 1:19', flight: 'Psalm 139:7', freeze: 'Exodus 14:14', collapse: 'Matthew 11:28' };
+  Object.entries(want).forEach(([b, ref]) => eq(sel(L('rising', b, 'present_open'), 'body', null), ref, b));
+});
+t('unknown_dying (after asking twice) → Isa 43:1', () => eq(sel(L('dying', 'rest', 'present_open'), 'spirit', 'unknown_dying'), 'Isaiah 43:1'));
+t('unknown_managed → Ps 46:10', () => eq(sel(L('managed', 'rest', 'present_open'), 'spirit', 'unknown_managed'), 'Psalm 46:10'));
+t('better_than with empty than-whom: same pair', () => eq(sel(L('managed', 'rest', 'present_open'), 'spirit', 'better_than'), '1 Corinthians 4:7'));
+
+// ---- strategies ----
+t('strategy by recommended axis', () => {
+  eq(E.strategyFor(C, L('dying', 'fight', 'present_open'), 'body', 'unloved'), 'One sentence before the case: “I’m reading attack. One minute.”');
+  eq(E.strategyFor(C, L('rising', 'rest', 'blank'), 'mind', null), 'Do not interpret. Body first. One word after two breaths: here.');
+  eq(E.strategyFor(C, L('managed', 'rest', 'present_open'), 'spirit', 'up_to_me'), 'One task that is actually yours. The rest is not a moral.');
+});
+t('every pin has a strategy and a verse', () => [...C.dyingPins, ...C.managedPins].every(p => C.strategiesByPin[p.id] && C.verseByPin[p.id]) || 'missing');
+t('override only offers off-home axes', () => eq(E.axisChoices(L('managed', 'control', 'present_open')), ['spirit', 'body']));
+
+// ---- §12.2 character-for-character (second, independent transcription of the PRD tables) ----
+const PRD = {
+  verseByPin: {
+    unloved: ['I have loved you', 'with an everlasting love', 'Jeremiah 31:3'],
+    unworthy: ['while we were still sinners', 'Christ died for us', 'Romans 5:8'],
+    unsafe: ['when you pass through the waters', 'I will be with you', 'Isaiah 43:2'],
+    not_enough: ['My grace is sufficient', 'for you', '2 Corinthians 12:9'],
+    no_trust: ['When I am afraid', 'I put my trust in you', 'Psalm 56:3'],
+    alone: ['I have called you by name', 'you are mine', 'Isaiah 43:1'],
+    must_carry: ['Cast your burden on the Lord', 'and he will sustain you', 'Psalm 55:22'],
+    unknown_dying: ['I have called you by name', 'you are mine', 'Isaiah 43:1'],
+    in_control: ['Be still', 'and know that I am God', 'Psalm 46:10'],
+    earned_place: ['What do you have', 'that you did not receive?', '1 Corinthians 4:7'],
+    better_than: ['What do you have', 'that you did not receive?', '1 Corinthians 4:7'],
+    mine_to_manage: ['Unless the Lord builds the house', 'those who build labor in vain', 'Psalm 127:1'],
+    up_to_me: ['apart from me', 'you can do nothing', 'John 15:5'],
+    proverb: ['while we were still weak', 'Christ died for the ungodly', 'Romans 5:6'],
+    abide_after: ['Abide in me', 'and I in you', 'John 15:4'],
+    need_nothing: ['The Lord is my shepherd', 'I shall not want', 'Psalm 23:1'],
+    unknown_managed: ['Be still', 'and know that I am God', 'Psalm 46:10'],
+  },
+  verseByBody: {
+    control: ['Be still', 'and know that I am God', 'Psalm 46:10'],
+    fight: ['slow to speak', 'slow to anger', 'James 1:19'],
+    flight: ['Where shall I go', 'from your Spirit?', 'Psalm 139:7'],
+    freeze: ['The Lord will fight for you', 'you have only to be silent', 'Exodus 14:14'],
+    collapse: ['Come to me', 'I will give you rest', 'Matthew 11:28'],
+    rest: ['As the Father has loved me', 'so have I loved you', 'John 15:9'],
+  },
+  verseByMind: {
+    present_narrowed: ['be quick to hear', 'slow to speak', 'James 1:19'],
+    time_travel_future: ['do not be anxious', 'about tomorrow', 'Matthew 6:34'],
+    time_travel_past: ['Behold, I am doing', 'a new thing', 'Isaiah 43:19'],
+    time_travel: ['do not be anxious', 'about tomorrow', 'Matthew 6:34'],
+    blank: ['The Spirit himself', 'intercedes for us', 'Romans 8:26'],
+    present_open: ['As the Father has loved me', 'so have I loved you', 'John 15:9'],
+  },
+};
+for (const table of Object.keys(PRD)) {
+  t(`${table}: same keys as PRD`, () => eq(Object.keys(C[table]).sort(), Object.keys(PRD[table]).sort()));
+  for (const [k, [inhale, exhale, ref]] of Object.entries(PRD[table])) {
+    t(`${table}.${k} matches PRD exactly`, () => eq(C[table][k], { inhale, exhale, ref }));
+  }
+}
+
+// ---- no streak UI anywhere in the build ----
+const src = await Promise.all(['app.js', 'index.html', 'engine.js'].map(f => fetch(f + '?_=' + Date.now()).then(r => r.text())));
+t('app code has no streak, score, badge, leaderboard, or celebration', () => {
+  const hit = src.join('\n').match(/streak|leaderboard|badge|confetti|congrat|well done|great job/i);
+  return !hit || 'found: ' + hit[0];
+});
+t('"streak"/"score" appear in content only inside onboarding\'s "No score. No streak."', () => {
+  const s = JSON.stringify({ ...C, onboarding: C.onboarding.filter((_, i) => i !== 1) });
+  return !/streak|score/i.test(s) && /No score\. No streak\./.test(C.onboarding[1].body);
+});
+t('crisis reachable from /here and onboarding', () => !!C.copy.here.crisisLink && !!C.onboarding[2].secondary && src[0].includes("go('crisis')"));
+
+document.getElementById('sum').textContent = `${pass} passed, ${fail} failed`;
+document.getElementById('sum').className = fail ? 'fail' : 'pass';
+document.title = `${fail ? '✗' : '✓'} ${pass}/${pass + fail} — I Am Here tests`;
+</script>
+</body>
+</html>
