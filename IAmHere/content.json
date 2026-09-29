@@ -15,7 +15,7 @@
       "question": "Unmanaged, gripping, or taken?",
       "home": "rest",
       "ticks": [
-        { "id": "rest", "label": "Rest", "helper": "Jaw soft. The list can wait." },
+        { "id": "rest", "label": "Rest", "helper": "Jaw soft. Free to be still or move." },
         { "id": "control", "label": "Control", "helper": "Grip. Scanning. Feels like agency." },
         { "id": "fight", "label": "Fight", "helper": "Toward. Heat. Win." },
         { "id": "flight", "label": "Flight", "helper": "Away. Screen, door, task as exit." },
