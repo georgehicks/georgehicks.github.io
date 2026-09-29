@@ -34,7 +34,7 @@
       "ticks": [
         { "id": "present_open", "label": "Present-open", "helper": "Here, and can be surprised." },
         { "id": "present_narrowed", "label": "Present-narrowed", "helper": "Here, to prosecute, solve, or code." },
-        { "id": "time_travel", "label": "Time-travel", "helper": "Past storm or future swallow." },
+        { "id": "time_travel", "label": "Time-travel", "helper": "Past storm or future dread." },
         { "id": "blank", "label": "Blank", "helper": "Zombie. Snow. Nobody home." }
       ],
       "timeTravelFlavors": [
