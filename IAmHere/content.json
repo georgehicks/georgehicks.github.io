@@ -7,7 +7,7 @@
       "ticks": [
         { "id": "rising", "label": "Alive", "helper": "With. Received. Not self-supplied." },
         { "id": "managed", "label": "Managing", "helper": "Correct words, then back to handling it." },
-        { "id": "dying", "label": "Fading", "helper": "Cut off. Anti-love is loud." }
+        { "id": "dying", "label": "Fading", "helper": "Far off. Love is hard to hear." }
       ]
     },
     "body": {
@@ -169,7 +169,7 @@
     "pin": {
       "titleDying": "Which sentence feels true right now?",
       "titleManaged": "Which sentence is in charge right now?",
-      "instruction": "Pick one. None is allowed.",
+      "instruction": "Pick the closest one.",
       "followup": "Which would you least want confirmed right now — by a person, by tomorrow, or by God?",
       "thanWhom": "Than whom? (optional, stays on device)",
       "also": "also",
