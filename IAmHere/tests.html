@@ -31,7 +31,7 @@ function t(name, fn) {
   out.append(li);
 }
 const eq = (a, b, what = '') => { if (JSON.stringify(a) !== JSON.stringify(b)) throw new Error(`${what} expected ${JSON.stringify(b)}, got ${JSON.stringify(a)}`); };
-const L = (spirit, body, mind, timeTravelFlavor = null) => ({ spirit, body, mind, timeTravelFlavor, domain: 'moment' });
+const L = (spirit, body, mind, timeTravelFlavor = null) => ({ spirit, body, mind, timeTravelFlavor });
 
 // ---- §21 content shape ----
 t('content.json has exactly the §21 top-level keys', () => eq(Object.keys(C).sort(),
@@ -72,10 +72,9 @@ t('three pin taps keep the first', () => {
 t('session record stores one pinId and no free text', () => {
   const v = { loc: L('managed', 'rest', 'present_open'), axis: 'spirit', pinId: 'better_than', thanWhom: 'Someone', verse: C.verseByPin.better_than, homePath: false };
   const rec = E.buildSession(v, { breathsCompleted: 8, saved: true });
-  eq(Object.keys(rec).sort(), ['axisMoved', 'body', 'breathsCompleted', 'domain', 'id', 'mind', 'pinId', 'pinList', 'saved', 'spirit', 'timeTravelFlavor', 'ts', 'verseRef'].sort());
+  eq(Object.keys(rec).sort(), ['axisMoved', 'body', 'breathsCompleted', 'id', 'mind', 'pinId', 'pinList', 'saved', 'spirit', 'timeTravelFlavor', 'ts', 'verseRef'].sort());
   return !JSON.stringify(rec).includes('Someone') || 'than-whom text leaked into the record';
 });
-t('domain skipped stores moment', () => eq(E.buildSession({ loc: { ...L('dying', 'rest', 'present_open'), domain: null }, axis: 'spirit', pinId: 'alone', verse: C.verseByPin.alone }, { breathsCompleted: 6 }).domain, 'moment'));
 
 // ---- proverb ----
 t('proverb strategy includes the not-in-Scripture note', () => eq(E.honestyNote(C, 'proverb'), 'That sentence is not in Scripture. It is the desk talking.'));
@@ -167,7 +166,7 @@ t('"streak"/"score" appear in content only inside onboarding\'s "No score. No st
   const s = JSON.stringify({ ...C, onboarding: C.onboarding.filter((_, i) => i !== 1) });
   return !/streak|score/i.test(s) && /No score\. No streak\./.test(C.onboarding[1].body);
 });
-t('crisis reachable from /here and onboarding', () => !!C.copy.here.crisisLink && !!C.onboarding[2].secondary && src[0].includes("go('crisis')"));
+t('help screen reachable from /here and settings, not pushed in onboarding', () => !!C.copy.here.crisisLink && (src[0].match(/go\('crisis'\)/g) || []).length === 2 && !/988|danger|ending your life/.test(JSON.stringify(C.onboarding)));
 
 document.getElementById('sum').textContent = `${pass} passed, ${fail} failed`;
 document.getElementById('sum').className = fail ? 'fail' : 'pass';

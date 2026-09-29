@@ -63,7 +63,7 @@ const sentence = s => /[.?!…”]$/.test(s) ? s : s + '.';
 const announce = text => { $announce.textContent = ''; setTimeout(() => { $announce.textContent = text; }, 50); };
 
 // ===================== visit state (in memory only — PRD §20: force-close = no save) =====================
-const freshDraft = () => ({ domain: 'moment', spirit: null, body: null, mind: null, timeTravelFlavor: null });
+const freshDraft = () => ({ spirit: null, body: null, mind: null, timeTravelFlavor: null });
 let draft = freshDraft();
 let visit = null;
 let obStep = 0;
@@ -134,13 +134,12 @@ const VIEWS = {
     return h('section', { class: 'view onb' },
       h('div', { class: 'spacer' }),
       h('h1', { text: s.title }),
-      h('p', {}, last ? withTel(s.body) : s.body),
+      h('p', { text: s.body }),
       h('div', { class: 'spacer' }),
       h('div', { class: 'dots', 'aria-hidden': 'true' }, C.onboarding.map((_, i) => h('span', { class: i === obStep ? 'on' : '' }))),
       h('div', { class: 'stack' },
         btn(s.cta, last ? finish : next),
-        obStep === 1 && link(C.copy.skip, finish),
-        last && s.secondary && link(s.secondary, () => go('crisis')),
+        obStep > 0 && !last && link(C.copy.skip, finish),
       ),
     );
   },
@@ -151,7 +150,6 @@ const VIEWS = {
     let flavorRow, cta;
     const update = () => {
       for (const axis of E.AXES) refs[axis].forEach(b => b.setAttribute('aria-pressed', String(draft[axis] === b.dataset.id)));
-      domainBtns.forEach(b => b.setAttribute('aria-pressed', String(draft.domain === b.dataset.id)));
       flavorRow.hidden = draft.mind !== 'time_travel';
       flavorRow.querySelectorAll('button').forEach(b => b.setAttribute('aria-pressed', String(draft.timeTravelFlavor === b.dataset.id)));
       cta.disabled = !E.isComplete(draft);
@@ -174,11 +172,6 @@ const VIEWS = {
     };
     const byId = (axis, id) => C.axes[axis].ticks.find(t => t.id === id);
 
-    const domainBtns = C.copy.here.domains.map(d => {
-      const b = chip({ label: d.label, cls: 'pill', onclick: () => { draft.domain = d.id; update(); } });
-      b.dataset.id = d.id; return b;
-    });
-
     const bodyGroups = C.axes.body.groups.map(g => g.label
       ? [h('div', { class: 'group-label', text: g.label }), h('div', { class: 'grid' }, g.ids.map(id => tick('body', byId('body', id))))]
       : h('div', { class: 'not-taken' }, g.ids.map(id => tick('body', byId('body', id)))));
@@ -195,11 +188,12 @@ const VIEWS = {
       h('div', { class: 'topbar' },
         h('h1', { class: 'wordmark', text: C.copy.wordmark }),
         h('button', { type: 'button', class: 'icon-btn', 'aria-label': C.copy.settings.title, onclick: () => go('settings') }, gearIcon())),
-      h('div', { class: 'domains' }, domainBtns),
       card('spirit', h('div', { class: 'grid one' }, C.axes.spirit.ticks.map(t => tick('spirit', t)))),
       card('body', bodyGroups),
       card('mind', [h('div', { class: 'grid' }, C.axes.mind.ticks.map(t => tick('mind', t))), flavorRow]),
-      h('div', { class: 'footer' }, cta, link(C.copy.here.crisisLink, () => go('crisis'))),
+      h('div', { class: 'footer' }, cta),
+      // deliberately quiet: reachable, but below the fold rather than beside the main action
+      h('div', { class: 'center help-link' }, link(C.copy.here.crisisLink, () => go('crisis'), 'small')),
     );
     update();
     return view;
@@ -335,7 +329,6 @@ const VIEWS = {
     const L = C.copy.log;
     const items = sessions().slice().reverse();
     const fmt = new Intl.DateTimeFormat(undefined, { dateStyle: 'medium', timeStyle: 'short' });
-    const domainLabel = id => (C.copy.here.domains.find(d => d.id === id) || {}).label;
     return h('section', { class: 'view' },
       link(C.copy.back, () => go(visit ? 'again' : 'settings'), 'back'),
       h('h2', { text: L.title }),
@@ -343,7 +336,7 @@ const VIEWS = {
         const when = new Date(s.ts);
         const mind = tickLabel('mind', s.mind) + (s.timeTravelFlavor ? ' · ' + (C.axes.mind.timeTravelFlavors.find(f => f.id === s.timeTravelFlavor) || {}).label : '');
         return h('div', { class: 'log-item' },
-          h('div', { class: 'log-when', text: (isNaN(when) ? s.ts : fmt.format(when)) + (s.domain && s.domain !== 'moment' ? ' · ' + domainLabel(s.domain) : '') }),
+          h('div', { class: 'log-when', text: isNaN(when) ? s.ts : fmt.format(when) }),
           h('div', { class: 'log-ticks', text: [tickLabel('spirit', s.spirit), tickLabel('body', s.body), mind].join(' · ') }),
           s.pinId && h('div', { class: 'log-meta', text: pinLabel(s.pinId) }),
           h('div', { class: 'log-meta', text: `${L.moved} ${s.axisMoved} · ${s.verseRef}` }));
@@ -393,6 +386,7 @@ const VIEWS = {
       toggle('tone', S.tone),
       toggle('keepAll', S.keepAll),
       h('div', { class: 'row' }, h('span', { class: 'row-label', text: S.log }), link('›', () => go('log'))),
+      h('div', { class: 'row' }, h('span', { class: 'row-label', text: C.copy.here.crisisLink }), link('›', () => go('crisis'))),
       h('div', { style: 'margin-top:22px' }, clear),
       h('p', { class: 'fine', text: S.scripture }),
       h('p', { class: 'fine', text: S.about }),

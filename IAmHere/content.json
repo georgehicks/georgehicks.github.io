@@ -150,12 +150,6 @@
     {
       "title": "One breath. One sentence.",
       "body": "You will tap where you are. If something is pinning you, you will name it. Then a short breath with a line of Scripture. No score. No streak.",
-      "cta": "Continue"
-    },
-    {
-      "title": "This is not for every kind of pain.",
-      "body": "If you are in danger now, or thinking of ending your life, this is not the tool. Use the stand-down screen or local help. In the US, call or text 988.",
-      "secondary": "I need help now",
       "cta": "I am here"
     }
   ],
@@ -172,17 +166,8 @@
     "back": "Back",
     "skip": "Skip",
     "here": {
-      "domains": [
-        { "id": "moment", "label": "This moment" },
-        { "id": "wife", "label": "Wife / closest" },
-        { "id": "future", "label": "Future" },
-        { "id": "work", "label": "Work" },
-        { "id": "body", "label": "Body" },
-        { "id": "God", "label": "God" },
-        { "id": "friend", "label": "Friend" }
-      ],
       "cta": "This is where I am",
-      "crisisLink": "I am in present danger"
+      "crisisLink": "Need human help?"
     },
     "pin": {
       "titleDying": "What would hurt most if it were true?",

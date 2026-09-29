@@ -141,16 +141,8 @@
   .chip.pill[aria-pressed="true"] .lbl { font-weight: 600; }
   .chip.pill[aria-pressed="true"] .lbl::before { content: "✓ "; }
 
-  /* optional, so it stays one quiet scrolling row rather than competing with the axes */
-  .domains {
-    display: flex; gap: 6px; margin: 2px -16px 12px; padding: 2px 16px 4px;
-    overflow-x: auto; scrollbar-width: none; -webkit-overflow-scrolling: touch;
-  }
-  .domains::-webkit-scrollbar { display: none; }
-  .domains .chip.pill { flex: none; background: transparent; }
-  .domains .chip.pill .lbl { font-size: 0.86rem; font-weight: 400; color: var(--ink-dim); }
-  .domains .chip.pill[aria-pressed="true"] { background: var(--accent); }
-  .domains .chip.pill[aria-pressed="true"] .lbl { color: var(--accent-ink); font-weight: 600; }
+  .help-link { margin-top: 28px; }
+  .help-link .link { color: var(--ink-faint); text-decoration-color: transparent; }
 
   /* ---------- axis cards ---------- */
   .axis { border-radius: 18px; padding: 14px 14px 14px; margin-bottom: 12px; }

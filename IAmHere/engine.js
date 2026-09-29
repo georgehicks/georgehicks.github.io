@@ -111,7 +111,6 @@ export function buildSession(v, { breathsCompleted, saved }) {
   return {
     id: uuid(),
     ts: localISO(),
-    domain: v.loc.domain || 'moment',
     spirit: v.loc.spirit,
     body: v.loc.body,
     mind: v.loc.mind,
