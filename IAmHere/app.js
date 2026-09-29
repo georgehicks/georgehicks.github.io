@@ -446,7 +446,6 @@ const VIEWS = {
       h('div', { style: 'margin-top:22px' }, clear),
       h('p', { class: 'fine', text: S.scripture }),
       h('p', { class: 'fine', text: S.about }),
-      h('p', { class: 'fine' }, withTel(C.crisis.line)),
       version,
     );
   },
