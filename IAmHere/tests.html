@@ -112,6 +112,12 @@ t('just breathe (no check-in): 8 breaths, John 15:9, nothing silent', () => {
   const s = E.breathScript(C, { loc: {}, direct: true }, 'truth');
   eq(s.length, 8); return s.every(x => x && x.ref === 'John 15:9');
 });
+t('a named lie opens in Truth over lies; otherwise the remembered mode', () => {
+  eq(E.startMode({ pinId: 'unloved' }, 'with'), 'truth');
+  eq(E.startMode({ pinId: 'unknown_dying' }, 'with'), 'with');
+  eq(E.startMode({ pinId: null }, 'above'), 'above');
+  eq(E.startMode({ pinId: null }, 'bogus'), 'truth');
+});
 t('breath is 8 by default', () => eq(E.breathPlan({ loc: L('dying', 'rest', 'present_open') }).total, 8));
 t('no PRD shorthand left in the copy', () => {
   const hit = JSON.stringify({ ...C, verseByPin: 0, verseByBody: 0, verseByMind: 0 }).match(/this year’s face|old broadcast|two columns|second half|weather|provision|reading attack|not a moral|running the desk|Zombie|Anti-love/i);

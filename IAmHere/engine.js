@@ -98,6 +98,10 @@ export const breathPlan = ({ loc, homePath }) => homePath
 // prayer lines. Returns one entry per breath: { inhale, exhale, ref } or null for a
 // silent breath (blank mind, truth mode only).
 export const BREATH_MODES = ['truth', 'above', 'with'];
+// Which mode a breath opens in: a check-in that named a lie always opens on its answering
+// verse; otherwise the last mode the person chose.
+export const startMode = (v, remembered) =>
+  (v.pinId && !isUnknownPin(v.pinId)) ? 'truth' : BREATH_MODES.includes(remembered) ? remembered : 'truth';
 export function breathScript(C, v, mode = 'truth') {
   const m = C.breathModes.find(x => x.id === mode);
   if (m && m.steps) return m.steps.flatMap(s => Array(s.breaths).fill(s)).map(s => ({ inhale: s.inhale, exhale: s.exhale, ref: null }));

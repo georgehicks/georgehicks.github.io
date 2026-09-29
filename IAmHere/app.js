@@ -395,7 +395,8 @@ const VIEWS = {
 // ===================== breath (PRD §12) =====================
 function breathView(homePath) {
   const B = E.BREATH;
-  const mode = visit.breathMode = E.BREATH_MODES.includes(settings.breathMode) ? settings.breathMode : 'truth';
+  // a mode tapped during this visit wins; otherwise a named lie opens in truth, else the remembered mode
+  const mode = visit.breathMode = visit.modeTapped || E.startMode(visit, settings.breathMode);
   visit.verse = E.verseFor(C, visit);
   const script = E.breathScript(C, visit, mode); // one entry per breath; null = silent
   const total = script.length;
@@ -418,7 +419,7 @@ function breathView(homePath) {
   const modeRow = h('div', { class: 'mode-row', role: 'group', 'aria-label': C.copy.breathe.modes },
     C.breathModes.map(m => chip({ label: m.label, cls: 'pill', pressed: m.id === mode, onclick: () => {
       if (m.id === mode) return;
-      settings.breathMode = m.id; saveSettings(); tone.prime(); render(current);
+      visit.modeTapped = m.id; settings.breathMode = m.id; saveSettings(); tone.prime(); render(current);
     } })));
   const intro = homePath ? h('p', { class: 'home-intro', text: C.copy.home.text }) : null;
 
