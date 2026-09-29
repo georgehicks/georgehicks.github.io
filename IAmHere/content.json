@@ -45,13 +45,13 @@
   },
 
   "dyingPins": [
-    { "id": "unloved", "label": "Love has turned. I am not wanted in this." },
-    { "id": "unworthy", "label": "I am bad, or only holdable if I get this right." },
-    { "id": "unsafe", "label": "If I stay, I will be swallowed or hurt." },
-    { "id": "not_enough", "label": "What this requires is already beyond me." },
-    { "id": "no_trust", "label": "There is no ground I can trust." },
-    { "id": "alone", "label": "I am alone in this, and I shouldn’t take up room." },
-    { "id": "must_carry", "label": "If I don’t carry it, it won’t be made right." },
+    { "id": "unloved", "label": "I’m not wanted here." },
+    { "id": "unworthy", "label": "I have to get this right to be loved." },
+    { "id": "unsafe", "label": "This feels like too much to stay in." },
+    { "id": "not_enough", "label": "This is more than I have." },
+    { "id": "no_trust", "label": "Nothing feels steady enough to trust." },
+    { "id": "alone", "label": "I’m on my own in this." },
+    { "id": "must_carry", "label": "It’s all on me to make this right." },
     { "id": "unknown_dying", "label": "I don’t know yet." }
   ],
 
@@ -144,7 +144,7 @@
   "onboarding": [
     {
       "title": "I Am Here",
-      "body": "Home is Spirit alive, body at rest, mind present and open. This app helps you notice when you have left, and take one step back.",
+      "body": "Home is abiding in Christ: spirit alive to God, body in restful flow, mind present and open. It is received, not earned. This app helps you notice when you have left, and take one step back.",
       "cta": "Continue"
     },
     {
@@ -167,7 +167,7 @@
       "cta": "This is where I am"
     },
     "pin": {
-      "titleDying": "What would hurt most if it were true?",
+      "titleDying": "Which sentence feels true right now?",
       "titleManaged": "Which sentence is in charge right now?",
       "instruction": "Pick one. None is allowed.",
       "followup": "Which would you least want confirmed right now — by a person, by tomorrow, or by God?",
@@ -185,6 +185,7 @@
       "secondary": "Skip to breath"
     },
     "home": {
+      "line": "Home is abiding in Christ: spirit alive to God, body in restful flow, mind present and open.",
       "text": "Stay. Nothing to fix."
     },
     "breathe": {
@@ -200,7 +201,6 @@
       "log": "Log"
     },
     "end": {
-      "text": "Home is Spirit alive, body rest, mind present-open.",
       "link": "I am here"
     },
     "log": {
@@ -221,7 +221,7 @@
       "clear": "Clear all data",
       "clearConfirm": "Tap again to clear everything",
       "scripture": "Quotations are from the ESV.",
-      "about": "I Am Here helps a person notice where they are — spirit, body, and mind — and take one step back toward home. It is a flashlight in a doorway."
+      "about": "I Am Here helps you notice where you are — spirit, body, and mind — and take one step back toward home. Home is abiding in Christ: spirit alive to God, body in restful flow, mind present and open."
     }
   }
 }

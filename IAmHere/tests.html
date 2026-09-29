@@ -89,6 +89,9 @@ t('proverb breath is Romans 5:6 fragments only', () => {
 const sel = (loc, axis, pinId) => E.verseFor(C, { loc, axis, pinId }).ref;
 t('blank → Rom 8:26 regardless of pin', () => { eq(sel(L('dying', 'fight', 'blank'), 'mind', 'unloved'), 'Romans 8:26'); eq(sel(L('rising', 'freeze', 'blank'), 'mind', null), 'Romans 8:26'); });
 t('blank path has 2 silent breaths', () => eq(E.breathPlan({ loc: L('rising', 'rest', 'blank') }).silent, 2));
+t('one home line, used verbatim in onboarding and About', () =>
+  C.onboarding[0].body.startsWith(C.copy.home.line) && C.copy.settings.about.includes(C.copy.home.line)
+  && !/Home is Spirit|Spirit (alive|rising)/.test(JSON.stringify(C)));
 t('breath is 8 by default', () => eq(E.breathPlan({ loc: L('dying', 'rest', 'present_open') }).total, 8));
 t('no copy mentions a list or a desk', () => !/\blist\b|\bdesk\b/i.test(JSON.stringify(C)) || JSON.stringify(C).match(/.{30}\b(list|desk)\b.{30}/i)[0]);
 t('pin pair wins over axis (moving body, pinned)', () => eq(sel(L('dying', 'fight', 'present_open'), 'body', 'must_carry'), 'Psalm 55:22'));
@@ -160,6 +163,7 @@ for (const table of Object.keys(PRD)) {
 
 // ---- no streak UI anywhere in the build ----
 const src = await Promise.all(['app.js', 'index.html', 'engine.js'].map(f => fetch(f + '?_=' + Date.now()).then(r => r.text())));
+t('end card shows the home line', () => src[0].includes("text: C.copy.home.line"));
 t('app code has no streak, score, badge, leaderboard, or celebration', () => {
   const hit = src.join('\n').match(/streak|leaderboard|badge|confetti|congrat|well done|great job/i);
   return !hit || 'found: ' + hit[0];

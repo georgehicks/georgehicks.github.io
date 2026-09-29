@@ -292,7 +292,7 @@ const VIEWS = {
     if (visit.ended) {
       return h('section', { class: 'view' },
         h('div', { class: 'spacer' }),
-        h('h2', { class: 'end-text', text: C.copy.end.text }),
+        h('h2', { class: 'end-text', text: C.copy.home.line }),
         h('div', { class: 'spacer' }),
         h('div', { class: 'center' }, link(C.copy.end.link, resetToHere, 'small')));
     }
