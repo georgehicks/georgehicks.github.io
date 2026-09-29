@@ -143,7 +143,7 @@
 
   "breathModes": [
     { "id": "truth", "label": "Truth over lies" },
-    { "id": "above", "label": "Things above", "steps": [
+    { "id": "above", "label": "Thanks and prayer", "steps": [
       { "inhale": "I am grateful for…", "exhale": "Thank You, Lord.", "breaths": 4 },
       { "inhale": "I pray for…", "exhale": "Thank You, Lord.", "breaths": 4 }
     ] },
@@ -178,12 +178,22 @@
     "skip": "Skip",
     "here": {
       "cta": "This is where I am",
-      "breathe": "Just breathe"
+      "title": "Check in"
+    },
+    "start": {
+      "paths": [
+        { "id": "checkin", "title": "Check in", "body": "Notice your spirit, body, and mind, and take one step back." },
+        { "id": "lie", "title": "Name a lie", "body": "Pick the sentence that feels true, and breathe the truth over it." },
+        { "id": "above", "title": "Thanks and prayer", "body": "Set your mind on things above with gratitude and prayer." },
+        { "id": "with", "title": "Rest with Him", "body": "Be with the Father, Jesus, and the Holy Spirit." }
+      ]
     },
     "pin": {
       "titleDying": "Which sentence feels true right now?",
       "titleManaged": "Which sentence is in charge right now?",
       "instruction": "Pick the closest one.",
+      "fadingHeading": "When I’m fading",
+      "managingHeading": "When I’m managing",
       "followup": "Take a second look. Which of these would you least want to be true?",
       "thanWhom": "Better than whom? (optional, never saved)",
       "also": "also",
@@ -192,6 +202,8 @@
     "strategy": {
       "startWith": "Start with",
       "chooseOther": "Start somewhere else",
+      "restSpirit": "Rest with the Spirit",
+      "nameLie": "Name a lie",
       "recapPin": "Sentence",
       "honestyProverb": "That saying isn’t in the Bible. It’s self-reliance talking.",
       "cta": "Breathe"
@@ -208,6 +220,7 @@
     "again": {
       "title": "That is enough.",
       "locateAgain": "Check in again",
+      "toStart": "Back to start",
       "save": "Save this check-in",
       "saved": "Saved",
       "done": "I’m done",
@@ -219,6 +232,8 @@
     "log": {
       "title": "Saved check-ins",
       "empty": "Nothing saved yet.",
+      "delete": "Delete",
+      "deleteConfirm": "Tap again to delete",
       "moved": "Started with"
     },
     "settings": {

@@ -67,12 +67,20 @@ export function strategyFor(C, loc, axis, pinId) {
   return C.strategiesByPin[list];
 }
 
+// When the quiet 988 line appears (strategy screen only): fading with a body that's collapsed
+// or frozen, fading with a blank mind, or the sentence "This feels like too much to stay in."
+export const isWorrisome = v =>
+  (v.loc.spirit === 'dying' && (v.loc.body === 'collapse' || v.loc.body === 'freeze' || v.loc.mind === 'blank'))
+  || v.pinId === 'unsafe';
+
 export const honestyNote = (C, pinId) => pinId === 'proverb' ? C.copy.strategy.honestyProverb : null;
 
 // PRD §12.2 — verse selection, in the order listed there.
 export function verseFor(C, { loc, axis, pinId, homePath, direct }) {
-  if (homePath || direct) return C.verseByMind.present_open;               // John 15:9 (home, or breathing without a check-in)
-  if (loc.mind === 'blank') return C.verseByMind.blank;                     // Rom 8:26
+  const named = pinId && !isUnknownPin(pinId);
+  if (homePath || (direct && !pinId)) return C.verseByMind.present_open;   // John 15:9 (home, or breathing with nothing named)
+  // blank mind rests with the Spirit — unless the person chose to name a lie after all
+  if (loc.mind === 'blank' && !named) return C.verseByMind.blank;           // Rom 8:26
   if (pinId && !isUnknownPin(pinId)) return C.verseByPin[pinId];
   if (axis === 'mind' && loc.mind === 'time_travel') {
     if (loc.timeTravelFlavor === 'future') return C.verseByMind.time_travel_future;
@@ -132,7 +140,7 @@ export function buildSession(v, { breathsCompleted, saved }) {
     body: v.loc.body,
     mind: v.loc.mind,
     timeTravelFlavor: v.loc.mind === 'time_travel' ? (v.loc.timeTravelFlavor || null) : null,
-    pinList: v.homePath ? null : pinListFor(v.loc),
+    pinList: v.homePath ? null : v.pinId ? v.pinList : pinListFor(v.loc),
     pinId: v.pinId || null,
     axisMoved: v.axis,
     breathMode: v.breathMode || 'truth',

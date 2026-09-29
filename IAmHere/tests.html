@@ -87,7 +87,18 @@ t('proverb breath is Romans 5:6 fragments only', () => {
 
 // ---- §12.2 selection rules ----
 const sel = (loc, axis, pinId) => E.verseFor(C, { loc, axis, pinId }).ref;
-t('blank → Rom 8:26 regardless of pin', () => { eq(sel(L('dying', 'fight', 'blank'), 'mind', 'unloved'), 'Romans 8:26'); eq(sel(L('rising', 'freeze', 'blank'), 'mind', null), 'Romans 8:26'); });
+t('blank → Rom 8:26 (rest with the Spirit) unless a lie is named', () => {
+  eq(sel(L('rising', 'freeze', 'blank'), 'mind', null), 'Romans 8:26');
+  eq(sel(L('dying', 'fight', 'blank'), 'mind', 'unknown_dying'), 'Romans 8:26');
+  eq(sel(L('dying', 'fight', 'blank'), 'mind', 'unloved'), 'Jeremiah 31:3');
+});
+t('Name a lie (no check-in): the sentence\'s own verse; nothing named → home verse', () => {
+  eq(E.verseFor(C, { loc: {}, direct: true, axis: 'spirit', pinId: 'up_to_me' }).ref, 'John 15:5');
+  eq(E.verseFor(C, { loc: {}, direct: true, axis: 'spirit', pinId: 'unknown_dying' }).ref, 'Isaiah 43:1');
+  eq(E.verseFor(C, { loc: {}, direct: true }).ref, 'John 15:9');
+});
+t('a saved named lie records which list it came from', () =>
+  eq(E.buildSession({ loc: L('rising', 'rest', 'blank'), axis: 'mind', pinId: 'in_control', pinList: 'managed', verse: C.verseByPin.in_control }, { breathsCompleted: 8 }).pinList, 'managed'));
 t('blank path has 2 silent breaths', () => eq(E.breathPlan({ loc: L('rising', 'rest', 'blank') }).silent, 2));
 t('one home line, used verbatim in onboarding and About', () =>
   C.onboarding[0].body.startsWith(C.copy.home.line) && C.copy.settings.about.includes(C.copy.home.line)
@@ -117,6 +128,13 @@ t('a named lie opens in Truth over lies; otherwise the remembered mode', () => {
   eq(E.startMode({ pinId: 'unknown_dying' }, 'with'), 'with');
   eq(E.startMode({ pinId: null }, 'above'), 'above');
   eq(E.startMode({ pinId: null }, 'bogus'), 'truth');
+});
+t('worrisome = fading with collapse/freeze/blank, or "too much to stay in"', () => {
+  const W = (spirit, body, mind, pinId = null) => E.isWorrisome({ loc: L(spirit, body, mind), pinId });
+  return W('dying', 'collapse', 'present_open') && W('dying', 'freeze', 'time_travel') && W('dying', 'rest', 'blank')
+    && E.isWorrisome({ loc: {}, pinId: 'unsafe' })
+    && !W('dying', 'fight', 'present_open') && !W('managed', 'collapse', 'blank') && !W('rising', 'freeze', 'blank')
+    && !W('dying', 'rest', 'present_open', 'unloved');
 });
 t('breath is 8 by default', () => eq(E.breathPlan({ loc: L('dying', 'rest', 'present_open') }).total, 8));
 t('no PRD shorthand left in the copy', () => {
@@ -202,7 +220,7 @@ t('"streak"/"score" appear in content only inside onboarding\'s "No scores. No s
   const s = JSON.stringify({ ...C, onboarding: C.onboarding.filter((_, i) => i !== 1) });
   return !/streak|score/i.test(s) && /No scores\. No streaks\./.test(C.onboarding[1].body);
 });
-t('danger line is one quiet sentence on /here and in settings; no crisis screen, nothing in onboarding', () =>
+t('danger line is one quiet sentence, only on a worrisome strategy screen and in settings; no crisis screen, nothing in onboarding', () =>
   C.crisis.line === 'If you are in danger, call or text 988 in the US.' && (src[0].match(/withTel\(C\.crisis\.line\)/g) || []).length === 2
   && !src[0].includes("go('crisis')") && !/human help|988|danger/i.test(JSON.stringify(C.onboarding) + JSON.stringify(C.copy)));
 

@@ -24,6 +24,7 @@ function applySettings() {
 const isOnboarded = () => !!store.get(KEY.onboarded, false);
 const sessions = () => store.get(KEY.sessions, []);
 function writeSession(rec) { const all = sessions(); all.push(rec); store.set(KEY.sessions, all); }
+function deleteSession(id) { store.set(KEY.sessions, sessions().filter(s => s.id !== id)); }
 
 // ===================== tiny DOM helper =====================
 function h(tag, props, ...kids) {
@@ -84,13 +85,20 @@ function startVisit() {
   };
   go(E.needsPin(loc) ? 'pin' : 'strategy');
 }
-// straight to the breath, no check-in: nothing to match a verse to, so truth mode uses the home verse
-function breatheNow() {
-  visit = { loc: {}, direct: true, homePath: false, axis: null, pinId: null };
+// straight to a breath mode, no check-in (start screen's Thanks and prayer / Rest with Him)
+function breatheNow(mode) {
+  visit = { loc: {}, direct: true, homePath: false, axis: null, pinId: null, modeTapped: mode };
   tone.prime();
   go('breathe');
 }
+// start screen's Name a lie: both sentence lists, then that sentence's step and verse
+function nameLie() {
+  visit = { loc: {}, direct: true, lieOnly: true, homePath: false, axis: 'spirit', pinList: 'both',
+    pinSel: {}, pinId: null, thanWhom: '', unknownAsked: false, modeTapped: 'truth' };
+  go('pin');
+}
 function resetToHere() { visit = null; draft = freshDraft(); go('here'); }
+function resetToStart() { visit = null; draft = freshDraft(); go('start'); }
 
 // ===================== router (hash routes so GitHub Pages serves one file) =====================
 let current = null, teardown = null, programmatic = false;
@@ -109,12 +117,12 @@ const NEEDS_VISIT = ['pin', 'strategy', 'breathe', 'home-state', 'again'];
 function render(requested) {
   if (teardown) { teardown(); teardown = null; }
   let route = requested;
-  if (!(route in VIEWS)) route = 'here';
+  if (!(route in VIEWS)) route = 'start';
   if (!isOnboarded() && route !== '') route = '';
-  if (route === '' && isOnboarded()) route = 'here';
-  if (NEEDS_VISIT.includes(route) && !visit) route = 'here';
-  if (visit && visit.direct && (route === 'pin' || route === 'strategy')) route = 'here';
-  if (route === 'pin' && !E.needsPin(visit.loc)) route = 'strategy';
+  if (route === '' && isOnboarded()) route = 'start';
+  if (NEEDS_VISIT.includes(route) && !visit) route = 'start';
+  if (visit && visit.direct && !visit.lieOnly && (route === 'pin' || route === 'strategy')) route = 'start';
+  if (route === 'pin' && !visit.lieOnly && !visit.blankNaming && !E.needsPin(visit.loc)) route = 'strategy';
   if (route !== requested) history.replaceState(null, '', '#/' + route);
   current = route;
   $app.replaceChildren(VIEWS[route]());
@@ -129,7 +137,7 @@ const VIEWS = {
   ''() {
     const s = C.onboarding[obStep];
     const next = () => { obStep++; render(''); };
-    const finish = () => { store.set(KEY.onboarded, true); obStep = 0; go('here'); };
+    const finish = () => { store.set(KEY.onboarded, true); obStep = 0; go('start'); };
     const last = obStep === C.onboarding.length - 1;
     return h('section', { class: 'view onb' },
       h('div', { class: 'spacer' }),
@@ -144,7 +152,23 @@ const VIEWS = {
     );
   },
 
-  // ---------- /here : locate (PRD §8) ----------
+  // ---------- /start : the home line and four plain paths ----------
+  start() {
+    const go1 = { checkin: resetToHere, lie: nameLie, above: () => breatheNow('above'), with: () => breatheNow('with') };
+    return h('section', { class: 'view' },
+      h('div', { class: 'topbar' },
+        h('h1', { class: 'wordmark', text: C.copy.wordmark }),
+        h('button', { type: 'button', class: 'icon-btn', 'aria-label': C.copy.settings.title, onclick: () => go('settings') }, gearIcon())),
+      h('p', { class: 'home-line', text: C.copy.home.line }),
+      h('div', { class: 'paths' }, C.copy.start.paths.map((p, i) =>
+        h('button', { type: 'button', class: 'path' + (i === 0 ? ' primary' : ''), onclick: go1[p.id] },
+          h('span', { class: 'path-title', text: p.title }),
+          h('span', { class: 'path-body', text: p.body })))),
+      h('div', { class: 'spacer' }),
+    );
+  },
+
+  // ---------- /here : check in (PRD §8) ----------
   here() {
     const refs = { spirit: [], body: [], mind: [] };
     let flavorRow, cta;
@@ -185,17 +209,12 @@ const VIEWS = {
 
     cta = btn(C.copy.here.cta, startVisit);
     const view = h('section', { class: 'view' },
-      h('div', { class: 'topbar' },
-        h('h1', { class: 'wordmark', text: C.copy.wordmark }),
-        h('div', { class: 'topbar-actions' },
-          link(C.copy.here.breathe, breatheNow),
-          h('button', { type: 'button', class: 'icon-btn', 'aria-label': C.copy.settings.title, onclick: () => go('settings') }, gearIcon()))),
+      link(C.copy.back, () => go('start'), 'back'),
+      h('h1', { class: 'sr-only', text: C.copy.here.title }),
       card('spirit', h('div', { class: 'grid one' }, C.axes.spirit.ticks.map(t => tick('spirit', t)))),
       card('body', bodyGroups),
       card('mind', [h('div', { class: 'grid' }, C.axes.mind.ticks.map(t => tick('mind', t))), flavorRow]),
       h('div', { class: 'footer' }, cta),
-      // deliberately quiet: one plain line below the fold, not a screen or a button
-      h('p', { class: 'danger-line' }, withTel(C.crisis.line)),
     );
     update();
     return view;
@@ -204,10 +223,15 @@ const VIEWS = {
   // ---------- /pin (PRD §10) ----------
   pin() {
     const P = C.copy.pin;
-    const pins = E.pinsFor(C, visit.pinList);
-    const title = visit.unknownAsked ? P.followup : (visit.pinList === 'dying' ? P.titleDying : P.titleManaged);
+    // one list, or (Name a lie, or blank + Alive) both lists under plain headings, one "I don't know yet" at the end
+    const known = list => list.filter(p => !E.isUnknownPin(p.id));
+    const groups = visit.pinList === 'both'
+      ? [{ heading: P.fadingHeading, pins: known(C.dyingPins) }, { heading: P.managingHeading, pins: known(C.managedPins) },
+         { heading: null, pins: C.dyingPins.filter(p => p.id === 'unknown_dying') }]
+      : [{ heading: null, pins: E.pinsFor(C, visit.pinList) }];
+    const title = visit.unknownAsked ? P.followup : (visit.pinList === 'managed' ? P.titleManaged : P.titleDying);
     let cont, thanWrap;
-    const buttons = pins.map(p => {
+    const buttons = groups.flatMap(g => g.pins).map(p => {
       const tag = h('span', { class: 'also-tag', text: P.also, hidden: true });
       const b = chip({ label: p.label, onclick: () => { visit.pinSel = E.tapPin(visit.pinSel, p.id); update(); } });
       b.append(tag); b.dataset.id = p.id; return b;
@@ -237,14 +261,19 @@ const VIEWS = {
         return render('pin'); // PRD §10.2: one follow-up question, then the same list again
       }
       visit.pinId = id;
+      visit.pinList = C.dyingPins.some(p => p.id === id) ? 'dying' : 'managed';
       if (id !== 'better_than') visit.thanWhom = '';
+      if (visit.blankNaming) { visit.modeTapped = 'truth'; tone.prime(); return go('breathe'); } // strategy already seen
       go('strategy');
     });
+    const byId = id => buttons.find(b => b.dataset.id === id);
+    const back = visit.lieOnly ? 'start' : visit.blankNaming ? 'strategy' : 'here';
     const view = h('section', { class: 'view' },
-      link(C.copy.back, () => go('here'), 'back'),
+      link(C.copy.back, () => go(back), 'back'),
       h('h2', { text: title }),
       h('p', { class: 'instruction', text: P.instruction }),
-      h('div', { class: 'pin-list' }, buttons),
+      groups.map(g => [g.heading && h('h3', { class: 'pin-heading', text: g.heading }),
+        h('div', { class: 'pin-list' }, g.pins.map(p => byId(p.id)))]),
       thanWrap,
       h('div', { class: 'spacer' }),
       h('div', { class: 'footer' }, cont),
@@ -272,6 +301,27 @@ const VIEWS = {
         chip({ label: C.axes[a].label, cls: 'pill', pressed: a === visit.axis, onclick: () => { visit.axis = a; render('strategy'); } })));
     }
     const toBreath = () => { tone.prime(); go('breathe'); };
+    // quiet, and only after a check-in that looks worrisome (never on the start screen)
+    const danger = E.isWorrisome(visit) && h('p', { class: 'danger-line' }, withTel(C.crisis.line));
+    if (visit.lieOnly) {
+      // Name a lie: no check-in to recap, just the sentence and its one step
+      return h('section', { class: 'view' },
+        link(C.copy.back, () => go('pin'), 'back'),
+        h('p', { class: 'recap', text: `${S.recapPin}: ${pinText}` }),
+        h('h2', { class: 'strategy-text', text: E.strategyFor(C, loc, 'spirit', visit.pinId) }),
+        note && h('p', { class: 'note', text: note }),
+        h('div', { class: 'spacer' }),
+        h('div', { class: 'footer' }, btn(S.cta, toBreath)),
+        danger);
+    }
+    // blank mind: rest with the Spirit (the default), or name a lie after all
+    const blankChoice = loc.mind === 'blank' && visit.axis === 'mind';
+    const restSpirit = () => { visit.modeTapped = 'truth'; toBreath(); };
+    const nameAfterAll = () => {
+      visit.blankNaming = true; visit.pinSel = {}; visit.unknownAsked = false;
+      visit.pinList = loc.spirit === 'dying' || loc.spirit === 'managed' ? loc.spirit : 'both';
+      go('pin');
+    };
     return h('section', { class: 'view' },
       link(C.copy.back, () => go(E.needsPin(loc) ? 'pin' : 'here'), 'back'),
       h('p', { class: 'recap' }, recap),
@@ -281,8 +331,9 @@ const VIEWS = {
       h('div', { class: 'spacer' }),
       h('div', { class: 'footer' },
         choiceRow,
-        btn(S.cta, toBreath),
+        blankChoice ? [btn(S.restSpirit, restSpirit), btn(S.nameLie, nameAfterAll, 'quiet')] : btn(S.cta, toBreath),
         choiceRow && link(S.chooseOther, e => { choiceRow.hidden = false; e.currentTarget.remove(); }, 'small')),
+      danger,
     );
   },
 
@@ -297,7 +348,7 @@ const VIEWS = {
         h('div', { class: 'spacer' }),
         h('h2', { class: 'end-text', text: C.copy.home.line }),
         h('div', { class: 'spacer' }),
-        h('div', { class: 'center' }, link(C.copy.end.link, resetToHere, 'small')));
+        h('div', { class: 'center' }, link(C.copy.end.link, resetToStart, 'small')));
     }
     let saveBtn = null;
     if (!settings.keepAll && !visit.direct) { // a breath with no check-in has nothing to save
@@ -314,7 +365,7 @@ const VIEWS = {
       h('h2', { class: 'quiet-title', text: A.title }),
       h('div', { class: 'spacer' }),
       h('div', { class: 'stack' },
-        btn(A.locateAgain, resetToHere),
+        visit.direct ? btn(A.toStart, resetToStart) : btn(A.locateAgain, resetToHere),
         saveBtn,
         btn(A.done, () => { visit.ended = true; render('again'); }, 'quiet'),
         h('div', { class: 'center' }, link(A.log, () => go('log'), 'small'))),
@@ -332,7 +383,16 @@ const VIEWS = {
       items.length ? h('div', {}, items.map(s => {
         const when = new Date(s.ts);
         const mind = tickLabel('mind', s.mind) + (s.timeTravelFlavor ? ' · ' + (C.axes.mind.timeTravelFlavors.find(f => f.id === s.timeTravelFlavor) || {}).label : '');
+        // two taps to delete, like Clear all data (no pop-up dialogs)
+        let armed = false;
+        const del = link(L.delete, () => {
+          if (!armed) { armed = true; del.textContent = L.deleteConfirm; return; }
+          deleteSession(s.id);
+          if (visit && visit.savedId === s.id) visit.savedId = null;
+          render('log');
+        }, 'small log-delete');
         return h('div', { class: 'log-item' },
+          del,
           h('div', { class: 'log-when', text: isNaN(when) ? s.ts : fmt.format(when) }),
           h('div', { class: 'log-ticks', text: [tickLabel('spirit', s.spirit), tickLabel('body', s.body), mind].join(' · ') }),
           s.pinId && h('div', { class: 'log-meta', text: pinLabel(s.pinId) }),
@@ -374,7 +434,7 @@ const VIEWS = {
     const version = h('p', { class: 'version' });
     showVersion(version);
     return h('section', { class: 'view' },
-      link(C.copy.back, () => go('here'), 'back'),
+      link(C.copy.back, () => go('start'), 'back'),
       h('h2', { text: S.title, style: 'margin-bottom:8px' }),
       h('div', { class: 'row' }, h('label', { for: 'reminder', text: S.reminder }), sel),
       calRow,
@@ -410,7 +470,7 @@ function breathView(homePath) {
   const fex = h('p', { class: 'frag', 'aria-hidden': 'true' });
   const ref = h('p', { class: 'ref' });
   // leaving is always allowed: Back returns a step, Done ends the breath early
-  const back = link(C.copy.back, () => { stop(); go(homePath || visit.direct ? 'here' : 'strategy'); });
+  const back = link(C.copy.back, () => { stop(); go(homePath ? 'here' : visit.lieOnly ? 'strategy' : visit.direct ? 'start' : 'strategy'); });
   const doneBtn = btn(C.copy.breathe.done, () => end(), 'quiet');
   const dots = Array.from({ length: total }, () => h('span'));
   const progress = h('div', { class: 'breath-dots', role: 'progressbar', 'aria-label': C.copy.breathe.progress,
