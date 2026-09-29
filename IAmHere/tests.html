@@ -77,7 +77,7 @@ t('session record stores one pinId and no free text', () => {
 });
 
 // ---- proverb ----
-t('proverb strategy includes the not-in-Scripture note', () => eq(E.honestyNote(C, 'proverb'), 'That sentence is not in Scripture. It is self-reliance talking.'));
+t('proverb strategy includes the not-in-Scripture note', () => eq(E.honestyNote(C, 'proverb'), 'That saying isn’t in the Bible. It’s self-reliance talking.'));
 t('no other pin gets a note', () => [...C.dyingPins, ...C.managedPins].filter(p => p.id !== 'proverb').every(p => E.honestyNote(C, p.id) === null));
 t('proverb breath is Romans 5:6 fragments only', () => {
   const v = E.verseFor(C, { loc: L('managed', 'rest', 'present_open'), axis: 'spirit', pinId: 'proverb' });
@@ -93,6 +93,10 @@ t('one home line, used verbatim in onboarding and About', () =>
   C.onboarding[0].body.startsWith(C.copy.home.line) && C.copy.settings.about.includes(C.copy.home.line)
   && !/Home is Spirit|Spirit (alive|rising)/.test(JSON.stringify(C)));
 t('breath is 8 by default', () => eq(E.breathPlan({ loc: L('dying', 'rest', 'present_open') }).total, 8));
+t('no PRD shorthand left in the copy', () => {
+  const hit = JSON.stringify({ ...C, verseByPin: 0, verseByBody: 0, verseByMind: 0 }).match(/this year’s face|old broadcast|two columns|second half|weather|provision|reading attack|not a moral|running the desk|Zombie|Anti-love/i);
+  return !hit || 'found: ' + hit[0];
+});
 t('no copy mentions a list or a desk', () => !/\blist\b|\bdesk\b/i.test(JSON.stringify(C)) || JSON.stringify(C).match(/.{30}\b(list|desk)\b.{30}/i)[0]);
 t('pin pair wins over axis (moving body, pinned)', () => eq(sel(L('dying', 'fight', 'present_open'), 'body', 'must_carry'), 'Psalm 55:22'));
 t('time-travel future → Matt 6:34', () => eq(sel(L('rising', 'rest', 'time_travel', 'future'), 'mind', null), 'Matthew 6:34'));
@@ -109,9 +113,9 @@ t('better_than with empty than-whom: same pair', () => eq(sel(L('managed', 'rest
 
 // ---- strategies ----
 t('strategy by recommended axis', () => {
-  eq(E.strategyFor(C, L('dying', 'fight', 'present_open'), 'body', 'unloved'), 'One sentence before the case: “I’m reading attack. One minute.”');
-  eq(E.strategyFor(C, L('rising', 'rest', 'blank'), 'mind', null), 'Do not interpret. Body first. One word after two breaths: here.');
-  eq(E.strategyFor(C, L('managed', 'rest', 'present_open'), 'spirit', 'up_to_me'), 'One task that is actually yours. The rest is not a moral.');
+  eq(E.strategyFor(C, L('dying', 'fight', 'present_open'), 'body', 'unloved'), 'Before you make your case, say one sentence: “This feels like an attack. Give me a minute.”');
+  eq(E.strategyFor(C, L('rising', 'rest', 'blank'), 'mind', null), 'Don’t try to figure it out. Start with your body. After two breaths, say one word: “here.”');
+  eq(E.strategyFor(C, L('managed', 'rest', 'present_open'), 'spirit', 'up_to_me'), 'Pick one thing that really is yours to do. Leaving the rest undone isn’t a failure.');
 });
 t('every pin has a strategy and a verse', () => [...C.dyingPins, ...C.managedPins].every(p => C.strategiesByPin[p.id] && C.verseByPin[p.id]) || 'missing');
 t('override only offers off-home axes', () => eq(E.axisChoices(L('managed', 'control', 'present_open')), ['spirit', 'body']));
@@ -168,9 +172,9 @@ t('app code has no streak, score, badge, leaderboard, or celebration', () => {
   const hit = src.join('\n').match(/streak|leaderboard|badge|confetti|congrat|well done|great job/i);
   return !hit || 'found: ' + hit[0];
 });
-t('"streak"/"score" appear in content only inside onboarding\'s "No score. No streak."', () => {
+t('"streak"/"score" appear in content only inside onboarding\'s "No scores. No streaks."', () => {
   const s = JSON.stringify({ ...C, onboarding: C.onboarding.filter((_, i) => i !== 1) });
-  return !/streak|score/i.test(s) && /No score\. No streak\./.test(C.onboarding[1].body);
+  return !/streak|score/i.test(s) && /No scores\. No streaks\./.test(C.onboarding[1].body);
 });
 t('danger line is one quiet sentence on /here and in settings; no crisis screen, nothing in onboarding', () =>
   C.crisis.line === 'If you are in danger, call or text 988 in the US.' && (src[0].match(/withTel\(C\.crisis\.line\)/g) || []).length === 2

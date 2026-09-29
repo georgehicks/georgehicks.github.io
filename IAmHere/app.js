@@ -59,7 +59,6 @@ function withTel(text) {
   const parts = text.split('988');
   return parts.flatMap((p, i) => i === 0 ? [p] : [h('a', { class: 'tel', href: 'tel:988', text: '988' }), p]);
 }
-const sentence = s => /[.?!…”]$/.test(s) ? s : s + '.';
 const announce = text => { $announce.textContent = ''; setTimeout(() => { $announce.textContent = text; }, 50); };
 
 // ===================== visit state (in memory only — PRD §20: force-close = no save) =====================
@@ -248,18 +247,14 @@ const VIEWS = {
   // ---------- /strategy (PRD §11) ----------
   strategy() {
     const S = C.copy.strategy, loc = visit.loc;
-    let pinText = '—';
+    // "Spirit: Fading · Body: Rest · Mind: Open", then the chosen sentence (if any) on its own line
+    const ticks = E.AXES.map(a => `${C.axes[a].label}: ${tickLabel(a, loc[a])}`).join(' · ');
+    let pinText = null;
     if (visit.pinId) {
       pinText = pinLabel(visit.pinId);
       if (visit.pinId === 'better_than' && visit.thanWhom.trim()) pinText += ' ' + visit.thanWhom.trim();
     }
-    const recap = [
-      sentence(`${C.axes.spirit.label} ${tickLabel('spirit', loc.spirit)}`),
-      sentence(`${C.axes.body.label} ${tickLabel('body', loc.body)}`),
-      sentence(`${C.axes.mind.label} ${tickLabel('mind', loc.mind)}`),
-      sentence(`${S.recapPin}: ${pinText}`),
-      sentence(`${S.recapMoving}: ${visit.axis}`),
-    ].join(' ');
+    const recap = [h('span', { text: ticks }), pinText && [h('br'), h('span', { text: `${S.recapPin}: ${pinText}` })]];
     const note = E.honestyNote(C, visit.pinId);
     const choices = E.axisChoices(loc);
     let choiceRow = null;
@@ -270,7 +265,7 @@ const VIEWS = {
     const toBreath = () => { tone.prime(); go('breathe'); };
     return h('section', { class: 'view' },
       link(C.copy.back, () => go(E.needsPin(loc) ? 'pin' : 'here'), 'back'),
-      h('p', { class: 'recap', text: recap }),
+      h('p', { class: 'recap' }, recap),
       h('h2', { text: `${S.startWith} ${visit.axis}.` }),
       h('p', { class: 'strategy-text', text: E.strategyFor(C, loc, visit.axis, visit.pinId) }),
       note && h('p', { class: 'note', text: note }),
@@ -278,7 +273,6 @@ const VIEWS = {
       h('div', { class: 'footer' },
         choiceRow,
         btn(S.cta, toBreath),
-        link(S.secondary, toBreath),
         choiceRow && link(S.chooseOther, e => { choiceRow.hidden = false; e.currentTarget.remove(); }, 'small')),
     );
   },

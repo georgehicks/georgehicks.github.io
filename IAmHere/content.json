@@ -2,25 +2,25 @@
   "axes": {
     "spirit": {
       "label": "Spirit",
-      "question": "Alive, managing, or fading?",
+      "question": "How is it with you and God?",
       "home": "rising",
       "ticks": [
-        { "id": "rising", "label": "Alive", "helper": "With. Received. Not self-supplied." },
-        { "id": "managed", "label": "Managing", "helper": "Correct words, then back to handling it." },
+        { "id": "rising", "label": "Alive", "helper": "Connected to God. Receiving, not straining." },
+        { "id": "managed", "label": "Managing", "helper": "Saying the right things, but running on my own strength." },
         { "id": "dying", "label": "Fading", "helper": "Far off. Love is hard to hear." }
       ]
     },
     "body": {
       "label": "Body",
-      "question": "Unmanaged, gripping, or taken?",
+      "question": "What is your body doing?",
       "home": "rest",
       "ticks": [
         { "id": "rest", "label": "Rest", "helper": "Jaw soft. Free to be still or move." },
-        { "id": "control", "label": "Control", "helper": "Grip. Scanning. Feels like agency." },
-        { "id": "fight", "label": "Fight", "helper": "Toward. Heat. Win." },
-        { "id": "flight", "label": "Flight", "helper": "Away. Screen, door, task as exit." },
-        { "id": "freeze", "label": "Freeze", "helper": "In the room. Cannot move." },
-        { "id": "collapse", "label": "Collapse", "helper": "Dropped. Numb. Heavy." }
+        { "id": "control", "label": "Control", "helper": "Gripping, scanning, trying to stay on top of it." },
+        { "id": "fight", "label": "Fight", "helper": "Heated. Pushing back. Need to win." },
+        { "id": "flight", "label": "Flight", "helper": "Wanting out — a screen, a door, a task." },
+        { "id": "freeze", "label": "Freeze", "helper": "Stuck. Can’t move or decide." },
+        { "id": "collapse", "label": "Collapse", "helper": "Heavy, numb, shut down." }
       ],
       "groups": [
         { "label": null, "ids": ["rest", "control"] },
@@ -29,13 +29,13 @@
     },
     "mind": {
       "label": "Mind",
-      "question": "Where is attention, and is it open?",
+      "question": "Where is your mind?",
       "home": "present_open",
       "ticks": [
-        { "id": "present_open", "label": "Present-open", "helper": "Here, and can be surprised." },
-        { "id": "present_narrowed", "label": "Present-narrowed", "helper": "Here, to prosecute, solve, or code." },
-        { "id": "time_travel", "label": "Time-travel", "helper": "Past storm or future dread." },
-        { "id": "blank", "label": "Blank", "helper": "Zombie. Snow. Nobody home." }
+        { "id": "present_open", "label": "Open", "helper": "Here, and open to what comes." },
+        { "id": "present_narrowed", "label": "Narrowed", "helper": "Here, but locked on judging, fixing, or solving." },
+        { "id": "time_travel", "label": "Past or future", "helper": "Replaying what happened or dreading what’s next." },
+        { "id": "blank", "label": "Blank", "helper": "Foggy. Checked out. Nothing there." }
       ],
       "timeTravelFlavors": [
         { "id": "past", "label": "Past" },
@@ -62,45 +62,45 @@
     { "id": "mine_to_manage", "label": "It’s mine to manage." },
     { "id": "up_to_me", "label": "It’s up to me." },
     { "id": "proverb", "label": "God helps those who help themselves." },
-    { "id": "abide_after", "label": "I’ll abide after I finish this." },
+    { "id": "abide_after", "label": "I’ll turn to God after I finish this." },
     { "id": "need_nothing", "label": "I don’t need anything right now." },
     { "id": "unknown_managed", "label": "I don’t know yet." }
   ],
 
   "strategiesByBody": {
-    "control": "Set down what you’re gripping for ten minutes. See if the hand reaches.",
-    "fight": "One sentence before the case: “I’m reading attack. One minute.”",
-    "flight": "Stay in this room five minutes. Screen after.",
-    "freeze": "Feel the chair. Unclamp the jaw. Do not solve.",
-    "collapse": "Name one sensation, or say “I’m gone.” Do not interpret.",
-    "rest": "Stay. Nothing to fix in the body."
+    "control": "Put down what you’re gripping for ten minutes. Notice if your hand keeps reaching for it.",
+    "fight": "Before you make your case, say one sentence: “This feels like an attack. Give me a minute.”",
+    "flight": "Stay where you are for five minutes. The screen can wait.",
+    "freeze": "Feel the chair under you. Loosen your jaw. Don’t try to solve anything yet.",
+    "collapse": "Name one thing you can feel in your body, or just say “I’m checked out.” Don’t try to explain it.",
+    "rest": "Stay as you are. Your body doesn’t need fixing."
   },
 
   "strategiesByMind": {
-    "present_open": "Stay. Nothing to fix.",
-    "present_narrowed": "Drop the verdict for sixty seconds. Look at this year’s face.",
-    "time_travel": "Come back to this room. If future: two columns, one action in 24 hours. If past: name the old broadcast.",
-    "blank": "Do not interpret. Body first. One word after two breaths: here."
+    "present_open": "Stay as you are. Nothing to fix.",
+    "present_narrowed": "For one minute, stop judging or fixing. Look at the person in front of you as they are today.",
+    "time_travel": "Come back to this room. If you’re in the future: sort what you can do from what you can’t, and pick one thing to do in the next day. If you’re in the past: name the old memory that’s replaying.",
+    "blank": "Don’t try to figure it out. Start with your body. After two breaths, say one word: “here.”"
   },
 
   "strategiesByPin": {
-    "unloved": "Look at this year’s face. Say: “This may be the old broadcast.”",
-    "unworthy": "Do not argue your case. Stay in the room as you are.",
-    "unsafe": "Stay one minute. Do not solve. Feel the chair.",
-    "not_enough": "Two columns. One action in 24 hours. Fog is not a verdict.",
-    "no_trust": "One honest sentence to Him. No second half. Wait.",
-    "alone": "One honest sentence to Him. No second half. Wait.",
-    "must_carry": "Name the sting without absorbing anyone else’s weather.",
-    "unknown_dying": "Sit. Do not solve. Let one true sentence form.",
-    "in_control": "Set down what you’re gripping for ten minutes. Watch the hand reach.",
-    "earned_place": "Receive one thing you did not provision.",
-    "better_than": "Name the hidden second half (than whom). Drop the rank for sixty seconds.",
-    "mine_to_manage": "Cross out what is not yours today. Say it out loud.",
-    "up_to_me": "One task that is actually yours. The rest is not a moral.",
-    "proverb": "Do the one small act that is yours. Stop before you feel ready. Let the unfinished part stay unfinished in front of Him.",
-    "abide_after": "Sit one minute after the amen. No second half.",
-    "need_nothing": "Name one true need in a single clause.",
-    "unknown_managed": "Set down what you’re holding. Sit one minute."
+    "unloved": "Look at the person as they are today. Tell yourself: “This may be an old hurt talking.”",
+    "unworthy": "Don’t try to prove yourself. Stay here as you are.",
+    "unsafe": "Stay for one minute. Don’t try to fix it. Feel the chair under you.",
+    "not_enough": "Sort what you can do from what you can’t. Pick one thing to do in the next day. Feeling overwhelmed doesn’t mean you’ve failed.",
+    "no_trust": "Tell God one honest sentence. Don’t add a “but.” Then wait.",
+    "alone": "Tell God one honest sentence. Don’t add a “but.” Then wait.",
+    "must_carry": "Name what hurts. Let other people carry their own feelings.",
+    "unknown_dying": "Sit for a moment. Don’t try to fix anything. Let one true sentence come.",
+    "in_control": "Put down what you’re gripping for ten minutes. Notice your hand reaching for it.",
+    "earned_place": "Notice one good thing you didn’t earn or provide for yourself, and receive it.",
+    "better_than": "Finish the sentence: better than whom? Then, for one minute, stop comparing.",
+    "mine_to_manage": "Name what isn’t yours to carry today. Say it out loud.",
+    "up_to_me": "Pick one thing that really is yours to do. Leaving the rest undone isn’t a failure.",
+    "proverb": "Do the one small thing that’s yours to do. Stop before it feels finished, and leave the rest with God.",
+    "abide_after": "After you pray, sit quietly with God for one minute before moving on.",
+    "need_nothing": "Name one thing you actually need right now, in a few words.",
+    "unknown_managed": "Put down what you’re holding and sit for one minute."
   },
 
   "verseByPin": {
@@ -148,8 +148,8 @@
       "cta": "Continue"
     },
     {
-      "title": "One breath. One sentence.",
-      "body": "You will tap where you are. If something is pinning you, you will name it. Then a short breath with a line of Scripture. No score. No streak.",
+      "title": "How it works",
+      "body": "Tap how your spirit, body, and mind are right now. If a thought is weighing on you, pick the sentence closest to it. Then breathe for a minute with a line of Scripture. No scores. No streaks.",
       "cta": "I am here"
     }
   ],
@@ -170,23 +170,21 @@
       "titleDying": "Which sentence feels true right now?",
       "titleManaged": "Which sentence is in charge right now?",
       "instruction": "Pick the closest one.",
-      "followup": "Which would you least want confirmed right now — by a person, by tomorrow, or by God?",
-      "thanWhom": "Than whom? (optional, stays on device)",
+      "followup": "Take a second look. Which of these would you least want to be true?",
+      "thanWhom": "Better than whom? (optional, never saved)",
       "also": "also",
       "cta": "Continue"
     },
     "strategy": {
       "startWith": "Start with",
-      "chooseOther": "Choose a different axis",
-      "recapPin": "Pin",
-      "recapMoving": "Moving",
-      "honestyProverb": "That sentence is not in Scripture. It is self-reliance talking.",
-      "cta": "Breathe this",
-      "secondary": "Skip to breath"
+      "chooseOther": "Start somewhere else",
+      "recapPin": "Sentence",
+      "honestyProverb": "That saying isn’t in the Bible. It’s self-reliance talking.",
+      "cta": "Breathe"
     },
     "home": {
       "line": "Home is abiding in Christ: spirit alive to God, body in restful flow, mind present and open.",
-      "text": "Stay. Nothing to fix."
+      "text": "You’re home. Stay here a moment."
     },
     "breathe": {
       "done": "Done",
@@ -194,19 +192,19 @@
     },
     "again": {
       "title": "That is enough.",
-      "locateAgain": "Locate again",
-      "save": "Save this locate",
+      "locateAgain": "Check in again",
+      "save": "Save this check-in",
       "saved": "Saved",
       "done": "I’m done",
-      "log": "Log"
+      "log": "Saved check-ins"
     },
     "end": {
       "link": "I am here"
     },
     "log": {
-      "title": "Log",
-      "empty": "Nothing saved.",
-      "moved": "Moved"
+      "title": "Saved check-ins",
+      "empty": "Nothing saved yet.",
+      "moved": "Started with"
     },
     "settings": {
       "title": "Settings",
@@ -215,9 +213,9 @@
       "reminderAdd": "Add to calendar",
       "reduceMotion": "Reduce motion",
       "largeType": "Larger type",
-      "keepAll": "Keep all locates on this device",
+      "keepAll": "Save every check-in automatically",
       "tone": "Breath tone",
-      "log": "Log",
+      "log": "Saved check-ins",
       "clear": "Clear all data",
       "clearConfirm": "Tap again to clear everything",
       "scripture": "Quotations are from the ESV.",
