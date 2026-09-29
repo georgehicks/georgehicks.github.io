@@ -8,7 +8,7 @@ let C = null; // frozen content.json
 
 // ===================== storage (PRD §6: local only) =====================
 const KEY = { settings: 'iamhere.settings', sessions: 'iamhere.sessions', onboarded: 'iamhere.onboarded' };
-const DEFAULT_SETTINGS = { reminderHour: null, reduceMotion: false, largeType: false, keepAll: false, tone: false };
+const DEFAULT_SETTINGS = { reminderHour: null, reduceMotion: false, largeType: false, keepAll: false, tone: false, breathMode: 'truth' };
 const store = {
   get(k, fallback) { try { const v = localStorage.getItem(k); return v == null ? fallback : JSON.parse(v); } catch { return fallback; } },
   set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch {} },
@@ -84,6 +84,12 @@ function startVisit() {
   };
   go(E.needsPin(loc) ? 'pin' : 'strategy');
 }
+// straight to the breath, no check-in: nothing to match a verse to, so truth mode uses the home verse
+function breatheNow() {
+  visit = { loc: {}, direct: true, homePath: false, axis: null, pinId: null };
+  tone.prime();
+  go('breathe');
+}
 function resetToHere() { visit = null; draft = freshDraft(); go('here'); }
 
 // ===================== router (hash routes so GitHub Pages serves one file) =====================
@@ -107,6 +113,7 @@ function render(requested) {
   if (!isOnboarded() && route !== '') route = '';
   if (route === '' && isOnboarded()) route = 'here';
   if (NEEDS_VISIT.includes(route) && !visit) route = 'here';
+  if (visit && visit.direct && (route === 'pin' || route === 'strategy')) route = 'here';
   if (route === 'pin' && !E.needsPin(visit.loc)) route = 'strategy';
   if (route !== requested) history.replaceState(null, '', '#/' + route);
   current = route;
@@ -180,7 +187,9 @@ const VIEWS = {
     const view = h('section', { class: 'view' },
       h('div', { class: 'topbar' },
         h('h1', { class: 'wordmark', text: C.copy.wordmark }),
-        h('button', { type: 'button', class: 'icon-btn', 'aria-label': C.copy.settings.title, onclick: () => go('settings') }, gearIcon())),
+        h('div', { class: 'topbar-actions' },
+          link(C.copy.here.breathe, breatheNow),
+          h('button', { type: 'button', class: 'icon-btn', 'aria-label': C.copy.settings.title, onclick: () => go('settings') }, gearIcon()))),
       card('spirit', h('div', { class: 'grid one' }, C.axes.spirit.ticks.map(t => tick('spirit', t)))),
       card('body', bodyGroups),
       card('mind', [h('div', { class: 'grid' }, C.axes.mind.ticks.map(t => tick('mind', t))), flavorRow]),
@@ -291,7 +300,7 @@ const VIEWS = {
         h('div', { class: 'center' }, link(C.copy.end.link, resetToHere, 'small')));
     }
     let saveBtn = null;
-    if (!settings.keepAll) {
+    if (!settings.keepAll && !visit.direct) { // a breath with no check-in has nothing to save
       saveBtn = btn(visit.savedId ? A.saved : A.save, () => {
         if (visit.savedId) return;
         const rec = E.buildSession(visit, { breathsCompleted: visit.breathsCompleted, saved: true });
@@ -327,7 +336,7 @@ const VIEWS = {
           h('div', { class: 'log-when', text: isNaN(when) ? s.ts : fmt.format(when) }),
           h('div', { class: 'log-ticks', text: [tickLabel('spirit', s.spirit), tickLabel('body', s.body), mind].join(' · ') }),
           s.pinId && h('div', { class: 'log-meta', text: pinLabel(s.pinId) }),
-          h('div', { class: 'log-meta', text: `${L.moved} ${s.axisMoved} · ${s.verseRef}` }));
+          h('div', { class: 'log-meta', text: `${L.moved} ${s.axisMoved} · ${s.verseRef || (C.breathModes.find(m => m.id === s.breathMode) || {}).label}` }));
       })) : h('p', { class: 'fine', text: L.empty }),
     );
   },
@@ -386,8 +395,10 @@ const VIEWS = {
 // ===================== breath (PRD §12) =====================
 function breathView(homePath) {
   const B = E.BREATH;
-  const plan = E.breathPlan(visit);
-  const verse = visit.verse = E.verseFor(C, visit);
+  const mode = visit.breathMode = E.BREATH_MODES.includes(settings.breathMode) ? settings.breathMode : 'truth';
+  visit.verse = E.verseFor(C, visit);
+  const script = E.breathScript(C, visit, mode); // one entry per breath; null = silent
+  const total = script.length;
   const cycle = B.inhaleMs + B.exhaleMs;
   const ease = x => 0.5 - 0.5 * Math.cos(Math.PI * Math.min(1, Math.max(0, x)));
 
@@ -398,11 +409,17 @@ function breathView(homePath) {
   const fex = h('p', { class: 'frag', 'aria-hidden': 'true' });
   const ref = h('p', { class: 'ref' });
   // leaving is always allowed: Back returns a step, Done ends the breath early
-  const back = link(C.copy.back, () => { stop(); go(homePath ? 'here' : 'strategy'); });
+  const back = link(C.copy.back, () => { stop(); go(homePath || visit.direct ? 'here' : 'strategy'); });
   const doneBtn = btn(C.copy.breathe.done, () => end(), 'quiet');
-  const dots = Array.from({ length: plan.total }, () => h('span'));
+  const dots = Array.from({ length: total }, () => h('span'));
   const progress = h('div', { class: 'breath-dots', role: 'progressbar', 'aria-label': C.copy.breathe.progress,
-    'aria-valuemin': '0', 'aria-valuemax': String(plan.total), 'aria-valuenow': '0' }, dots);
+    'aria-valuemin': '0', 'aria-valuemax': String(total), 'aria-valuenow': '0' }, dots);
+  // switching mode restarts the breath with the new lines (and is remembered for next time)
+  const modeRow = h('div', { class: 'mode-row', role: 'group', 'aria-label': C.copy.breathe.modes },
+    C.breathModes.map(m => chip({ label: m.label, cls: 'pill', pressed: m.id === mode, onclick: () => {
+      if (m.id === mode) return;
+      settings.breathMode = m.id; saveSettings(); tone.prime(); render(current);
+    } })));
   const intro = homePath ? h('p', { class: 'home-intro', text: C.copy.home.text }) : null;
 
   let startT = null, pausedAt = null, pausedTotal = 0, raf = 0, lastBreath = -1, stopped = false, introTimer = 0;
@@ -413,16 +430,18 @@ function breathView(homePath) {
     visit.breathsCompleted = n;
     dots.forEach((d, i) => { d.className = i < n ? 'done' : i === n ? 'now' : ''; });
     progress.setAttribute('aria-valuenow', String(n));
-    if (n >= plan.silent) {
-      if (n === plan.silent) { fin.textContent = verse.inhale; fex.textContent = verse.exhale; ref.textContent = verse.ref; ref.classList.add('shown'); }
-      announce(verse.inhale + ' ' + verse.exhale);
+    const s = script[n];
+    if (s && s !== script[n - 1]) {
+      fin.textContent = s.inhale; fex.textContent = s.exhale;
+      ref.textContent = s.ref || ''; ref.classList.toggle('shown', !!s.ref);
     }
+    if (s) announce(s.inhale + ' ' + s.exhale);
   }
   function frame() {
     if (stopped) return;
     const t = elapsed();
     const n = Math.floor(t / cycle);
-    if (n >= plan.total) { visit.breathsCompleted = plan.total; return end(); }
+    if (n >= total) { visit.breathsCompleted = total; return end(); }
     if (n !== lastBreath) { lastBreath = n; onBreathStart(n); }
     const ph = t - n * cycle;
     const inhaling = ph < B.inhaleMs;
@@ -435,8 +454,9 @@ function breathView(homePath) {
     // PRD §12.1 text: inhale line 0→1 over the inhale; over the exhale it falls 1→0.15
     // while the exhale line is at full; both settle to 0.2 between breaths.
     let oi = 0, oe = 0;
-    if (n >= plan.silent) {
-      const base = n === plan.silent ? 0 : 0.2;
+    if (script[n]) {
+      // a new line fades up from nothing; a repeated line from its 0.2 resting glow
+      const base = script[n] !== script[n - 1] ? 0 : 0.2;
       if (inhaling) { oi = base + (1 - base) * ease(ph / B.inhaleMs); oe = base; }
       else {
         const u = ph - B.inhaleMs;
@@ -469,7 +489,7 @@ function breathView(homePath) {
     if (stopped) return;
     stop();
     // "keep all locates" (default off) writes every session; otherwise only an explicit Save does
-    if (settings.keepAll && !visit.savedId) {
+    if (settings.keepAll && !visit.savedId && !visit.direct) {
       const rec = E.buildSession(visit, { breathsCompleted: visit.breathsCompleted, saved: false });
       writeSession(rec); visit.savedId = rec.id;
     }
@@ -484,6 +504,7 @@ function breathView(homePath) {
 
   return h('section', { class: 'view breathe' },
     h('div', { class: 'breathe-top' }, back),
+    modeRow,
     h('div', { class: 'breathe-body' },
       intro,
       h('div', { class: 'bloom-wrap', 'aria-hidden': 'true' }, bloom),

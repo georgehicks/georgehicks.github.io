@@ -70,8 +70,8 @@ export function strategyFor(C, loc, axis, pinId) {
 export const honestyNote = (C, pinId) => pinId === 'proverb' ? C.copy.strategy.honestyProverb : null;
 
 // PRD §12.2 — verse selection, in the order listed there.
-export function verseFor(C, { loc, axis, pinId, homePath }) {
-  if (homePath) return C.verseByMind.present_open;                         // John 15:9
+export function verseFor(C, { loc, axis, pinId, homePath, direct }) {
+  if (homePath || direct) return C.verseByMind.present_open;               // John 15:9 (home, or breathing without a check-in)
   if (loc.mind === 'blank') return C.verseByMind.blank;                     // Rom 8:26
   if (pinId && !isUnknownPin(pinId)) return C.verseByPin[pinId];
   if (axis === 'mind' && loc.mind === 'time_travel') {
@@ -92,6 +92,18 @@ export function verseFor(C, { loc, axis, pinId, homePath }) {
 export const breathPlan = ({ loc, homePath }) => homePath
   ? { total: BREATH.homeTotal, silent: 0 }
   : { total: BREATH.total, silent: loc.mind === 'blank' ? BREATH.silentBlank : 0 };
+
+// Three ways to breathe (content.json breathModes). "truth" is the matched verse above;
+// "above" (gratitude, then prayer) and "with" (Father, Jesus, Holy Spirit) are fixed
+// prayer lines. Returns one entry per breath: { inhale, exhale, ref } or null for a
+// silent breath (blank mind, truth mode only).
+export const BREATH_MODES = ['truth', 'above', 'with'];
+export function breathScript(C, v, mode = 'truth') {
+  const m = C.breathModes.find(x => x.id === mode);
+  if (m && m.steps) return m.steps.flatMap(s => Array(s.breaths).fill(s)).map(s => ({ inhale: s.inhale, exhale: s.exhale, ref: null }));
+  const plan = breathPlan(v), verse = verseFor(C, v);
+  return Array.from({ length: plan.total }, (_, i) => i < plan.silent ? null : verse);
+}
 
 const uuid = () => (globalThis.crypto && crypto.randomUUID) ? crypto.randomUUID()
   : 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c => {
@@ -119,7 +131,8 @@ export function buildSession(v, { breathsCompleted, saved }) {
     pinList: v.homePath ? null : pinListFor(v.loc),
     pinId: v.pinId || null,
     axisMoved: v.axis,
-    verseRef: v.verse.ref,
+    breathMode: v.breathMode || 'truth',
+    verseRef: (v.breathMode || 'truth') === 'truth' ? v.verse.ref : null,
     breathsCompleted: Math.max(0, Math.min(10, breathsCompleted | 0)),
     saved: !!saved,
   };

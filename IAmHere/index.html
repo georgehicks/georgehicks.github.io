@@ -113,6 +113,7 @@
 
   /* ---------- top bar ---------- */
   .topbar { display: flex; align-items: center; justify-content: space-between; min-height: 44px; margin-bottom: 8px; }
+  .topbar-actions { display: flex; align-items: center; gap: 2px; }
   .wordmark { font-weight: 600; font-size: 1.05rem; letter-spacing: 0.01em; margin: 0; }
 
   /* ---------- chips (PRD §16: min 44px tap targets; §18: aria-pressed, not colour-only) ---------- */
@@ -187,6 +188,11 @@
   /* ---------- breathe (PRD §12) ---------- */
   .breathe { justify-content: center; align-items: center; text-align: center; padding: 8px 0; }
   .breathe-top { width: 100%; min-height: 44px; display: flex; justify-content: space-between; align-items: center; }
+  .mode-row { display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; margin: 2px 0 4px; }
+  .mode-row .chip.pill { background: transparent; padding: 6px 12px; }
+  .mode-row .chip.pill .lbl { font-size: 0.8rem; font-weight: 400; color: var(--ink-dim); }
+  .mode-row .chip.pill[aria-pressed="true"] { background: var(--accent); }
+  .mode-row .chip.pill[aria-pressed="true"] .lbl { color: var(--accent-ink); font-weight: 600; }
   .breathe-body { flex: 1; display: flex; flex-direction: column; justify-content: center; align-items: center; width: 100%; }
   .home-intro { font-size: 1.3rem; font-weight: 500; min-height: 1.6em; transition: opacity 1.2s ease; }
   .home-intro.gone { opacity: 0; }

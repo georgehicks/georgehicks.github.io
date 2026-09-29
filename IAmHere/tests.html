@@ -35,7 +35,7 @@ const L = (spirit, body, mind, timeTravelFlavor = null) => ({ spirit, body, mind
 
 // ---- §21 content shape ----
 t('content.json has exactly the §21 top-level keys', () => eq(Object.keys(C).sort(),
-  ['axes', 'copy', 'crisis', 'dyingPins', 'managedPins', 'onboarding', 'strategiesByBody', 'strategiesByMind', 'strategiesByPin', 'verseByBody', 'verseByMind', 'verseByPin'].sort()));
+  ['axes', 'breathModes', 'copy', 'crisis', 'dyingPins', 'managedPins', 'onboarding', 'strategiesByBody', 'strategiesByMind', 'strategiesByPin', 'verseByBody', 'verseByMind', 'verseByPin'].sort()));
 t('content is frozen', () => Object.isFrozen(C) && Object.isFrozen(C.verseByPin.proverb));
 t('no markdown in content.json', () => !/[*_`#]{2}|\[[^\]]+\]\(/.test(JSON.stringify(C)) || 'markdown-like text found');
 
@@ -72,7 +72,7 @@ t('three pin taps keep the first', () => {
 t('session record stores one pinId and no free text', () => {
   const v = { loc: L('managed', 'rest', 'present_open'), axis: 'spirit', pinId: 'better_than', thanWhom: 'Someone', verse: C.verseByPin.better_than, homePath: false };
   const rec = E.buildSession(v, { breathsCompleted: 8, saved: true });
-  eq(Object.keys(rec).sort(), ['axisMoved', 'body', 'breathsCompleted', 'id', 'mind', 'pinId', 'pinList', 'saved', 'spirit', 'timeTravelFlavor', 'ts', 'verseRef'].sort());
+  eq(Object.keys(rec).sort(), ['axisMoved', 'body', 'breathMode', 'breathsCompleted', 'id', 'mind', 'pinId', 'pinList', 'saved', 'spirit', 'timeTravelFlavor', 'ts', 'verseRef'].sort());
   return !JSON.stringify(rec).includes('Someone') || 'than-whom text leaked into the record';
 });
 
@@ -92,6 +92,26 @@ t('blank path has 2 silent breaths', () => eq(E.breathPlan({ loc: L('rising', 'r
 t('one home line, used verbatim in onboarding and About', () =>
   C.onboarding[0].body.startsWith(C.copy.home.line) && C.copy.settings.about.includes(C.copy.home.line)
   && !/Home is Spirit|Spirit (alive|rising)/.test(JSON.stringify(C)));
+t('three breath modes, truth first', () => eq(C.breathModes.map(m => m.id), E.BREATH_MODES));
+t('truth mode: blank mind gets 2 silent breaths, then Rom 8:26', () => {
+  const s = E.breathScript(C, { loc: L('rising', 'rest', 'blank'), axis: 'mind' }, 'truth');
+  eq(s.length, 8); eq(s.slice(0, 2), [null, null]); eq(s[2].ref, 'Romans 8:26');
+});
+t('things above: 4 grateful, then 4 prayer, each answered "Thank You, Lord."', () => {
+  const s = E.breathScript(C, { loc: L('dying', 'fight', 'blank') }, 'above');
+  eq(s.map(x => x.inhale), [...Array(4).fill('I am grateful for…'), ...Array(4).fill('I pray for…')]);
+  return s.every(x => x.exhale === 'Thank You, Lord.' && x.ref === null);
+});
+t('rest with Him: 3 breaths each with Father, Jesus, Holy Spirit', () => {
+  const s = E.breathScript(C, { loc: L('rising', 'rest', 'present_open'), homePath: true }, 'with');
+  eq(s.map(x => x.inhale.replace('It’s good to be with You, ', '')), ['Father.', 'Father.', 'Father.', 'Jesus.', 'Jesus.', 'Jesus.', 'Holy Spirit.', 'Holy Spirit.', 'Holy Spirit.']);
+  return s.every(x => x.exhale === 'I am Yours.');
+});
+t('prayer modes save no verse reference', () => eq(E.buildSession({ loc: L('dying', 'rest', 'present_open'), axis: 'spirit', pinId: 'alone', verse: C.verseByPin.alone, breathMode: 'with' }, { breathsCompleted: 9 }).verseRef, null));
+t('just breathe (no check-in): 8 breaths, John 15:9, nothing silent', () => {
+  const s = E.breathScript(C, { loc: {}, direct: true }, 'truth');
+  eq(s.length, 8); return s.every(x => x && x.ref === 'John 15:9');
+});
 t('breath is 8 by default', () => eq(E.breathPlan({ loc: L('dying', 'rest', 'present_open') }).total, 8));
 t('no PRD shorthand left in the copy', () => {
   const hit = JSON.stringify({ ...C, verseByPin: 0, verseByBody: 0, verseByMind: 0 }).match(/this year’s face|old broadcast|two columns|second half|weather|provision|reading attack|not a moral|running the desk|Zombie|Anti-love/i);

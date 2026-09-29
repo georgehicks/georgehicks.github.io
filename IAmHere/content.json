@@ -141,6 +141,19 @@
     "present_open": { "inhale": "As the Father has loved me", "exhale": "so have I loved you", "ref": "John 15:9" }
   },
 
+  "breathModes": [
+    { "id": "truth", "label": "Truth over lies" },
+    { "id": "above", "label": "Things above", "steps": [
+      { "inhale": "I am grateful for…", "exhale": "Thank You, Lord.", "breaths": 4 },
+      { "inhale": "I pray for…", "exhale": "Thank You, Lord.", "breaths": 4 }
+    ] },
+    { "id": "with", "label": "Rest with Him", "steps": [
+      { "inhale": "It’s good to be with You, Father.", "exhale": "I am Yours.", "breaths": 3 },
+      { "inhale": "It’s good to be with You, Jesus.", "exhale": "I am Yours.", "breaths": 3 },
+      { "inhale": "It’s good to be with You, Holy Spirit.", "exhale": "I am Yours.", "breaths": 3 }
+    ] }
+  ],
+
   "onboarding": [
     {
       "title": "I Am Here",
@@ -164,7 +177,8 @@
     "back": "Back",
     "skip": "Skip",
     "here": {
-      "cta": "This is where I am"
+      "cta": "This is where I am",
+      "breathe": "Just breathe"
     },
     "pin": {
       "titleDying": "Which sentence feels true right now?",
@@ -188,7 +202,8 @@
     },
     "breathe": {
       "done": "Done",
-      "progress": "Breaths"
+      "progress": "Breaths",
+      "modes": "Way of breathing"
     },
     "again": {
       "title": "That is enough.",
