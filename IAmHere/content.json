@@ -34,7 +34,7 @@
       "ticks": [
         { "id": "present_open", "label": "Open", "helper": "Here, and open to what comes." },
         { "id": "present_narrowed", "label": "Narrowed", "helper": "Here, but locked on judging, fixing, or solving." },
-        { "id": "time_travel", "label": "Past or future", "helper": "Replaying what happened or dreading what’s next." },
+        { "id": "time_travel", "label": "Past or future", "helper": "Replaying, dreading, or daydreaming — anywhere but here." },
         { "id": "blank", "label": "Blank", "helper": "Foggy. Checked out. Nothing there." }
       ],
       "timeTravelFlavors": [
@@ -79,7 +79,7 @@
   "strategiesByMind": {
     "present_open": "Stay as you are. Nothing to fix.",
     "present_narrowed": "For one minute, stop judging or fixing. Look at the person in front of you as they are today.",
-    "time_travel": "Come back to this room. If you’re in the future: sort what you can do from what you can’t, and pick one thing to do in the next day. If you’re in the past: name the old memory that’s replaying.",
+    "time_travel": "Come back to this room. If you’re replaying the past, name the memory. If you’re dreading the future, pick one thing you can do in the next day. If you’re daydreaming, notice what you’re longing for and tell God.",
     "blank": "Don’t try to figure it out. Start with your body. After two breaths, say one word: “here.”"
   },
 
