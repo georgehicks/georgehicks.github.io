@@ -17,10 +17,10 @@
       "ticks": [
         { "id": "rest", "label": "Rest", "helper": "Jaw soft. Free to be still or move." },
         { "id": "control", "label": "Control", "helper": "Gripping, scanning, trying to stay on top of it." },
-        { "id": "fight", "label": "Fight", "helper": "Heated. Pushing back. Need to win." },
-        { "id": "flight", "label": "Flight", "helper": "Wanting out — a screen, a door, a task." },
-        { "id": "freeze", "label": "Freeze", "helper": "Stuck. Can’t move or decide." },
-        { "id": "collapse", "label": "Collapse", "helper": "Heavy, numb, shut down." }
+        { "id": "fight", "label": "Fight", "helper": "Heated. Pushing back. Need to win or survive." },
+        { "id": "flight", "label": "Flight", "helper": "Wanting to escape — a screen, a door, a task." },
+        { "id": "freeze", "label": "Freeze", "helper": "Stuck. Afraid to move." },
+        { "id": "collapse", "label": "Collapse", "helper": "Heavy, helpless, alone." }
       ],
       "groups": [
         { "label": null, "ids": ["rest", "control"] },
