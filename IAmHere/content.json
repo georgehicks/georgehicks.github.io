@@ -2,12 +2,12 @@
   "axes": {
     "spirit": {
       "label": "Spirit",
-      "question": "Is the line up, handled, or gone?",
+      "question": "Alive, managing, or fading?",
       "home": "rising",
       "ticks": [
-        { "id": "rising", "label": "Rising", "helper": "With. Received. Not self-supplied." },
-        { "id": "managed", "label": "Managed", "helper": "Correct words, then back to managing." },
-        { "id": "dying", "label": "Dying", "helper": "Cut off. Anti-love is loud." }
+        { "id": "rising", "label": "Alive", "helper": "With. Received. Not self-supplied." },
+        { "id": "managed", "label": "Managing", "helper": "Correct words, then back to handling it." },
+        { "id": "dying", "label": "Fading", "helper": "Cut off. Anti-love is loud." }
       ]
     },
     "body": {
@@ -144,7 +144,7 @@
   "onboarding": [
     {
       "title": "I Am Here",
-      "body": "Home is Spirit rising, body at rest, mind present and open. This app helps you notice when you have left, and take one step back.",
+      "body": "Home is Spirit alive, body at rest, mind present and open. This app helps you notice when you have left, and take one step back.",
       "cta": "Continue"
     },
     {
@@ -200,7 +200,7 @@
       "log": "Log"
     },
     "end": {
-      "text": "Home is Spirit rising, body rest, mind present-open.",
+      "text": "Home is Spirit alive, body rest, mind present-open.",
       "link": "I am here"
     },
     "log": {
