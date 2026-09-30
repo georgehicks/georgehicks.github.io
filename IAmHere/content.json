@@ -356,7 +356,7 @@
     },
     {
       "title": "How it works",
-      "body": "Tap how your spirit, mind, and body are right now. If a thought is weighing on you, pick the sentence closest to it. Then breathe for a minute with a line of Scripture. No scores. No streaks.",
+      "body": "Tap how your spirit, mind, and body are right now. If a thought is weighing on you, pick the sentence closest to it. Then breathe a line of Scripture with Him for a minute. No scores. No streaks.",
       "cta": "I am here"
     }
   ],
@@ -377,7 +377,7 @@
     "start": {
       "paths": [
         { "id": "checkin", "title": "Check in", "body": "Notice your spirit, mind, and body, and take one step back." },
-        { "id": "lie", "title": "Name a lie", "body": "Pick the sentence that feels true, and breathe the truth over it." },
+        { "id": "lie", "title": "Name a lie", "body": "Pick the sentence that feels true, and breathe a line of Scripture with Him." },
         { "id": "stand", "title": "Stand firm", "body": "Stand in Christ’s strength when it feels like more than a bad day." },
         { "id": "above", "title": "Thanks and prayer", "body": "Set your mind on things above with gratitude and prayer." },
         { "id": "with", "title": "Rest with Him", "body": "Be with the Father, Jesus, and the Holy Spirit." }
