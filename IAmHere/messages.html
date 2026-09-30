@@ -107,7 +107,7 @@ C.breathModes.filter(m => m.steps).forEach(m => {
   m.steps.forEach(s => other.append(el('p', null, `${s.breaths} × ${s.inhale} / ${s.exhale}${s.ref ? '  (' + s.ref + ')' : ''}`)));
 });
 other.append(el('h3', null, 'Already home'), el('p', null, C.copy.home.text + '  →  ' + C.verseByMind.present_open.inhale + ' / ' + C.verseByMind.present_open.exhale + ' (John 15:9)'));
-other.append(el('h3', null, 'Name a lie'), el('p', null, C.copy.pin.fatherOfLies));
+other.append(el('h3', null, 'Sentence picker'), el('p', null, C.copy.pin.instruction));
 other.append(el('h3', null, 'Danger line (only after a worrisome check-in)'), el('p', null, C.crisis.line));
 out.append(other);
 

@@ -77,7 +77,7 @@ t('session record stores one pinId and no free text', () => {
 });
 
 // ---- proverb ----
-t('proverb strategy includes the not-in-Scripture note', () => eq(E.honestyNote(C, 'proverb'), 'That saying isn’t in the Bible. It’s self-reliance talking.'));
+t('proverb strategy includes the not-in-Scripture note', () => eq(E.honestyNote(C, 'proverb'), 'Many of us grew up with this saying. Scripture says something kinder: God helps the weak.'));
 t('no other pin gets a note', () => [...C.dyingPins, ...C.managedPins].filter(p => p.id !== 'proverb').every(p => E.honestyNote(C, p.id) === null));
 t('proverb breath is Romans 5:6 fragments only', () => {
   const v = E.verseFor(C, { loc: L('managed', 'rest', 'present_open'), axis: 'spirit', pinId: 'proverb' });
@@ -236,7 +236,9 @@ for (const table of Object.keys(PRD)) {
 
 // ---- no streak UI anywhere in the build ----
 const src = await Promise.all(['app.js', 'index.html', 'engine.js'].map(f => fetch(f + '?_=' + Date.now()).then(r => r.text())));
-t('father-of-lies line only where Name a lie was chosen', () => src[0].includes('(visit.lieOnly || visit.blankNaming) && h(\'p\', { class: \'father-of-lies\'') || 'not gated');
+t('John 8:44 lives only in the Stand firm description, never on the sentence picker', () =>
+  C.copy.start.paths.find(p => p.id === 'stand').body.includes('John 8:44') && !src[0].includes('father-of-lies')
+  && !JSON.stringify(C.copy.pin).includes('John 8:44'));
 t('end card shows the home line', () => src[0].includes("text: C.copy.home.line"));
 t('app code has no streak, score, badge, leaderboard, or celebration', () => {
   const hit = src.join('\n').match(/streak|leaderboard|badge|confetti|congrat|well done|great job/i);

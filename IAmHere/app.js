@@ -281,8 +281,6 @@ const VIEWS = {
       link(C.copy.back, () => go(back), 'back'),
       h('h2', { text: title }),
       h('p', { class: 'instruction', text: P.instruction }),
-      // only where the person chose "Name a lie" — never on the automatic check-in pin screen
-      (visit.lieOnly || visit.blankNaming) && h('p', { class: 'father-of-lies', text: P.fatherOfLies }),
       groups.map(g => [g.heading && h('h3', { class: 'pin-heading', text: g.heading }),
         h('div', { class: 'pin-list' }, g.pins.map(p => byId(p.id)))]),
       thanWrap,

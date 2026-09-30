@@ -6,7 +6,7 @@
       "home": "rising",
       "ticks": [
         { "id": "rising", "label": "Alive", "helper": "Connected to God. Receiving, not straining." },
-        { "id": "managed", "label": "Managing", "helper": "Saying the right things, but running on my own strength." },
+        { "id": "managed", "label": "Managing", "helper": "The work may be real. The strength you’re running on may not be His." },
         { "id": "dying", "label": "Fading", "helper": "Far off. Love is hard to hear." }
       ]
     },
@@ -236,7 +236,7 @@
     ],
     "better_than": [
       { "truth": "Comparing yourself to someone is quick and quiet. Sometimes it covers insecurity; sometimes it just feels good to be ahead. Either way, it pulls you away from people, and from God.",
-        "prayer": "Lord, I’ve been ranking myself above someone. I confess it. Help me see them the way You do. Everything I have is Yours." },
+        "prayer": "Lord, I’ve been ranking myself above someone. Help me see them the way You do." },
       { "truth": "Feeling better than someone can be a relief when you feel small inside. It’s worth asking what the comparison is protecting.",
         "prayer": "Father, I’ve been comparing. Help me see what I’m afraid of underneath it. Show me what’s good in them, too." },
       { "truth": "You’ve noticed where you’re ahead, and maybe you are. But it’s become a way of keeping score.",
@@ -378,7 +378,7 @@
       "paths": [
         { "id": "checkin", "title": "Check in", "body": "Notice your spirit, mind, and body, and take one step back." },
         { "id": "lie", "title": "Name a lie", "body": "Pick the sentence that feels true, and breathe a line of Scripture with Him." },
-        { "id": "stand", "title": "Stand firm", "body": "Stand in Christ’s strength when it feels like more than a bad day." },
+        { "id": "stand", "title": "Stand firm", "body": "Stand in Christ’s strength when it feels like more than a bad day. Jesus called the enemy “the father of lies” (John 8:44)." },
         { "id": "above", "title": "Thanks and prayer", "body": "Set your mind on things above with gratitude and prayer." },
         { "id": "with", "title": "Rest with Him", "body": "Be with the Father, Jesus, and the Holy Spirit." }
       ]
@@ -386,10 +386,9 @@
     "pin": {
       "titleDying": "Which sentence feels true right now?",
       "titleManaged": "Which sentence is in charge right now?",
-      "instruction": "Pick the closest one.",
+      "instruction": "Some thoughts feel true and aren’t. Naming the closest one is enough.",
       "fadingHeading": "When I’m fading",
       "managingHeading": "When I’m managing",
-      "fatherOfLies": "Jesus called the enemy “the father of lies” (John 8:44).",
       "followup": "Take a second look. Which of these would you least want to be true?",
       "thanWhom": "Better than whom? (optional, never saved)",
       "also": "also",
@@ -400,7 +399,7 @@
       "restSpirit": "Rest with the Spirit",
       "nameLie": "Name a lie",
       "recapPin": "Sentence",
-      "honestyProverb": "That saying isn’t in the Bible. It’s self-reliance talking.",
+      "honestyProverb": "Many of us grew up with this saying. Scripture says something kinder: God helps the weak.",
       "cta": "Breathe"
     },
     "home": {
