@@ -245,7 +245,10 @@
   .bloom-wrap { --size: min(220px, 56vw, 32vh); width: var(--size); height: var(--size); position: relative; margin: 8px auto 26px; }
   .bloom {
     --p: 0; position: absolute; inset: 0;
-    transform: scale(calc(0.15 + 0.85 * var(--p))) rotate(calc((1 - var(--p)) * 180deg));
+    transform: scale3d(calc(0.15 + 0.85 * var(--p)), calc(0.15 + 0.85 * var(--p)), 1) rotate(calc((1 - var(--p)) * 180deg));
+    /* composited layers move by fractions of a pixel; repainting snaps to whole pixels and
+       jiggles as the bloom slows at the top of the breath */
+    will-change: transform; backface-visibility: hidden;
   }
   .petal {
     position: absolute; top: 50%; left: 50%;
@@ -253,16 +256,25 @@
     margin: calc(var(--size) * -0.22) 0 0 calc(var(--size) * -0.22);
     border-radius: 50%; background: var(--petal); opacity: var(--petal-opacity); mix-blend-mode: var(--petal-blend);
     /* spread < petal radius, so the petals always overlap at the centre (no hole) */
-    transform: rotate(calc(var(--i) * 45deg)) translateY(calc(var(--p) * var(--size) * -0.2));
+    transform: rotate(calc(var(--i) * 45deg)) translate3d(0, calc(var(--p) * var(--size) * -0.2), 0);
+    will-change: transform; backface-visibility: hidden;
   }
   /* PRD §17: with reduce motion, no scale — a static bar; only opacity changes */
   .breath-bar { display: none; width: min(180px, 50vw); height: 4px; border-radius: 4px; background: var(--petal); margin: 40px auto 48px; opacity: 0.3; }
   html.reduce-motion .bloom-wrap { display: none; }
+  /* short phones (SE size): keep the whole breath on one screen, verse size unchanged */
+  @media (max-height: 720px) {
+    .bloom-wrap { --size: min(200px, 56vw, 27vh); margin: 2px auto 12px; }
+    .ref { margin-top: 8px; }
+    .breathe-foot { gap: 10px; }
+    .mode-row { margin-bottom: 0; }
+  }
   html.reduce-motion .breath-bar { display: block; }
 
-  .fragments { min-height: 7.6em; display: flex; flex-direction: column; justify-content: center; gap: 0.3em; padding: 0 4px; }
+  /* fixed height for up to two lines per fragment, so a longer verse never moves the bloom */
+  .fragments { font-size: max(22px, 1.6rem); height: 5.4em; display: flex; flex-direction: column; justify-content: center; gap: 0.3em; padding: 0 4px; }
   /* PRD §16: serif only for Scripture; §20: never below 22px, two lines per fragment allowed */
-  .frag { font-family: var(--serif); font-size: max(22px, 1.6rem); line-height: 1.25; opacity: 0; max-width: 22ch; margin: 0 auto; }
+  .frag { font-family: var(--serif); font-size: 1em; line-height: 1.25; opacity: 0; max-width: 22ch; margin: 0 auto; }
   .ref { font-size: 15px; color: var(--ink-dim); margin-top: 14px; opacity: 0; transition: opacity 1.5s ease; letter-spacing: 0.02em; }
   .ref.shown { opacity: 1; }
   .breathe-foot { width: 100%; display: flex; flex-direction: column; align-items: center; gap: 16px; }
