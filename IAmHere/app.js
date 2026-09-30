@@ -133,7 +133,7 @@ function render(requested) {
   if (route === 'pin' && !visit.lieOnly && !visit.blankNaming && !E.needsPin(visit.loc)) route = 'strategy';
   if (route !== requested) history.replaceState(null, '', '#/' + route);
   current = route;
-  if (updateReady && SAFE_TO_RELOAD.includes(route)) return location.reload();
+  if (updateReady && SAFE_TO_RELOAD.includes(route)) applyUpdate();
   $app.replaceChildren(VIEWS[route]());
   window.scrollTo(0, 0);
   const head = $app.querySelector('h1, h2');
@@ -710,19 +710,27 @@ async function showVersion(el, tries = 0) {
   } catch {}
 }
 
-// ===================== apply updates on the first open =====================
-// A new version downloads in the background and takes over mid-session (sw.js
-// skipWaiting + clients.claim). Reload onto it right away — but never mid-breath or
-// mid-check-in (that would lose the taps): wait until the person is on a resting screen.
+// ===================== updates =====================
+// A new version installs in the background and WAITS (sw.js never takes over on its own),
+// so this page keeps getting every file from its own version — old code never meets new
+// content. On a resting screen we let the new version take over and reload onto it at once;
+// never mid-breath or mid-check-in (that would lose the taps).
 const SAFE_TO_RELOAD = ['start', 'settings', 'log', ''];
-let updateReady = false;
-if ('serviceWorker' in navigator) {
-  const hadController = !!navigator.serviceWorker.controller; // first-ever install isn't an update
-  navigator.serviceWorker.addEventListener('controllerchange', () => {
-    if (!hadController || updateReady) return;
-    updateReady = true;
-    if (SAFE_TO_RELOAD.includes(current)) location.reload();
-  });
+let updateReady = null; // the installed, waiting worker
+function applyUpdate() { if (updateReady) updateReady.postMessage('skipWaiting'); }
+if ('serviceWorker' in navigator && navigator.serviceWorker.controller) { // first-ever install isn't an update
+  let reloading = false;
+  navigator.serviceWorker.addEventListener('controllerchange', () => { if (!reloading) { reloading = true; location.reload(); } });
+  navigator.serviceWorker.getRegistration().then(reg => {
+    if (!reg) return;
+    const ready = w => { updateReady = w; if (SAFE_TO_RELOAD.includes(current)) applyUpdate(); };
+    if (reg.waiting) ready(reg.waiting);
+    reg.addEventListener('updatefound', () => {
+      const w = reg.installing;
+      if (w) w.addEventListener('statechange', () => { if (w.state === 'installed' && reg.waiting === w) ready(w); });
+    });
+    reg.update().catch(() => {});
+  }).catch(() => {});
 }
 
 // ===================== boot =====================

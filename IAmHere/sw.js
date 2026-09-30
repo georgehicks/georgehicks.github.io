@@ -1,11 +1,14 @@
-const CACHE = 'iamhere-v40';
+const CACHE = 'iamhere-v43';
 const ASSETS = ['./', './index.html', './app.js', './engine.js', './content.json', './manifest.json', './icon.svg'];
 
 self.addEventListener('install', e => {
   // cache: 'reload' skips the HTTP cache so a version bump really fetches fresh files
   e.waitUntil(caches.open(CACHE).then(c => c.addAll(ASSETS.map(u => new Request(u, { cache: 'reload' })))));
-  self.skipWaiting();
+  // no skipWaiting here: a new version waits so an open page never mixes old code with
+  // new files. The app tells it to take over (below) when the person is on a resting screen.
 });
+
+self.addEventListener('message', e => { if (e.data === 'skipWaiting') self.skipWaiting(); });
 
 self.addEventListener('activate', e => {
   e.waitUntil(
