@@ -3770,8 +3770,9 @@ For God alone my soul waits in silence. — Psalm 62:1`;
         await Promise.all(keys.filter(k => k.startsWith('abidingsteps-') && k !== 'abidingsteps-music').map(k => caches.delete(k)));
       }
       if ('serviceWorker' in navigator) {
+        // only AbidingSteps' own worker — the other apps on this domain keep theirs
         const regs = await navigator.serviceWorker.getRegistrations();
-        await Promise.all(regs.map(r => r.unregister()));
+        await Promise.all(regs.filter(r => new URL(r.scope).pathname.endsWith('/AbidingSteps/')).map(r => r.unregister()));
       }
     } catch (e) { /* fall through to reload regardless */ }
     status.textContent = 'Reloading…';
