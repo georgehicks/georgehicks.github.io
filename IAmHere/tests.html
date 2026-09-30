@@ -156,7 +156,7 @@ t('time-travel past → Isa 43:19', () => eq(sel(L('rising', 'rest', 'time_trave
 t('time-travel no flavor → Matt 6:34', () => eq(sel(L('rising', 'rest', 'time_travel'), 'mind', null), 'Matthew 6:34'));
 t('present-narrowed → Jas 1:19 (quick to hear)', () => eq(E.verseFor(C, { loc: L('rising', 'rest', 'present_narrowed'), axis: 'mind' }).inhale, 'be quick to hear'));
 t('body only (spirit rising) → pair by body tick', () => {
-  const want = { control: 'Psalm 46:10', fight: 'James 1:19', flight: 'Psalm 139:7', freeze: 'Exodus 14:14', collapse: 'Matthew 11:28' };
+  const want = { control: 'Psalm 46:10', fight: 'James 1:19', flight: 'Psalm 139:10', freeze: 'Exodus 14:14', collapse: 'Matthew 11:28' };
   Object.entries(want).forEach(([b, ref]) => eq(sel(L('rising', b, 'present_open'), 'body', null), ref, b));
 });
 t('unknown_dying (after asking twice) → Isa 43:1', () => eq(sel(L('dying', 'rest', 'present_open'), 'spirit', 'unknown_dying'), 'Isaiah 43:1'));
@@ -213,7 +213,7 @@ const PRD = {
   verseByBody: {
     control: ['Be still', 'and know that I am God', 'Psalm 46:10'],
     fight: ['slow to speak', 'slow to anger', 'James 1:19'],
-    flight: ['Where shall I go', 'from your Spirit?', 'Psalm 139:7'],
+    flight: ['even there your hand', 'shall lead me', 'Psalm 139:10'], // was 139:7 in the PRD — presence, not pursuit, for someone escaping
     freeze: ['The Lord will fight for you', 'you have only to be silent', 'Exodus 14:14'],
     collapse: ['Come to me', 'I will give you rest', 'Matthew 11:28'],
     rest: ['As the Father has loved me', 'so have I loved you', 'John 15:9'],
