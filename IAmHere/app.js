@@ -133,6 +133,7 @@ function render(requested) {
   if (route === 'pin' && !visit.lieOnly && !visit.blankNaming && !E.needsPin(visit.loc)) route = 'strategy';
   if (route !== requested) history.replaceState(null, '', '#/' + route);
   current = route;
+  if (updateReady && SAFE_TO_RELOAD.includes(route)) return location.reload();
   $app.replaceChildren(VIEWS[route]());
   window.scrollTo(0, 0);
   const head = $app.querySelector('h1, h2');
@@ -691,6 +692,21 @@ async function showVersion(el, tries = 0) {
       navigator.serviceWorker.ready.then(() => setTimeout(() => showVersion(el, tries + 1), 800));
     }
   } catch {}
+}
+
+// ===================== apply updates on the first open =====================
+// A new version downloads in the background and takes over mid-session (sw.js
+// skipWaiting + clients.claim). Reload onto it right away — but never mid-breath or
+// mid-check-in (that would lose the taps): wait until the person is on a resting screen.
+const SAFE_TO_RELOAD = ['start', 'settings', 'log', ''];
+let updateReady = false;
+if ('serviceWorker' in navigator) {
+  const hadController = !!navigator.serviceWorker.controller; // first-ever install isn't an update
+  navigator.serviceWorker.addEventListener('controllerchange', () => {
+    if (!hadController || updateReady) return;
+    updateReady = true;
+    if (SAFE_TO_RELOAD.includes(current)) location.reload();
+  });
 }
 
 // ===================== boot =====================
