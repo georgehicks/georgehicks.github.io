@@ -58,15 +58,26 @@ export function tapPin(sel, id) {
   return s;
 }
 
-// One step for the axis being moved: { truth, prayer } — first honest words about where
-// the person is, then a prayer that brings it to God (and hands off to the verse).
+// The step for the axis being moved. Each place has several versions, each { truth, prayer }:
+// honest words about where the person is, then a prayer that asks to see what's true there
+// and turns toward God (handing off to the verse). stepKey names the place so the app can
+// avoid showing the same version twice in a row.
+export function stepKey(loc, axis, pinId) {
+  if (axis === 'body') return 'body:' + loc.body;
+  if (axis === 'mind') return 'mind:' + loc.mind;
+  // spirit moved with no pin (pin skipped because mind is blank): the list's "don't know" steps
+  return 'pin:' + (pinId || (loc.spirit === 'dying' ? 'unknown_dying' : 'unknown_managed'));
+}
 export function strategyFor(C, loc, axis, pinId) {
-  if (axis === 'body') return C.strategiesByBody[loc.body];
-  if (axis === 'mind') return C.strategiesByMind[loc.mind];
-  if (pinId && C.strategiesByPin[pinId]) return C.strategiesByPin[pinId];
-  // spirit moved with no pin (pin skipped because mind is blank): the list's "don't know" line
-  const list = loc.spirit === 'dying' ? 'unknown_dying' : 'unknown_managed';
-  return C.strategiesByPin[list];
+  const [kind, id] = stepKey(loc, axis, pinId).split(':');
+  return (kind === 'body' ? C.strategiesByBody : kind === 'mind' ? C.strategiesByMind : C.strategiesByPin)[id];
+}
+// a random version, never the one shown last time at this place
+export function pickVariant(count, last, rand = Math.random) {
+  if (count <= 1) return 0;
+  if (last == null || last >= count) return Math.floor(rand() * count);
+  const i = Math.floor(rand() * (count - 1)); // skip over the last one shown
+  return i >= last ? i + 1 : i;
 }
 
 // When the quiet 988 line appears (strategy screen only): fading with a body that's collapsed

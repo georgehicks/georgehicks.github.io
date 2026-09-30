@@ -68,120 +68,228 @@
   ],
 
   "strategiesByBody": {
-    "control": {
-      "truth": "Gripping feels like being responsible. If you let go, something might slip, and maybe it would. But your hands are tired, and holding on this tight isn’t the same as keeping it safe.",
-      "prayer": "Lord, I’m holding on as tight as I can. I don’t know how to let go, but I open my hands to You."
-    },
-    "fight": {
-      "truth": "Something landed as an attack, and part of you is already building the case. Maybe you were wronged; that can be true. But when you’re this heated, it’s hard to hear anything, even God.",
-      "prayer": "Lord, I feel attacked and I want to win. Before I say anything, I turn to You."
-    },
-    "flight": {
-      "truth": "Part of you wants out: a screen, a door, anything else. That pull usually means something here feels like too much. Getting away is how you’ve gotten through before.",
-      "prayer": "Lord, I want to escape. Instead of running from this, I’m running to You. Stay with me here."
-    },
-    "freeze": {
-      "truth": "You’re stuck. Every move feels risky, so you don’t make one. Freezing isn’t laziness or weakness. It’s your body trying to keep you safe.",
-      "prayer": "Lord, I’m stuck and afraid to move. I don’t have to figure this out right now. Be with me here."
-    },
-    "collapse": {
-      "truth": "You’ve gone heavy. Everything feels like too much, and it seems like no one is coming. When you’ve carried too much for too long, shutting down is what’s left.",
-      "prayer": "Lord, I have nothing left and I feel alone. I can’t reach for You, so I’m asking You to come to me."
-    },
-    "rest": {
-      "truth": "Your body is at ease right now, free to be still or move. Nothing here needs fixing.",
-      "prayer": "Lord, thank You for this rest. Keep me here with You."
-    }
+    "control": [
+      { "truth": "Gripping feels like being responsible. If you let go, something might slip, and maybe it would. But your hands are tired, and holding on this tight isn’t the same as keeping it safe.",
+        "prayer": "Lord, I’m holding on as tight as I can. Help me see what’s really at stake here. Maybe it’s safer in Your hands than in mine." },
+      { "truth": "You’re scanning for what could go wrong and trying to stay a step ahead. That watchfulness has probably protected you, and people may rely on it. It also never lets you rest.",
+        "prayer": "Father, I can’t stop watching for what might go wrong. Show me what’s true about this moment. Help me notice what You’re already holding." },
+      { "truth": "Control feels like the only thing standing between you and chaos. Letting go sounds like giving up, so of course you’re holding on.",
+        "prayer": "Jesus, I’m afraid of what happens if I let go. Help me see this the way You do. Show me one thing here that is already good." }
+    ],
+    "fight": [
+      { "truth": "Something landed as an attack, and part of you is already building the case. Maybe you were wronged; that can be true. But when you’re this heated, it’s hard to hear anything, even God.",
+        "prayer": "Lord, I feel attacked and I want to win. Before I say anything, help me see what’s really happening here. Show me what’s true about them, and about me." },
+      { "truth": "You’re heated, and your body is ready to push back. Anger often shows up when something you care about feels threatened, and what you care about may be worth protecting.",
+        "prayer": "Father, I’m angry, and I don’t want to pretend I’m not. Help me see what I’m really protecting. Show me what’s right here, and how to stand for it without doing harm." },
+      { "truth": "It feels like you have to win, or at least survive this. When the stakes feel that high, slowing down can feel dangerous.",
+        "prayer": "Jesus, this feels like a fight I can’t lose. Help me see what’s actually at stake. Maybe I don’t have to win to be okay." }
+    ],
+    "flight": [
+      { "truth": "Part of you wants out: a screen, a door, anything else. That pull usually means something here feels like too much. Getting away is how you’ve gotten through before.",
+        "prayer": "Lord, I want to escape. Help me see what I’m running from. Maybe it isn’t as big with You beside me." },
+      { "truth": "You’re looking for a way out. Sometimes leaving is wise. Sometimes it’s just the fastest way to stop feeling something hard.",
+        "prayer": "Father, I want to get away from this. Help me see which one this is: wisdom or escape. Show me what’s worth staying for." },
+      { "truth": "The screen, the task, the next thing: they all promise relief. They usually give a little, then leave you more tired.",
+        "prayer": "Jesus, I keep reaching for a way out. Help me see what I’m really looking for. Maybe it’s rest, and maybe You have it." }
+    ],
+    "freeze": [
+      { "truth": "You’re stuck. Every move feels risky, so you don’t make one. Freezing isn’t laziness or weakness. It’s your body trying to keep you safe.",
+        "prayer": "Lord, I’m stuck and afraid to move. Help me see what’s true right now. Maybe I’m safer here with You than I feel." },
+      { "truth": "You can’t decide, and you can’t move. It’s as if every choice might be the wrong one. That fear is real, even if the danger isn’t clear.",
+        "prayer": "Father, I’m frozen. Help me see what I’m afraid of. Show me the next small step if there is one, and let me rest in You if there isn’t." },
+      { "truth": "Your body has gone still, braced for something. Part of you is waiting until it’s safe to move.",
+        "prayer": "Jesus, I’m braced and waiting. Help me see that You are here. Show me what’s steady in this room." }
+    ],
+    "collapse": [
+      { "truth": "You’ve gone heavy. Everything feels like too much, and it seems like no one is coming. When you’ve carried too much for too long, shutting down is what’s left.",
+        "prayer": "Lord, I have nothing left and I feel alone. I can’t reach for You, so I’m asking You to come to me. Help me see that I’m not as alone as I feel." },
+      { "truth": "You feel helpless, like nothing you do will matter. That heaviness is real, and it isn’t a character flaw. You’ve reached the end of what you have.",
+        "prayer": "Father, I’m out of strength. Help me see what’s still true when I can’t do anything. Maybe You aren’t waiting for me to get up." },
+      { "truth": "It’s hard to care about anything right now. You may feel far from everyone, and from God. You don’t have to fix that to be seen.",
+        "prayer": "Jesus, I feel heavy and far away. You know what it is to be weary. Help me see You here with me." }
+    ],
+    "rest": [
+      { "truth": "Your body is at ease right now, free to be still or move. Nothing here needs fixing.",
+        "prayer": "Lord, thank You for this rest. Help me notice it and receive it. Keep me here with You." },
+      { "truth": "You’re not bracing or gripping. This ease is a gift, even if it doesn’t last.",
+        "prayer": "Father, thank You for this ease. Help me see Your care in it. Let me stay a moment longer." },
+      { "truth": "Your body feels settled. That’s worth noticing before you move on.",
+        "prayer": "Jesus, thank You for this settledness. Show me what’s good right here. I want to rest in You." }
+    ]
   },
 
   "strategiesByMind": {
-    "present_open": {
-      "truth": "You’re here, and open to what comes. This is what home feels like.",
-      "prayer": "Lord, thank You that I’m here with You. Keep me open to You."
-    },
-    "present_narrowed": {
-      "truth": "Your attention has locked onto judging, fixing, or solving. That kind of focus is useful, and sometimes needed. But it has squeezed out almost everything else, maybe even the people around you, and God.",
-      "prayer": "Lord, I’m locked on this. I can’t force my mind open, so I’m asking You to widen it. Help me listen."
-    },
-    "time_travel": {
-      "truth": "Your mind is somewhere else: replaying what happened, bracing for what might, or drifting into how you wish things were. The past and the future can feel more real than this moment. But this moment is where God meets you.",
-      "prayer": "Lord, I’ve been living in another time. What I regret, what I dread, and what I long for, I bring to You. Meet me here, now."
-    },
-    "blank": {
-      "truth": "There’s nothing there right now: foggy, checked out, no words. You don’t have to think your way out of it, and you don’t need the right words to pray.",
-      "prayer": "Holy Spirit, I have no words. Pray for me."
-    }
+    "present_open": [
+      { "truth": "You’re here, and open to what comes. This is what home feels like.",
+        "prayer": "Lord, thank You that I’m here with You. Help me see what You’re showing me. Keep me open to You." },
+      { "truth": "Your mind is present and open. You’re not rushing ahead or looking back.",
+        "prayer": "Father, thank You for this moment. Help me notice what’s beautiful here. Keep me here with You." },
+      { "truth": "You’re here, and you can be surprised. That openness is a gift.",
+        "prayer": "Jesus, I’m here. Show me what You want me to see. I’m listening." }
+    ],
+    "present_narrowed": [
+      { "truth": "Your attention has locked onto judging, fixing, or solving. That kind of focus is useful, and sometimes needed. But it has squeezed out almost everything else, maybe even the people around you, and God.",
+        "prayer": "Lord, I’m locked on this. I can’t force my mind open, so I’m asking You to widen it. Help me see what I’ve been missing." },
+      { "truth": "You’re working the problem hard. You may even be right about it. But being right has started to matter more than anything else.",
+        "prayer": "Father, I want to be right about this. Help me see it more fully than I do. Show me what’s true about the people in it, too." },
+      { "truth": "Your mind is running in a tight loop: analyzing, deciding, correcting. It feels productive, but it’s also tiring.",
+        "prayer": "Jesus, my mind won’t let this go. Help me see what matters most here. Maybe it isn’t the thing I’m stuck on." }
+    ],
+    "time_travel": [
+      { "truth": "Your mind is somewhere else: replaying what happened, bracing for what might, or drifting into how you wish things were. The past and the future can feel more real than this moment. But this moment is where God meets you.",
+        "prayer": "Lord, I’ve been living in another time. What I regret, what I dread, and what I long for, I bring to You. Help me see what’s here, now." },
+      { "truth": "You keep going back to what happened, or ahead to what might. Your mind is trying to fix, prevent, or escape something, and it’s working hard.",
+        "prayer": "Father, my mind keeps leaving this moment. Help me see what I’m trying to fix or avoid. Show me what’s good about right now." },
+      { "truth": "You may be daydreaming about how things could be, or reliving how they were. Those longings are real, and some of them are good.",
+        "prayer": "Jesus, I keep drifting somewhere else. Help me see what I’m longing for. Maybe You want to meet that longing here." }
+    ],
+    "blank": [
+      { "truth": "There’s nothing there right now: foggy, checked out, no words. You don’t have to think your way out of it, and you don’t need the right words to pray.",
+        "prayer": "Holy Spirit, I have no words. Pray for me." },
+      { "truth": "Your mind has gone quiet in a way that isn’t peaceful. It’s okay not to know what you feel.",
+        "prayer": "Holy Spirit, I can’t find anything to say. Be with me in the fog." },
+      { "truth": "You’re checked out. Maybe it all got to be too much. Nothing needs to happen right now.",
+        "prayer": "Holy Spirit, I’m empty. Breathe with me, and pray what I can’t." }
+    ]
   },
 
   "strategiesByPin": {
-    "unloved": {
-      "truth": "Feeling unwanted is one of the deepest hurts there is. Maybe someone really did pull away, or maybe an old hurt is being stirred up. Either way, it hurts.",
-      "prayer": "Lord, it feels like I’m not wanted. I bring that hurt to You. Remind me that You want me."
-    },
-    "unworthy": {
-      "truth": "It feels like love is on the line, like getting this wrong would cost you. Maybe you learned that somewhere it was true. Trying this hard to earn love is exhausting.",
-      "prayer": "Lord, I’m trying so hard to earn love, and I can’t keep it up. Love me as I am, even here."
-    },
-    "unsafe": {
-      "truth": "This feels like too much, and part of you wants out. That feeling is real. It’s telling you something here is heavy, and you don’t have to pretend it’s fine.",
-      "prayer": "Lord, this feels like too much. I don’t know how to stay in it. Be with me in the middle of it."
-    },
-    "not_enough": {
-      "truth": "What’s being asked of you really might be more than you have. That isn’t a failure. It’s what it feels like to be human when the load is heavy.",
-      "prayer": "Lord, this is more than I have. I don’t have to have enough. You do."
-    },
-    "no_trust": {
-      "truth": "Nothing feels solid right now. When the ground keeps shifting, holding back your trust is a way of protecting yourself, and you’ve probably had reason to learn it.",
-      "prayer": "Lord, I don’t know what to trust, and I’m afraid. I’m going to try to trust You, even a little."
-    },
-    "alone": {
-      "truth": "It feels like it’s just you. Maybe people aren’t around, or they don’t understand, or you haven’t let them in. Being alone with something heavy is hard.",
-      "prayer": "Lord, I feel alone in this. I’m not asking You to explain it. I’m asking You to be here."
-    },
-    "must_carry": {
-      "truth": "You feel responsible for making this right. Maybe you do have a part in it. But you’ve picked up more than your share, and it’s crushing you.",
-      "prayer": "Lord, I’ve been carrying this as if it’s all on me. I give You what isn’t mine to carry."
-    },
-    "unknown_dying": {
-      "truth": "You can’t name it yet, only that something feels wrong. That’s honest, and it’s enough to start with.",
-      "prayer": "Lord, I don’t know what’s wrong. You do. Show me when You’re ready."
-    },
-    "in_control": {
-      "truth": "Being in control feels safe. You’ve kept things together, and people probably count on you for it. But control can quietly take the place of trust.",
-      "prayer": "Lord, I like being in control. It feels safer than trusting You. I open my hands."
-    },
-    "earned_place": {
-      "truth": "You’ve worked hard, and it’s good to see what that work has built. But if your place depends on earning it, you never get to rest in it.",
-      "prayer": "Lord, I’ve been living like I have to earn my place. Everything I have came from You. Help me receive it."
-    },
-    "better_than": {
-      "truth": "Comparing yourself to someone is quick and quiet. Sometimes it covers insecurity; sometimes it just feels good to be ahead. Either way, it pulls you away from people, and from God.",
-      "prayer": "Lord, I’ve been ranking myself above someone. I confess it. Everything I have is Yours."
-    },
-    "mine_to_manage": {
-      "truth": "Some of this really is yours to handle, and you’ve been faithful with it. But you’ve been holding all of it as if it depends on you.",
-      "prayer": "Lord, I’ve been managing this on my own. Build what only You can build, and I’ll do my part."
-    },
-    "up_to_me": {
-      "truth": "A lot may really be on your shoulders right now, and maybe no one else is stepping in. So you’ve been carrying it, and that’s exhausting.",
-      "prayer": "Lord, I’ve been acting like this is all up to me. Apart from You, I can’t do any of it. Do it with me."
-    },
-    "proverb": {
-      "truth": "It sounds wise, and you’ve probably heard it your whole life. There are real things to do, and doing them matters. But this saying makes God a reward for effort instead of help for the weak.",
-      "prayer": "Lord, I’ve been trying to earn Your help. I’m weaker than I want to admit. Help me anyway."
-    },
-    "abide_after": {
-      "truth": "There’s a real task in front of you, and it’s pulling hard. Turning to God can feel like one more thing to fit in once it’s done. But “after” keeps getting later.",
-      "prayer": "Lord, I keep saying I’ll come to You when I’m done. I’m coming now, in the middle of it."
-    },
-    "need_nothing": {
-      "truth": "Maybe things really are fine. Or maybe needing something feels risky. Saying you don’t need anything can be a way of staying in control.",
-      "prayer": "Lord, I say I don’t need anything. Show me what I need from You."
-    },
-    "unknown_managed": {
-      "truth": "You can’t name it yet, only that you’ve been running on your own strength. Noticing that is a good place to start.",
-      "prayer": "Lord, I’ve been running on my own. I stop here and wait for You."
-    }
+    "unloved": [
+      { "truth": "Feeling unwanted is one of the deepest hurts there is. Maybe someone really did pull away, or maybe an old hurt is being stirred up. Either way, it hurts.",
+        "prayer": "Lord, it feels like I’m not wanted. I bring that hurt to You. Help me see what’s true here, and remind me that You want me." },
+      { "truth": "It feels like you don’t belong here. Maybe you’ve been left out, or maybe it’s a quieter feeling you can’t explain. Both are painful.",
+        "prayer": "Father, I feel unwanted. Help me see this clearly, without making it bigger or smaller than it is. Show me where I am loved." },
+      { "truth": "Rejection, real or feared, can make everything else go quiet. It’s hard to think about anything else when you feel unwanted.",
+        "prayer": "Jesus, You know what it is to be rejected. Help me see what’s true about me in Your eyes. Let that be louder than this feeling." }
+    ],
+    "unworthy": [
+      { "truth": "It feels like love is on the line, like getting this wrong would cost you. Maybe you learned that somewhere it was true. Trying this hard to earn love is exhausting.",
+        "prayer": "Lord, I’m trying so hard to earn love, and I can’t keep it up. Help me see what’s true here. Maybe I’m already loved, even here." },
+      { "truth": "You feel like you have to perform to be okay. Mistakes feel dangerous. That pressure is heavy to carry.",
+        "prayer": "Father, I feel like I have to get this right to be loved. Help me see how You see me when I get it wrong. Show me that Your love doesn’t move." },
+      { "truth": "Part of you believes that if you fail, you’ll be too much or not enough. That belief probably came from somewhere real.",
+        "prayer": "Jesus, I’m afraid of failing. Help me see where this fear came from. Show me that You loved me before I did anything right." }
+    ],
+    "unsafe": [
+      { "truth": "This feels like too much, and part of you wants out. That feeling is real. It’s telling you something here is heavy, and you don’t have to pretend it’s fine.",
+        "prayer": "Lord, this feels like too much. I don’t know how to stay in it. Help me see what’s true here, and be with me in the middle of it." },
+      { "truth": "It feels overwhelming, like you might go under. That fear deserves to be taken seriously.",
+        "prayer": "Father, I feel like I might go under. Help me see what’s actually happening. Show me where You are in this." },
+      { "truth": "Something here feels like more than you can hold. Staying feels risky, and your caution may be protecting something important.",
+        "prayer": "Jesus, I’m afraid this is too much for me. Help me see what’s safe and what isn’t. Stay with me while I find out." }
+    ],
+    "not_enough": [
+      { "truth": "What’s being asked of you really might be more than you have. That isn’t a failure. It’s what it feels like to be human when the load is heavy.",
+        "prayer": "Lord, this is more than I have. Help me see what You’re actually asking of me. I don’t have to have enough. You do." },
+      { "truth": "You’re looking at what this requires and coming up short. That’s a scary place to stand.",
+        "prayer": "Father, I don’t have enough for this. Help me see what’s mine to do today. Show me what You’ve already given me." },
+      { "truth": "It feels like you’re failing before you’ve started. Being out of your depth is uncomfortable and humbling.",
+        "prayer": "Jesus, I feel out of my depth. Help me see this the way You do. Maybe weakness is where You meet me." }
+    ],
+    "no_trust": [
+      { "truth": "Nothing feels solid right now. When the ground keeps shifting, holding back your trust is a way of protecting yourself, and you’ve probably had reason to learn it.",
+        "prayer": "Lord, I don’t know what to trust, and I’m afraid. Help me see what’s steady here. I’m going to try to trust You, even a little." },
+      { "truth": "You’ve been let down before, maybe many times. Being careful now is understandable.",
+        "prayer": "Father, it’s hard for me to trust anything right now. Help me see what’s true about You, even if I can’t feel it yet." },
+      { "truth": "Everything feels uncertain. When you can’t tell what’s next, it’s hard to relax into anything.",
+        "prayer": "Jesus, nothing feels steady. Help me see one thing that is. Be that for me." }
+    ],
+    "alone": [
+      { "truth": "It feels like it’s just you. Maybe people aren’t around, or they don’t understand, or you haven’t let them in. Being alone with something heavy is hard.",
+        "prayer": "Lord, I feel alone in this. I’m not asking You to explain it. Help me see that You’re here." },
+      { "truth": "You feel like you have to handle this by yourself. Maybe asking for help feels risky, or you don’t want to be a burden.",
+        "prayer": "Father, I’ve been carrying this alone. Help me see who You’ve put around me. Show me I don’t have to hide." },
+      { "truth": "Loneliness makes everything heavier. Even surrounded by people, you can feel unseen.",
+        "prayer": "Jesus, I feel unseen. Help me see that You know me by name. Let me feel known." }
+    ],
+    "must_carry": [
+      { "truth": "You feel responsible for making this right. Maybe you do have a part in it. But you’ve picked up more than your share, and it’s crushing you.",
+        "prayer": "Lord, I’ve been carrying this as if it’s all on me. Help me see what’s mine and what isn’t. I give You what isn’t mine to carry." },
+      { "truth": "It feels like if you don’t fix this, no one will. That weight is real, and you’ve been faithful to carry it.",
+        "prayer": "Father, I feel like it’s all on me. Help me see where You’re already at work. Maybe I can set some of this down." },
+      { "truth": "You care about making things right, and that’s good. But caring has turned into carrying, and you’re worn out.",
+        "prayer": "Jesus, I’m worn out from trying to make this right. Help me see what You want me to carry today. I’ll let You hold the rest." }
+    ],
+    "unknown_dying": [
+      { "truth": "You can’t name it yet, only that something feels wrong. That’s honest, and it’s enough to start with.",
+        "prayer": "Lord, I don’t know what’s wrong. You do. Help me see it when You’re ready." },
+      { "truth": "Something is off, but you can’t find the words. That can feel frustrating, or scary.",
+        "prayer": "Father, something feels wrong and I can’t name it. Help me see what’s true. I’ll wait with You." },
+      { "truth": "Not knowing is its own kind of hard. You don’t need to solve it right now.",
+        "prayer": "Jesus, I can’t name what I’m feeling. Help me see what’s underneath it. Be with me until I can." }
+    ],
+    "in_control": [
+      { "truth": "Being in control feels safe. You’ve kept things together, and people probably count on you for it. But control can quietly take the place of trust.",
+        "prayer": "Lord, I like being in control. It feels safer than trusting You. Help me see what I’m really holding onto, and I’ll open my hands." },
+      { "truth": "You’re steady and on top of things. That’s a strength. It can also keep you from needing anyone, including God.",
+        "prayer": "Father, I’ve got this handled, or I think I do. Help me see where I’m leaning on myself instead of You." },
+      { "truth": "Control feels good when things are uncertain. It gives you something to hold.",
+        "prayer": "Jesus, I’m holding on tight. Help me see what I’m afraid would happen if I let go. Show me that You are the one holding it together." }
+    ],
+    "earned_place": [
+      { "truth": "You’ve worked hard, and it’s good to see what that work has built. But if your place depends on earning it, you never get to rest in it.",
+        "prayer": "Lord, I’ve been living like I have to earn my place. Help me see what I’ve received that I never earned, and help me receive it." },
+      { "truth": "You’ve proven yourself, maybe over and over. It’s satisfying. It’s also a lot of pressure to keep proving.",
+        "prayer": "Father, I keep proving myself. Help me see where my place really comes from. Let me rest in it." },
+      { "truth": "It feels good to have earned what you have, and some of it you did earn. But none of it started with you.",
+        "prayer": "Jesus, I’ve been proud of what I’ve built. Help me see the gifts underneath it. Thank You for them." }
+    ],
+    "better_than": [
+      { "truth": "Comparing yourself to someone is quick and quiet. Sometimes it covers insecurity; sometimes it just feels good to be ahead. Either way, it pulls you away from people, and from God.",
+        "prayer": "Lord, I’ve been ranking myself above someone. I confess it. Help me see them the way You do. Everything I have is Yours." },
+      { "truth": "Feeling better than someone can be a relief when you feel small inside. It’s worth asking what the comparison is protecting.",
+        "prayer": "Father, I’ve been comparing. Help me see what I’m afraid of underneath it. Show me what’s good in them, too." },
+      { "truth": "You’ve noticed where you’re ahead, and maybe you are. But it’s become a way of keeping score.",
+        "prayer": "Jesus, I’ve been keeping score. Help me see that what I have was given to me. Make me grateful instead of proud." }
+    ],
+    "mine_to_manage": [
+      { "truth": "Some of this really is yours to handle, and you’ve been faithful with it. But you’ve been holding all of it as if it depends on you.",
+        "prayer": "Lord, I’ve been managing this on my own. Help me see what’s mine to do and what’s Yours. Build what only You can build." },
+      { "truth": "You’re responsible, and you take it seriously. That’s a good thing. It can also crowd out asking God for help.",
+        "prayer": "Father, I’ve been handling this without You. Help me see where I need You in it. I invite You in." },
+      { "truth": "You’ve been running this on your own. It’s working, mostly. But it’s costing you.",
+        "prayer": "Jesus, I’ve been doing this in my own strength. Help me see what it’s costing me. Show me how to do it with You." }
+    ],
+    "up_to_me": [
+      { "truth": "A lot may really be on your shoulders right now, and maybe no one else is stepping in. So you’ve been carrying it, and that’s exhausting.",
+        "prayer": "Lord, it feels like this is all up to me. Help me see what’s true here. Maybe some of this was never mine to carry." },
+      { "truth": "When others drop the ball, you pick it up. That’s often the right thing to do. But it can turn into believing it all depends on you.",
+        "prayer": "Father, I’ve been acting like it all depends on me. Help me see what You’re already doing here. Apart from You, I can’t do any of it." },
+      { "truth": "You’re the one people count on. It feels good to be needed. It also means you rarely get to lean on anyone.",
+        "prayer": "Jesus, I don’t know how to lean on anyone. Help me see that I can lean on You. Do this with me." }
+    ],
+    "proverb": [
+      { "truth": "It sounds wise, and you’ve probably heard it your whole life. There are real things to do, and doing them matters. But this saying makes God a reward for effort instead of help for the weak.",
+        "prayer": "Lord, I’ve been trying to earn Your help. Help me see what grace really is. I’m weaker than I want to admit. Help me anyway." },
+      { "truth": "It feels like you have to do your part before God will do His. Effort matters. But God’s help doesn’t wait for you to earn it.",
+        "prayer": "Father, I’ve been trying to deserve Your help. Help me see that You came for the weak. That includes me." },
+      { "truth": "Maybe you’re afraid that if you stop trying, nothing will happen. Working hard has gotten you this far.",
+        "prayer": "Jesus, I’m afraid to stop trying. Help me see that You help me because You love me, not because I earned it." }
+    ],
+    "abide_after": [
+      { "truth": "There’s a real task in front of you, and it’s pulling hard. Turning to God can feel like one more thing to fit in once it’s done. But “after” keeps getting later.",
+        "prayer": "Lord, I keep saying I’ll come to You when I’m done. Help me see that You’re here in the middle of it. I’m coming now." },
+      { "truth": "The work matters, and you want to finish it well. Stopping feels like losing momentum.",
+        "prayer": "Father, I don’t want to stop. Help me see what I miss when I keep You waiting. Be with me in this work." },
+      { "truth": "You mean to turn to God. You really do. But the next thing keeps winning.",
+        "prayer": "Jesus, I keep putting You off. Help me see You as the one I’m doing this for. I stop and turn to You now." }
+    ],
+    "need_nothing": [
+      { "truth": "Maybe things really are fine. Or maybe needing something feels risky. Saying you don’t need anything can be a way of staying in control.",
+        "prayer": "Lord, I say I don’t need anything. Help me see what I really need from You." },
+      { "truth": "You’re self-sufficient, and that’s gotten you far. It can also make it hard to receive.",
+        "prayer": "Father, I’m used to not needing anyone. Help me see where I’m thirsty. Teach me to receive." },
+      { "truth": "Needing something can feel like weakness. So you keep it to yourself, maybe even from yourself.",
+        "prayer": "Jesus, I don’t like needing things. Help me see what I’ve been ignoring. You are my shepherd, and I want You to lead." }
+    ],
+    "unknown_managed": [
+      { "truth": "You can’t name it yet, only that you’ve been running on your own strength. Noticing that is a good place to start.",
+        "prayer": "Lord, I’ve been running on my own. Help me see what’s driving me. I stop here and wait for You." },
+      { "truth": "Something is pushing you, but you’re not sure what. Maybe you’ve just been busy.",
+        "prayer": "Father, I’ve been moving fast. Help me see what’s underneath it. I want to be still with You." },
+      { "truth": "You sense you’re managing something, even if you can’t say what. Noticing that is honest.",
+        "prayer": "Jesus, I’m not sure what I’ve been holding. Help me see it. I’ll be still and listen." }
+    ]
   },
 
   "verseByPin": {

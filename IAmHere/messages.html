@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>I Am Here — all messages</title>
+<style>
+  :root { --paper: #F6F3EC; --card: #FCFAF6; --ink: #1E232B; --dim: #545B67; --faint: #858B96; --line: #DCD7CB; --accent: #1F3A5F;
+          --gold: #F3E8CC; --blue: #E3EAF2; --green: #E5EEE2; }
+  @media (prefers-color-scheme: dark) {
+    :root { --paper: #14161B; --card: #1B1E25; --ink: #ECE8DF; --dim: #AEB3BC; --faint: #767C87; --line: #2E323B; --accent: #A9BCE4;
+            --gold: #2A2416; --blue: #1B2230; --green: #1B251D; }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--paper); color: var(--ink); font: 15px/1.5 Seravek, "Gill Sans Nova", -apple-system, system-ui, sans-serif; }
+  main { max-width: 760px; margin: 0 auto; padding: 24px 16px 60px; }
+  h1 { font-size: 1.6rem; margin: 0 0 4px; }
+  .sub { color: var(--dim); margin: 0 0 18px; }
+  nav { display: flex; flex-wrap: wrap; gap: 6px 14px; margin-bottom: 26px; font-size: 0.92rem; }
+  nav a { color: var(--accent); }
+  h2 { font-size: 1.15rem; margin: 34px 0 6px; padding: 8px 12px; border-radius: 10px; }
+  h2.spirit { background: var(--gold); } h2.mind { background: var(--blue); } h2.body { background: var(--green); } h2.other { background: var(--card); border: 1px solid var(--line); }
+  .how { color: var(--dim); font-size: 0.9rem; margin: 0 0 10px; }
+  .place { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 14px 16px; margin: 12px 0; }
+  .place h3 { font-size: 1.05rem; margin: 0; }
+  .helper { color: var(--dim); font-size: 0.9rem; }
+  .verse { font-family: "Iowan Old Style", "Palatino Linotype", Georgia, serif; margin: 8px 0 4px; }
+  .verse .ref { font-family: inherit; color: var(--faint); font-size: 0.85rem; margin-left: 6px; }
+  .versions { margin: 10px 0 0; padding: 0; list-style: none; counter-reset: v; }
+  .versions li { counter-increment: v; position: relative; padding: 10px 0 10px 30px; border-top: 1px solid var(--line); }
+  .versions li::before { content: counter(v); position: absolute; left: 4px; top: 10px; width: 18px; height: 18px; border-radius: 50%;
+    background: var(--line); color: var(--dim); font-size: 0.72rem; text-align: center; line-height: 18px; }
+  .truth { margin: 0 0 6px; }
+  .prayer { margin: 0; padding-left: 10px; border-left: 3px solid var(--accent); }
+  .note { color: var(--dim); font-size: 0.9rem; font-style: italic; margin-top: 8px; }
+  .lines p { margin: 4px 0; }
+  .count { color: var(--faint); font-size: 0.85rem; }
+</style>
+</head>
+<body>
+<main>
+  <h1>I Am Here — all messages</h1>
+  <p class="sub">Every step shown before the breath, with the verse it hands off to. Read live from content.json. <span class="count" id="count"></span></p>
+  <nav id="nav"></nav>
+  <div id="out"></div>
+</main>
+<script type="module">
+// Dev-only review page (not cached by sw.js, not linked from the app).
+const C = await (await fetch('content.json?_=' + Date.now())).json();
+const out = document.getElementById('out'), nav = document.getElementById('nav');
+const el = (tag, cls, text) => { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; };
+const verse = v => { const p = el('p', 'verse', `${v.inhale} / ${v.exhale}`); p.append(el('span', 'ref', v.ref)); return p; };
+let total = 0;
+
+function section(id, cls, title, how) {
+  const h = el('h2', cls, title); h.id = id; out.append(h);
+  if (how) out.append(el('p', 'how', how));
+  const a = el('a', null, title); a.href = '#' + id; nav.append(a);
+}
+function place(title, helper, verses, versions, note) {
+  const d = el('div', 'place');
+  d.append(el('h3', null, title));
+  if (helper) d.append(el('div', 'helper', helper));
+  (verses || []).forEach(v => d.append(verse(v)));
+  const ol = el('ol', 'versions');
+  versions.forEach(v => { const li = el('li'); li.append(el('p', 'truth', v.truth), el('p', 'prayer', v.prayer)); ol.append(li); total++; });
+  d.append(ol);
+  if (note) d.append(el('p', 'note', note));
+  out.append(d);
+}
+
+// ---- Spirit: the step comes from the sentence (pin) the person names ----
+section('spirit', 'spirit', 'Spirit — ' + C.axes.spirit.question,
+  'Spirit steps come from the sentence the person names. Alive never gets a sentence (no step). ' +
+  C.axes.spirit.ticks.map(t => `${t.label}: ${t.helper}`).join('  ·  '));
+section('fading', 'spirit', 'Fading — ' + C.copy.pin.titleDying, 'Shown after Spirit: Fading, or on Name a lie under "' + C.copy.pin.fadingHeading + '".');
+C.dyingPins.forEach(p => place(p.label, null, [C.verseByPin[p.id]], C.strategiesByPin[p.id]));
+section('managing', 'spirit', 'Managing — ' + C.copy.pin.titleManaged, 'Shown after Spirit: Managing, or on Name a lie under "' + C.copy.pin.managingHeading + '".');
+C.managedPins.forEach(p => place(p.label, null, [C.verseByPin[p.id]], C.strategiesByPin[p.id],
+  p.id === 'proverb' ? 'Also shown: ' + C.copy.strategy.honestyProverb : null));
+
+// ---- Mind ----
+section('mind', 'mind', 'Mind — ' + C.axes.mind.question, 'Shown when the check-in starts with mind (e.g. Blank, or Narrowed / Past or future with Spirit Alive). A named sentence’s verse takes priority over these.');
+C.axes.mind.ticks.forEach(t => {
+  const vs = t.id === 'time_travel'
+    ? [C.verseByMind.time_travel_past, C.verseByMind.time_travel_future]
+    : [C.verseByMind[t.id]];
+  place(t.label, t.helper, vs, C.strategiesByMind[t.id],
+    t.id === 'blank' ? 'Blank: two silent breaths first. Buttons: Rest with the Spirit (Romans 8:26) or Name a lie.'
+    : t.id === 'time_travel' ? 'Past → Isaiah 43:19; Future or unmarked → Matthew 6:34.'
+    : t.id === 'present_open' ? 'Home state: only reached by choosing it on "Pray about something else".' : null);
+});
+
+// ---- Body ----
+section('body', 'body', 'Body — ' + C.axes.body.question, 'Shown when the check-in starts with body (Taken states come first). The body verse is used when Spirit is Alive; otherwise the named sentence’s verse.');
+C.axes.body.ticks.forEach(t => place(t.label, t.helper, [C.verseByBody[t.id]], C.strategiesByBody[t.id],
+  t.id === 'rest' ? 'Home state: only reached by choosing it on "Pray about something else".' : null));
+
+// ---- Other screens ----
+section('other', 'other', 'Breath modes and other lines');
+const other = el('div', 'place lines');
+other.append(el('h3', null, 'Home line'), el('p', null, C.copy.home.line));
+other.append(el('h3', null, 'Start screen'));
+C.copy.start.paths.forEach(p => other.append(el('p', null, `${p.title} — ${p.body}`)));
+C.breathModes.filter(m => m.steps).forEach(m => {
+  other.append(el('h3', null, 'Breath mode: ' + m.label));
+  m.steps.forEach(s => other.append(el('p', null, `${s.breaths} × ${s.inhale} / ${s.exhale}${s.ref ? '  (' + s.ref + ')' : ''}`)));
+});
+other.append(el('h3', null, 'Already home'), el('p', null, C.copy.home.text + '  →  ' + C.verseByMind.present_open.inhale + ' / ' + C.verseByMind.present_open.exhale + ' (John 15:9)'));
+other.append(el('h3', null, 'Name a lie'), el('p', null, C.copy.pin.fatherOfLies));
+other.append(el('h3', null, 'Danger line (only after a worrisome check-in)'), el('p', null, C.crisis.line));
+out.append(other);
+
+document.getElementById('count').textContent = `${total} step versions.`;
+</script>
+</body>
+</html>

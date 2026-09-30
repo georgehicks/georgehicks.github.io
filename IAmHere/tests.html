@@ -165,14 +165,26 @@ t('better_than with empty than-whom: same pair', () => eq(sel(L('managed', 'rest
 
 // ---- strategies ----
 t('strategy by recommended axis', () => {
-  eq(E.strategyFor(C, L('dying', 'fight', 'present_open'), 'body', 'unloved').prayer, 'Lord, I feel attacked and I want to win. Before I say anything, I turn to You.');
-  eq(E.strategyFor(C, L('rising', 'rest', 'blank'), 'mind', null).prayer, 'Holy Spirit, I have no words. Pray for me.');
-  eq(E.strategyFor(C, L('managed', 'rest', 'present_open'), 'spirit', 'up_to_me').prayer, 'Lord, I’ve been acting like this is all up to me. Apart from You, I can’t do any of it. Do it with me.');
+  eq(E.stepKey(L('dying', 'fight', 'present_open'), 'body', 'unloved'), 'body:fight');
+  eq(E.stepKey(L('rising', 'rest', 'blank'), 'mind', null), 'mind:blank');
+  eq(E.stepKey(L('managed', 'rest', 'present_open'), 'spirit', 'up_to_me'), 'pin:up_to_me');
+  eq(E.stepKey(L('dying', 'rest', 'blank'), 'spirit', null), 'pin:unknown_dying');
+  eq(E.strategyFor(C, L('rising', 'rest', 'blank'), 'mind', null)[0].prayer, 'Holy Spirit, I have no words. Pray for me.');
 });
-t('every step is truth first, then a prayer to God', () => {
-  const all = [...Object.values(C.strategiesByBody), ...Object.values(C.strategiesByMind), ...Object.values(C.strategiesByPin)];
-  const bad = all.filter(x => !x.truth || !/^(Lord|Holy Spirit|Father|Jesus),/.test(x.prayer || ''));
+t('every place has 3 versions, each truth first, then a prayer to God', () => {
+  const places = [...Object.values(C.strategiesByBody), ...Object.values(C.strategiesByMind), ...Object.values(C.strategiesByPin)];
+  const bad = places.find(list => !Array.isArray(list) || list.length < 3 || list.some(x => !x.truth || !/^(Lord|Holy Spirit|Father|Jesus),/.test(x.prayer || '')));
+  return !bad || JSON.stringify(bad);
+});
+t('outside blank mind, every prayer asks to see what is true', () => {
+  const places = { ...C.strategiesByBody, ...C.strategiesByPin, ...C.strategiesByMind };
+  const bad = Object.entries(places).filter(([k]) => k !== 'blank').flatMap(([k, l]) => l.map(x => [k, x.prayer])).filter(([, p]) => !/\b(see|notice|show me)\b/i.test(p));
   return !bad.length || JSON.stringify(bad[0]);
+});
+t('never the same version twice in a row', () => {
+  for (let last = 0; last < 3; last++) for (let r = 0; r < 1; r += 0.05) if (E.pickVariant(3, last, () => r) === last) return 'repeated ' + last;
+  const seen = new Set(); for (let r = 0; r < 1; r += 0.05) seen.add(E.pickVariant(3, null, () => r));
+  return seen.size === 3 || 'not all reachable';
 });
 t('every pin has a strategy and a verse', () => [...C.dyingPins, ...C.managedPins].every(p => C.strategiesByPin[p.id] && C.verseByPin[p.id]) || 'missing');
 t('override only offers off-home axes', () => eq(E.axisChoices(L('managed', 'control', 'present_open')), ['spirit', 'body']));
@@ -231,7 +243,8 @@ t('app code has no streak, score, badge, leaderboard, or celebration', () => {
   return !hit || 'found: ' + hit[0];
 });
 t('"streak"/"score" appear in content only inside onboarding\'s "No scores. No streaks."', () => {
-  const s = JSON.stringify({ ...C, onboarding: C.onboarding.filter((_, i) => i !== 1) });
+  // the app's own UI text only — a prayer may honestly say "keeping score" about comparing yourself to others
+  const s = JSON.stringify({ ...C, onboarding: C.onboarding.filter((_, i) => i !== 1), strategiesByBody: 0, strategiesByMind: 0, strategiesByPin: 0 });
   return !/streak|score/i.test(s) && /No scores\. No streaks\./.test(C.onboarding[1].body);
 });
 t('danger line is one quiet sentence, only on a worrisome strategy screen; no crisis screen, nothing in onboarding or settings', () =>

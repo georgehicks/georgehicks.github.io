@@ -7,7 +7,7 @@ const $announce = document.getElementById('announcer');
 let C = null; // frozen content.json
 
 // ===================== storage (PRD §6: local only) =====================
-const KEY = { settings: 'iamhere.settings', sessions: 'iamhere.sessions', onboarded: 'iamhere.onboarded' };
+const KEY = { settings: 'iamhere.settings', sessions: 'iamhere.sessions', onboarded: 'iamhere.onboarded', seen: 'iamhere.seen' };
 const DEFAULT_SETTINGS = { reminderHour: null, reduceMotion: false, largeType: false, keepAll: false, tone: false, breathMode: 'truth', theme: 'auto' };
 const store = {
   get(k, fallback) { try { const v = localStorage.getItem(k); return v == null ? fallback : JSON.parse(v); } catch { return fallback; } },
@@ -313,8 +313,16 @@ const VIEWS = {
     }
     const toBreath = () => { tone.prime(); go('breathe'); };
     // the truth about where you are first, then the prayer that brings it to God
+    // one version per place per visit (stable on Back); a different one than last time
     const step = (axis) => {
-      const st = E.strategyFor(C, loc, axis, visit.pinId);
+      const key = E.stepKey(loc, axis, visit.pinId), list = E.strategyFor(C, loc, axis, visit.pinId);
+      visit.stepPick = visit.stepPick || {};
+      if (visit.stepPick[key] == null) {
+        const seen = store.get(KEY.seen, {});
+        visit.stepPick[key] = seen[key] = E.pickVariant(list.length, seen[key]);
+        store.set(KEY.seen, seen);
+      }
+      const st = list[visit.stepPick[key]] || list[0];
       return [h('h2', { class: 'truth', text: st.truth }), h('p', { class: 'prayer', text: st.prayer })];
     };
     // quiet, and only after a check-in that looks worrisome (never on the start screen)
