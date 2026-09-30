@@ -165,9 +165,14 @@ t('better_than with empty than-whom: same pair', () => eq(sel(L('managed', 'rest
 
 // ---- strategies ----
 t('strategy by recommended axis', () => {
-  eq(E.strategyFor(C, L('dying', 'fight', 'present_open'), 'body', 'unloved'), 'Before you make your case, say one sentence: “This feels like an attack. Give me a minute.”');
-  eq(E.strategyFor(C, L('rising', 'rest', 'blank'), 'mind', null), 'Don’t try to figure it out. Start with your body. After two breaths, say one word: “here.”');
-  eq(E.strategyFor(C, L('managed', 'rest', 'present_open'), 'spirit', 'up_to_me'), 'Pick one thing that really is yours to do. Leaving the rest undone isn’t a failure.');
+  eq(E.strategyFor(C, L('dying', 'fight', 'present_open'), 'body', 'unloved').prayer, 'Lord, I feel attacked and I want to win. Before I say anything, I turn to You.');
+  eq(E.strategyFor(C, L('rising', 'rest', 'blank'), 'mind', null).prayer, 'Holy Spirit, I have no words. Pray for me.');
+  eq(E.strategyFor(C, L('managed', 'rest', 'present_open'), 'spirit', 'up_to_me').prayer, 'Lord, I’ve been acting like this is all up to me. Apart from You, I can’t do any of it. Do it with me.');
+});
+t('every step is truth first, then a prayer to God', () => {
+  const all = [...Object.values(C.strategiesByBody), ...Object.values(C.strategiesByMind), ...Object.values(C.strategiesByPin)];
+  const bad = all.filter(x => !x.truth || !/^(Lord|Holy Spirit|Father|Jesus),/.test(x.prayer || ''));
+  return !bad.length || JSON.stringify(bad[0]);
 });
 t('every pin has a strategy and a verse', () => [...C.dyingPins, ...C.managedPins].every(p => C.strategiesByPin[p.id] && C.verseByPin[p.id]) || 'missing');
 t('override only offers off-home axes', () => eq(E.axisChoices(L('managed', 'control', 'present_open')), ['spirit', 'body']));

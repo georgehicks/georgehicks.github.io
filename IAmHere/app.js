@@ -312,6 +312,11 @@ const VIEWS = {
         chip({ label: C.axes[a].label, cls: 'pill', pressed: a === visit.axis, onclick: () => { visit.axis = a; render('strategy'); } })));
     }
     const toBreath = () => { tone.prime(); go('breathe'); };
+    // the truth about where you are first, then the prayer that brings it to God
+    const step = (axis) => {
+      const st = E.strategyFor(C, loc, axis, visit.pinId);
+      return [h('h2', { class: 'truth', text: st.truth }), h('p', { class: 'prayer', text: st.prayer })];
+    };
     // quiet, and only after a check-in that looks worrisome (never on the start screen)
     const danger = E.isWorrisome(visit) && h('p', { class: 'danger-line' }, withTel(C.crisis.line));
     if (visit.lieOnly) {
@@ -319,7 +324,7 @@ const VIEWS = {
       return h('section', { class: 'view' },
         link(C.copy.back, () => go('pin'), 'back'),
         h('p', { class: 'recap', text: `${S.recapPin}: ${pinText}` }),
-        h('h2', { class: 'strategy-text', text: E.strategyFor(C, loc, 'spirit', visit.pinId) }),
+        step('spirit'),
         note && h('p', { class: 'note', text: note }),
         h('div', { class: 'spacer' }),
         h('div', { class: 'footer' }, btn(S.cta, toBreath)),
@@ -336,8 +341,7 @@ const VIEWS = {
     return h('section', { class: 'view' },
       link(C.copy.back, () => go(E.needsPin(loc) ? 'pin' : 'here'), 'back'),
       h('p', { class: 'recap' }, recap),
-      h('h2', { text: `${S.startWith} ${visit.axis}.` }),
-      h('p', { class: 'strategy-text', text: E.strategyFor(C, loc, visit.axis, visit.pinId) }),
+      step(visit.axis),
       note && h('p', { class: 'note', text: note }),
       h('div', { class: 'spacer' }),
       h('div', { class: 'footer' },

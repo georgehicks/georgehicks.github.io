@@ -58,7 +58,8 @@ export function tapPin(sel, id) {
   return s;
 }
 
-// PRD §11 — one strategy for the axis being moved.
+// One step for the axis being moved: { truth, prayer } — first honest words about where
+// the person is, then a prayer that brings it to God (and hands off to the verse).
 export function strategyFor(C, loc, axis, pinId) {
   if (axis === 'body') return C.strategiesByBody[loc.body];
   if (axis === 'mind') return C.strategiesByMind[loc.mind];
