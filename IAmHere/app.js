@@ -517,12 +517,15 @@ function breathView(homePath) {
   const now = () => performance.now();
   const elapsed = () => (pausedAt ?? now()) - startT - pausedTotal;
 
+  // compare words, not objects: the prayer modes build a fresh entry for every breath
+  const REST = 0.2;
+  const sameLine = (a, b) => !!a && !!b && a.inhale === b.inhale && a.exhale === b.exhale && a.ref === b.ref;
   function onBreathStart(n) {
     visit.breathsCompleted = n;
     dots.forEach((d, i) => { d.className = i < n ? 'done' : i === n ? 'now' : ''; });
     progress.setAttribute('aria-valuenow', String(n));
     const s = script[n];
-    if (s && s !== script[n - 1]) {
+    if (s && !sameLine(s, script[n - 1])) {
       fin.textContent = s.inhale; fex.textContent = s.exhale;
       ref.textContent = s.ref || ''; ref.classList.toggle('shown', !!s.ref);
     }
@@ -542,17 +545,20 @@ function breathView(homePath) {
     dots[n].style.setProperty('--f', (ph / cycle).toFixed(3)); // the current dot fills over its breath
     tone.set(p);
 
-    // PRD §12.1 text: inhale line 0→1 over the inhale; over the exhale it falls 1→0.15
-    // while the exhale line is at full; both settle to 0.2 between breaths.
+    // Text: the inhale line rises over the inhale and eases down over the exhale, while the
+    // exhale line comes up and holds. Between breaths both rest at a faint glow and carry
+    // straight into the next breath when the words repeat; when the words change (or the
+    // breath is the last), both ease all the way out first, so nothing ever snaps.
     let oi = 0, oe = 0;
-    if (script[n]) {
-      // a new line fades up from nothing; a repeated line from its 0.2 resting glow
-      const base = script[n] !== script[n - 1] ? 0 : 0.2;
+    const cur = script[n];
+    if (cur) {
+      const base = sameLine(cur, script[n - 1]) ? REST : 0;   // where this breath's words start
+      const settle = sameLine(cur, script[n + 1]) ? REST : 0; // where they end
       if (inhaling) { oi = base + (1 - base) * ease(ph / B.inhaleMs); oe = base; }
       else {
         const u = ph - B.inhaleMs;
-        oi = u < 3400 ? 1 - 0.85 * ease(u / 3400) : 0.15 + 0.05 * ((u - 3400) / 600);
-        oe = u < 600 ? base + (1 - base) * ease(u / 600) : u < 3200 ? 1 : 1 - 0.8 * ease((u - 3200) / 800);
+        oi = 1 + (settle - 1) * ease(u / B.exhaleMs);
+        oe = u < 600 ? base + (1 - base) * ease(u / 600) : u < 3000 ? 1 : 1 + (settle - 1) * ease((u - 3000) / 1000);
       }
     }
     fin.style.opacity = oi.toFixed(3);
