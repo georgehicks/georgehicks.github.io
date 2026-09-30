@@ -101,18 +101,18 @@ export const breathPlan = ({ loc, homePath }) => homePath
   ? { total: BREATH.homeTotal, silent: 0 }
   : { total: BREATH.total, silent: loc.mind === 'blank' ? BREATH.silentBlank : 0 };
 
-// Three ways to breathe (content.json breathModes). "truth" is the matched verse above;
-// "above" (gratitude, then prayer) and "with" (Father, Jesus, Holy Spirit) are fixed
-// prayer lines. Returns one entry per breath: { inhale, exhale, ref } or null for a
+// Four ways to breathe (content.json breathModes). "truth" is the matched verse above;
+// "stand" is three fixed Scripture fragments (Eph 6:10, Jas 4:7, 1 John 4:4); "above"
+// (gratitude, then prayer) and "with" (Father, Jesus, Holy Spirit) are prayer lines. Returns one entry per breath: { inhale, exhale, ref } or null for a
 // silent breath (blank mind, truth mode only).
-export const BREATH_MODES = ['truth', 'above', 'with'];
+export const BREATH_MODES = ['truth', 'stand', 'above', 'with'];
 // Which mode a breath opens in: a check-in that named a lie always opens on its answering
 // verse; otherwise the last mode the person chose.
 export const startMode = (v, remembered) =>
   (v.pinId && !isUnknownPin(v.pinId)) ? 'truth' : BREATH_MODES.includes(remembered) ? remembered : 'truth';
 export function breathScript(C, v, mode = 'truth') {
   const m = C.breathModes.find(x => x.id === mode);
-  if (m && m.steps) return m.steps.flatMap(s => Array(s.breaths).fill(s)).map(s => ({ inhale: s.inhale, exhale: s.exhale, ref: null }));
+  if (m && m.steps) return m.steps.flatMap(s => Array(s.breaths).fill(s)).map(s => ({ inhale: s.inhale, exhale: s.exhale, ref: s.ref || null }));
   const plan = breathPlan(v), verse = verseFor(C, v);
   return Array.from({ length: plan.total }, (_, i) => i < plan.silent ? null : verse);
 }

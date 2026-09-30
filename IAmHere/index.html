@@ -178,6 +178,7 @@
   }
 
   /* ---------- pin ---------- */
+  .father-of-lies { font-size: 0.85rem; color: var(--ink-faint); margin-top: 6px; }
   .pin-heading { font-size: 0.9rem; font-weight: 600; color: var(--ink-dim); margin: 18px 2px -8px; }
   .pin-list { display: flex; flex-direction: column; gap: 8px; margin: 16px 0; }
   .pin-list .chip { min-height: 56px; }
@@ -201,7 +202,9 @@
   /* ---------- breathe (PRD §12) ---------- */
   .breathe { justify-content: center; align-items: center; text-align: center; padding: 8px 0; }
   .breathe-top { width: 100%; min-height: 44px; display: flex; justify-content: space-between; align-items: center; }
-  .mode-row { display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; margin: 2px 0 4px; }
+  /* four modes sit as an even 2 × 2 rather than wrapping 3 + 1 */
+  .mode-row { display: grid; grid-template-columns: repeat(2, auto); gap: 6px; justify-content: center; margin: 2px 0 4px; }
+  .mode-row .chip.pill { justify-content: center; }
   .mode-row .chip.pill { background: transparent; padding: 6px 12px; }
   .mode-row .chip.pill .lbl { font-size: 0.8rem; font-weight: 400; color: var(--ink-dim); }
   .mode-row .chip.pill[aria-pressed="true"] { background: var(--accent); }

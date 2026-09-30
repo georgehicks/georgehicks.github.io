@@ -136,6 +136,14 @@ t('worrisome = fading with collapse/freeze/blank, or "too much to stay in"', () 
     && !W('dying', 'fight', 'present_open') && !W('managed', 'collapse', 'blank') && !W('rising', 'freeze', 'blank')
     && !W('dying', 'rest', 'present_open', 'unloved');
 });
+t('stand firm: 3 breaths each of Eph 6:10, Jas 4:7, 1 John 4:4, exact ESV fragments', () => {
+  const s = E.breathScript(C, { loc: {}, direct: true }, 'stand');
+  eq(s.map(x => x.ref), ['Ephesians 6:10', 'Ephesians 6:10', 'Ephesians 6:10', 'James 4:7', 'James 4:7', 'James 4:7', '1 John 4:4', '1 John 4:4', '1 John 4:4']);
+  eq([s[0], s[3], s[6]].map(x => [x.inhale, x.exhale]), [
+    ['be strong in the Lord', 'and in the strength of his might'],
+    ['Submit yourselves therefore to God', 'Resist the devil, and he will flee from you'],
+    ['he who is in you is greater', 'than he who is in the world']]);
+});
 t('breath is 8 by default', () => eq(E.breathPlan({ loc: L('dying', 'rest', 'present_open') }).total, 8));
 t('no PRD shorthand left in the copy', () => {
   const hit = JSON.stringify({ ...C, verseByPin: 0, verseByBody: 0, verseByMind: 0 }).match(/this year’s face|old broadcast|two columns|second half|weather|provision|reading attack|not a moral|running the desk|Zombie|Anti-love/i);
@@ -211,6 +219,7 @@ for (const table of Object.keys(PRD)) {
 
 // ---- no streak UI anywhere in the build ----
 const src = await Promise.all(['app.js', 'index.html', 'engine.js'].map(f => fetch(f + '?_=' + Date.now()).then(r => r.text())));
+t('father-of-lies line only where Name a lie was chosen', () => src[0].includes('(visit.lieOnly || visit.blankNaming) && h(\'p\', { class: \'father-of-lies\'') || 'not gated');
 t('end card shows the home line', () => src[0].includes("text: C.copy.home.line"));
 t('app code has no streak, score, badge, leaderboard, or celebration', () => {
   const hit = src.join('\n').match(/streak|leaderboard|badge|confetti|congrat|well done|great job/i);

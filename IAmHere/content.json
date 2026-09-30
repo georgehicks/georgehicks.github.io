@@ -143,6 +143,11 @@
 
   "breathModes": [
     { "id": "truth", "label": "Truth over lies" },
+    { "id": "stand", "label": "Stand firm", "steps": [
+      { "inhale": "be strong in the Lord", "exhale": "and in the strength of his might", "ref": "Ephesians 6:10", "breaths": 3 },
+      { "inhale": "Submit yourselves therefore to God", "exhale": "Resist the devil, and he will flee from you", "ref": "James 4:7", "breaths": 3 },
+      { "inhale": "he who is in you is greater", "exhale": "than he who is in the world", "ref": "1 John 4:4", "breaths": 3 }
+    ] },
     { "id": "above", "label": "Thanks and prayer", "steps": [
       { "inhale": "I am grateful for…", "exhale": "Thank You, Lord.", "breaths": 4 },
       { "inhale": "I pray for…", "exhale": "Thank You, Lord.", "breaths": 4 }
@@ -184,6 +189,7 @@
       "paths": [
         { "id": "checkin", "title": "Check in", "body": "Notice your spirit, body, and mind, and take one step back." },
         { "id": "lie", "title": "Name a lie", "body": "Pick the sentence that feels true, and breathe the truth over it." },
+        { "id": "stand", "title": "Stand firm", "body": "Stand in Christ’s strength when it feels like more than a bad day." },
         { "id": "above", "title": "Thanks and prayer", "body": "Set your mind on things above with gratitude and prayer." },
         { "id": "with", "title": "Rest with Him", "body": "Be with the Father, Jesus, and the Holy Spirit." }
       ]
@@ -194,6 +200,7 @@
       "instruction": "Pick the closest one.",
       "fadingHeading": "When I’m fading",
       "managingHeading": "When I’m managing",
+      "fatherOfLies": "Jesus called the enemy “the father of lies” (John 8:44).",
       "followup": "Take a second look. Which of these would you least want to be true?",
       "thanWhom": "Better than whom? (optional, never saved)",
       "also": "also",

@@ -154,7 +154,7 @@ const VIEWS = {
 
   // ---------- /start : the home line and four plain paths ----------
   start() {
-    const go1 = { checkin: resetToHere, lie: nameLie, above: () => breatheNow('above'), with: () => breatheNow('with') };
+    const go1 = { checkin: resetToHere, lie: nameLie, stand: () => breatheNow('stand'), above: () => breatheNow('above'), with: () => breatheNow('with') };
     return h('section', { class: 'view' },
       h('div', { class: 'topbar' },
         h('h1', { class: 'wordmark', text: C.copy.wordmark }),
@@ -272,6 +272,8 @@ const VIEWS = {
       link(C.copy.back, () => go(back), 'back'),
       h('h2', { text: title }),
       h('p', { class: 'instruction', text: P.instruction }),
+      // only where the person chose "Name a lie" — never on the automatic check-in pin screen
+      (visit.lieOnly || visit.blankNaming) && h('p', { class: 'father-of-lies', text: P.fatherOfLies }),
       groups.map(g => [g.heading && h('h3', { class: 'pin-heading', text: g.heading }),
         h('div', { class: 'pin-list' }, g.pins.map(p => byId(p.id)))]),
       thanWrap,
@@ -665,9 +667,9 @@ async function boot() {
     $app.replaceChildren(h('div', { class: 'offline', text: 'Connect once to install.' }));
     return;
   }
-  // PRD §20: a force-close mid-exercise reopens on /here, never mid-flow
+  // PRD §20: a force-close mid-exercise reopens on the start screen, never mid-flow
   const r = parseRoute();
-  if (NEEDS_VISIT.includes(r)) history.replaceState(null, '', '#/here');
+  if (NEEDS_VISIT.includes(r)) history.replaceState(null, '', '#/start');
   render(parseRoute());
 }
 boot();
