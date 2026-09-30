@@ -212,8 +212,8 @@ const VIEWS = {
       link(C.copy.back, () => go('start'), 'back'),
       h('h1', { class: 'sr-only', text: C.copy.here.title }),
       card('spirit', h('div', { class: 'grid one' }, C.axes.spirit.ticks.map(t => tick('spirit', t)))),
-      card('body', bodyGroups),
       card('mind', [h('div', { class: 'grid' }, C.axes.mind.ticks.map(t => tick('mind', t))), flavorRow]),
+      card('body', bodyGroups),
       h('div', { class: 'footer' }, cta),
     );
     update();
@@ -396,7 +396,7 @@ const VIEWS = {
         return h('div', { class: 'log-item' },
           del,
           h('div', { class: 'log-when', text: isNaN(when) ? s.ts : fmt.format(when) }),
-          h('div', { class: 'log-ticks', text: [tickLabel('spirit', s.spirit), tickLabel('body', s.body), mind].join(' · ') }),
+          h('div', { class: 'log-ticks', text: [tickLabel('spirit', s.spirit), mind, tickLabel('body', s.body)].join(' · ') }),
           s.pinId && h('div', { class: 'log-meta', text: pinLabel(s.pinId) }),
           h('div', { class: 'log-meta', text: `${L.moved} ${s.axisMoved} · ${s.verseRef || (C.breathModes.find(m => m.id === s.breathMode) || {}).label}` }));
       })) : h('p', { class: 'fine', text: L.empty }),

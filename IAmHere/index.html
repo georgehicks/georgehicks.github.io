@@ -9,7 +9,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="I Am Here">
-<meta name="description" content="Notice where you are — spirit, body, and mind — and take one step back toward home.">
+<meta name="description" content="Notice where you are — spirit, mind, and body — and take one step back toward home.">
 <link rel="manifest" href="manifest.json">
 <link rel="icon" href="icon.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="icon.svg">
@@ -28,9 +28,10 @@
     --line: #DCD7CB;
     --accent: #1F3A5F;
     --accent-ink: #FFFFFF;
-    --wash-spirit: #EDE9F5;
-    --wash-body: #E7EEE5;
-    --wash-mind: #E5E9EF;
+    /* spirit = soft gold (light), mind = slate blue (clear sky), body = sage (earth) */
+    --wash-spirit: #F3E8CC;
+    --wash-mind: #E3EAF2;
+    --wash-body: #E5EEE2;
     --petal: #2B4A75;
     --petal-blend: multiply;
     --petal-opacity: 0.26;
@@ -48,9 +49,9 @@
       --line: #2E323B;
       --accent: #A9BCE4;
       --accent-ink: #111726;
-      --wash-spirit: #211F2B;
-      --wash-body: #1B231E;
-      --wash-mind: #1C2029;
+      --wash-spirit: #2A2416;
+      --wash-mind: #1B2230;
+      --wash-body: #1B251D;
       --petal: #7F97CC;
       --petal-blend: screen;
       --petal-opacity: 0.42;
@@ -159,8 +160,8 @@
   /* ---------- axis cards ---------- */
   .axis { border-radius: 18px; padding: 14px 14px 14px; margin-bottom: 12px; }
   .axis.spirit { background: var(--wash-spirit); }
-  .axis.body { background: var(--wash-body); }
   .axis.mind { background: var(--wash-mind); }
+  .axis.body { background: var(--wash-body); }
   .axis-head { margin: 0 2px 10px; }
   .axis-name { font-size: 0.75rem; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: var(--ink-dim); }
   .axis-q { font-size: 1.05rem; font-weight: 600; margin-top: 2px; }

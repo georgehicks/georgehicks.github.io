@@ -1,7 +1,7 @@
 {
   "name": "I Am Here",
   "short_name": "I Am Here",
-  "description": "Notice where you are — spirit, body, and mind — and take one step back toward home.",
+  "description": "Notice where you are — spirit, mind, and body — and take one step back toward home.",
   "start_url": "./index.html",
   "scope": "./",
   "id": "./",

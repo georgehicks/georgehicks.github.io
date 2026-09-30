@@ -2,7 +2,8 @@
 // import this, so every rule from the PRD lives in exactly one place. All copy and
 // verse strings come from content.json (passed in as C); nothing is hardcoded here.
 
-export const AXES = ['spirit', 'body', 'mind'];
+// display order follows 1 Thessalonians 5:23 (spirit, soul, body); priority rules are separate
+export const AXES = ['spirit', 'mind', 'body'];
 export const HOME = { spirit: 'rising', body: 'rest', mind: 'present_open' };
 export const TAKEN = ['fight', 'flight', 'freeze', 'collapse'];
 

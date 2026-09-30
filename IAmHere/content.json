@@ -162,12 +162,12 @@
   "onboarding": [
     {
       "title": "I Am Here",
-      "body": "Home is abiding in Christ: spirit alive to God, body in restful flow, mind present and open. It is received, not earned. This app helps you notice when you have left, and take one step back.",
+      "body": "Home is abiding in Christ: spirit alive to God, mind present and open, body in restful flow. It is received, not earned. This app helps you notice when you have left, and take one step back.",
       "cta": "Continue"
     },
     {
       "title": "How it works",
-      "body": "Tap how your spirit, body, and mind are right now. If a thought is weighing on you, pick the sentence closest to it. Then breathe for a minute with a line of Scripture. No scores. No streaks.",
+      "body": "Tap how your spirit, mind, and body are right now. If a thought is weighing on you, pick the sentence closest to it. Then breathe for a minute with a line of Scripture. No scores. No streaks.",
       "cta": "I am here"
     }
   ],
@@ -187,7 +187,7 @@
     },
     "start": {
       "paths": [
-        { "id": "checkin", "title": "Check in", "body": "Notice your spirit, body, and mind, and take one step back." },
+        { "id": "checkin", "title": "Check in", "body": "Notice your spirit, mind, and body, and take one step back." },
         { "id": "lie", "title": "Name a lie", "body": "Pick the sentence that feels true, and breathe the truth over it." },
         { "id": "stand", "title": "Stand firm", "body": "Stand in Christ’s strength when it feels like more than a bad day." },
         { "id": "above", "title": "Thanks and prayer", "body": "Set your mind on things above with gratitude and prayer." },
@@ -216,7 +216,7 @@
       "cta": "Breathe"
     },
     "home": {
-      "line": "Home is abiding in Christ: spirit alive to God, body in restful flow, mind present and open.",
+      "line": "Home is abiding in Christ: spirit alive to God, mind present and open, body in restful flow.",
       "text": "You’re home. Stay here a moment."
     },
     "breathe": {
@@ -256,7 +256,7 @@
       "clear": "Clear all data",
       "clearConfirm": "Tap again to clear everything",
       "scripture": "Quotations are from the ESV.",
-      "about": "I Am Here helps you notice where you are — spirit, body, and mind — and take one step back toward home. Home is abiding in Christ: spirit alive to God, body in restful flow, mind present and open."
+      "about": "I Am Here helps you notice where you are — spirit, mind, and body — and take one step back toward home. Home is abiding in Christ: spirit alive to God, mind present and open, body in restful flow."
     }
   }
 }
