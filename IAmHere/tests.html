@@ -123,7 +123,7 @@ t('just breathe (no check-in): 8 breaths, John 15:9, nothing silent', () => {
   const s = E.breathScript(C, { loc: {}, direct: true }, 'truth');
   eq(s.length, 8); return s.every(x => x && x.ref === 'John 15:9');
 });
-t('a named lie opens in Truth over lies; otherwise the remembered mode', () => {
+t('a named lie opens in Truth with Him; otherwise the remembered mode', () => {
   eq(E.startMode({ pinId: 'unloved' }, 'with'), 'truth');
   eq(E.startMode({ pinId: 'unknown_dying' }, 'with'), 'with');
   eq(E.startMode({ pinId: null }, 'above'), 'above');

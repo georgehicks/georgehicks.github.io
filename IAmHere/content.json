@@ -331,7 +331,7 @@
   },
 
   "breathModes": [
-    { "id": "truth", "label": "Truth over lies" },
+    { "id": "truth", "label": "Truth with Him" },
     { "id": "stand", "label": "Stand firm", "steps": [
       { "inhale": "be strong in the Lord", "exhale": "and in the strength of his might", "ref": "Ephesians 6:10", "breaths": 3 },
       { "inhale": "Submit yourselves therefore to God", "exhale": "Resist the devil, and he will flee from you", "ref": "James 4:7", "breaths": 3 },
