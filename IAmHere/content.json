@@ -351,7 +351,7 @@
   "onboarding": [
     {
       "title": "I Am Here",
-      "body": "Home is abiding in Christ: spirit alive to God, mind present and open, body in restful flow. It is received, not earned. This app helps you notice when you have left, and take one step back.",
+      "body": "Home is abiding in Christ: spirit alive to God, mind present and open, body free to be still or move. It is received, not earned. This app helps you notice when you have left, and take one step back.",
       "cta": "Continue"
     },
     {
@@ -404,7 +404,7 @@
       "cta": "Breathe"
     },
     "home": {
-      "line": "Home is abiding in Christ: spirit alive to God, mind present and open, body in restful flow.",
+      "line": "Home is abiding in Christ: spirit alive to God, mind present and open, body free to be still or move.",
       "text": "You’re home. Stay here a moment."
     },
     "breathe": {
@@ -452,7 +452,7 @@
       "scripture": "Quotations are from the ESV.",
       "refresh": "Refresh",
       "refreshing": "Refreshing…",
-      "about": "I Am Here helps you notice where you are — spirit, mind, and body — and take one step back toward home. Home is abiding in Christ: spirit alive to God, mind present and open, body in restful flow."
+      "about": "I Am Here helps you notice where you are — spirit, mind, and body — and take one step back toward home. Home is abiding in Christ: spirit alive to God, mind present and open, body free to be still or move."
     }
   }
 }
