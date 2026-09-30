@@ -248,6 +248,12 @@
       "reminder": "Daily reminder",
       "reminderOff": "Off",
       "reminderAdd": "Add to calendar",
+      "theme": "Theme",
+      "themes": [
+        { "id": "auto", "label": "Auto" },
+        { "id": "light", "label": "Light" },
+        { "id": "dark", "label": "Dark" }
+      ],
       "reduceMotion": "Reduce motion",
       "largeType": "Larger type",
       "keepAll": "Save every check-in automatically",
@@ -256,6 +262,8 @@
       "clear": "Clear all data",
       "clearConfirm": "Tap again to clear everything",
       "scripture": "Quotations are from the ESV.",
+      "refresh": "Refresh",
+      "refreshing": "Refreshing…",
       "about": "I Am Here helps you notice where you are — spirit, mind, and body — and take one step back toward home. Home is abiding in Christ: spirit alive to God, mind present and open, body in restful flow."
     }
   }

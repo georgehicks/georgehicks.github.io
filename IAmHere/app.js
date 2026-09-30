@@ -8,7 +8,7 @@ let C = null; // frozen content.json
 
 // ===================== storage (PRD §6: local only) =====================
 const KEY = { settings: 'iamhere.settings', sessions: 'iamhere.sessions', onboarded: 'iamhere.onboarded' };
-const DEFAULT_SETTINGS = { reminderHour: null, reduceMotion: false, largeType: false, keepAll: false, tone: false, breathMode: 'truth' };
+const DEFAULT_SETTINGS = { reminderHour: null, reduceMotion: false, largeType: false, keepAll: false, tone: false, breathMode: 'truth', theme: 'auto' };
 const store = {
   get(k, fallback) { try { const v = localStorage.getItem(k); return v == null ? fallback : JSON.parse(v); } catch { return fallback; } },
   set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch {} },
@@ -17,9 +17,17 @@ const store = {
 let settings = { ...DEFAULT_SETTINGS, ...store.get(KEY.settings, {}) };
 function saveSettings() { store.set(KEY.settings, settings); applySettings(); }
 // Reduce motion is the in-app setting only (PRD §6/§12), not the OS preference.
+const THEME_COLOR = { light: '#F6F3EC', dark: '#14161B' };
 function applySettings() {
   document.documentElement.classList.toggle('reduce-motion', !!settings.reduceMotion);
   document.documentElement.classList.toggle('large', !!settings.largeType);
+  // theme: Auto follows the phone; Light/Dark force it (tokens in index.html key off data-theme)
+  const forced = settings.theme === 'light' || settings.theme === 'dark' ? settings.theme : null;
+  if (forced) document.documentElement.dataset.theme = forced; else delete document.documentElement.dataset.theme;
+  document.querySelectorAll('meta[name="theme-color"]').forEach(m => {
+    const own = /dark/.test(m.media) ? 'dark' : 'light';
+    m.content = THEME_COLOR[forced || own];
+  });
 }
 const isOnboarded = () => !!store.get(KEY.onboarded, false);
 const sessions = () => store.get(KEY.sessions, []);
@@ -433,11 +441,21 @@ const VIEWS = {
       go('');
     }, 'quiet');
 
-    const version = h('p', { class: 'version' });
+    const version = h('span');
     showVersion(version);
+    const refresh = link(S.refresh, () => { refresh.textContent = S.refreshing; refreshApp(); }, 'small');
     return h('section', { class: 'view' },
       link(C.copy.back, () => go('start'), 'back'),
       h('h2', { text: S.title, style: 'margin-bottom:8px' }),
+      h('div', { class: 'row' },
+        h('span', { class: 'row-label', id: 'theme-label', text: S.theme }),
+        h('div', { class: 'theme-pick', role: 'group', 'aria-labelledby': 'theme-label' }, S.themes.map(t => {
+          const b = chip({ label: t.label, cls: 'pill', pressed: (settings.theme || 'auto') === t.id, onclick: () => {
+            settings.theme = t.id; saveSettings();
+            b.parentElement.querySelectorAll('button').forEach(x => x.setAttribute('aria-pressed', String(x === b)));
+          } });
+          return b;
+        }))),
       h('div', { class: 'row' }, h('label', { for: 'reminder', text: S.reminder }), sel),
       calRow,
       toggle('reduceMotion', S.reduceMotion),
@@ -448,7 +466,7 @@ const VIEWS = {
       h('div', { style: 'margin-top:22px' }, clear),
       h('p', { class: 'fine', text: S.scripture }),
       h('p', { class: 'fine', text: S.about }),
-      version,
+      h('div', { class: 'version' }, version, refresh),
     );
   },
 };
@@ -646,12 +664,32 @@ function downloadReminder(hour) {
   document.body.append(a); a.click(); a.remove();
 }
 
+// Refresh: drop this app's cache and service worker, then reload so the newest version
+// installs. Only I Am Here's worker — other apps on this domain keep theirs.
+async function refreshApp() {
+  try {
+    if ('caches' in window) {
+      const keys = await caches.keys();
+      await Promise.all(keys.filter(k => k.startsWith('iamhere-')).map(k => caches.delete(k)));
+    }
+    if ('serviceWorker' in navigator) {
+      const regs = await navigator.serviceWorker.getRegistrations();
+      await Promise.all(regs.filter(r => new URL(r.scope).pathname.endsWith('/IAmHere/')).map(r => r.unregister()));
+    }
+  } catch (e) { /* reload regardless */ }
+  location.reload();
+}
+
 // installed version is read from the service worker's cache name (sw.js is the one place it's set)
-async function showVersion(el) {
+async function showVersion(el, tries = 0) {
   try {
     const keys = 'caches' in window ? await caches.keys() : [];
     const nums = keys.map(k => /^iamhere-v(\d+)$/.exec(k)).filter(Boolean).map(m => +m[1]);
     if (nums.length) el.textContent = 'v' + Math.max(...nums);
+    // first visit / just refreshed: the cache appears once the new worker takes over
+    else if ('serviceWorker' in navigator && tries < 5) {
+      navigator.serviceWorker.ready.then(() => setTimeout(() => showVersion(el, tries + 1), 800));
+    }
   } catch {}
 }
 
