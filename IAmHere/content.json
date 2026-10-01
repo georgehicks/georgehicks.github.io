@@ -15,7 +15,7 @@
       "question": "What is your body doing?",
       "home": "rest",
       "ticks": [
-        { "id": "rest", "label": "Rest", "helper": "Jaw soft. Free to be still or move." },
+        { "id": "rest", "label": "Rest", "helper": "Free to live and move. Free to be still. Free to be." },
         { "id": "control", "label": "Control", "helper": "Gripping, scanning, trying to stay on top of it." },
         { "id": "fight", "label": "Fight", "helper": "Heated. Pushing back. Need to win or survive." },
         { "id": "flight", "label": "Flight", "helper": "Wanting to escape — a screen, a door, a task." },
