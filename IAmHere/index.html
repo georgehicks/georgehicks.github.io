@@ -9,7 +9,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="I Am Here">
-<meta name="description" content="Notice where you are — spirit, mind, and body — and take one step back toward home.">
+<meta name="description" content="Notice where you are — spirit, soul, and body — and take one step back toward home.">
 <script>
   // apply a forced Light/Dark theme before first paint (no flash); Auto leaves it to the phone
   try { const t = (JSON.parse(localStorage.getItem('iamhere.settings')) || {}).theme;
@@ -194,6 +194,11 @@
   /* PRD §8.2: Control must not share a visual bin with Rest */
   .not-taken { display: grid; gap: 8px; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); }
   .flavors { display: flex; gap: 8px; margin-top: 10px; flex-wrap: wrap; }
+  .feelings-label { font-size: 0.8rem; color: var(--ink-dim); margin: 14px 2px 6px; }
+  .feelings { display: flex; flex-wrap: wrap; gap: 6px; }
+  .feelings .chip.pill { min-height: 40px; padding: 6px 12px; }
+  .feelings .chip.pill .lbl { font-size: 0.85rem; font-weight: 400; }
+  .feelings .chip.pill[aria-pressed="true"] .lbl { font-weight: 600; }
 
   .footer {
     position: sticky; bottom: 0; margin: 4px -16px 0; padding: 14px 16px calc(6px + env(safe-area-inset-bottom));

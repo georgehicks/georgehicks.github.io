@@ -72,6 +72,13 @@ export function strategyFor(C, loc, axis, pinId) {
   const [kind, id] = stepKey(loc, axis, pinId).split(':');
   return (kind === 'body' ? C.strategiesByBody : kind === 'mind' ? C.strategiesByMind : C.strategiesByPin)[id];
 }
+// An optional named feeling goes right after the address, in the person's own voice:
+// "Lord, I'm holding on…" → "Lord, I feel anxious. I'm holding on…"
+export function withFeeling(prayer, feelingLabel) {
+  if (!feelingLabel) return prayer;
+  const i = prayer.indexOf(', ');
+  return i < 0 ? prayer : prayer.slice(0, i + 2) + 'I feel ' + feelingLabel.toLowerCase() + '. ' + prayer.slice(i + 2);
+}
 // a random version, never the one shown last time at this place
 export function pickVariant(count, last, rand = Math.random) {
   if (count <= 1) return 0;
@@ -153,6 +160,7 @@ export function buildSession(v, { breathsCompleted, saved }) {
     body: v.loc.body,
     mind: v.loc.mind,
     timeTravelFlavor: v.loc.mind === 'time_travel' ? (v.loc.timeTravelFlavor || null) : null,
+    feeling: v.loc.feeling || null,
     pinList: v.homePath ? null : v.pinId ? v.pinList : pinListFor(v.loc),
     pinId: v.pinId || null,
     axisMoved: v.axis,

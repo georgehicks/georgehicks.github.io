@@ -72,7 +72,7 @@ t('three pin taps keep the first', () => {
 t('session record stores one pinId and no free text', () => {
   const v = { loc: L('managed', 'rest', 'present_open'), axis: 'spirit', pinId: 'better_than', thanWhom: 'Someone', verse: C.verseByPin.better_than, homePath: false };
   const rec = E.buildSession(v, { breathsCompleted: 8, saved: true });
-  eq(Object.keys(rec).sort(), ['axisMoved', 'body', 'breathMode', 'breathsCompleted', 'id', 'mind', 'pinId', 'pinList', 'saved', 'spirit', 'timeTravelFlavor', 'ts', 'verseRef'].sort());
+  eq(Object.keys(rec).sort(), ['axisMoved', 'body', 'breathMode', 'breathsCompleted', 'feeling', 'id', 'mind', 'pinId', 'pinList', 'saved', 'spirit', 'timeTravelFlavor', 'ts', 'verseRef'].sort());
   return !JSON.stringify(rec).includes('Someone') || 'than-whom text leaked into the record';
 });
 
@@ -144,6 +144,13 @@ t('stand firm: 3 breaths each of Eph 6:10, Jas 4:7, 1 John 4:4, exact ESV fragme
     ['Submit yourselves therefore to God', 'Resist the devil, and he will flee from you'],
     ['he who is in you is greater', 'than he who is in the world']]);
 });
+t('a named feeling joins the prayer after the address, and changes nothing else', () => {
+  eq(E.withFeeling('Lord, I’m holding on as tight as I can.', 'Anxious'), 'Lord, I feel anxious. I’m holding on as tight as I can.');
+  eq(E.withFeeling('Holy Spirit, I have no words. Pray for me.', 'Numb'), 'Holy Spirit, I feel numb. I have no words. Pray for me.');
+  eq(E.withFeeling('Lord, x.', null), 'Lord, x.');
+  eq(E.recommendAxis({ ...L('rising', 'rest', 'present_narrowed'), feeling: 'angry' }), 'mind');
+});
+t('the middle part is Soul, holding thoughts and feelings', () => C.axes.mind.label === 'Soul' && /feelings/.test(C.axes.mind.question) && C.copy.home.line.includes('soul present and open'));
 t('breath is 8 by default', () => eq(E.breathPlan({ loc: L('dying', 'rest', 'present_open') }).total, 8));
 t('no PRD shorthand left in the copy', () => {
   const hit = JSON.stringify({ ...C, verseByPin: 0, verseByBody: 0, verseByMind: 0 }).match(/this year’s face|old broadcast|two columns|second half|weather|provision|reading attack|not a moral|running the desk|Zombie|Anti-love/i);

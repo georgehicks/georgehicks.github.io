@@ -28,18 +28,29 @@
       ]
     },
     "mind": {
-      "label": "Mind",
-      "question": "Where is your mind?",
+      "label": "Soul",
+      "question": "What’s happening in your thoughts and feelings?",
       "home": "present_open",
       "ticks": [
-        { "id": "present_open", "label": "Open", "helper": "Here, and open to what comes." },
-        { "id": "present_narrowed", "label": "Narrowed", "helper": "Here, but locked on judging, fixing, or solving." },
+        { "id": "present_open", "label": "Open", "helper": "Here, and open. Thoughts and feelings both welcome." },
+        { "id": "present_narrowed", "label": "Narrowed", "helper": "Locked on judging, fixing, or solving. Feelings pushed aside." },
         { "id": "time_travel", "label": "Past or future", "helper": "Replaying, dreading, or daydreaming — anywhere but here." },
-        { "id": "blank", "label": "Blank", "helper": "Foggy. Checked out. Nothing there." }
+        { "id": "blank", "label": "Blank", "helper": "Numb and foggy. Can’t think or feel much." }
       ],
       "timeTravelFlavors": [
         { "id": "past", "label": "Past" },
         { "id": "future", "label": "Future" }
+      ],
+      "feelingsLabel": "Name a feeling (optional)",
+      "feelings": [
+        { "id": "anxious", "label": "Anxious" },
+        { "id": "sad", "label": "Sad" },
+        { "id": "angry", "label": "Angry" },
+        { "id": "ashamed", "label": "Ashamed" },
+        { "id": "lonely", "label": "Lonely" },
+        { "id": "numb", "label": "Numb" },
+        { "id": "grateful", "label": "Grateful" },
+        { "id": "peaceful", "label": "Peaceful" }
       ]
     }
   },
@@ -351,12 +362,12 @@
   "onboarding": [
     {
       "title": "I Am Here",
-      "body": "Home is abiding in Christ: spirit alive to God, mind present and open, body free to be still or move. It is received, not earned. This app helps you notice when you have left, and take one step back.",
+      "body": "Home is abiding in Christ: spirit alive to God, soul present and open, body free to be still or move. It is received, not earned. This app helps you notice when you have left, and take one step back.",
       "cta": "Continue"
     },
     {
       "title": "How it works",
-      "body": "Tap how your spirit, mind, and body are right now. If a thought is weighing on you, pick the sentence closest to it. Then breathe a line of Scripture with Him for a minute. No scores. No streaks.",
+      "body": "Tap how your spirit, soul, and body are right now. If a thought is weighing on you, pick the sentence closest to it. Then breathe a line of Scripture with Him for a minute. No scores. No streaks.",
       "cta": "I am here"
     }
   ],
@@ -376,7 +387,7 @@
     },
     "start": {
       "paths": [
-        { "id": "checkin", "title": "Check in", "body": "Notice your spirit, mind, and body, and take one step back." },
+        { "id": "checkin", "title": "Check in", "body": "Notice your spirit, soul, and body, and take one step back." },
         { "id": "lie", "title": "Name a lie", "body": "Pick the sentence that feels true, and breathe a line of Scripture with Him." },
         { "id": "stand", "title": "Stand firm", "body": "Stand in Christ’s strength when it feels like more than a bad day. Jesus called the enemy “the father of lies” (John 8:44)." },
         { "id": "above", "title": "Thanks and prayer", "body": "Set your mind on things above with gratitude and prayer." },
@@ -403,7 +414,7 @@
       "cta": "Breathe"
     },
     "home": {
-      "line": "Home is abiding in Christ: spirit alive to God, mind present and open, body free to be still or move.",
+      "line": "Home is abiding in Christ: spirit alive to God, soul present and open, body free to be still or move.",
       "text": "You’re home. Stay here a moment."
     },
     "breathe": {
@@ -451,7 +462,7 @@
       "scripture": "Quotations are from the ESV.",
       "refresh": "Refresh",
       "refreshing": "Refreshing…",
-      "about": "I Am Here helps you notice where you are — spirit, mind, and body — and take one step back toward home. Home is abiding in Christ: spirit alive to God, mind present and open, body free to be still or move."
+      "about": "I Am Here helps you notice where you are — spirit, soul, and body — and take one step back toward home. Home is abiding in Christ: spirit alive to God, soul present and open, body free to be still or move."
     }
   }
 }

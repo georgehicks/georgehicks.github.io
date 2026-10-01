@@ -80,7 +80,7 @@ C.managedPins.forEach(p => place(p.label, null, [C.verseByPin[p.id]], C.strategi
   p.id === 'proverb' ? 'Also shown: ' + C.copy.strategy.honestyProverb : null));
 
 // ---- Mind ----
-section('mind', 'mind', 'Mind — ' + C.axes.mind.question, 'Shown when the check-in starts with mind (e.g. Blank, or Narrowed / Past or future with Spirit Alive). A named sentence’s verse takes priority over these.');
+section('mind', 'mind', C.axes.mind.label + ' — ' + C.axes.mind.question, 'Optional feeling words (' + C.axes.mind.feelings.map(f => f.label).join(', ') + ') add "I feel …" after the address in any prayer. Shown when the check-in starts with soul (e.g. Blank, or Narrowed / Past or future with Spirit Alive). A named sentence’s verse takes priority over these.');
 C.axes.mind.ticks.forEach(t => {
   const vs = t.id === 'time_travel'
     ? [C.verseByMind.time_travel_past, C.verseByMind.time_travel_future]

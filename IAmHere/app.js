@@ -71,12 +71,13 @@ function withTel(text) {
 const announce = text => { $announce.textContent = ''; setTimeout(() => { $announce.textContent = text; }, 50); };
 
 // ===================== visit state (in memory only — PRD §20: force-close = no save) =====================
-const freshDraft = () => ({ spirit: null, body: null, mind: null, timeTravelFlavor: null });
+const freshDraft = () => ({ spirit: null, body: null, mind: null, timeTravelFlavor: null, feeling: null });
 let draft = freshDraft();
 let visit = null;
 let obStep = 0;
 
 const tickLabel = (axis, id) => (C.axes[axis].ticks.find(t => t.id === id) || {}).label || '—';
+const feelingLabel = id => id ? (C.axes.mind.feelings.find(f => f.id === id) || {}).label : null;
 const pinLabel = id => ([...C.dyingPins, ...C.managedPins].find(p => p.id === id) || {}).label;
 
 function startVisit() {
@@ -185,6 +186,7 @@ const VIEWS = {
       for (const axis of E.AXES) refs[axis].forEach(b => b.setAttribute('aria-pressed', String(draft[axis] === b.dataset.id)));
       flavorRow.hidden = draft.mind !== 'time_travel';
       flavorRow.querySelectorAll('button').forEach(b => b.setAttribute('aria-pressed', String(draft.timeTravelFlavor === b.dataset.id)));
+      feelingRow.querySelectorAll('button').forEach(b => b.setAttribute('aria-pressed', String(draft.feeling === b.dataset.id)));
       cta.disabled = !E.isComplete(draft);
     };
     const tick = (axis, t) => {
@@ -216,12 +218,19 @@ const VIEWS = {
       b.dataset.id = f.id; return b;
     }));
 
+    // optional: one feeling, tap again to clear. It shapes the prayer, never the recommendation.
+    const feelingRow = h('div', { class: 'feelings', role: 'group', 'aria-label': C.axes.mind.feelingsLabel }, C.axes.mind.feelings.map(f => {
+      const b = chip({ label: f.label, cls: 'pill', onclick: () => { draft.feeling = draft.feeling === f.id ? null : f.id; update(); } });
+      b.dataset.id = f.id; return b;
+    }));
+
     cta = btn(C.copy.here.cta, startVisit);
     const view = h('section', { class: 'view' },
       link(C.copy.back, () => go('start'), 'back'),
       h('h1', { class: 'sr-only', text: C.copy.here.title }),
       card('spirit', h('div', { class: 'grid one' }, C.axes.spirit.ticks.map(t => tick('spirit', t)))),
-      card('mind', [h('div', { class: 'grid' }, C.axes.mind.ticks.map(t => tick('mind', t))), flavorRow]),
+      card('mind', [h('div', { class: 'grid' }, C.axes.mind.ticks.map(t => tick('mind', t))), flavorRow,
+        h('div', { class: 'feelings-label', text: C.axes.mind.feelingsLabel }), feelingRow]),
       card('body', bodyGroups),
       h('div', { class: 'footer' }, cta),
     );
@@ -321,7 +330,7 @@ const VIEWS = {
         store.set(KEY.seen, seen);
       }
       const st = list[visit.stepPick[key]] || list[0];
-      return [h('h2', { class: 'truth', text: st.truth }), h('p', { class: 'prayer', text: st.prayer })];
+      return [h('h2', { class: 'truth', text: st.truth }), h('p', { class: 'prayer', text: E.withFeeling(st.prayer, feelingLabel(loc.feeling)) })];
     };
     // quiet, and only after a check-in that looks worrisome (never on the start screen)
     const danger = E.isWorrisome(visit) && h('p', { class: 'danger-line' }, withTel(C.crisis.line));
@@ -403,7 +412,8 @@ const VIEWS = {
       h('h2', { text: L.title }),
       items.length ? h('div', {}, items.map(s => {
         const when = new Date(s.ts);
-        const mind = tickLabel('mind', s.mind) + (s.timeTravelFlavor ? ' · ' + (C.axes.mind.timeTravelFlavors.find(f => f.id === s.timeTravelFlavor) || {}).label : '');
+        const mind = tickLabel('mind', s.mind) + (s.timeTravelFlavor ? ' · ' + (C.axes.mind.timeTravelFlavors.find(f => f.id === s.timeTravelFlavor) || {}).label : '')
+          + (s.feeling ? ' (' + (feelingLabel(s.feeling) || '').toLowerCase() + ')' : '');
         // two taps to delete, like Clear all data (no pop-up dialogs)
         let armed = false;
         const del = link(L.delete, () => {
