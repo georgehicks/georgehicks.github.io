@@ -47,8 +47,10 @@
         { "id": "sad", "label": "Sad" },
         { "id": "angry", "label": "Angry" },
         { "id": "ashamed", "label": "Ashamed" },
+        { "id": "guilty", "label": "Guilty" },
         { "id": "lonely", "label": "Lonely" },
         { "id": "numb", "label": "Numb" },
+        { "id": "joyful", "label": "Joyful" },
         { "id": "grateful", "label": "Grateful" },
         { "id": "peaceful", "label": "Peaceful" }
       ]
