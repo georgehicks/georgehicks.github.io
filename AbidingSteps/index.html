@@ -202,10 +202,11 @@
   .outcome-chip { background: var(--bg-elevated); border: 1px solid var(--border); color: var(--text-faint); border-radius: 8px; padding: 5px 9px; font-size: 0.74rem; cursor: pointer; display: flex; align-items: center; gap: 5px; white-space: nowrap; flex: 0 0 auto; }
   .outcome-chip.selected { border-color: var(--accent); color: var(--accent); }
   .outcome-chip .type-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--text-faint); }
-  .outcome-chip.deliverable .type-dot { background: var(--step); }
+  .outcome-chip.destination .type-dot { background: var(--step); }
   .outcome-chip.directive .type-dot { background: var(--ahead); }
   .add-chip { border-style: dashed; color: var(--text-faint); }
   .sub-outcome-row { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+  .milestone-chip { border-style: solid; border-color: color-mix(in srgb, var(--accent) 45%, var(--border)); }
 
   /* ===== Action block — the strong visual focal point; everything else stays subdued ===== */
   .action-block {
@@ -277,7 +278,9 @@
   .mic-btn.recording { background: var(--danger); color: #fff; border-color: var(--danger); }
 
   /* ===== Ahead view ===== */
-  .filter-row { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 6px; }
+  .filter-row { display: flex; gap: 5px; flex-wrap: wrap; margin-bottom: 6px; }
+  /* six horizon chips on one phone-width line */
+  .filter-row .chip { padding: 6px 8px; }
   .ahead-subtitle-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 14px; }
   .role-subtitle { font-size: 0.74rem; color: var(--text-faint); min-height: 1.2em; }
   #clearDoneBtn { flex-shrink: 0; white-space: nowrap; }
@@ -302,6 +305,15 @@
     width: 100%; min-height: 52px; background: var(--bg-raised); border: 1px solid var(--border);
     border-radius: 8px; color: var(--text); padding: 8px 10px; font-size: 16px; font-family: inherit; resize: vertical;
   }
+  .outcome-tree { margin-top: 8px; display: flex; flex-direction: column; gap: 6px; }
+  .tree-steps { display: flex; flex-wrap: wrap; gap: 5px; }
+  .tree-steps.indent { padding-left: 18px; }
+  .tree-steps .chip { padding: 3px 8px; font-size: 0.7rem; display: inline-flex; align-items: center; gap: 4px; }
+  .tree-x { background: none; border: none; color: var(--text-faint); font-size: 0.8rem; line-height: 1; padding: 0 0 0 2px; cursor: pointer; }
+  .tree-ms { display: flex; align-items: center; gap: 6px; font-size: 0.8rem; color: var(--text); }
+  .tree-ms.done .tree-ms-name { text-decoration: line-through; color: var(--text-faint); }
+  .tree-ms-done { background: none; border: none; color: var(--accent); font-size: 0.75rem; padding: 0; width: 14px; cursor: pointer; }
+  .tree-add-ms { align-self: flex-start; padding: 3px 8px; font-size: 0.7rem; }
   /* quick snooze: off Today now, auto-starred back when the date arrives (nextActionDate) */
   .snooze-row { display: flex; flex-wrap: nowrap; align-items: center; gap: 5px; margin-top: 8px; overflow-x: auto; scrollbar-width: none; }
   .snooze-row::-webkit-scrollbar { display: none; }
@@ -675,13 +687,12 @@
         <button type="button" id="aheadIdleGoStep">→ Step</button>
       </div>
       <div class="filter-row" id="roleFilterRow">
-        <span class="chip selected" data-role="All">All</span>
+        <span class="chip" data-role="Inbox">Inbox</span>
         <span class="chip" data-role="Today">Today</span>
-        <span class="chip" data-role="Roots">Roots</span>
-        <span class="chip" data-role="Resources">Resources</span>
-        <span class="chip" data-role="Reach">Reach</span>
-        <span class="chip" data-role="Reality">Reality</span>
+        <span class="chip" data-role="Week">Week</span>
+        <span class="chip" data-role="Later">Later</span>
         <span class="chip maybe-filter-chip" data-role="Maybe">Maybe</span>
+        <span class="chip selected" data-role="All">All</span>
       </div>
       <div class="ahead-subtitle-row">
         <div class="role-subtitle" id="roleSubtitle"></div>
@@ -785,6 +796,14 @@
       </div>
 
       <div class="settings-section">
+        <h3>Backup</h3>
+        <p style="font-size:0.72rem; color:var(--text-faint); margin:0 0 8px;">Everything this app stores — outcomes with their milestones and steps, notes, settings — as one JSON file. Restore replaces what's here (and, if signed in, on your other devices).</p>
+        <button class="btn" id="exportStoreBtn" style="width:100%; margin-bottom:8px;">Download store JSON</button>
+        <button class="btn" id="restoreStoreBtn" style="width:100%;">Restore store JSON</button>
+        <div id="backupStatus" style="font-size:0.72rem; color:var(--text-dim); margin-top:6px;"></div>
+      </div>
+
+      <div class="settings-section">
         <h3>Calendar (ICS)</h3>
         <p style="font-size:0.72rem; color:var(--text-faint); margin:0 0 8px;">Paste any calendar's .ics feed link — Google, Outlook, iCloud, or any other. One per line. Most providers block a browser from fetching the feed directly (CORS) — if pulling fails, put a CORS proxy URL in front of it below.</p>
         <textarea id="icsUrls" style="width:100%; min-height:56px; background:var(--bg-elevated); border:1px solid var(--border); border-radius:8px; color:var(--text); padding:10px; font-size:16px; font-family:inherit; resize:vertical; margin-bottom:8px;" placeholder="One .ics feed URL per line"></textarea>
@@ -859,12 +878,12 @@
     <div class="modal-card">
       <h3 id="outcomeModalTitle">New outcome</h3>
       <input type="text" id="outcomeModalName" class="modal-input" placeholder="Outcome name">
-      <div class="modal-field-label">Type</div>
+      <div class="modal-field-label">Kind <span class="optional">— leave unset to keep it in Inbox</span></div>
       <div class="modal-toggle-row">
-        <button type="button" class="modal-toggle-btn" data-type="Deliverable">Deliverable</button>
-        <button type="button" class="modal-toggle-btn" data-type="Directive">Directive</button>
+        <button type="button" class="modal-toggle-btn" data-type="Destination" title="Somewhere you arrive — it can be finished">Destination</button>
+        <button type="button" class="modal-toggle-btn" data-type="Directive" title="A way you keep going — never finished">Directive</button>
       </div>
-      <div class="modal-field-label">Role</div>
+      <div class="modal-field-label">Role <span class="optional">— optional</span></div>
       <div class="modal-toggle-row" id="outcomeModalTagRow">
         <button type="button" class="modal-toggle-btn" data-tag="Roots">Roots</button>
         <button type="button" class="modal-toggle-btn" data-tag="Resources">Resources</button>
@@ -2315,7 +2334,9 @@ For God alone my soul waits in silence. — Psalm 62:1`;
   document.getElementById('dayBar').addEventListener('click', () => toggleDayPlan(selectedDateKey));
 
   // ===== Action block — ONLY the choice (idle) or the counter + focus (running) =====
-  let selectedOutcomeId = null, selectedSubOutcome = null;
+  // selection = outcome › optional milestone › optional step (selectedSubOutcome is the
+  // step title, within the milestone's steps when one is chosen, else the outcome's)
+  let selectedOutcomeId = null, selectedMilestoneId = null, selectedSubOutcome = null;
 
   // chunk sizes are Settings-owned state — Step's chips and the overrun "add time"
   // chips both render from this one array, so editing it in Settings updates both live
@@ -2686,7 +2707,7 @@ For God alone my soul waits in silence. — Psalm 62:1`;
     // outcome-summary bar above would just repeat it and waste vertical space, so it
     // hides for the duration of the chunk and comes back once idle
     document.getElementById('outcomeSummary').style.display = 'none';
-    document.getElementById('actionFocus').textContent = 'Working on ' + ((selectedOutcome() || {}).t || '—') + (selectedSubOutcome ? ' › ' + selectedSubOutcome : '');
+    document.getElementById('actionFocus').textContent = 'Working on ' + (selectedOutcome() ? selectionLabel(selectedOutcome()) : '—');
     document.getElementById('timerSub').textContent = '';
     if (tickHandle) clearInterval(tickHandle);
     tick();
@@ -2830,9 +2851,24 @@ For God alone my soul waits in silence. — Psalm 62:1`;
   // nothing was saved anywhere, so a restart reset both.) =====
   function newId() { return 'o' + Date.now().toString(36) + Math.random().toString(36).slice(2, 7); }
   function makeOutcome(t, type, tag, extra) {
-    const o = Object.assign({ id: newId(), t, type, tag, budget: null, today: false, completed: false, maybe: false, nextActionDate: null, subs: [], lastWorked: null }, extra);
+    const o = Object.assign({ id: newId(), t, type: type || null, tag: tag || null, budget: null, today: false, completed: false, maybe: false, nextActionDate: null, subs: [], milestones: [], lastWorked: null }, extra);
     if (o.today) o.starredOn = todayKeyLocal();
     return o;
+  }
+  // after the outcome's tree changed under a live selection: drop a removed milestone
+  // or step, then redraw Step's row and labels to match
+  function revalidateSelection() {
+    const o = selectedOutcome(); if (!o) return;
+    if (selectedMilestoneId && !selMilestone(o)) selectedMilestoneId = null;
+    if (selectedSubOutcome && !stepScope(o).subs.includes(selectedSubOutcome)) selectedSubOutcome = null;
+    renderSubOutcomeRow(o);
+    document.getElementById('outcomeSummaryText').textContent = selectionLabel(o);
+    switchNotesContext(selectionNotesKey(o), selectionLabel(o));
+    store.set('__local_selection', { id: o.id, ms: selectedMilestoneId, sub: selectedSubOutcome });
+    updateSelectionLabels();
+  }
+  function makeMilestone(t) {
+    return { id: 'm' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6), t, completed: false, maybe: false, nextActionDate: null, lastWorked: null, subs: [] };
   }
   // every path onto Today goes through here — starredOn is what lets the morning look
   // tell "still here from an earlier day" apart from "put here today"
@@ -2853,13 +2889,13 @@ For God alone my soul waits in silence. — Psalm 62:1`;
   function seedOutcomes() {
     const yesterday = Date.now() - 864e5;
     return [
-      makeOutcome('AbidingSteps spec', 'Deliverable', 'Reach', { today: true, subs: ['Data model', 'Screen spec', 'Music settings'] }),
+      makeOutcome('AbidingSteps spec', 'Destination', 'Reach', { today: true, subs: ['Data model', 'Screen spec', 'Music settings'] }),
       makeOutcome('Exercise', 'Directive', 'Reality', { today: true, budget: makeBudget(180, 'week') }),
-      makeOutcome('Reply to emails', 'Deliverable', 'Reality', { lastWorked: yesterday }),
-      makeOutcome('Draft sermon notes', 'Deliverable', 'Reach', { lastWorked: yesterday }),
-      makeOutcome('File taxes', 'Deliverable', 'Reality', { budget: makeBudget(120, 'total'), subs: ['Gather receipts', 'Fill forms', 'Submit'] }),
+      makeOutcome('Reply to emails', 'Destination', 'Reality', { lastWorked: yesterday }),
+      makeOutcome('Draft sermon notes', 'Destination', 'Reach', { lastWorked: yesterday }),
+      makeOutcome('File taxes', 'Destination', 'Reality', { budget: makeBudget(120, 'total'), subs: ['Gather receipts', 'Fill forms', 'Submit'] }),
       makeOutcome('Read scripture', 'Directive', 'Roots'),
-      makeOutcome('Call Mom', 'Deliverable', 'Roots'),
+      makeOutcome('Call Mom', 'Destination', 'Roots'),
       makeOutcome('Try journaling', 'Directive', 'Reach', { budget: makeBudget(60, 'week'), maybe: true }),
     ];
   }
@@ -2879,6 +2915,12 @@ For God alone my soul waits in silence. — Psalm 62:1`;
     let changed = false;
     list.forEach(o => {
       if (o.budget && !o.budget.period) { o.budget = makeBudget(o.budget.target, 'week'); changed = true; }
+      // Deliverable was renamed Destination — also catches rows written by an older
+      // build on another device
+      if (o.type === 'Deliverable') { o.type = 'Destination'; changed = true; }
+      if (!Array.isArray(o.subs)) { o.subs = []; changed = true; }
+      if (!Array.isArray(o.milestones)) { o.milestones = []; changed = true; }
+      o.milestones.forEach(m => { if (!Array.isArray(m.subs)) { m.subs = []; changed = true; } });
       // stars from before starredOn existed count as today's — so the first morning
       // look comes tomorrow instead of re-asking about everything on the update day
       if (o.today && !o.starredOn) { o.starredOn = todayKeyLocal(); changed = true; }
@@ -2903,8 +2945,8 @@ For God alone my soul waits in silence. — Psalm 62:1`;
   function openOutcomeModal(opts) {
     outcomeModalTitle.textContent = opts.title;
     outcomeModalName.value = opts.name || '';
-    setModalToggle('type', opts.type || 'Deliverable');
-    setModalToggle('tag', opts.tag || 'Reach');
+    setModalToggle('type', opts.type || null); // unset = Inbox — never auto-filed
+    setModalToggle('tag', opts.tag || null);
     document.getElementById('outcomeModalMaybe').classList.toggle('selected', !!opts.maybe);
     document.getElementById('outcomeModalNextDate').value = opts.nextActionDate || '';
     document.getElementById('outcomeModalNotes').value = opts.notes || '';
@@ -2915,10 +2957,11 @@ For God alone my soul waits in silence. — Psalm 62:1`;
     outcomeModalName.focus();
   }
   function closeOutcomeModal() { outcomeModalOverlay.classList.remove('show'); outcomeModalOnSave = null; }
+  // kind and role are both optional — tapping the selected one again clears it
   document.querySelectorAll('.modal-toggle-btn[data-type]').forEach(btn =>
-    btn.addEventListener('click', () => setModalToggle('type', btn.dataset.type)));
+    btn.addEventListener('click', () => setModalToggle('type', btn.classList.contains('selected') ? null : btn.dataset.type)));
   document.querySelectorAll('.modal-toggle-btn[data-tag]').forEach(btn =>
-    btn.addEventListener('click', () => setModalToggle('tag', btn.dataset.tag)));
+    btn.addEventListener('click', () => setModalToggle('tag', btn.classList.contains('selected') ? null : btn.dataset.tag)));
   document.querySelectorAll('.modal-toggle-btn[data-period]').forEach(btn =>
     btn.addEventListener('click', () => setModalToggle('period', btn.dataset.period)));
   document.getElementById('outcomeModalMaybe').addEventListener('click', (e) => e.currentTarget.classList.toggle('selected'));
@@ -2926,8 +2969,8 @@ For God alone my soul waits in silence. — Psalm 62:1`;
   document.getElementById('outcomeModalSave').addEventListener('click', () => {
     const name = outcomeModalName.value.trim();
     if (!name) { outcomeModalName.focus(); return; }
-    const type = (document.querySelector('.modal-toggle-btn[data-type].selected') || {}).dataset?.type || 'Deliverable';
-    const tag = (document.querySelector('.modal-toggle-btn[data-tag].selected') || {}).dataset?.tag || 'Reach';
+    const type = (document.querySelector('.modal-toggle-btn[data-type].selected') || {}).dataset?.type || null;
+    const tag = (document.querySelector('.modal-toggle-btn[data-tag].selected') || {}).dataset?.tag || null;
     const maybe = document.getElementById('outcomeModalMaybe').classList.contains('selected');
     const nextActionDate = document.getElementById('outcomeModalNextDate').value || null;
     const target = parseInt(document.getElementById('outcomeModalBudget').value, 10);
@@ -2995,7 +3038,7 @@ For God alone my soul waits in silence. — Psalm 62:1`;
   confirmModalOverlay.addEventListener('click', (e) => { if (e.target === confirmModalOverlay) closeConfirmModal(); });
   function outcomeChip(o) {
     const chip = document.createElement('div');
-    chip.className = 'outcome-chip ' + String(o.type).toLowerCase() + (o.id === selectedOutcomeId ? ' selected' : '');
+    chip.className = 'outcome-chip ' + String(o.type || 'inbox').toLowerCase() + (o.id === selectedOutcomeId ? ' selected' : '');
     chip.innerHTML = '<span class="type-dot"></span>';
     chip.appendChild(document.createTextNode(o.t));
     if (o.budget) {
@@ -3122,7 +3165,8 @@ For God alone my soul waits in silence. — Psalm 62:1`;
     const o = findOutcome(id);
     if (!o) return;
     selectedOutcomeId = id;
-    selectedSubOutcome = (opts && opts.sub && (o.subs || []).includes(opts.sub)) ? opts.sub : null;
+    selectedMilestoneId = (opts && opts.ms && (o.milestones || []).some(m => m.id === opts.ms)) ? opts.ms : null;
+    selectedSubOutcome = (opts && opts.sub && stepScope(o).subs.includes(opts.sub)) ? opts.sub : null;
     // choosing to work on it now IS choosing it for today — no separate promote step
     if (!(opts && opts.restore)) {
       starToday(o); o.lastWorked = Date.now();
@@ -3136,7 +3180,7 @@ For God alone my soul waits in silence. — Psalm 62:1`;
   }
 
   function clearSelection(label, opts) {
-    selectedOutcomeId = null; selectedSubOutcome = null;
+    selectedOutcomeId = null; selectedMilestoneId = null; selectedSubOutcome = null;
     document.getElementById('outcomeSummaryText').textContent = '';
     document.getElementById('subOutcomeRow').innerHTML = '';
     document.querySelectorAll('#chunkChips .chip').forEach(c => c.classList.add('disabled'));
@@ -3165,49 +3209,75 @@ For God alone my soul waits in silence. — Psalm 62:1`;
     clearSelection('✓ Marked done', { abideNudge: true });
   });
 
+  // milestones are optional and steps don't need one: the row offers the outcome's
+  // milestones, then the steps of whatever is chosen (the milestone, else the outcome)
+  function selMilestone(o) { return selectedMilestoneId ? (o.milestones || []).find(m => m.id === selectedMilestoneId) || null : null; }
+  function stepScope(o) { const m = selMilestone(o); if (m) return m; if (!o.subs) o.subs = []; return o; }
   function renderSubOutcomeRow(o) {
     const row = document.getElementById('subOutcomeRow');
     row.innerHTML = '';
-    (o.subs || []).forEach(s => {
-      const c = document.createElement('span'); c.className = 'chip' + (s === selectedSubOutcome ? ' selected' : '');
-      c.textContent = s;
-      c.addEventListener('click', () => {
-        document.querySelectorAll('#subOutcomeRow .chip').forEach(x => x.classList.toggle('selected', x === c));
-        selectedSubOutcome = s;
-        finishOutcomeSelection(o);
+    const chip = (cls, text, onClick) => {
+      const c = document.createElement('span'); c.className = cls; c.textContent = text;
+      c.addEventListener('click', onClick); row.appendChild(c); return c;
+    };
+    (o.milestones || []).filter(m => !m.completed || m.id === selectedMilestoneId).forEach(m => {
+      chip('chip milestone-chip' + (m.id === selectedMilestoneId ? ' selected' : ''), '◆ ' + m.t, () => {
+        // tapping the chosen milestone again steps back out to the outcome itself
+        selectedMilestoneId = m.id === selectedMilestoneId ? null : m.id;
+        selectedSubOutcome = null;
+        if (selectedMilestoneId) { m.lastWorked = Date.now(); saveOutcomes(); }
+        renderSubOutcomeRow(o); finishOutcomeSelection(o);
       });
-      row.appendChild(c);
     });
-    const addSub = document.createElement('span'); addSub.className = 'chip add-chip'; addSub.textContent = '+ sub-step';
-    addSub.addEventListener('click', () => {
+    const scope = stepScope(o);
+    scope.subs.forEach(s => {
+      chip('chip' + (s === selectedSubOutcome ? ' selected' : ''), s, () => {
+        selectedSubOutcome = s === selectedSubOutcome ? null : s;
+        renderSubOutcomeRow(o); finishOutcomeSelection(o);
+      });
+    });
+    const ms = selMilestone(o);
+    chip('chip add-chip', '+ step', () => {
       openTextModal({
-        title: 'New sub-step for ' + o.t,
+        title: 'New step for ' + (ms ? ms.t : o.t),
         onSave: (s) => {
-          const cur = findOutcome(o.id);
-          if (!cur) return;
-          if (!cur.subs) cur.subs = [];
-          if (!cur.subs.includes(s)) cur.subs.push(s);
+          const cur = findOutcome(o.id); if (!cur) return;
+          const target = stepScope(cur);
+          if (!target.subs.includes(s)) target.subs.push(s);
           saveOutcomes();
           selectedSubOutcome = s;
-          renderSubOutcomeRow(cur);
-          finishOutcomeSelection(cur);
+          renderSubOutcomeRow(cur); finishOutcomeSelection(cur); renderAheadList();
         }
       });
     });
-    row.appendChild(addSub);
+    if (!ms) chip('chip add-chip', '+ milestone', () => {
+      openTextModal({
+        title: 'New milestone for ' + o.t,
+        onSave: (t) => {
+          const cur = findOutcome(o.id); if (!cur) return;
+          const m = makeMilestone(t);
+          cur.milestones.push(m);
+          saveOutcomes();
+          selectedMilestoneId = m.id; selectedSubOutcome = null;
+          renderSubOutcomeRow(cur); finishOutcomeSelection(cur); renderAheadList();
+        }
+      });
+    });
   }
 
-  function selectionLabel(o) { return o.t + (selectedSubOutcome ? ' › ' + selectedSubOutcome : ''); }
+  function selectionLabel(o) { const m = selMilestone(o); return o.t + (m ? ' › ' + m.t : '') + (selectedSubOutcome ? ' › ' + selectedSubOutcome : ''); }
+  // notes key: outcome id, then #milestone id, then |step title — so each level keeps its own notes
+  function selectionNotesKey(o) { const m = selMilestone(o); return o.id + (m ? '#' + m.id : '') + (selectedSubOutcome ? '|' + selectedSubOutcome : ''); }
   function finishOutcomeSelection(o) {
     const label = selectionLabel(o);
     document.getElementById('outcomeSummaryText').textContent = label;
     collapseOutcomePicker();
     document.querySelectorAll('#chunkChips .chip').forEach(c => c.classList.remove('disabled'));
     document.getElementById('actionIdleLabel').textContent = 'Choose a length';
-    switchNotesContext(o.id + (selectedSubOutcome ? '|' + selectedSubOutcome : ''), label);
-    store.set('__local_selection', { id: o.id, sub: selectedSubOutcome });
+    switchNotesContext(selectionNotesKey(o), label);
+    store.set('__local_selection', { id: o.id, ms: selectedMilestoneId, sub: selectedSubOutcome });
     renderStepBudget();
-    document.getElementById('markDoneBtn').style.display = o.type === 'Deliverable' ? '' : 'none';
+    document.getElementById('markDoneBtn').style.display = o.type === 'Destination' ? '' : 'none';
   }
   // after a rename (here or synced from another device), refresh every place the name shows
   function updateSelectionLabels() {
@@ -3217,7 +3287,7 @@ For God alone my soul waits in silence. — Psalm 62:1`;
     document.getElementById('outcomeSummaryText').textContent = label;
     if (document.getElementById('actionRunning').style.display !== 'none') document.getElementById('actionFocus').textContent = 'Working on ' + label;
     document.getElementById('notesArea').placeholder = 'Notes for ' + label + '…';
-    document.getElementById('markDoneBtn').style.display = o.type === 'Deliverable' ? '' : 'none';
+    document.getElementById('markDoneBtn').style.display = o.type === 'Destination' ? '' : 'none';
   }
 
   // ===== notes are scoped to whatever outcome (+ sub-outcome) is current, not global.
@@ -3305,12 +3375,13 @@ For God alone my soul waits in silence. — Psalm 62:1`;
 
   // ===== Ahead list — the star is the deliberate "add to today" path =====
   // shareable with people unfamiliar with the shorthand — spelled out per role
+  // filters are time horizons (plus Inbox/Maybe), not role tags — roles are an
+  // optional leftover label now, never the spine
   const ROLE_SUBTITLES = {
+    'Inbox': 'Not sorted yet — give each a kind: Destination or Directive',
     'Today': 'Drawn into today\'s Step picker',
-    'Roots': 'Faith, Family, Friends, Fellowship',
-    'Resources': 'Finances, Home, Possessions, Stewardship',
-    'Reality': 'Fitness, Health, Work, Obligations',
-    'Reach': 'Calling, Growth, Career, Influence',
+    'Week': 'Coming back to Today within the next 7 days',
+    'Later': 'Set for later — beyond this week',
     'Maybe': 'Trying these on — no guilt if they don\'t stick',
   };
   document.querySelectorAll('#roleFilterRow .chip').forEach(chip => {
@@ -3323,15 +3394,17 @@ For God alone my soul waits in silence. — Psalm 62:1`;
     });
   });
 
-  const ROLE_TAGS = ['Roots', 'Resources', 'Reach', 'Reality'];
   const aheadList = document.getElementById('aheadList');
   const activeRoleFilter = () => ((document.querySelector('#roleFilterRow .chip.selected') || {}).dataset || {}).role;
   function outcomeMatchesFilter(o, role) {
     if (role === 'Maybe') return !!o.maybe;
     if (o.maybe) return false; // maybe items stay out of the way — only the Maybe filter shows them
+    if (role === 'Inbox') return !o.type;
     if (role === 'Today') return !!o.today;
-    if (!role || role === 'All') return true;
-    return o.tag === role;
+    const d = o.nextActionDate, tk = todayKeyLocal(), wk = addDaysKey(7);
+    if (role === 'Week') return !o.today && !!d && d > tk && d <= wk;
+    if (role === 'Later') return !o.today && !!d && d > wk;
+    return true; // All
   }
 
   // ===== quick snooze ("punt forward") — sets nextActionDate and takes it off Today;
@@ -3356,6 +3429,38 @@ For God alone my soul waits in silence. — Psalm 62:1`;
     else { o.today = false; o.nextActionDate = key; }
   }
   const snoozedUntil = (o) => (o.nextActionDate && o.nextActionDate > todayKeyLocal()) ? o.nextActionDate : null;
+
+  // the outcome's shape, editable in place: its own steps, then each optional milestone
+  // with that milestone's steps. Steps never need a milestone.
+  function renderOutcomeTree(o) {
+    const steps = (list, msId) => list.map((s, i) => '<span class="chip tree-step">' + escapeHtml(s)
+        + '<button type="button" class="tree-x" data-tree="del-step" data-ms="' + msId + '" data-i="' + i + '" title="Remove step">×</button></span>').join('')
+      + '<span class="chip add-chip" data-tree="add-step" data-ms="' + msId + '">+ step</span>';
+    return '<div class="outcome-tree">'
+      + '<div class="tree-steps">' + steps(o.subs || [], '') + '</div>'
+      + (o.milestones || []).map(m => '<div class="tree-ms' + (m.completed ? ' done' : '') + '">'
+        + '<button type="button" class="tree-ms-done" data-tree="ms-done" data-ms="' + m.id + '" title="' + (m.completed ? 'Reopen' : 'Mark milestone done') + '">' + (m.completed ? '✓' : '◆') + '</button>'
+        + '<span class="tree-ms-name">' + escapeHtml(m.t) + '</span>'
+        + '<button type="button" class="tree-x" data-tree="del-ms" data-ms="' + m.id + '" title="Remove milestone">×</button></div>'
+        + '<div class="tree-steps indent">' + steps(m.subs || [], m.id) + '</div>').join('')
+      + '<span class="chip add-chip tree-add-ms" data-tree="add-ms">+ milestone</span>'
+      + '</div>';
+  }
+  function handleTreeClick(o, el, changed) {
+    const act = el.dataset.tree, ms = el.dataset.ms ? (o.milestones || []).find(m => m.id === el.dataset.ms) : null;
+    const scope = ms || o;
+    if (act === 'add-step') openTextModal({ title: 'New step for ' + scope.t, onSave: (t) => { if (!scope.subs.includes(t)) scope.subs.push(t); changed(); } });
+    else if (act === 'del-step') { scope.subs.splice(+el.dataset.i, 1); changed(); }
+    else if (act === 'add-ms') openTextModal({ title: 'New milestone for ' + o.t, onSave: (t) => { o.milestones.push(makeMilestone(t)); changed(); } });
+    else if (act === 'ms-done' && ms) { ms.completed = !ms.completed; changed(); }
+    else if (act === 'del-ms' && ms) openConfirmModal({
+      title: 'Remove milestone?', message: '"' + ms.t + '"' + (ms.subs.length ? ' and its ' + ms.subs.length + ' step' + (ms.subs.length === 1 ? '' : 's') : '') + ' — this can\'t be undone.',
+      onOk: () => {
+        o.milestones = o.milestones.filter(m => m !== ms);
+        changed();
+      }
+    });
+  }
 
   const STAR_SVG = '<svg width="17" height="17" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round" aria-hidden="true"><path d="M12 3.2l2.7 5.5 6.1.9-4.4 4.3 1 6.1L12 17.1 6.6 20l1-6.1-4.4-4.3 6.1-.9z"/></svg>';
 
@@ -3388,11 +3493,12 @@ For God alone my soul waits in silence. — Psalm 62:1`;
         + '<button class="maybe-toggle' + (o.maybe ? ' active' : '') + '" title="Maybe — trying it on, not committed">?</button>'
         + '<span class="outcome-name' + (o.completed ? ' completed' : '') + '">' + escapeHtml(o.t) + '</span></div>'
         + '<div class="outcome-row-actions">'
-        + (o.type === 'Deliverable' ? '<button class="done-chip complete-btn' + (o.completed ? ' done' : '') + '" title="Mark complete">' + (o.completed ? '✓ Done' : 'Done') + '</button>' : '')
+        + (o.type === 'Destination' ? '<button class="done-chip complete-btn' + (o.completed ? ' done' : '') + '" title="Mark complete">' + (o.completed ? '✓ Done' : 'Done') + '</button>' : '')
         + '<button class="done-chip edit-btn" title="Edit">Edit</button>'
         + '<button class="row-icon-btn delete-btn" title="Delete">×</button>'
         + '</div></div>'
-        + '<div class="outcome-row-meta"><span class="badge">' + o.type + ' · ' + o.tag
+        + '<div class="outcome-row-meta"><span class="badge">' + (o.type || 'Inbox') + (o.tag ? ' · ' + o.tag : '')
+        + ((o.milestones || []).length ? ' · ' + o.milestones.length + ' milestone' + (o.milestones.length === 1 ? '' : 's') : '')
         + (snoozedUntil(o) ? ' · later ' + escapeHtml(shortDateLabel(snoozedUntil(o))) : '') + '</span></div>';
       if (o.budget) {
         const acc = budgetAcc(o), target = o.budget.target;
@@ -3405,6 +3511,7 @@ For God alone my soul waits in silence. — Psalm 62:1`;
       // no popup, so you can fly through items jotting next steps without leaving the list
       html += '<div class="outcome-row-notes"' + (expanded ? '' : ' style="display:none;"') + '>'
         + '<textarea class="outcome-row-notes-input" placeholder="Notes — pulled up when you work this…">' + escapeHtml(notesByKey[o.id] || '') + '</textarea>'
+        + renderOutcomeTree(o)
         + (o.completed ? '' : '<div class="snooze-row" title="Later — off Today until then">'
           + (o.today && !snoozedUntil(o) ? '' : '<span class="chip" data-snooze="today">Today</span>')
           + snoozeOptions().map(([label, key]) => '<span class="chip' + (o.nextActionDate === key ? ' selected' : '') + '" data-snooze="' + key + '">' + label + '</span>').join('')
@@ -3424,6 +3531,10 @@ For God alone my soul waits in silence. — Psalm 62:1`;
         renderAheadList();
       });
       row.querySelector('.outcome-row-notes-input').addEventListener('input', (e) => captureRowNotes(o.id, e.target.value));
+      row.querySelector('.outcome-tree').addEventListener('click', (e) => {
+        const el = e.target.closest('[data-tree]');
+        if (el) handleTreeClick(o, el, () => { changed(); if (o.id === selectedOutcomeId) revalidateSelection(); });
+      });
       row.querySelectorAll('[data-snooze]').forEach(chip => chip.addEventListener('click', () => {
         snoozeOutcome(o, chip.dataset.snooze === 'today' ? null : chip.dataset.snooze); changed();
       }));
@@ -3487,9 +3598,10 @@ For God alone my soul waits in silence. — Psalm 62:1`;
     const filterRole = activeRoleFilter();
     openOutcomeModal({
       title: 'New outcome',
-      tag: ROLE_TAGS.includes(filterRole) ? filterRole : undefined,
+      maybe: filterRole === 'Maybe',
       onSave: (name, type, tag, budget, notes, maybe, nextActionDate) => {
         const o = makeOutcome(name, type, tag, { maybe, nextActionDate });
+        if (filterRole === 'Today') starToday(o); // added while looking at Today → lands there
         applyBudgetSpec(o, budget);
         setOutcomeNotes(o.id, notes);
         outcomes.push(o);
@@ -3573,7 +3685,8 @@ For God alone my soul waits in silence. — Psalm 62:1`;
     const sel = selectedOutcome();
     if (selectedOutcomeId && !sel) clearSelection();
     else if (sel) {
-      if (selectedSubOutcome && !(sel.subs || []).includes(selectedSubOutcome)) selectedSubOutcome = null;
+      if (selectedMilestoneId && !selMilestone(sel)) selectedMilestoneId = null;
+      if (selectedSubOutcome && !stepScope(sel).subs.includes(selectedSubOutcome)) selectedSubOutcome = null;
       renderSubOutcomeRow(sel); updateSelectionLabels();
     }
     checkActiveControl();
@@ -3716,11 +3829,65 @@ For God alone my soul waits in silence. — Psalm 62:1`;
     },
   };
 
+  // ===== Backup — the same key → JSON-string map cloud sync pushes, wrapped with a
+  // version + timestamp. Restore swaps it in wholesale and marks it dirty so sync
+  // carries it to the cloud (and from there to the other devices). =====
+  const BACKUP_VERSION = 1;
+  document.getElementById('exportStoreBtn').addEventListener('click', () => {
+    const payload = { version: BACKUP_VERSION, app: 'abidingsteps', exportedAt: new Date().toISOString(), data: cloudSync.allData() };
+    const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = 'abidingsteps-store-' + todayKeyLocal() + '.json';
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+    document.getElementById('backupStatus').textContent = 'Downloaded ✓';
+  });
+  function applyBackup(payload) {
+    Object.keys(localStorage).forEach(k => {
+      if (k.startsWith(STORE_PREFIX) && !k.slice(STORE_PREFIX.length).startsWith('__local_')) localStorage.removeItem(k);
+    });
+    Object.keys(payload.data).forEach(k => {
+      if (!k.startsWith('__local_') && typeof payload.data[k] === 'string') localStorage.setItem(STORE_PREFIX + k, payload.data[k]);
+    });
+    cloudSync.markDirty();
+    refreshFromStore();
+    if (cloudSync.docRef && !cloudSync.paused) cloudSync.pushNow();
+    document.getElementById('backupStatus').textContent = 'Restored ✓' + (cloudSync.docRef ? ' — syncing to your other devices' : '');
+  }
+  document.getElementById('restoreStoreBtn').addEventListener('click', () => {
+    const input = document.createElement('input');
+    input.type = 'file'; input.accept = '.json,application/json'; input.style.display = 'none';
+    input.addEventListener('change', async () => {
+      input.remove(); // kept in the page until now — iOS drops the change event otherwise
+      const status = document.getElementById('backupStatus');
+      const file = input.files && input.files[0];
+      if (!file) return;
+      let payload;
+      try { payload = JSON.parse(await file.text()); } catch (e) { status.textContent = "That file isn't valid JSON."; return; }
+      if (!payload || typeof payload.data !== 'object' || !payload.data || typeof payload.data.outcomes !== 'string') {
+        status.textContent = "That doesn't look like an AbidingSteps store file."; return;
+      }
+      let list = [];
+      try { list = JSON.parse(payload.data.outcomes) || []; } catch (e) {}
+      const msCount = list.reduce((n, o) => n + ((o && o.milestones) || []).length, 0);
+      const when = payload.exportedAt ? new Date(payload.exportedAt).toLocaleString() : 'an unknown date';
+      openConfirmModal({
+        title: 'Replace this data?',
+        message: 'File from ' + when + ': ' + list.length + ' outcome' + (list.length === 1 ? '' : 's') + ', ' + msCount + ' milestone' + (msCount === 1 ? '' : 's')
+          + '. Everything here' + (cloudSync.docRef ? ' and on your other devices' : '') + ' is replaced by it.',
+        okLabel: 'Replace',
+        onOk: () => applyBackup(payload),
+      });
+    });
+    document.body.appendChild(input); input.click();
+  });
+
   // ===== startup — restore what this device saved, then (optionally) connect sync =====
   applySettingsToUI();
   (function restoreSelection() {
     const sel = store.get('__local_selection', null);
-    if (sel && findOutcome(sel.id)) selectOutcome(sel.id, { restore: true, sub: sel.sub });
+    if (sel && findOutcome(sel.id)) selectOutcome(sel.id, { restore: true, ms: sel.ms, sub: sel.sub });
     else switchNotesContext('_', null);
   })();
   store.onChange = () => { cloudSync.markDirty(); cloudSync.queuePush(); };

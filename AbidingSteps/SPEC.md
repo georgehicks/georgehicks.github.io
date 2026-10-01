@@ -17,6 +17,44 @@ correction are the working bet instead. See the ADHD-research discussion
 
 ## Data model
 
+### Outcome tree (2026-09-30 — supersedes the sketch below where they differ)
+
+```
+Destination | Directive        ← only two kinds (unset = Inbox, never auto-filed)
+  └─ 0+ Milestones             ← optional
+  └─ Steps                     ← allowed with no milestone
+Milestone
+  └─ Steps
+```
+
+As stored (`outcomes` key, synced as-is):
+
+```
+Outcome { id, t, type: 'Destination' | 'Directive' | null, tag: string | null,
+          budget, today, starredOn, completed, maybe, nextActionDate, lastWorked,
+          subs: string[],                      // steps directly on the outcome
+          milestones: Milestone[] }
+Milestone { id, t, completed, maybe, nextActionDate, lastWorked, subs: string[] }
+```
+
+- `Deliverable` was renamed `Destination`; `normalizeOutcomes` migrates old rows
+  (including ones written later by an older build on another device).
+- Step / Ahead / Abide are how a chunk is spent, not kinds.
+- Role tags (Roots/Resources/Reach/Reality) are an optional leftover label —
+  not required, not a filter. Ahead filters by horizon instead: Inbox (no kind)
+  · Today (starred) · Week (Later date ≤ 7 days) · Later (beyond that) · Maybe
+  · All.
+- Step's picker: after choosing an outcome, "change" shows its milestones (◆)
+  then the steps of whatever is chosen; tapping the chosen milestone again
+  steps back out. Notes key `outcomeId#milestoneId|step`.
+- Ahead's expanded row edits the tree in place: + step (outcome or milestone),
+  + milestone, mark a milestone done, remove a step or milestone.
+- Settings → Backup: **Download store JSON** = `{ version: 1, app, exportedAt,
+  data: cloudSync.allData() }` (synced keys only, values as stored JSON
+  strings). **Restore store JSON** confirms (shows counts + export date), then
+  replaces every synced key, marks dirty, and pushes — so it reaches other
+  devices too.
+
 ### Outcome
 The core unit of work — either an open-ended regimen or a thing with a
 finish line. Deliberately NOT a single "task" type; conflating directive and
