@@ -91,6 +91,17 @@ C.axes.mind.ticks.forEach(t => {
     : t.id === 'present_open' ? 'Home state: only reached by choosing it on "Pray about something else".' : null);
 });
 
+// ---- Feelings ----
+section('feelings', 'mind', 'Feelings — ' + C.axes.mind.feelingsLabel, 'Optional. The acknowledgment closes the truth; the opener starts the prayer, under that prayer’s own address. Never changes the verse or the recommendation.');
+const fp = el('div', 'place');
+C.axes.mind.feelings.forEach(f => {
+  fp.append(el('h3', null, f.label));
+  fp.append(el('p', 'truth', f.ack));
+  fp.append(el('p', 'prayer', '[Lord / Father / Jesus / Holy Spirit], ' + f.opener + ' …'));
+  if (f.coveredBy) fp.append(el('p', 'note', 'Skipped where the step already says it: ' + f.coveredBy.join(', ')));
+});
+out.append(fp);
+
 // ---- Body ----
 section('body', 'body', 'Body — ' + C.axes.body.question, 'Shown when the check-in starts with body (Taken states come first). The body verse is used when Spirit is Alive; otherwise the named sentence’s verse.');
 C.axes.body.ticks.forEach(t => place(t.label, t.helper, [C.verseByBody[t.id]], C.strategiesByBody[t.id],

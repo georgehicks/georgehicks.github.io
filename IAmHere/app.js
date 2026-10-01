@@ -329,8 +329,9 @@ const VIEWS = {
         visit.stepPick[key] = seen[key] = E.pickVariant(list.length, seen[key]);
         store.set(KEY.seen, seen);
       }
-      const st = list[visit.stepPick[key]] || list[0];
-      return [h('h2', { class: 'truth', text: st.truth }), h('p', { class: 'prayer', text: E.withFeeling(st.prayer, feelingLabel(loc.feeling)) })];
+      const feeling = loc.feeling && C.axes.mind.feelings.find(f => f.id === loc.feeling);
+      const st = E.composeStep(list[visit.stepPick[key]] || list[0], feeling, key);
+      return [h('h2', { class: 'truth', text: st.truth }), h('p', { class: 'prayer', text: st.prayer })];
     };
     // quiet, and only after a check-in that looks worrisome (never on the start screen)
     const danger = E.isWorrisome(visit) && h('p', { class: 'danger-line' }, withTel(C.crisis.line));

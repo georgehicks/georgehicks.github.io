@@ -41,18 +41,18 @@
         { "id": "past", "label": "Past" },
         { "id": "future", "label": "Future" }
       ],
-      "feelingsLabel": "Name a feeling (optional)",
+      "feelingsLabel": "And a feeling, if you can name one",
       "feelings": [
-        { "id": "anxious", "label": "Anxious" },
-        { "id": "sad", "label": "Sad" },
-        { "id": "angry", "label": "Angry" },
-        { "id": "ashamed", "label": "Ashamed" },
-        { "id": "guilty", "label": "Guilty" },
-        { "id": "lonely", "label": "Lonely" },
-        { "id": "numb", "label": "Numb" },
-        { "id": "joyful", "label": "Joyful" },
-        { "id": "grateful", "label": "Grateful" },
-        { "id": "peaceful", "label": "Peaceful" }
+        { "id": "anxious", "label": "Anxious", "ack": "You’re anxious, too. Anxiety pulls everything toward what might go wrong.", "opener": "I’m anxious." },
+        { "id": "sad", "label": "Sad", "ack": "There’s sadness here, too. It doesn’t need a reason to be real.", "opener": "I’m sad." },
+        { "id": "angry", "label": "Angry", "ack": "You’re angry, too. Anger usually means something that matters has been hurt.", "opener": "I’m angry, and I won’t hide it from You." },
+        { "id": "ashamed", "label": "Ashamed", "ack": "Shame is here, too, telling you that you are the problem.", "opener": "I feel ashamed. Look at me anyway." },
+        { "id": "guilty", "label": "Guilty", "ack": "You feel guilty, too. Guilt is how a living conscience speaks.", "opener": "I feel guilty. I bring You what I did." },
+        { "id": "lonely", "label": "Lonely", "ack": "Loneliness is here, too, and it makes everything heavier.", "opener": "I’m lonely.", "coveredBy": ["pin:alone"] },
+        { "id": "numb", "label": "Numb", "ack": "You feel numb, too. Sometimes numb is what’s left after feeling too much.", "opener": "I feel numb.", "coveredBy": ["mind:blank"] },
+        { "id": "joyful", "label": "Joyful", "ack": "There’s joy here, too, even alongside the rest. That’s worth noticing.", "opener": "thank You for the joy that’s here." },
+        { "id": "grateful", "label": "Grateful", "ack": "You’re grateful, too. Gratitude can sit right next to struggle.", "opener": "thank You for what I’m grateful for." },
+        { "id": "peaceful", "label": "Peaceful", "ack": "There’s some peace here, too.", "opener": "thank You for this peace." }
       ]
     }
   },

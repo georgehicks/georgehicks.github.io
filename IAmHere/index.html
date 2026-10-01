@@ -194,7 +194,8 @@
   /* PRD §8.2: Control must not share a visual bin with Rest */
   .not-taken { display: grid; gap: 8px; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); }
   .flavors { display: flex; gap: 8px; margin-top: 10px; flex-wrap: wrap; }
-  .feelings-label { font-size: 0.8rem; color: var(--ink-dim); margin: 14px 2px 6px; }
+  /* part of the Soul question, set off by a thin rule rather than tacked on */
+  .feelings-label { font-size: 0.92rem; font-weight: 600; color: var(--ink-dim); margin: 16px 2px 8px; padding-top: 14px; border-top: 1px solid color-mix(in srgb, var(--ink) 12%, transparent); }
   .feelings { display: flex; flex-wrap: wrap; gap: 6px; }
   .feelings .chip.pill { min-height: 40px; padding: 6px 12px; }
   .feelings .chip.pill .lbl { font-size: 0.85rem; font-weight: 400; }

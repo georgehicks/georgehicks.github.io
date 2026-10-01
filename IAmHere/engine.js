@@ -72,12 +72,16 @@ export function strategyFor(C, loc, axis, pinId) {
   const [kind, id] = stepKey(loc, axis, pinId).split(':');
   return (kind === 'body' ? C.strategiesByBody : kind === 'mind' ? C.strategiesByMind : C.strategiesByPin)[id];
 }
-// An optional named feeling goes right after the address, in the person's own voice:
-// "Lord, I'm holding on…" → "Lord, I feel anxious. I'm holding on…"
-export function withFeeling(prayer, feelingLabel) {
-  if (!feelingLabel) return prayer;
-  const i = prayer.indexOf(', ');
-  return i < 0 ? prayer : prayer.slice(0, i + 2) + 'I feel ' + feelingLabel.toLowerCase() + '. ' + prayer.slice(i + 2);
+// An optional named feeling is part of the step, not a label stuck on it: its acknowledgment
+// closes the truth ("…too", so it sits beside any place), and its opener starts the prayer
+// under the prayer's own address ("Holy Spirit, I feel numb. I have no words…"). Good
+// feelings open with thanks. A feeling the step already names (Lonely + "I'm on my own")
+// adds nothing.
+export function composeStep(step, feeling, key) {
+  if (!feeling || (feeling.coveredBy || []).includes(key)) return step;
+  const i = step.prayer.indexOf(', ');
+  const prayer = i < 0 ? step.prayer : step.prayer.slice(0, i + 2) + feeling.opener + ' ' + step.prayer.slice(i + 2);
+  return { truth: step.truth + ' ' + feeling.ack, prayer };
 }
 // a random version, never the one shown last time at this place
 export function pickVariant(count, last, rand = Math.random) {

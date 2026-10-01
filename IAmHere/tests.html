@@ -144,12 +144,23 @@ t('stand firm: 3 breaths each of Eph 6:10, Jas 4:7, 1 John 4:4, exact ESV fragme
     ['Submit yourselves therefore to God', 'Resist the devil, and he will flee from you'],
     ['he who is in you is greater', 'than he who is in the world']]);
 });
-t('a named feeling joins the prayer after the address, and changes nothing else', () => {
-  eq(E.withFeeling('Lord, I’m holding on as tight as I can.', 'Anxious'), 'Lord, I feel anxious. I’m holding on as tight as I can.');
-  eq(E.withFeeling('Holy Spirit, I have no words. Pray for me.', 'Numb'), 'Holy Spirit, I feel numb. I have no words. Pray for me.');
-  eq(E.withFeeling('Lord, x.', null), 'Lord, x.');
-  eq(E.recommendAxis({ ...L('rising', 'rest', 'present_narrowed'), feeling: 'angry' }), 'mind');
+t('a named feeling closes the truth and opens the prayer under its own address', () => {
+  const F = id => C.axes.mind.feelings.find(f => f.id === id);
+  const st = { truth: 'T.', prayer: 'Holy Spirit, I have no words. Pray for me.' };
+  eq(E.composeStep(st, F('sad'), 'body:freeze'), { truth: 'T. ' + F('sad').ack, prayer: 'Holy Spirit, I’m sad. I have no words. Pray for me.' });
+  eq(E.composeStep({ truth: 'T.', prayer: 'Lord, I have nothing left.' }, F('joyful'), 'body:collapse').prayer, 'Lord, thank You for the joy that’s here. I have nothing left.');
+  eq(E.composeStep(st, null, 'x'), st);
 });
+t('a feeling the step already names adds nothing (Lonely + "I’m on my own", Numb + Blank)', () => {
+  const st = C.strategiesByPin.alone[0], bl = C.strategiesByMind.blank[1];
+  eq(E.composeStep(st, C.axes.mind.feelings.find(f => f.id === 'lonely'), 'pin:alone'), st);
+  eq(E.composeStep(bl, C.axes.mind.feelings.find(f => f.id === 'numb'), 'mind:blank'), bl);
+});
+t('every feeling has an acknowledgment (“…too”) and a prayer opener', () => {
+  const bad = C.axes.mind.feelings.find(f => !/\btoo\b/.test(f.ack || '') || !f.opener);
+  return !bad || bad.id;
+});
+t('feelings never change the recommendation', () => eq(E.recommendAxis({ ...L('rising', 'rest', 'present_narrowed'), feeling: 'angry' }), 'mind'));
 t('the middle part is Soul, holding thoughts and feelings', () => C.axes.mind.label === 'Soul' && /feelings/.test(C.axes.mind.question) && C.copy.home.line.includes('soul present and open'));
 t('breath is 8 by default', () => eq(E.breathPlan({ loc: L('dying', 'rest', 'present_open') }).total, 8));
 t('no PRD shorthand left in the copy', () => {
