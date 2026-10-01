@@ -1,4 +1,4 @@
-const CACHE = 'iamhere-v48';
+const CACHE = 'iamhere-v49';
 const ASSETS = ['./', './index.html', './app.js', './engine.js', './content.json', './manifest.json', './icon.svg'];
 
 self.addEventListener('install', e => {

@@ -61,7 +61,7 @@
     { "id": "unloved", "label": "I’m not wanted here." },
     { "id": "unworthy", "label": "I have to get this right to be loved." },
     { "id": "unsafe", "label": "This feels like too much to stay in." },
-    { "id": "not_enough", "label": "This is more than I have." },
+    { "id": "not_enough", "label": "I’m not enough." },
     { "id": "no_trust", "label": "Nothing feels steady enough to trust." },
     { "id": "alone", "label": "I’m on my own in this." },
     { "id": "must_carry", "label": "It’s all on me to make this right." },
@@ -192,12 +192,12 @@
         "prayer": "Jesus, I’m afraid this is too much for me. Help me see what’s safe and what isn’t. Stay with me while I find out." }
     ],
     "not_enough": [
-      { "truth": "What’s being asked of you really might be more than you have. That isn’t a failure. It’s what it feels like to be human when the load is heavy.",
-        "prayer": "Lord, this is more than I have. Help me see what You’re actually asking of me. I don’t have to have enough. You do." },
-      { "truth": "You’re looking at what this requires and coming up short. That’s a scary place to stand.",
-        "prayer": "Father, I don’t have enough for this. Help me see what’s mine to do today. Show me what You’ve already given me." },
-      { "truth": "It feels like you’re failing before you’ve started. Being out of your depth is uncomfortable and humbling.",
-        "prayer": "Jesus, I feel out of my depth. Help me see this the way You do. Maybe weakness is where You meet me." }
+      { "truth": "“Not enough” goes deep. Not strong enough, not capable enough, not enough for the people counting on you. It feels less like a feeling and more like a fact about who you are.",
+        "prayer": "Lord, I don’t feel like enough. Help me see what’s true here. Maybe I was never meant to be enough on my own." },
+      { "truth": "You keep measuring yourself and coming up short. Maybe someone told you that, or maybe no one ever had to. That measuring doesn’t stop on its own.",
+        "prayer": "Father, I keep coming up short in my own eyes. Help me see how You see me. Your grace is enough, even where I’m not." },
+      { "truth": "What’s being asked of you really might be more than you have. That isn’t a verdict on who you are. It’s what it feels like to be human when the load is heavy.",
+        "prayer": "Jesus, I don’t have enough for this. Help me see what’s mine to do today. Maybe weakness is where You meet me." }
     ],
     "no_trust": [
       { "truth": "Nothing feels solid right now. When the ground keeps shifting, holding back your trust is a way of protecting yourself, and you’ve probably had reason to learn it.",
