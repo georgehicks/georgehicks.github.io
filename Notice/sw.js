@@ -1,4 +1,4 @@
-const CACHE = 'notice-v1';
+const CACHE = 'notice-v2';
 const ASSETS = ['./index.html', './manifest.json', './icon.svg'];
 
 self.addEventListener('install', e => {

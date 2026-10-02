@@ -278,8 +278,8 @@
   var LS_THEME = 'notice-theme';
 
   var PRESETS = {
-    emotions: ['Abandoned','Betrayed','Rejected','Attacked','Manipulated','Judged','Unappreciated','Ignored','Misunderstood','Neglected','Controlled','Unwanted','Used','Disrespected','Trapped','Humiliated','Threatened','Pressured','Excluded','Belittled','Cheated','Violated','Criticized','Loved','Resentful','Lost','Alone','Worthless','Broken','Hopeless','Unlovable','Failure','Powerless','Hate','Unforgiveness','Jealous','Frustrated'],
-    realemotions: ['Joyful','Angry','Grateful','Sad','Hopeful','Afraid','Calm','Ashamed','Peaceful','Guilty','Excited','Lonely','Safe','Overwhelmed','Content','Hurt','Worried','Uncertain','Confused','Disappointed','Embarrassed','Anxious','Relieved','Pleased'],
+    emotions: ['Abandoned','Betrayed','Rejected','Attacked','Manipulated','Judged','Unappreciated','Ignored','Misunderstood','Neglected','Controlled','Unwanted','Used','Disrespected','Trapped','Humiliated','Threatened','Pressured','Excluded','Belittled','Cheated','Violated','Criticized','Loved','Resentful','Lost','Alone','Worthless','Broken','Hopeless','Unlovable','Failure','Powerless','Hate','Unforgiveness','Jealous','Frustrated','Victimized','Wronged'],
+    realemotions: ['Joyful','Angry','Grateful','Sad','Hopeful','Afraid','Calm','Ashamed','Peaceful','Guilty','Excited','Lonely','Safe','Overwhelmed','Content','Hurting','Worried','Uncertain','Confused','Disappointed','Embarrassed','Anxious','Relieved','Pleased'],
     needs: ['Connection','Autonomy','Rest','Recognition','Clarity','Trust','Space','Purpose','Belonging','Acceptance','Safety','Growth'],
     values: ['Honesty','Courage','Balance','Freedom','Integrity','Creativity','Stability','Justice','Compassion','Loyalty','Ambition','Humility'],
     identity: ['Chosen','Lost','Beloved','Condemned','Forgiven','Unworthy','Redeemed','Free','Rejected','Righteous','Orphaned','Powerful','Strong','Divided','Whole','Deceived']
@@ -298,9 +298,9 @@
     sad: { scripture: { ref: "Psalm 34:18", text: "The Lord is near to the brokenhearted and saves the crushed in spirit." },
       dark: "Sadness numbed or hidden becomes a wall between you and everyone around you.",
       light: "Sadness brought honestly to God is met, not judged — He stays close to the brokenhearted." },
-    hurt: { scripture: { ref: "Psalm 147:3", text: "He heals the brokenhearted and binds up their wounds." },
+    hurting: { scripture: { ref: "Psalm 147:3", text: "He heals the brokenhearted and binds up their wounds." },
       dark: "Hurt left untended doesn't disappear — it just waits, and usually comes out sideways as anger or distance.",
-      light: "Named honestly, hurt is exactly what God says He binds up — He's not put off by the wound, He moves toward it." },
+      light: "Named honestly, hurting is exactly what God says He binds up — He's not put off by the wound, He moves toward it." },
     hopeful: { scripture: { ref: "Romans 15:13", text: "May the God of hope fill you with all joy and peace in believing." },
       dark: "Hope pinned to one outcome you can't control will eventually break your heart.",
       light: "Hope anchored in God doesn't need the outcome to arrive to already be steady." },
@@ -627,7 +627,15 @@
     hate: { scripture: { ref: "1 John 4:20", text: "If anyone says, 'I love God,' and hates his brother, he is a liar." },
       judgment: "\"Hate\" is a verdict that someone deserves your contempt, not a feeling itself — the feeling underneath is usually old anger, or a hurt that never got grieved.",
       dark: "Hate convinces you it's protecting something — but it always ends up destroying the one who carries it.",
-      light: "You can't hate someone made in God's image and stay close to the God whose image they carry." }
+      light: "You can't hate someone made in God's image and stay close to the God whose image they carry." },
+    victimized: { scripture: { ref: "Romans 12:19", text: "Beloved, never avenge yourselves, but leave it to the wrath of God, for it is written, 'Vengeance is mine, I will repay,' says the Lord." },
+      judgment: "\"Victimized\" names a verdict that someone wronged you — true or not, it's a claim about them, not a feeling in you. The feeling underneath is usually anger, grief, or fear.",
+      dark: "Holding the victim verdict can quietly become the whole story you tell about yourself, long after the actual event has passed.",
+      light: "You don't have to secure justice yourself — settling the score was never actually your job to carry." },
+    wronged: { scripture: { ref: "Colossians 3:13", text: "bearing with one another and, if one has a complaint against another, forgiving each other; as the Lord has forgiven you, so you also must forgive." },
+      judgment: "\"Wronged\" is a verdict that someone owes you a debt for what they did — the feeling underneath is usually anger, or grief over what was taken or broken.",
+      dark: "Keeping an accurate account of who wronged you can feel like justice, but it quietly turns you into the debt's permanent collector.",
+      light: "Forgiveness doesn't erase the debt's reality — it just hands the collecting to God instead of carrying it yourself." }
   };
 
   var HINT_DEFAULT = 'Notice which word pulls your attention. Tap it.';
