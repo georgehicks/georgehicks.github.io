@@ -401,7 +401,8 @@
       "title": "Links",
       "kind": "Study",
       "apps": [
-        {"id": "with", "title": "With", "body": "An app to practice being with God.", "url": "https://georgehicks.github.io/With/"}
+        {"id": "with", "title": "With", "body": "An app to practice being with God.", "url": "https://georgehicks.github.io/With/"},
+        {"id": "notice", "title": "Notice", "body": "A noticing exercise: sit with one word at a time.", "url": "https://georgehicks.github.io/Notice/"}
       ],
       "appKind": "App",
       "showFull": "Show the full page",
