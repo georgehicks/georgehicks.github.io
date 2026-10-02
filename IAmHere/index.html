@@ -180,6 +180,24 @@
   /* a study: the page images fill the column; full pages get a hairline so page edges read */
   /* ---------- a study: George's page in a frame, as wide as it was made to be ---------- */
   body.wide #app { max-width: 1164px; }
+  /* ---------- passage sheet (a Links reference, read in the app) ---------- */
+  .sheet-scrim {
+    position: fixed; inset: 0; z-index: 50; display: flex; align-items: flex-end; justify-content: center;
+    background: rgba(0, 0, 0, 0); transition: background 0.25s ease;
+  }
+  .sheet-scrim.open { background: rgba(0, 0, 0, 0.4); }
+  .sheet {
+    width: 100%; max-width: 440px; max-height: 80vh; max-height: 80dvh; overflow-y: auto; outline: none;
+    background: var(--paper-raised); color: var(--ink); border-radius: 18px 18px 0 0;
+    padding: 22px 20px calc(16px + env(safe-area-inset-bottom)); display: flex; flex-direction: column; gap: 14px;
+    transform: translateY(100%); transition: transform 0.28s ease;
+  }
+  .sheet-scrim.open .sheet { transform: none; }
+  html.reduce-motion .sheet, html.reduce-motion .sheet-scrim { transition: none; }
+  .passage { font-size: 1.12rem; line-height: 1.55; display: flex; flex-direction: column; gap: 10px; }
+  .passage-verse sup { font-size: 0.7em; color: var(--ink-faint); font-weight: 600; }
+  .sheet .esv-notice { font-size: 0.72rem; color: var(--ink-faint); line-height: 1.4; margin-top: 0; }
+
   .study-frame-wrap { width: calc(100% + 32px); margin: 0 -16px; overflow: hidden; min-height: 40vh; }
   .study-frame { display: block; width: 100%; border: 0; background: transparent; transform-origin: 0 0; }
   .study-frame.full { width: 860px; }

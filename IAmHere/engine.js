@@ -175,16 +175,15 @@ export function buildSession(v, { breathsCompleted, saved }) {
   };
 }
 
-// "John 10:16; 17:21; Ephesians 2:14–16" → one link per reference, each opening that passage
-// in the ESV. A reference with no book ("17:21") carries the book before it.
-export function refLinks(refs) {
+// "John 10:16; 17:21; Ephesians 2:14–16" → one entry per reference: the label as written and the
+// full key ("John 17:21") that names its passage in verses.json. A reference with no book
+// ("17:21") carries the book before it.
+export function refParts(refs) {
   let book = null;
   return refs.split(/;\s*/).map(label => {
     const m = /^((?:\d )?[A-Za-z]+(?: [A-Za-z]+)*) (\d.*)$/.exec(label);
     if (m) book = m[1];
-    const where = m ? m[2] : label;
-    const url = 'https://www.esv.org/' + (book + ' ' + where).replace(/–/g, '-').replace(/ /g, '+') + '/';
-    return { label, url };
+    return { label, key: m ? label : book + ' ' + label };
   });
 }
 

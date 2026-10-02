@@ -124,6 +124,7 @@ window.addEventListener('hashchange', () => {
 
 const NEEDS_VISIT = ['pin', 'strategy', 'breathe', 'home-state', 'again'];
 function render(requested) {
+  closeSheet(true);
   if (teardown) { teardown(); teardown = null; }
   let route = requested;
   // a study inside the app: #/links/<id>
@@ -527,8 +528,47 @@ const VIEWS = {
 // ===================== a study, inside the app =====================
 // George's own HTML studies, shown in a frame under the app's Back (an installed iPhone app
 // opening a page directly leaves no way back). Narrow screens get his phone layout, wide ones
-// his full sheet; a link swaps them. Each <span class="ref"> becomes ESV links once loaded,
+// his full sheet; a link swaps them. Each <span class="ref"> becomes tap targets once loaded
+// (the passage opens in a sheet over the study, from verses.json — ESV, never leaving the app),
 // so his files stay untouched and new versions can simply be dropped in.
+// verses.json: exact ESV text for every reference in the studies, saved with the app (and cached
+// by the service worker), so a passage opens instantly and offline. { "John 3:16": [[16, "…"]] }
+let versesLoad = null;
+const loadVerses = () => versesLoad || (versesLoad = fetch('verses.json').then(r => r.json()).catch(() => { versesLoad = null; return {}; }));
+
+// The passage sheet: slides up over the study. The phone's Back, Escape, a tap outside, or Close
+// all dismiss it (opening adds one history step so Back closes the sheet, not the study).
+let sheet = null;
+function openPassage(key, verses) {
+  closeSheet(true);
+  const K = C.copy.links;
+  const body = verses.map(([n, text]) => h('p', { class: 'passage-verse' },
+    verses.length > 1 && h('sup', { text: n }), verses.length > 1 && ' ', text));
+  const closeBtn = btn(K.close, () => closeSheet(), 'quiet');
+  const panel = h('div', { class: 'sheet', role: 'dialog', 'aria-modal': 'true', 'aria-labelledby': 'sheet-ref', tabindex: '-1' },
+    h('h2', { id: 'sheet-ref', text: key }),
+    h('div', { class: 'passage' }, body),
+    h('p', { class: 'fine esv-notice', text: K.esvNotice }),
+    closeBtn);
+  const scrim = h('div', { class: 'sheet-scrim', onclick: ev => { if (ev.target === scrim) closeSheet(); } }, panel);
+  const onKey = ev => { if (ev.key === 'Escape') closeSheet(); };
+  document.addEventListener('keydown', onKey);
+  sheet = { scrim, onKey, pushed: true };
+  history.pushState({ sheet: true }, '');
+  document.body.append(scrim);
+  requestAnimationFrame(() => { scrim.classList.add('open'); panel.focus({ preventScroll: true }); });
+}
+// quiet = tearing down for a new sheet or a route change: no history step to undo
+function closeSheet(quiet) {
+  if (!sheet) return;
+  const { scrim, onKey, pushed } = sheet;
+  sheet = null;
+  document.removeEventListener('keydown', onKey);
+  scrim.remove();
+  if (pushed && !quiet && history.state && history.state.sheet) history.back();
+}
+window.addEventListener('popstate', () => { if (sheet) { sheet.pushed = false; closeSheet(true); } });
+
 const NARROW = 860; // the full sheet is 8.5in (816px) wide
 const studyLayout = {}; // a layout picked by hand, per study, for this session
 function studyView(it) {
@@ -545,17 +585,20 @@ function studyView(it) {
     st.textContent = 'html, body { background: transparent !important; } .phone { width: auto !important; max-width: 430px; min-height: 0 !important; }'
       + ' .ref a { color: inherit; text-decoration: underline; text-decoration-color: color-mix(in srgb, currentColor 40%, transparent); text-underline-offset: 2px; }';
     doc.head.append(st);
-    doc.querySelectorAll('.ref').forEach(span => {
-      const links = E.refLinks(span.textContent.trim());
-      span.replaceChildren(...links.flatMap((l, i) => {
+    loadVerses().then(verses => doc.querySelectorAll('.ref').forEach(span => {
+      const parts = E.refParts(span.textContent.trim());
+      span.replaceChildren(...parts.flatMap((p, i) => {
+        if (!verses[p.key]) return i ? ['; ', p.label] : [p.label];
         const a = doc.createElement('a');
-        a.href = l.url; a.target = '_blank'; a.rel = 'noopener'; a.textContent = l.label;
+        a.href = '#'; a.setAttribute('role', 'button'); a.textContent = p.label;
+        a.addEventListener('click', ev => { ev.preventDefault(); openPassage(p.key, verses[p.key]); });
         return i ? ['; ', a] : [a];
       }));
-    });
+      fit();
+    }));
     // the frame is as tall as the page; the full sheet renders at its real width and, on a
     // narrow screen, the whole frame is scaled down to fit (pinch-zoom to read closely)
-    const fit = () => {
+    function fit() {
       if (layout === 'full') {
         // sheets differ in width (8.5in, 1100px…): render the frame as wide as the sheet itself
         const natural = Math.max(doc.documentElement.scrollWidth, doc.body.scrollWidth);
@@ -566,7 +609,7 @@ function studyView(it) {
       frame.style.height = docH + 'px';
       frame.style.transform = scale < 1 ? 'scale(' + scale + ')' : '';
       wrap.style.height = Math.ceil(docH * scale) + 'px';
-    };
+    }
     fit();
     if (window.ResizeObserver) new ResizeObserver(fit).observe(doc.body);
   });

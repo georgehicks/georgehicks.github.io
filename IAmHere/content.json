@@ -402,7 +402,9 @@
       "kind": "Study",
       "showFull": "Show the full page",
       "showPhone": "Show the phone layout",
-      "refHint": "Tap a reference to read it in the ESV.",
+      "refHint": "Tap a reference to read it here.",
+      "close": "Close",
+      "esvNotice": "Scripture quotations are from the ESV® Bible (The Holy Bible, English Standard Version®), © 2001 by Crossway, a publishing ministry of Good News Publishers. Used by permission. All rights reserved.",
       "items": [
         {"id": "inner-and-outer-man", "title": "Inner and Outer Man", "body": "Body, soul, and spirit: how they fit together, and the words Scripture uses for them.", "mobile": "studies/inner-and-outer-man-mobile.html", "full": "studies/inner-and-outer-man.html"},
         {"id": "not-quite", "title": "Not Quite", "body": "Why the world feels unfinished: the room He left, the mercy, the rescue, and the measure Jesus uses.", "mobile": "studies/not-quite-mobile.html", "full": "studies/not-quite.html"},
