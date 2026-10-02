@@ -178,7 +178,10 @@ const VIEWS = {
     );
   },
 
-  // ---------- /links : one-page studies (PDFs, saved for offline with the app) ----------
+  // ---------- /links : one-page studies ----------
+  // The PDFs live OUTSIDE the app's scope (/IAmHere-links/): an installed iPhone app opens an
+  // in-scope PDF in its own window with no way back, but opens out-of-scope links in a Safari
+  // panel with a Done button. (So the studies need a connection; the app itself stays offline.)
   links() {
     const K = C.copy.links;
     return h('section', { class: 'view' },

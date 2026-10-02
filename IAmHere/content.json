@@ -400,9 +400,9 @@
     "links": {
       "title": "Links",
       "items": [
-        { "title": "Inner and Outer Man", "body": "Body, soul, and spirit: how they fit together, and the words Scripture uses for them.", "href": "links/Inner-and-Outer-Man-mobile.pdf", "full": "links/Inner-and-Outer-Man.pdf" },
-        { "title": "Why Off", "body": "Why the world feels unfinished: the room He left, the mercy, and the rescue.", "href": "links/Why-Off-mobile.pdf", "full": "links/Why-Off.pdf" },
-        { "title": "Why He Came, and What He Is Up To", "body": "Jesus’ errand in Scripture’s own lines, and what He is still doing.", "href": "links/Why-He-Came-mobile.pdf", "full": "links/Why-He-Came-and-What-He-Is-Up-To.pdf" }
+        { "title": "Inner and Outer Man", "body": "Body, soul, and spirit: how they fit together, and the words Scripture uses for them.", "href": "../IAmHere-links/Inner-and-Outer-Man-mobile.pdf", "full": "../IAmHere-links/Inner-and-Outer-Man.pdf" },
+        { "title": "Why Off", "body": "Why the world feels unfinished: the room He left, the mercy, and the rescue.", "href": "../IAmHere-links/Why-Off-mobile.pdf", "full": "../IAmHere-links/Why-Off.pdf" },
+        { "title": "Why He Came, and What He Is Up To", "body": "Jesus’ errand in Scripture’s own lines, and what He is still doing.", "href": "../IAmHere-links/Why-He-Came-mobile.pdf", "full": "../IAmHere-links/Why-He-Came-and-What-He-Is-Up-To.pdf" }
       ],
       "kind": "PDF",
       "fullLabel": "Full page for printing"
