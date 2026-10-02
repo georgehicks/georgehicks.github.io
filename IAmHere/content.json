@@ -405,7 +405,7 @@
       "refHint": "Tap a reference to read it in the ESV.",
       "items": [
         {"id": "inner-and-outer-man", "title": "Inner and Outer Man", "body": "Body, soul, and spirit: how they fit together, and the words Scripture uses for them.", "mobile": "studies/inner-and-outer-man-mobile.html", "full": "studies/inner-and-outer-man.html"},
-        {"id": "why-off", "title": "Why Off", "body": "Why the world feels unfinished: the room He left, the mercy, and the rescue.", "mobile": "studies/why-off-mobile.html", "full": "studies/why-off.html"},
+        {"id": "not-quite", "title": "Not Quite", "body": "Why the world feels unfinished: the room He left, the mercy, the rescue, and the measure Jesus uses.", "mobile": "studies/not-quite-mobile.html", "full": "studies/not-quite.html"},
         {"id": "why-he-came", "title": "Why He Came, and What He Is Up To", "body": "Jesus’ errand in Scripture’s own lines, and what He is still doing.", "mobile": "studies/why-he-came-mobile.html", "full": "studies/why-he-came.html"}
       ]
     },
