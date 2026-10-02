@@ -1,5 +1,6 @@
-const CACHE = 'iamhere-v50';
+const CACHE = 'iamhere-v51';
 const ASSETS = ['./', './index.html', './app.js', './engine.js', './content.json', './manifest.json', './icon.svg',
+  './links/Inner-and-Outer-Man-mobile.pdf', './links/Why-Off-mobile.pdf', './links/Why-He-Came-mobile.pdf',
   './links/Inner-and-Outer-Man.pdf', './links/Why-Off.pdf', './links/Why-He-Came-and-What-He-Is-Up-To.pdf'];
 
 self.addEventListener('install', e => {

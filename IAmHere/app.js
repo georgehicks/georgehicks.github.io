@@ -184,11 +184,13 @@ const VIEWS = {
     return h('section', { class: 'view' },
       link(C.copy.back, () => go('start'), 'back'),
       h('h2', { text: K.title, style: 'margin-bottom:14px' }),
-      h('div', { class: 'paths' }, K.items.map(it =>
+      // the card opens the phone-sized PDF; the full page (more verses, for printing) sits just below
+      h('div', { class: 'paths' }, K.items.map(it => h('div', { class: 'link-item' },
         h('a', { class: 'path', href: it.href, target: '_blank', rel: 'noopener' },
           h('span', { class: 'path-title', text: it.title }),
           h('span', { class: 'path-body', text: it.body }),
-          h('span', { class: 'path-kind', text: K.kind })))),
+          h('span', { class: 'path-kind', text: K.kind })),
+        it.full && h('a', { class: 'link-full', href: it.full, target: '_blank', rel: 'noopener', text: K.fullLabel })))),
     );
   },
 
