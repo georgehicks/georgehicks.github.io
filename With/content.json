@@ -1,0 +1,2069 @@
+{
+ "meta": {
+  "name": "With",
+  "versesFile": false
+ },
+ "copy": {
+  "wordmark": "With",
+  "back": "Back",
+  "tabs": {
+   "practice": "Practice",
+   "way": "What's in the way?",
+   "review": "Review",
+   "more": "More"
+  },
+  "start": {
+   "line": "Get still. Bring one real thing to Him. Ask. Write down whatever comes. Test it. Keep it.",
+   "begin": "Begin",
+   "beginLine": "Breathe, then bring one thing to Him.",
+   "continue": "Continue where you left off",
+   "last": "Your last session",
+   "connectedOnly": "Just the breath, nothing after",
+   "why": "Why practice?",
+   "way": "What's in the way?"
+  },
+  "connected": {
+   "cont": "I'm here. Continue.",
+   "alone": "Done",
+   "progress": "Breaths"
+  },
+  "run": {
+   "back": "Back",
+   "counter": "Step {n} of {total}",
+   "stopRest": "Stop and rest",
+   "gladPlace": "Back to the glad place",
+   "notSure": "Not sure?",
+   "nothingCame": "Nothing came?",
+   "starters": "Sentence starters",
+   "cont": "Continue",
+   "hint": "Show a hint",
+   "stepNow": "Next step"
+  },
+  "care": {
+   "stop": "Stop and rest",
+   "cont": "Continue"
+  },
+  "mic": {
+   "start": "Dictate",
+   "stop": "Stop dictating"
+  },
+  "passage": {
+   "open": "Read on esv.org",
+   "close": "Close",
+   "read": "Read it",
+   "esvNotice": ""
+  },
+  "done": {
+   "title": "Saved.",
+   "review": "See it in Review",
+   "done": "Done",
+   "reminder": "A daily reminder is one calendar event, repeating once a day at the hour you pick.",
+   "reminderAdd": "Add a daily reminder",
+   "notNow": "Not now"
+  },
+  "why": {
+   "prev": "Back",
+   "next": "Next"
+  },
+  "more": {
+   "title": "More",
+   "commonLine": "Quiet answers to a few common questions",
+   "referencesLine": "The books behind the practices",
+   "safety": "Safety"
+  },
+  "review": {
+   "title": "Review",
+   "empty": "Nothing here yet.",
+   "all": "All",
+   "answered": "God answered",
+   "godAnswered": "God answered",
+   "markAnswered": "Mark as God answered",
+   "answeredHow": "A line about how.",
+   "removeMark": "Remove the mark",
+   "editKeep": "Edit",
+   "save": "Save",
+   "cancel": "Cancel",
+   "delete": "Delete this session",
+   "deleteAll": "Delete all sessions",
+   "deleteBody": "Delete this session from this device? It can't be undone.",
+   "deleteAllBody": "Delete every session from this device? It can't be undone.",
+   "deleteYes": "Delete",
+   "deleteNo": "Keep",
+   "export": "Export",
+   "exportPdf": "Export PDF",
+   "exportText": "Save as text",
+   "copyText": "Copy text",
+   "copied": "Copied",
+   "from": "From",
+   "to": "To",
+   "rangeNote": "Leave the dates empty to export everything.",
+   "continue": "Continue this session",
+   "nothingYet": "Nothing yet",
+   "rounds": "Passes",
+   "status": {
+    "open": "Unfinished",
+    "resting": "Resting",
+    "complete": "Complete"
+   }
+  },
+  "export": {
+   "exported": "Exported",
+   "print": "Print or save as PDF",
+   "fileName": "with-sessions.txt",
+   "blocked": "A new window did not open. Allow pop-ups for this app, then try again.",
+   "copyFailed": "The text could not be copied. Save it as a file instead."
+  },
+  "settings": {
+   "title": "Settings",
+   "theme": "Theme",
+   "themes": [
+    {
+     "id": "auto",
+     "label": "Auto"
+    },
+    {
+     "id": "light",
+     "label": "Light"
+    },
+    {
+     "id": "dark",
+     "label": "Dark"
+    }
+   ],
+   "largeType": "Larger type",
+   "reduceMotion": "Reduce motion",
+   "tone": "Breath sound",
+   "guidance": "Guidance",
+   "guidanceOpts": [
+    {
+     "id": "fade",
+     "label": "Fade"
+    },
+    {
+     "id": "always",
+     "label": "Always show"
+    },
+    {
+     "id": "hide",
+     "label": "Hide"
+    }
+   ],
+   "guidanceHelp": "Fade shows coaching for your first few sessions, then folds it behind a small ?.",
+   "reminder": "Daily reminder",
+   "reminderOff": "Off",
+   "reminderAdd": "Add to my calendar",
+   "showGated": "Show all paths and pages",
+   "clear": "Clear all data",
+   "clearBody": "Clear every session and setting from this device? It can't be undone.",
+   "clearYes": "Clear",
+   "clearNo": "Keep",
+   "about": "Everything stays on this device. Nothing is sent anywhere.",
+   "refresh": "Refresh the app",
+   "refreshing": "Refreshing…",
+   "version": "Version"
+  }
+ },
+ "safety": {
+  "line": "If you are in danger, call or text 988 in the US.",
+  "careLines": [
+   "Tell a trusted person.",
+   "If you hear voices that aren't like your own thoughts, are distressing or give commands, that deserves a doctor's care and not a prayer form."
+  ],
+  "keywords": [
+   "kill myself",
+   "end my life",
+   "take my life",
+   "suicide",
+   "suicidal",
+   "want to die",
+   "wanna die",
+   "hurt myself",
+   "harm myself",
+   "self-harm",
+   "self harm",
+   "cut myself",
+   "don't want to live",
+   "no reason to live",
+   "better off dead",
+   "end it all",
+   "voices telling me",
+   "voice telling me",
+   "told me to hurt",
+   "telling me to hurt",
+   "telling me to kill"
+  ]
+ },
+ "connected": {
+  "verses": [
+   {
+    "text": "Be still, and know that I am God.",
+    "ref": "Psalm 46:10"
+   },
+   {
+    "text": "My sheep hear My voice.",
+    "ref": "John 10:27"
+   },
+   {
+    "text": "I am with you always.",
+    "ref": "Matthew 28:20"
+   },
+   {
+    "text": "Come to Me, and I will give you rest.",
+    "ref": "Matthew 11:28"
+   },
+   {
+    "text": "Be still before the Lord and wait.",
+    "ref": "Psalm 37:7"
+   }
+  ],
+  "caption": "Before you pray, bow quietly before God, just to remember and realize who He is, how near He is.",
+  "captionSource": "Andrew Murray, *Waiting on God*, Fourth Day",
+  "breaths": 4
+ },
+ "expectation": {
+  "line": "It's often small: a thought, a word, a verse, a picture, a settled feeling. It's okay if it's quiet.",
+  "ref": "John 10:27",
+  "refText": "My sheep hear My voice",
+  "seeLink": "See how He speaks"
+ },
+ "afterAnswer": {
+  "line": "It may sound like your own thoughts. That's often how it comes. Write it down and test it."
+ },
+ "starters": [
+  "I think I heard...",
+  "What stood out was..."
+ ],
+ "steps": {
+  "bring": {
+   "type": "bring",
+   "title": "What are you bringing to Him?",
+   "coach": "One thing, in your own words. It can be one word.",
+   "notSure": "not_sure_there"
+  },
+  "know": {
+   "type": "ask",
+   "title": "God, what do You want me to know about this?",
+   "pause": "Reach, then listen.",
+   "label": "What came?",
+   "expect": true,
+   "coach": "Write whatever comes, even if slight.",
+   "notSure": "how_know"
+  },
+  "do": {
+   "type": "ask",
+   "title": "God, what do You want me to do?",
+   "pause": "Reach, then listen.",
+   "label": "What came?",
+   "coach": "Write whatever comes, even if slight.",
+   "notSure": "how_know"
+  },
+  "more": {
+   "type": "more",
+   "title": "Is there more?",
+   "yes": "Yes",
+   "no": "No",
+   "notSure": "tried_nothing"
+  },
+  "followup": {
+   "type": "followup",
+   "title": "Ask Him anything",
+   "uncounted": true,
+   "pause": "Reach, then listen.",
+   "label": "What came?",
+   "coach": "Ask in your own words, or start from one of these.",
+   "prompts": [
+    "What do You think of me?",
+    "What do You want me to know?",
+    "What do You want me to do?"
+   ],
+   "notSure": "tried_nothing"
+  },
+  "test": {
+   "type": "test",
+   "notSure": "how_know"
+  },
+  "keep": {
+   "type": "keep",
+   "notSure": "how_know"
+  }
+ },
+ "paths": {
+  "quick": {
+   "title": "Quick",
+   "credit": "Inspired by Jamie and Donna Winship",
+   "line": "Bring one thing, ask what He wants you to know and do, test it, keep it.",
+   "flow": [
+    "bring",
+    "know",
+    "do",
+    "more",
+    "test",
+    "keep"
+   ]
+  },
+  "deeper": {
+   "title": "Deeper",
+   "credit": "Inspired by Karl and Charlotte Lehman",
+   "line": "Start from a memory that is simply good, welcome Jesus, then bring the thing.",
+   "flow": [
+    "glad",
+    "appreciate",
+    "welcome",
+    "bring",
+    "know",
+    "do",
+    "more",
+    "test",
+    "keep"
+   ],
+   "gladPlaceKey": "appreciate",
+   "heavyNote": "This app is a poor place for deep trauma work. A trained person is the right help.",
+   "defs": {
+    "glad": {
+     "type": "bring",
+     "title": "Is there a memory that is simply good?",
+     "prompts": [
+      "What do you see?",
+      "What do you hear?",
+      "What do you feel?",
+      "Who is there?"
+     ],
+     "coach": "If you see something, write it. If you don't, that's fine.",
+     "notSure": "not_sure_there",
+     "heavy": true,
+     "remember": true
+    },
+    "appreciate": {
+     "type": "appreciate",
+     "title": "What do you appreciate most?",
+     "coach": "Stay until it's felt.",
+     "yes": "Continue",
+     "notYet": "Not yet",
+     "notSure": "not_sure_there",
+     "remember": true
+    },
+    "welcome": {
+     "type": "ask",
+     "title": "Jesus, I know You were with me here. I welcome You now. Help me perceive Your presence.",
+     "pause": "Reach, then listen.",
+     "label": "Describe whatever comes, even if slight.",
+     "coach": "If you see something, write it. If you don't, that's fine.",
+     "notSure": "not_sure_there",
+     "remember": true
+    }
+   }
+  },
+  "healing": {
+   "title": "Healing",
+   "credit": "Inspired by Charles Kraft",
+   "gated": true,
+   "line": "Ask God for a memory He wants to heal. It sits behind the breath and the glad place.",
+   "flow": [
+    "ready",
+    "ask",
+    "see",
+    "jesus",
+    "gave",
+    "forgave",
+    "lietruth",
+    "feel",
+    "again",
+    "test",
+    "keep"
+   ],
+   "gladPlaceFrom": "see",
+   "defs": {
+    "ready": {
+     "type": "ready",
+     "title": "Before you begin",
+     "checks": [
+      {
+       "id": "breath",
+       "label": "I did the breath.",
+       "go": "Go to the breath"
+      },
+      {
+       "id": "glad",
+       "label": "I have found my glad place.",
+       "go": "Go to the glad place"
+      }
+     ],
+     "lines": [
+      "You can stop at any time.",
+      "This is not for the worst things alone."
+     ],
+     "cta": "Continue",
+     "notSure": "not_good_enough"
+    },
+    "ask": {
+     "type": "ask",
+     "title": "Holy Spirit, is there a memory You want to heal today?",
+     "pause": "Reach, then listen.",
+     "label": "What came?",
+     "coach": "A thought, image, feeling, a place or a person all count.",
+     "nothing": {
+      "line": "If nothing comes, you may ask again, or choose a different path. Nothing is not a failure.",
+      "again": "Ask again",
+      "other": "Choose a different path"
+     },
+     "notSure": "tried_nothing",
+     "remember": true
+    },
+    "see": {
+     "type": "bring",
+     "title": "Just enough: where are you, how old, who is there, what is happening?",
+     "coach": "A short box, not a full replay.",
+     "notSure": "not_good_enough",
+     "remember": true
+    },
+    "jesus": {
+     "type": "ask",
+     "title": "Jesus, where were You?",
+     "pause": "Reach, then listen.",
+     "label": "What do you see or sense?",
+     "coach": "Not seeing is allowed. Ask: What is in the way?",
+     "notSure": "not_sure_there",
+     "remember": true
+    },
+    "gave": {
+     "type": "bring",
+     "title": "Tell Him what it was like. Give it to Him.",
+     "label": "What happened when you did?",
+     "coach": "Say it in your own words.",
+     "notSure": "not_good_enough"
+    },
+    "forgave": {
+     "type": "bring",
+     "title": "Is there anyone you need to forgive? Ask Jesus if you are ready, and what He wants.",
+     "label": "What came?",
+     "coach": "Forgiving is your own choice, not a step to complete.",
+     "optional": true,
+     "notSure": "not_good_enough"
+    },
+    "lietruth": {
+     "type": "lietruth",
+     "title": "Lies and truth",
+     "lieTitle": "What did you come to believe about yourself or God in that moment?",
+     "truthTitle": "Jesus, what is true?",
+     "pause": "Reach, then listen.",
+     "coach": "The truth is what you receive, not something the app supplies.",
+     "notSure": "how_know"
+    },
+    "feel": {
+     "type": "scale",
+     "title": "How does that memory feel now?",
+     "options": [
+      {
+       "id": "heavy",
+       "label": "Heavy"
+      },
+      {
+       "id": "lighter",
+       "label": "Lighter"
+      },
+      {
+       "id": "peace",
+       "label": "Peace"
+      }
+     ],
+     "noteLabel": "A note, if you want one.",
+     "notSure": "not_good_enough"
+    },
+    "again": {
+     "type": "again",
+     "title": "Ask again.",
+     "uncounted": true,
+     "body": "Jesus, is there more here, or something else You want to heal?",
+     "options": [
+      {
+       "id": "jesus",
+       "label": "Where is Jesus?"
+      },
+      {
+       "id": "gave",
+       "label": "Give Him the hurt"
+      },
+      {
+       "id": "lietruth",
+       "label": "Lies and truth"
+      },
+      {
+       "id": "ask",
+       "label": "Another memory"
+      }
+     ],
+     "heavy": "If it is heavy, or you are tired, go to the glad place and rest.",
+     "done": "I'm done for today",
+     "notSure": "not_good_enough"
+    }
+   },
+   "rest": {
+    "title": "Rest here.",
+    "lines": [
+     "You can stop at any time.",
+     "This app is a poor place for deep trauma work. A trained person is the right help."
+    ],
+    "glad": "Go to the glad place",
+    "done": "Done for today"
+   },
+   "feelNotes": {
+    "peace": "Peace: on to Test and Keep."
+   }
+  },
+  "daily": {
+   "title": "Daily",
+   "credit": "For ordinary moments",
+   "line": "A short, repeatable path for ordinary moments.",
+   "flow": [
+    "moment",
+    "dailyask",
+    "test",
+    "keep"
+   ],
+   "defs": {
+    "moment": {
+     "type": "moment",
+     "title": "Choose a moment",
+     "options": [
+      {
+       "id": "morning",
+       "label": "Morning",
+       "prompt": "Good morning. What do You want me to know today?"
+      },
+      {
+       "id": "decision",
+       "label": "A decision",
+       "prompt": "What do You want me to know about this? What is the next faithful step?",
+       "coach": "Then wait, write, check against Scripture."
+      },
+      {
+       "id": "scripture",
+       "label": "After Scripture",
+       "prompt": "What are You saying to me in this?"
+      },
+      {
+       "id": "someone",
+       "label": "Praying for someone",
+       "prompt": "What do You want me to say, or do for them?",
+       "coach": "Notice what comes."
+      },
+      {
+       "id": "evening",
+       "label": "Evening",
+       "prompt": "Thank You for today. What was You, and what did I miss?"
+      },
+      {
+       "id": "other",
+       "label": "Other"
+      }
+     ],
+     "otherOptions": [
+      {
+       "id": "work",
+       "label": "Work or chores",
+       "prompt": "Lord, I'm with You in this."
+      },
+      {
+       "id": "conflict",
+       "label": "Conflict",
+       "prompt": "What do You see here? What do You want me to know about this person?"
+      },
+      {
+       "id": "failed",
+       "label": "When you've failed",
+       "prompt": "I'm sorry.",
+       "coach": "Then listen for the Father's response, which the Bible says is to run toward you (Luke 15:20)."
+      },
+      {
+       "id": "anything",
+       "label": "Ask Him anything",
+       "prompt": "Ask Him anything."
+      }
+     ],
+     "notSure": "not_sure_there"
+    },
+    "dailyask": {
+     "type": "ask",
+     "title": "",
+     "pause": "Reach, then listen.",
+     "label": "What came?",
+     "coach": "Write whatever comes, even if slight.",
+     "notSure": "how_know"
+    },
+    "test": {
+     "type": "test",
+     "glance": true,
+     "notSure": "how_know"
+    },
+    "keep": {
+     "type": "keep",
+     "optional": true,
+     "notSure": "how_know"
+    }
+   }
+  },
+  "journaling": {
+   "title": "Journaling",
+   "credit": "Inspired by Jim Wilder and colleagues",
+   "gated": true,
+   "line": "Write what you perceive, step by step.",
+   "intro": "A template modeled on God's words to Moses.",
+   "framing": "You are writing what you perceive. You are not telling Him what to say.",
+   "flow": [
+    "gratitude",
+    "bring",
+    "see_you",
+    "hear_you",
+    "understand",
+    "glad_you",
+    "do_you",
+    "test",
+    "keep"
+   ],
+   "defs": {
+    "gratitude": {
+     "type": "bring",
+     "title": "Thank Him for something.",
+     "label": "What came?",
+     "coach": "Stay until it's felt.",
+     "notSure": "not_sure_there"
+    },
+    "see_you": {
+     "type": "ask",
+     "title": "I see you",
+     "pause": "Reach, then listen.",
+     "label": "What came?",
+     "notSure": "how_know"
+    },
+    "hear_you": {
+     "type": "ask",
+     "title": "I hear you",
+     "pause": "Reach, then listen.",
+     "label": "What came?",
+     "notSure": "how_know"
+    },
+    "understand": {
+     "type": "ask",
+     "title": "I understand",
+     "pause": "Reach, then listen.",
+     "label": "What came?",
+     "notSure": "how_know"
+    },
+    "glad_you": {
+     "type": "ask",
+     "title": "I am glad to be with you",
+     "pause": "Reach, then listen.",
+     "label": "What came?",
+     "notSure": "how_know"
+    },
+    "do_you": {
+     "type": "ask",
+     "title": "I can do something about it",
+     "pause": "Reach, then listen.",
+     "label": "What came?",
+     "notSure": "how_know"
+    }
+   }
+  }
+ },
+ "test": {
+  "top": "You reached. Now test.",
+  "lead": "Three things to look at, when you're ready.",
+  "questions": [
+   {
+    "id": "scripture",
+    "name": "Scripture",
+    "text": "Does it agree with what Scripture says?"
+   },
+   {
+    "id": "jesus",
+    "name": "Jesus",
+    "text": "Does it point to Jesus? Does it make me proud, or demand that I be sure?"
+   },
+   {
+    "id": "love",
+    "name": "Love",
+    "text": "Does it lead toward love for God and for people? Peace can take time, and conviction can be real. If I can't tell, I don't decide alone."
+   },
+   {
+    "id": "trusted",
+    "name": "Someone I trust",
+    "text": "Have I told someone I trust?"
+   }
+  ],
+  "options": [
+   {
+    "id": "yes",
+    "label": "Yes"
+   },
+   {
+    "id": "unsure",
+    "label": "Not sure"
+   },
+   {
+    "id": "no",
+    "label": "No"
+   }
+  ],
+  "noteLabel": "A note, if you want one.",
+  "no": "This is a reason to set it down and talk with a pastor, priest, spiritual director or mature friend.",
+  "unsure": "Hold it lightly. You don't have to decide alone. Bring it to someone you trust.",
+  "repeated": "This can be a heavy way to read yourself. Rest is allowed, and a counselor or pastor can help.",
+  "gladPlace": "Back to the glad place",
+  "takeBreak": "Take a break",
+  "cta": "Continue"
+ },
+ "standing": {
+  "title": "Three things to look at, when you're ready",
+  "lines": [
+   "Does it agree with Scripture?",
+   "Does it point to Jesus? And does it make me proud, or demand that I be sure?",
+   "Does it lead toward love for God and for people? Peace can take time, and conviction can be real. If I can't tell, I don't decide alone.",
+   "Have I told someone I trust?"
+  ]
+ },
+ "keep": {
+  "title": "What will you keep?",
+  "nextLabel": "A small next step, if there is one.",
+  "after": "Come back and see how it holds up.",
+  "cta": "Finish",
+  "notes": [
+   "This is your attempt to listen. It isn't God's dictation. Hold it loosely.",
+   "If it touches your marriage, your children, your health or medication, a large sum of money, or a choice that can't be undone, don't act on it alone and don't act on it quickly. Ask the people who love you."
+  ]
+ },
+ "how": {
+  "title": "How did it come?",
+  "ways": [
+   {
+    "id": "thought",
+    "label": "A thought",
+    "speaks": "thought",
+    "plain": "quiet thoughts"
+   },
+   {
+    "id": "scripture",
+    "label": "A verse",
+    "speaks": "scripture",
+    "plain": "verses"
+   },
+   {
+    "id": "picture",
+    "label": "A picture or memory",
+    "speaks": "picture",
+    "plain": "pictures and memories"
+   },
+   {
+    "id": "peace",
+    "label": "A feeling or peace",
+    "speaks": "peace",
+    "plain": "peace"
+   },
+   {
+    "id": "person",
+    "label": "A person",
+    "speaks": "person",
+    "plain": "other people"
+   },
+   {
+    "id": "circumstance",
+    "label": "Something that happened",
+    "speaks": "circumstance",
+    "plain": "things that happened"
+   },
+   {
+    "id": "unsure",
+    "label": "Not sure",
+    "speaks": null,
+    "plain": null
+   },
+   {
+    "id": "nothing",
+    "label": "Nothing yet",
+    "speaks": null,
+    "plain": null
+   }
+  ],
+  "pattern": "You've noticed God mostly through {a} and {b}.",
+  "patternOne": "You've noticed God mostly through {a}."
+ },
+ "nothing": {
+  "title": "Nothing came?",
+  "lead": "That's okay. Silence is allowed.",
+  "leadRefs": "Psalm 62:1, 1 Kings 19:12",
+  "lewis": "The silence is often so emphatic.",
+  "lewisSource": "C. S. Lewis, *Letters to Malcolm*, Letter 11",
+  "intro": "Three things to try, one at a time:",
+  "items": [
+   "Wait one more breath.",
+   "Write what you do notice, even a blank, a word, a body feeling.",
+   "Ask Him: What is in the way?",
+   "Look at How He speaks. It may have come in a way you didn't count: a verse, a memory, a person, a calm, something that happened.",
+   "Thank Him for something and come back later. Not hearing today doesn't mean He isn't speaking."
+  ],
+  "next": "Next",
+  "markNothing": "Nothing yet is a fine answer",
+  "close": "Close",
+  "speaksLink": "See how He speaks"
+ },
+ "remember": "You never have to picture anything. Remembering, noticing or simply asking is enough. Skip any step that asks for more than you want to give.",
+ "objections": {
+  "title": "What's in the way?",
+  "full": "What's in the way? Answering Objections",
+  "intro": "Does He really want to talk with me?",
+  "footLine": "This is a prayer aid. You need a church, a pastor or priest, a friend, and sometimes a counselor or doctor. This doesn't replace any of them.",
+  "cards": [
+   {
+    "id": "not_sure_there",
+    "status": "draft",
+    "q": "I'm not sure God is there, or that He'd talk with me.",
+    "a": "Yes. You don't need to be certain. A man once told Jesus, \"I believe; help my unbelief,\" and Jesus helped him. You can treat this as asking honestly and seeing what happens. No one is asking you to pretend. You can also just sit quietly and say nothing at all. That's a prayer too.",
+    "refs": "Mark 9:24, Matthew 7:7.",
+    "sheet": true,
+    "see": [
+     {
+      "label": "The Life",
+      "to": "why/life"
+     }
+    ],
+    "seeAssigned": true,
+    "try": {
+     "text": "\"God, if You're there, I'd like to know You.\""
+    }
+   },
+   {
+    "id": "not_good_enough",
+    "status": "draft",
+    "q": "I'm not good enough for Him to speak to me.",
+    "a": "God's love isn't a reward for being good. The father in Jesus' story ran to meet a son who had wasted everything, before he had finished his speech. You are invited to come near. If you are carrying something specific, you can tell Him. He already knows.",
+    "refs": "Luke 15:20, Romans 5:8, Hebrews 4:16.",
+    "sheet": true,
+    "see": [
+     {
+      "label": "The Life",
+      "to": "why/life"
+     }
+    ],
+    "seeAssigned": true
+   },
+   {
+    "id": "pastors_mystics",
+    "status": "draft",
+    "q": "Isn't this just for pastors or mystics?",
+    "a": "Jesus talked about His sheep, not His staff. The new covenant promise is that all of them will know Him, from the least to the greatest. Hearing Him grows with practice, like any friendship, and quiet seasons are part of that too.",
+    "refs": "John 10:3–5, Romans 8:14, Jeremiah 31:34 (knowing Him).",
+    "sheet": true,
+    "see": [
+     {
+      "label": "The Life",
+      "to": "why/life"
+     }
+    ],
+    "seeAssigned": true
+   },
+   {
+    "id": "tried_nothing",
+    "status": "draft",
+    "q": "I tried and nothing happened.",
+    "a": "That's common, and it doesn't mean something is wrong with you. Many faithful people have had long quiet seasons. Elijah, after his worst week, was first fed and allowed to sleep, and only then heard a whisper. Sometimes the kindest thing is rest. You can try the \"Nothing came?\" page, or just thank Him for something and come back another day. If the silence hurts, tell Him that. The Psalms do.",
+    "refs": "1 Kings 19:5–13, Psalm 13:1–2, Habakkuk 2:1.",
+    "sheet": true,
+    "see": [
+     {
+      "label": "How He speaks",
+      "to": "why/speaks"
+     }
+    ],
+    "seeAssigned": true,
+    "try": {
+     "text": "\"Nothing came?\"",
+     "to": "nothing"
+    }
+   },
+   {
+    "id": "bible_church",
+    "status": "draft",
+    "q": "Hasn't God already spoken in the Bible? My church doesn't teach this.",
+    "a": "The Bible is God's word and the standard for everything. Nothing here adds to it, and if something you hear disagrees with it, put it down. Jesus also said His sheep hear His voice, and He promised the Spirit would teach and remind. Christians have understood this in different ways, and many good churches teach it differently. You don't have to leave yours or take on a label. If you try this, bring what you write to your pastor, priest, spiritual director, or someone mature in your church, and let them help you weigh it.",
+    "refs": "Acts 17:11, John 10:27, John 14:26, Proverbs 11:14.",
+    "sheet": true,
+    "see": [
+     {
+      "label": "The Case",
+      "to": "why/case"
+     }
+    ]
+   },
+   {
+    "id": "how_know",
+    "status": "draft",
+    "q": "How do I know it's Him, and not me or something else?",
+    "a": "It may be your own thoughts. Often that's how God speaks, through a mind He made. You don't have to be sure. Ask: does it agree with Scripture? Does it honor Jesus? Does it ask me to hurt anyone, or to hide something from people who love me? Write it down, and tell someone you trust. If it asks something big, wait. If it only leaves you feeling heavy, that alone doesn't tell you who it's from. When you can't tell, don't decide alone. Put it down and come back another day.",
+    "refs": "1 Thessalonians 5:20–21, 1 John 4:1–3.",
+    "sheet": true,
+    "see": [
+     {
+      "label": "The Reach of Faith",
+      "to": "why/reach"
+     }
+    ],
+    "try": {
+     "text": "the Test step."
+    }
+   }
+  ],
+  "close": {
+   "line": "Is something else in the way? Tell Him. That is a fine first prayer.",
+   "tryLabel": "What's in the way?",
+   "tryButton": "Try this",
+   "done": "Done",
+   "careLead": "If this is heavy or frightening, see",
+   "careLink": "When it's heavy"
+  },
+  "cardLabels": {
+   "see": "See",
+   "try": "Try this",
+   "offer": "Want to try one question?",
+   "tryIt": "Try it"
+  }
+ },
+ "common": {
+  "title": "Common questions",
+  "status": "draft",
+  "cards": [
+   {
+    "id": "new_age",
+    "status": "draft",
+    "q": "Isn't this New Age or visualization?",
+    "a": "Some Christians have real concerns about methods that rely on imagination, and your pastor, priest or spiritual director is a good person to talk with. This app doesn't ask you to picture anything. It asks you to remember, to ask, and to write what you notice. You are talking to a person, God, and you test what comes against His Word. You can skip any step.",
+    "refs": "1 John 4:1.",
+    "sheet": false,
+    "see": [
+     {
+      "label": "The Case, step 9",
+      "to": "why/case/9"
+     }
+    ],
+    "seeAssigned": true
+   },
+   {
+    "id": "jesus_in_room",
+    "status": "draft",
+    "q": "Is Jesus \"in the room\"? He's in heaven.",
+    "a": "Jesus is risen and at the Father's right hand. He also said, \"I am with you always,\" and that He and the Father would come and make their home with the one who loves Him. This app doesn't ask you to summon Him or picture Him. You can simply welcome Him and ask Him to be near.",
+    "refs": "Matthew 28:20, John 14:18, John 14:23.",
+    "sheet": false,
+    "see": [
+     {
+      "label": "Scripture",
+      "to": "why/scripture"
+     }
+    ],
+    "seeAssigned": true
+   },
+   {
+    "id": "arrogant",
+    "status": "draft",
+    "q": "Isn't it arrogant to say God speaks to me?",
+    "a": "Many humble people feel this. Hearing isn't a sign that you are special. It's what sheep do, and sheep aren't remarkable. Holding what you hear loosely (\"I think... I may be wrong\") fits the posture. Listening is one of the humblest things a person can do.",
+    "refs": "1 Samuel 3:9–10, Luke 1:38.",
+    "sheet": false,
+    "see": [
+     {
+      "label": "The Life",
+      "to": "why/life"
+     }
+    ],
+    "seeAssigned": true
+   },
+   {
+    "id": "hebrews_cease",
+    "status": "draft",
+    "q": "Doesn't Hebrews say God has spoken by His Son? Doesn't prophecy cease?",
+    "a": "Hebrews says God has spoken finally in His Son, and nothing here adds to Him. Christians have long read 1 Corinthians 13 in different ways. Some believe prophecy ended with the apostles, and some believe it continues until we see Him face to face. You can stay where you are. If you want to see why this app leans the second way, The Case lays it out.",
+    "refs": "Hebrews 1:1–2, John 16:13–15, 1 Corinthians 13:8–12.",
+    "sheet": false,
+    "see": [
+     {
+      "label": "The Case, step 8",
+      "to": "why/case/8"
+     }
+    ]
+   }
+  ]
+ },
+ "care": {
+  "title": "When it's heavy",
+  "gated": true,
+  "exit": "You can close the app.",
+  "sections": [
+   {
+    "title": "If something frightening comes.",
+    "body": "If what you hear or see frightens you, tells you to hurt yourself or anyone else, feels like it's watching or controlling you, or comes when you haven't slept or your mind is racing, stop, and tell someone today: a doctor, a counselor, a pastor, a friend. Prayer is not a substitute for care, and you haven't done anything wrong. We'll be here when you're ready.",
+    "refs": "1 Corinthians 14:33"
+   },
+   {
+    "title": "If you live with anxiety, depression, OCD, bipolar or trauma.",
+    "body": "It can be safe, gently. Tell your counselor or doctor you're trying it. Don't change or stop any medication because of something you think you heard. If quiet or testing makes your mind louder, or you keep going round and round asking whether it was God, stop and close the app. Rest and care are not a lack of faith. Elijah was fed and slept before he heard anything.",
+    "refs": "1 Kings 19:5–8"
+   },
+   {
+    "title": "If quiet brings up loud things.",
+    "body": "Then stillness isn't safe for you right now, and that isn't your failure. Keep your eyes open, keep a light on, keep it short. Use the glad place, or stop. Many people need a counselor to help them find quiet safely.",
+    "refs": "Psalm 46:1, Matthew 11:28"
+   },
+   {
+    "title": "If you're grieving.",
+    "body": "Grief is welcome here, and you can bring all of it to God, including the wish for one more word from the one you lost. This app is for listening to God. Scripture asks us not to seek the dead for answers, and it also promises that God is near to the brokenhearted. A pastor, a counselor or a friend can sit with you.",
+    "refs": "Deuteronomy 18:10–12, Psalm 34:18, John 11:35, 1 Thessalonians 4:13–14"
+   },
+   {
+    "title": "If you've been hurt by a spiritual leader.",
+    "body": "I'm sorry. That should never have happened to you. Nobody has the right to tell you what God said. There's no leader here and nothing to join. You decide what to write and what to keep. A counselor who understands spiritual abuse can help.",
+    "refs": "Matthew 23:8–10, Ezekiel 34"
+   },
+   {
+    "title": "If someone told you God said something about you.",
+    "body": "Weigh it. You don't have to obey it, or even accept it. Test it like anything else, with Scripture, prayer, and people who know you. A word that needs you to hurry, keep it secret, or pull away from people who love you is a reason to slow down.",
+    "refs": "1 Thessalonians 5:20–21"
+   },
+   {
+    "title": "If you're angry, or hurting and it feels like silence.",
+    "body": "Then tell Him. The Psalms are full of honest anger and He kept them in the Bible. Anger told to God is still talking to God. You don't have to be polite, and you don't have to hear anything back today.",
+    "refs": "Psalm 13:1–2, Psalm 62:8, John 11:21, 35"
+   }
+  ]
+ },
+ "case": {
+  "title": "The Case",
+  "status": "draft",
+  "progress": "Step {n} of {total}",
+  "steps": [
+   {
+    "title": "From the beginning, God talks with the people He loves.",
+    "body": [
+     "He walked in the garden and spoke with Adam and Eve (Genesis 3:8–9). He spoke with Abraham, called \"the friend of God\" (Isaiah 41:8, James 2:23). He spoke with Moses \"face to face, as a man speaks to his friend\" (Exodus 33:11). Samuel was a boy when the LORD called him by name (1 Samuel 3). Speaking is how this God relates to His people. The only question is whether that stopped."
+    ]
+   },
+   {
+    "title": "The promise of the new covenant is that this goes wider, not narrower.",
+    "body": [
+     "Moses wished that all the LORD's people were prophets and that He would put His Spirit on them (Numbers 11:29). Jeremiah promised a covenant in which \"they shall all know me, from the least of them to the greatest\" (Jeremiah 31:33–34, quoted in Hebrews 8:10–11). Joel promised the Spirit on all flesh, and Peter said at Pentecost that this was now (Joel 2:28–29, Acts 2:16–18). It is a promise about everyday believers, not about a gifted few."
+    ]
+   },
+   {
+    "title": "Jesus said it plainly, and He said it to ordinary people.",
+    "body": [
+     {
+      "list": [
+       "\"My sheep hear My voice, and I know them, and they follow Me\" (John 10:27; also 10:3–5, 10:16).",
+       "\"I have called you friends, for all that I have heard from my Father I have made known to you\" (John 15:15). Friends are told what the Master is doing, and servants aren't.",
+       "\"No one knows the Father except the Son and anyone to whom the Son chooses to reveal Him\" (Matthew 11:27).",
+       "The Spirit \"will teach you all things and bring to your remembrance all that I have said\" (John 14:26), \"will guide you into all the truth\" and \"declare to you the things that are to come\" (John 16:13)."
+      ]
+     },
+     "Jesus did not teach this as a secret. He taught it as ordinary life with Him."
+    ]
+   },
+   {
+    "title": "Jesus lived this way Himself.",
+    "body": [
+     "\"The Son can do nothing of His own accord, but only what He sees the Father doing\" (John 5:19). \"I do nothing on My own authority, but speak just as the Father taught Me\" (John 8:28). He rose early to pray (Mark 1:35) and spent whole nights in prayer before choosing the Twelve (Luke 6:12). If the Son of God lived by listening, listening isn't beneath us."
+    ]
+   },
+   {
+    "title": "The apostles and the early church expected and practiced it.",
+    "body": [
+     "It happens on almost every page of Acts: Philip is told to go to the chariot (8:26, 29). Ananias, an otherwise unknown disciple, hears the Lord in a vision, answers, and even argues (9:10–16). Peter is told, \"Behold, three men are looking for you\" (10:19). The Spirit speaks while the church worships (13:2), forbids a route and gives a vision (16:6–10), and shows a prophet what's coming (21:10–11). The council writes, \"It seemed good to the Holy Spirit and to us\" (15:28). These were not the apostles only. Ananias and the believers at Antioch were ordinary."
+    ]
+   },
+   {
+    "title": "The letters assume every believer can hear, and tell us to practice.",
+    "body": [
+     {
+      "list": [
+       "\"All who are led by the Spirit of God are sons of God\" (Romans 8:14). You can't be led without hearing.",
+       "\"The Spirit Himself bears witness with our spirit that we are children of God\" (Romans 8:16). \"God has sent the Spirit of His Son into our hearts, crying 'Abba! Father!'\" (Galatians 4:6).",
+       "\"We have received the Spirit who is from God, that we might understand the things freely given us by God… we have the mind of Christ\" (1 Corinthians 2:12, 16).",
+       "\"You have been anointed by the Holy One… His anointing teaches you about everything\" (1 John 2:20, 27).",
+       "\"Earnestly desire the spiritual gifts, especially that you may prophesy\" (1 Corinthians 14:1). \"You can all prophesy one by one\" (14:31).",
+       "\"Today, if you hear His voice, do not harden your hearts\" (Hebrews 3:7–8, quoting Psalm 95). That is written to believers, as a standing instruction.",
+       "\"Keep in step with the Spirit\" (Galatians 5:25). \"Do not quench the Spirit\" (1 Thessalonians 5:19).",
+       "\"He who has an ear, let him hear what the Spirit says to the churches\" (Revelation 2:7, and six more times in chapters 2–3).",
+       "Discernment is learned by use: \"those who have their powers of discernment trained by constant practice\" (Hebrews 5:14). Scripture expects a practiced ear, and that means practice."
+      ]
+     },
+     "Hearing is assumed, commanded and trained. That does not mean a person who hears little is failing. Quiet seasons are part of the walk, and Scripture has them too (see *What's in the way?*)."
+    ]
+   },
+   {
+    "title": "Scripture also tells us to test everything, which is why we do.",
+    "body": [
+     "\"Test everything; hold fast what is good\" (1 Thessalonians 5:21). \"Do not believe every spirit, but test the spirits\" (1 John 4:1). Let the others \"weigh what is said\" (1 Corinthians 14:29). The Bereans were praised for checking even Paul against the Scriptures (Acts 17:11). Testing is not a reason to avoid hearing. It is how hearing is kept safe. That is the Test step in every path."
+    ]
+   },
+   {
+    "title": "The strongest objections, answered.",
+    "body": [
+     {
+      "q": "\"Hebrews 1:1–2 says God 'has spoken to us by His Son.' Isn't that the end?\""
+     },
+     "Yes. The Son is God's final and complete word, and nothing here adds to Him. But the same Son says the Spirit will take what is His and declare it to us (John 16:13–15). The writer of Hebrews goes on to say, \"Today, if you hear His voice\" (3:7). Final revelation and ongoing hearing are not opposed.",
+     {
+      "q": "\"Revelation 22:18–19 says not to add to the book.\""
+     },
+     "Right. Hearing God does not add to Scripture, and it never gets the same authority. It doesn't give new doctrine. It applies what is already given to a particular life, as every sermon and prayer does. Closing the canon is not the same as God going quiet.",
+     {
+      "q": "\"2 Timothy 3:16–17 says Scripture equips for every good work.\""
+     },
+     "It does, and it never says that God has stopped speaking in any other way. Scripture itself shows God speaking beyond what was then written, and the Bereans tested every word, including Paul's, against Scripture.",
+     {
+      "q": "\"1 Corinthians 13:8–10 says prophecy will cease.\""
+     },
+     "It does: \"when the perfect comes.\" Paul explains what that means in verse 12: \"then face to face.\" That has not happened. We still see in a mirror dimly, so we still need what helps us now. Faithful Christians read this differently, and this is the reading we hold.",
+     {
+      "q": "\"Isn't it dangerous?\""
+     },
+     "It can be, and that is why Scripture adds the test. Counterfeits are not an argument against the real. They are an argument for discernment. The answer to forged banknotes is not to stop using money."
+    ]
+   },
+   {
+    "title": "A word about what is and isn't claimed.",
+    "body": [
+     "Scripture teaches that God speaks and that we are to listen, test and obey. It does not prescribe the particular forms this app offers: a breath, a glad memory, a set of questions, a journal. Those are practical help drawn from teachers who have found them useful. Use what helps. Leave what doesn't."
+    ]
+   }
+  ],
+  "last": {
+   "title": "That's the case.",
+   "body": "That's the case. If it holds, the next question is how. Want to try one question?"
+  },
+  "note": "The Case never calls opponents unfaithful. It says: faithful Christians disagree, and here is why we believe this reading is right."
+ },
+ "reach": {
+  "title": "The Reach of Faith",
+  "status": "draft",
+  "screens": [
+   {
+    "title": "You've already done this.",
+    "body": [
+     "Anyone who has prayed, believed a promise, taken a verse to heart, or felt a prompting to call someone has reached. Hearing God has always been that."
+    ]
+   },
+   {
+    "title": "Every hearing is a reach, even between people.",
+    "body": [
+     "A letter from a friend, a voice on the phone, a text. You trust the sender, you interpret the words, and you respond. You can't make it airtight first. If you refused to trust until you had proof, you'd never hear anyone. Hearing always involves interpretation, and interpretation always involves trust."
+    ]
+   },
+   {
+    "title": "Even Scripture.",
+    "body": [
+     "We don't just read the Bible the way we read a manual and call that hearing God. The Bible shows study without hearing, and hearing that needed something more:",
+     {
+      "list": [
+       "The leaders who searched the Scriptures and still would not come to Jesus (John 5:39–40).",
+       "The two on the Emmaus road, who knew the Scriptures and still didn't see until He opened them to them. Afterward: \"Did not our hearts burn within us?\" (Luke 24:25–27, 32, 45).",
+       "The Ethiopian reading Isaiah: \"How can I, unless someone guides me?\" (Acts 8:30–31).",
+       "Lydia, whose heart \"the Lord opened to pay attention\" (Acts 16:14).",
+       "\"The word they heard did not benefit them, because they were not united by faith with those who listened\" (Hebrews 4:2).",
+       "The soils: the same seed, different hearing (Matthew 13:1–23). \"Take care then how you hear\" (Luke 8:18).",
+       "\"The natural person does not accept the things of the Spirit of God\" (1 Corinthians 2:14). We have \"received the Spirit who is from God, that we might understand\" (2:12).",
+       "\"Open my eyes, that I may behold wondrous things out of your law\" (Psalm 119:18)."
+      ]
+     },
+     "Reading Scripture as God's voice is itself a reach: trusting that He is speaking in it, perceiving what He is saying to me, and answering."
+    ]
+   },
+   {
+    "title": "Three trusts in every hearing.",
+    "body": [
+     {
+      "list": [
+       "**The listening.** That I can actually perceive. \"My sheep hear My voice\" (John 10:27).",
+       "**The message.** That what I perceived is what was said, which is why we test.",
+       "**The sender.** That it is really Him, and that He is good, and wants to be heard. \"Whoever would draw near to God must believe that He exists and that He rewards those who seek Him\" (Hebrews 11:6). Also John 7:17."
+      ]
+     },
+     "These can't be proven before we start. They are tested by walking in them."
+    ]
+   },
+   {
+    "title": "What stirs, and the answer to it.",
+    "body": [
+     "Scripture often describes hearing as something stirred within us, which we then answer.",
+     {
+      "list": [
+       "\"Everyone whose spirit God had stirred\" (Ezra 1:5). \"The LORD stirred up the spirit of Zerubbabel\" (Haggai 1:14).",
+       "\"You have said, 'Seek My face.' My heart says to You, 'Your face, LORD, do I seek'\" (Psalm 27:8). A word, and a heart that answers it.",
+       "People \"cut to the heart\" (Acts 2:37), and hearts that burned (Luke 24:32)."
+      ]
+     },
+     "The practice, then, is to notice what stirs, and to answer it: ask, write, take a small step. Hearing without response isn't completed hearing (James 1:22–25; John 10:27 goes on, \"and they follow Me\")."
+    ]
+   },
+   {
+    "title": "A reach is not a leap in the dark.",
+    "body": [
+     "Reaching and testing are two hands.",
+     {
+      "list": [
+       "Reach without testing is credulity.",
+       "Testing without reaching never hears. The leaders had the text and missed the Man."
+      ]
+     },
+     "The Test step in every path is the second hand. Scripture is the measure, mature believers help, and fruit shows over time. The app asks for both."
+    ]
+   },
+   {
+    "title": "What we're asking you to do.",
+    "body": [
+     "Not to be certain first. To reach: to call Him \"Thou,\" to say \"Speak, Lord, I'm listening,\" and to see what stirs. Then to test, and to answer."
+    ]
+   }
+  ],
+  "claimsTitle": "What it claims, and what it does not.",
+  "claims": [
+   "It claims that the *posture* is the same for Scripture and for a quiet impression: trust in the listening, in the message, and in the sender, and a response.",
+   "It does not claim the *authority* is the same. Scripture is the measure. Everything else is measured by it. See The Case, step 7.",
+   "It does not make Scripture subjective. Scripture's meaning is what the text says. The page is about what it takes to *receive* it as God's word and be changed by it, a point the church has long called **illumination**.",
+   "It does not belittle study. Careful reading is good, and the Bereans modeled it (Acts 17:11). The point is that study alone isn't yet hearing."
+  ],
+  "witnessesTitle": "Witnesses for this page",
+  "witnesses": [
+   {
+    "who": "Spurgeon",
+    "quote": "They can hear, because they have had spiritual ears given them. Once the Shepherd might have spoken all day long and they would not have heard Him.",
+    "source": "Sermon 2120, 1889, on John 10:27"
+   },
+   {
+    "who": "Lewis",
+    "quote": "He speaks as 'I' when we truly call Him 'Thou.'",
+    "source": "*Letters to Malcolm*, Letter 4"
+   },
+   {
+    "who": "Tozer",
+    "quote": "with the idea that it is not only a book which was once spoken, but a book which is now speaking.",
+    "source": "*The Pursuit of God*",
+    "lead": "Approach the Bible "
+   },
+   {
+    "who": "Augustine",
+    "quote": "Thou calledst, and shoutedst, and burstest my deafness.",
+    "source": "*Confessions* 10.27"
+   },
+   {
+    "who": "Murray",
+    "quote": "Wait on God until you know you have met Him; prayer will then become so different.",
+    "source": "*Waiting on God*, Fourth Day"
+   },
+   {
+    "who": "Chambers",
+    "quote": "Whether or not I hear God's call depends upon the state of my ears; and what I hear depends upon my disposition.",
+    "source": "\"Called of God\", utmost.org (Modern Classic edition)",
+    "url": "https://utmost.org/classic/called-of-god-classic/"
+   },
+   {
+    "who": "Chambers",
+    "quote": "The goal of my spiritual life is such close identification with Jesus Christ that I will always hear God.",
+    "source": "\"The Devotion of Hearing\", utmost.org",
+    "url": "https://utmost.org/the-devotion-of-hearing"
+   }
+  ],
+  "last": "Want to try one question?"
+ },
+ "speaks": {
+  "title": "How He speaks",
+  "status": "draft",
+  "framing": "This isn't a rulebook or a ranking. Scripture doesn't give a list, and God isn't limited to one way. These are the common ways He speaks, so you know what to notice. He often uses several together, and every one is tested the same way, and every one is a reach of faith.",
+  "labels": {
+   "inScripture": "In Scripture",
+   "witnesses": "Witnesses",
+   "test": "Test",
+   "try": "Try this"
+  },
+  "ways": [
+   {
+    "id": "scripture",
+    "title": "Through Scripture",
+    "note": "the plainest and most reliable",
+    "what": "A verse or passage that comes alive, answers the question you brought, or keeps returning to mind.",
+    "scripture": "Luke 24:27, 32 (the Emmaus road: \"Did not our hearts burn within us while He talked to us on the road, while He opened to us the Scriptures?\"). Hebrews 4:12. Matthew 4:4 (Jesus answered by the Word). Psalm 119:105.",
+    "witnesses": "Tozer, \"a book which is now speaking.\" Ambrose, \"We hear Him when we read the divine saying.\" Müller, who sought God's will \"through the instrumentality of the Word of God.\"",
+    "test": "It must mean what the passage actually means in context.",
+    "try": "Read a short passage slowly and ask, \"What are You saying to me in this?\""
+   },
+   {
+    "id": "thought",
+    "title": "A quiet thought or impression",
+    "note": "the most common",
+    "what": "A thought that arrives with weight. A word, a phrase, a settled \"knowing.\" It often sounds like your own mind, because the Spirit works through it.",
+    "scripture": "1 Kings 19:12 (the gentle whisper). Isaiah 30:21 (a word behind you). John 14:26 (He will bring to your remembrance). Acts 8:29, 10:19, 13:2 (\"the Spirit said\").",
+    "witnesses": "Wesley, \"an inward impression on the soul.\" Willard (describes the voice as an impression on the mind). Brother Lawrence, \"continually conversing with Him.\" Chambers, \"Speak, Lord.\"",
+    "test": "The Test step. Does it agree with Scripture, point to Jesus, and lead toward love? Write it down, and tell someone you trust.",
+    "try": "Ask one question, wait one breath, and write the first thing that comes."
+   },
+   {
+    "id": "peace",
+    "title": "Peace, and its absence",
+    "note": "a settled sense",
+    "what": "A deep rightness or calm about a path, or a quiet unease that won't settle.",
+    "scripture": "Colossians 3:15 (let the peace of Christ rule in your hearts). Philippians 4:7. Romans 8:16 (the Spirit bears witness with our spirit). Acts 16:6–7 (the Spirit of Jesus did not allow). 2 Corinthians 2:12–13 (no rest in his spirit).",
+    "witnesses": "Wesley on the witness of the Spirit. Edwards' tests of what the Spirit's work produces (love, humility, a turning toward Jesus).",
+    "test": "Anxiety and the Spirit's unrest are not the same. Peace from the Spirit is deeper than mood and does not demand certainty. Be honest about fatigue, hunger and fear.",
+    "try": "Hold a decision before Him and notice what your body and spirit do."
+   },
+   {
+    "id": "person",
+    "title": "Another person",
+    "note": "a friend, a pastor, a stranger with the right word",
+    "what": "Someone says what you needed, or confirms what you've been sensing.",
+    "scripture": "1 Samuel 3:8–9 (Eli helps Samuel recognize the voice). Acts 9:17 (Ananias to Saul). Acts 21:10–11 (Agabus). 1 Corinthians 14:3, 29–31. Proverbs 11:14.",
+    "witnesses": "Samuel's story. Müller's warning that counsel of others is never to outrank the Word of God.",
+    "test": "Weigh it as Scripture asks. People can be wrong, and the confirmation of mature believers helps.",
+    "try": "Share what you wrote with one trusted person and ask what they notice."
+   },
+   {
+    "id": "circumstance",
+    "title": "Circumstances: open and closed doors",
+    "note": "",
+    "what": "Events line up, or something blocks the way, and both turn out to matter.",
+    "scripture": "1 Corinthians 16:8–9 (a wide door and many adversaries). Colossians 4:3. Revelation 3:8. Acts 16:6–10 (blocked, then a vision, then a door).",
+    "witnesses": "",
+    "test": "Circumstances alone interpret poorly. Use them to confirm what you've heard some other way, not to replace it.",
+    "try": "Look back over the last week. Where did something open, close, or arrive just when you needed it?"
+   },
+   {
+    "id": "picture",
+    "title": "Pictures, memories and dreams",
+    "note": "",
+    "what": "An image, a remembered scene, or a dream that carries meaning. This is the way the app's *remember* prompts lean on, and the one many people find hardest.",
+    "scripture": "Acts 10:9–16 (Peter's vision). Acts 16:9–10 (Paul's vision). Matthew 1:20, 2:12 (dreams). Joel 2:28, Acts 2:17.",
+    "witnesses": "Ignatius' practice of praying a Gospel scene with the imagination. Virkler lists it among his keys.",
+    "test": "Never required. The app never asks anyone to invent an image. If something comes, write it. If not, that's fine. Test it like everything else, and hold it loosely.",
+    "try": "Remember one place where you felt God was near, and notice what stands out."
+   },
+   {
+    "id": "conviction",
+    "title": "Conviction and comfort",
+    "note": "",
+    "what": "Conviction is a specific, clear, loving \"this is not you\" about something. It leads to repentance and relief, not to shame. Comfort is the quiet word that you are held.",
+    "scripture": "John 16:8 (He convicts). Acts 2:37. 2 Corinthians 7:10 (godly grief). Romans 8:1 (no condemnation). John 14:16–18 (the Comforter, not left as orphans).",
+    "witnesses": "Fox, \"There is one, even Christ Jesus, that can speak to thy condition.\" Spurgeon, the sheep who \"distinguish between His voice and other voices.\"",
+    "test": "This is where the voices differ most. The Spirit convicts specifically and leads to Jesus. Accusation is general, crushing and sends you away from Him. If it condemns, it isn't Him.",
+    "try": "Ask, \"Is there anything You want me to see?\" and notice whether what comes draws you toward Him or away."
+   },
+   {
+    "id": "rare",
+    "title": "Rarer ways",
+    "note": "not to be sought, not to be feared",
+    "what": "A spoken word, a prophetic word through another believer, a word of knowledge, a clear visitation.",
+    "scripture": "1 Samuel 3:4–10. Acts 9:4–6. 1 Corinthians 12:7–11, 14:24–25.",
+    "witnesses": "Justin Martyr and Irenaeus, who said the gifts continued in the church of their day. Fox, whose account is of hearing a voice.",
+    "test": "Held to the strictest test. The more unusual the claim, the more it needs mature confirmation. None of this is required for a real walk with God.",
+    "try": "Nothing. If this happens, bring it to someone mature."
+   }
+  ],
+  "togetherTitle": "How the ways work together.",
+  "together": "God doesn't use one channel alone. A verse comes, a friend says the same thing, and peace follows. When different ways agree, trust grows. When one stands alone and unusual, slow down.",
+  "noneTitle": "For the person who has had none of these.",
+  "none": "Hearing is a relationship, not a performance. Start where it's easiest for you. Many people hear first through Scripture or a quiet thought. The rest comes with time.",
+  "teachingAid": "The list is a teaching aid. Scripture does not catalog ways, and the app says so."
+ },
+ "witnesses": {
+  "title": "The Witnesses",
+  "status": "draft",
+  "verse": "\"A great cloud of witnesses\" (Hebrews 12:1).",
+  "framing": "These Christians didn't agree on everything. They agree on this: God speaks to His people, and we are meant to listen. They also agree on testing what we hear.",
+  "disclaimer": "Quotes show the practice is old and tested, not that each person would endorse this app, or each other.",
+  "items": [
+   {
+    "id": "justin",
+    "name": "Justin Martyr",
+    "dates": "c. 100–165",
+    "who": "Early apologist and martyr",
+    "quote": "For the prophetical gifts remain with us, even to the present time.",
+    "source": "*Dialogue with Trypho*, ch. 82",
+    "ways": [
+     "rare"
+    ]
+   },
+   {
+    "id": "irenaeus",
+    "name": "Irenaeus",
+    "dates": "c. 130–202",
+    "who": "Bishop of Lyon, defender of the faith against heresy",
+    "quote": "We do also hear many brethren in the Church, who possess prophetic gifts, and who through the Spirit speak all kinds of languages.",
+    "source": "*Against Heresies* 5.6.1 (Roberts and Rambaut, Ante-Nicene Fathers)",
+    "ways": [
+     "rare"
+    ]
+   },
+   {
+    "id": "ambrose",
+    "name": "Ambrose",
+    "dates": "c. 339–397",
+    "who": "Bishop of Milan, teacher of Augustine",
+    "quote": "We speak to Him when we pray; we hear Him when we read the divine saying.",
+    "source": "*On the Duties of Ministers* I.20.88, quoted in Vatican II, *Dei Verbum* 25",
+    "ways": [
+     "scripture"
+    ]
+   },
+   {
+    "id": "augustine",
+    "name": "Augustine",
+    "dates": "354–430",
+    "who": "Bishop of Hippo, the most influential teacher of the Western church",
+    "quote": "Thou calledst, and shoutedst, and burstest my deafness.",
+    "source": "*Confessions* 10.27",
+    "ways": []
+   },
+   {
+    "id": "benedict",
+    "name": "Benedict",
+    "dates": "c. 480–547",
+    "who": "Founder of Western monasticism",
+    "quote": "Listen… with the ear of your heart.",
+    "source": "*Rule*, Prologue",
+    "ways": []
+   },
+   {
+    "id": "luther",
+    "name": "Martin Luther",
+    "dates": "1483–1546",
+    "who": "Reformer",
+    "quote": "The Holy Spirit himself preaches here, and one word of his sermon is far better than a thousand of our prayers.",
+    "source": "*A Simple Way to Pray* (1535)",
+    "context": "Said of meditating on the Word.",
+    "ways": [
+     "scripture"
+    ]
+   },
+   {
+    "id": "ignatius",
+    "name": "Ignatius of Loyola",
+    "dates": "1491–1556",
+    "who": "Founder of the Jesuits",
+    "quote": "",
+    "paraphrase": "Teaches praying a Gospel scene by seeing it \"with the eyes of the imagination.\"",
+    "source": "*Spiritual Exercises*",
+    "ways": [
+     "picture"
+    ]
+   },
+   {
+    "id": "lawrence",
+    "name": "Brother Lawrence",
+    "dates": "c. 1614–1691",
+    "who": "Carmelite lay brother",
+    "quote": "We should establish ourselves in a sense of God's Presence, by continually conversing with Him.",
+    "source": "*The Practice of the Presence of God*",
+    "ways": [
+     "thought"
+    ]
+   },
+   {
+    "id": "fox",
+    "name": "George Fox",
+    "dates": "1624–1691",
+    "who": "Founder of the Quakers",
+    "quote": "There is one, even Christ Jesus, that can speak to thy condition.",
+    "source": "*Journal*, 1647",
+    "ways": [
+     "conviction",
+     "rare"
+    ]
+   },
+   {
+    "id": "edwards",
+    "name": "Jonathan Edwards",
+    "dates": "1703–1758",
+    "who": "Pastor and theologian of the Great Awakening",
+    "quote": "",
+    "paraphrase": "Wrote the classic tests for any work of the Spirit: it esteems Jesus, opposes sin and Satan, loves Scripture, embraces truth, and produces love to God and others.",
+    "source": "*The Distinguishing Marks of a Work of the Spirit of God* (1741)",
+    "ways": [
+     "peace"
+    ]
+   },
+   {
+    "id": "wesley",
+    "name": "John Wesley",
+    "dates": "1703–1791",
+    "who": "Founder of Methodism",
+    "quote": "an inward impression on the soul, whereby the Spirit of God directly witnesses to my spirit, that I am a child of God.",
+    "lead": "The testimony of the Spirit is ",
+    "source": "Sermon, \"The Witness of the Spirit\"",
+    "ways": [
+     "thought",
+     "peace"
+    ]
+   },
+   {
+    "id": "muller",
+    "name": "George Müller",
+    "dates": "1805–1898",
+    "who": "Bristol pastor, cared for thousands of orphans by prayer",
+    "quote": "I never remember, in all my Christian course… that I ever sincerely and patiently sought to know the will of God by the teaching of the Holy Ghost, through the instrumentality of the Word of God, but I have been always directed rightly.",
+    "source": "*Answers to Prayer* (Brooks), preface, 1895",
+    "ways": [
+     "scripture",
+     "person"
+    ]
+   },
+   {
+    "id": "murray",
+    "name": "Andrew Murray",
+    "dates": "1828–1917",
+    "who": "South African pastor and prolific writer on prayer",
+    "quote": "When you are praying, let there be intervals of silence, reverent stillness of soul, in which you yield yourself to God, in case He may have aught He wishes to teach you or to work in you.",
+    "before": "Before you pray, bow quietly before God, just to remember and realize who He is, how near He is.",
+    "source": "*Waiting on God* (1896), Fourth Day",
+    "ways": []
+   },
+   {
+    "id": "spurgeon",
+    "name": "Charles Spurgeon",
+    "dates": "1834–1892",
+    "who": "Baptist preacher at the Metropolitan Tabernacle, London, \"the Prince of Preachers\"",
+    "quote": "Their Lord has spoken to them. They have heard His voice and have known it to be His. They still hear it and they distinguish between His voice and other voices.",
+    "lead": "On John 10:27: ",
+    "source": "Sermon 2120, \"The Security of Believers\" (1889), *Metropolitan Tabernacle Pulpit* vol. 35",
+    "ways": [
+     "conviction"
+    ]
+   },
+   {
+    "id": "chambers",
+    "name": "Oswald Chambers",
+    "dates": "1874–1917",
+    "who": "Scottish Baptist minister and teacher. *My Utmost for His Highest* was compiled by his wife from his talks and published in 1927.",
+    "quote": "Get into the habit of saying, 'Speak, Lord,' and life will become a romance.",
+    "source": "*My Utmost for His Highest*, \"The Dilemma of Obedience,\" read on utmost.org (Modern Classic edition). Entry date not shown there.",
+    "url": "https://utmost.org/classic/the-dilemma-of-obedience-classic/",
+    "ways": [
+     "thought"
+    ]
+   },
+   {
+    "id": "tozer",
+    "name": "A. W. Tozer",
+    "dates": "1897–1963",
+    "who": "Pastor and writer",
+    "quote": "",
+    "paraphrase": "The Bible is \"not only a book which was once spoken, but a book which is now speaking.\"",
+    "source": "*The Pursuit of God*",
+    "ways": [
+     "scripture"
+    ]
+   },
+   {
+    "id": "lewis",
+    "name": "C. S. Lewis",
+    "dates": "1898–1963",
+    "who": "Oxford and Cambridge scholar, Anglican layman, author of *Mere Christianity*",
+    "quote": "He speaks as 'I' when we truly call Him 'Thou.'",
+    "after": "Of prayer: \"By unveiling, by confessing our sins and 'making known' our requests, we assume the high rank of persons before Him. And He, descending, becomes a Person to us.\"",
+    "source": "*Letters to Malcolm*, Letter 4 (1964)",
+    "ways": []
+   },
+   {
+    "id": "willard",
+    "name": "Dallas Willard",
+    "dates": "1935–2013",
+    "who": "Philosopher and teacher of spiritual formation",
+    "quote": "",
+    "paraphrase": "Argued that a conversational relationship with God is the normal Christian life, tested by Scripture.",
+    "source": "*Hearing God*",
+    "ways": [
+     "thought"
+    ]
+   }
+  ],
+  "notes": {
+   "luther": "Luther's line is about meditating on the Word, not a separate channel.",
+   "ignatius": "Ignatius's imaginative method is his own, and some later Christians question it.",
+   "fox": "Fox founded a movement with beliefs that differ from other Christians'.",
+   "lewis": "Lewis is a careful, restrained writer on prayer who doesn't teach this app's forms, and he writes honestly about silence."
+  }
+ },
+ "life": {
+  "title": "The Life",
+  "status": "draft",
+  "intro": "What the interactive life looks like.",
+  "portraitsTitle": "Ordinary people in Scripture who heard",
+  "showsLabel": "What this shows",
+  "portraits": [
+   {
+    "name": "Ananias",
+    "refs": "Acts 9:10–19",
+    "body": "An ordinary disciple. The Lord speaks to him in a vision, he answers \"Here I am,\" he argues (\"Lord, I have heard from many about this man\"), the Lord answers him, and he obeys.",
+    "shows": "a conversation, honest objection allowed, a small obedient step."
+   },
+   {
+    "name": "Samuel",
+    "refs": "1 Samuel 3",
+    "body": "A boy who didn't recognize the voice, and an older believer who helped him. His reply, \"Speak, for your servant hears\" (1 Samuel 3:10), is the prayer Chambers urges us to make a habit.",
+    "shows": "it can take help to recognize. Learning is normal."
+   },
+   {
+    "name": "Philip",
+    "refs": "Acts 8:26–40",
+    "body": "Told to go, then told to join the chariot.",
+    "shows": "a series of small nudges, each followed."
+   },
+   {
+    "name": "Peter at Joppa",
+    "refs": "Acts 10",
+    "body": "A vision, then \"the Spirit said to him.\"",
+    "shows": "God tells him something that changes what he thinks is allowed, and then the Spirit confirms it with events."
+   },
+   {
+    "name": "The church in Antioch",
+    "refs": "Acts 13:1–3",
+    "body": "A group worshiping and fasting, and the Spirit speaks.",
+    "shows": "hearing together."
+   },
+   {
+    "name": "Mary",
+    "refs": "Luke 10:38–42",
+    "body": "She sits and listens.",
+    "shows": "presence before productivity."
+   },
+   {
+    "name": "Moses",
+    "refs": "Exodus 33:11",
+    "body": "Spoke with God as a friend.",
+    "shows": "the aim is friendship."
+   }
+  ],
+  "dayTitle": "A day with Him",
+  "dayIntro": "Short, concrete moments. None is required and none is a rule.",
+  "day": [
+   {
+    "label": "Morning",
+    "text": "\"Good morning. What do You want me to know today?\" Write a line."
+   },
+   {
+    "label": "Before a decision",
+    "text": "Small or large: \"What do You think? What do You want me to do?\" Then wait, write, check against Scripture."
+   },
+   {
+    "label": "Reading Scripture",
+    "text": "After a passage, ask: \"What are You saying to me in this?\""
+   },
+   {
+    "label": "Praying for someone",
+    "text": "Ask \"What do You want me to say, or do for them?\" Notice what comes."
+   },
+   {
+    "label": "Work or chores",
+    "text": "A short \"Lord, I'm with You in this\" and a quick breath."
+   },
+   {
+    "label": "Conflict",
+    "text": "\"What do You see here? What do You want me to know about this person?\""
+   },
+   {
+    "label": "When you've failed",
+    "text": "\"I'm sorry.\" Then listen for the Father's response, which the Bible says is to run toward you (Luke 15:20)."
+   },
+   {
+    "label": "Evening",
+    "text": "\"Thank You for today. What was You, and what did I miss?\""
+   }
+  ],
+  "speaksTitle": "How He may speak",
+  "speaksLine": "See the How He speaks page for what to listen for.",
+  "timeTitle": "What it does over time",
+  "timeIntro": "We describe what the Bible promises and what Christians report, and not what will happen to any one person.",
+  "time": [
+   "Peace in place of striving (Philippians 4:6–7)",
+   "Courage and less fear (1 John 4:18)",
+   "Love that reaches enemies",
+   "A deeper sense of being known and loved (Romans 8:15–16)",
+   "Freedom from lies (John 8:32)",
+   "Wisdom for ordinary choices (James 1:5)"
+  ],
+  "last": "You've seen the case and the witnesses. Now ask one question."
+ },
+ "scripture": {
+  "title": "Scripture",
+  "status": "draft",
+  "lead": "Jesus said it plainly.",
+  "leadRef": "John 10:27",
+  "leadText": "My sheep hear My voice.",
+  "intro": "Tap a reference to open the passage.",
+  "groups": [
+   {
+    "title": "He speaks to His own",
+    "note": "the core promise",
+    "verses": [
+     {
+      "ref": "John 10:3–5",
+      "note": "the sheep know the shepherd's voice."
+     },
+     {
+      "ref": "John 10:27",
+      "note": "\"My sheep hear My voice.\""
+     },
+     {
+      "ref": "Isaiah 30:21",
+      "note": "a word behind you saying \"This is the way.\"",
+      "speaks": "thought"
+     },
+     {
+      "ref": "Revelation 3:20",
+      "note": "He knocks and comes in."
+     }
+    ]
+   },
+   {
+    "title": "Jesus Himself lived by listening",
+    "note": "He modeled it",
+    "verses": [
+     {
+      "ref": "John 5:19–20, 30",
+      "note": "only what He sees the Father doing."
+     },
+     {
+      "ref": "John 8:28",
+      "note": "speaks what the Father taught Him."
+     },
+     {
+      "ref": "John 12:49–50",
+      "note": "the Father told Him what to say."
+     },
+     {
+      "ref": "Mark 1:35",
+      "note": "withdrew early to pray."
+     }
+    ]
+   },
+   {
+    "title": "He sends the Spirit to guide us",
+    "note": "",
+    "verses": [
+     {
+      "ref": "John 14:16–18, 26",
+      "note": "Helper, teacher, reminder; not left as orphans."
+     },
+     {
+      "ref": "John 16:12–15",
+      "note": "the Spirit will guide into truth and declare what is His."
+     },
+     {
+      "ref": "Romans 8:14–16",
+      "note": "led by the Spirit, who bears witness with ours.",
+      "speaks": "peace"
+     }
+    ]
+   },
+   {
+    "title": "Ask, and keep asking",
+    "note": "",
+    "verses": [
+     {
+      "ref": "Matthew 7:7–11",
+      "note": "ask, seek, knock; the Father gives good gifts."
+     },
+     {
+      "ref": "Luke 11:9–13",
+      "note": "the Father gives the Holy Spirit to those who ask."
+     },
+     {
+      "ref": "James 1:5",
+      "note": "if you lack wisdom, ask."
+     },
+     {
+      "ref": "Jeremiah 33:3",
+      "note": "\"Call to Me and I will answer you.\""
+     }
+    ]
+   },
+   {
+    "title": "Quiet, and the small voice",
+    "note": "",
+    "verses": [
+     {
+      "ref": "Psalm 46:10",
+      "note": "be still and know."
+     },
+     {
+      "ref": "Psalm 62:1",
+      "note": "my soul waits in silence."
+     },
+     {
+      "ref": "1 Kings 19:11–13",
+      "note": "the gentle whisper.",
+      "speaks": "thought"
+     },
+     {
+      "ref": "Habakkuk 2:1",
+      "note": "I will stand and look to see what He will say."
+     },
+     {
+      "ref": "Luke 24:32",
+      "note": "hearts burning as He talked with them.",
+      "speaks": "scripture"
+     }
+    ]
+   },
+   {
+    "title": "Test everything",
+    "note": "",
+    "verses": [
+     {
+      "ref": "1 John 4:1",
+      "note": "test the spirits."
+     },
+     {
+      "ref": "1 Thessalonians 5:19–22",
+      "note": "don't quench the Spirit; test everything."
+     },
+     {
+      "ref": "Acts 17:11",
+      "note": "the Bereans examined the Scriptures."
+     },
+     {
+      "ref": "Galatians 5:22–23",
+      "note": "the fruit of the Spirit."
+     },
+     {
+      "ref": "Romans 8:1",
+      "note": "no condemnation."
+     }
+    ]
+   },
+   {
+    "title": "Not alone",
+    "note": "",
+    "verses": [
+     {
+      "ref": "Matthew 1:23",
+      "note": "Immanuel, God with us."
+     },
+     {
+      "ref": "Isaiah 7:14",
+      "note": "Immanuel, God with us."
+     },
+     {
+      "ref": "Matthew 28:20",
+      "note": "I am with you always."
+     },
+     {
+      "ref": "John 14:23",
+      "note": "He and the Father make their home with us."
+     },
+     {
+      "ref": "Matthew 11:28–30",
+      "note": "come to Me, rest."
+     }
+    ]
+   },
+   {
+    "title": "For the one who is afraid",
+    "note": "",
+    "verses": [
+     {
+      "ref": "Luke 15:20",
+      "note": "the father runs."
+     },
+     {
+      "ref": "Hebrews 4:16",
+      "note": "approach with confidence."
+     },
+     {
+      "ref": "1 John 4:18",
+      "note": "perfect love casts out fear."
+     },
+     {
+      "ref": "Mark 9:24",
+      "note": "\"I believe; help my unbelief.\""
+     }
+    ]
+   }
+  ]
+ },
+ "references": {
+  "title": "References",
+  "intro": "These practices are inspired by the work below. The app is a simplified guide shaped for people new to this. It doesn't replace the books, and the authors haven't endorsed it. If something here helps, the books go much deeper.",
+  "outro": "A book is a great next step for anyone who wants more. A trusted pastor or counselor is a better guide than any app for anything heavy.",
+  "kraftNote": "The Kraft books include teaching on spiritual warfare and deliverance. This app does not cover it.",
+  "linkLabel": "Amazon",
+  "items": [
+   {
+    "by": "Jamie Winship",
+    "book": "Living Fearless",
+    "use": "Quick path, \"What do You want me to know?\"",
+    "url": "https://www.amazon.com/Living-Fearless-Exchanging-World-Liberating/dp/0800740297"
+   },
+   {
+    "by": "Jamie Winship",
+    "book": "Living Fearless Guided Journal",
+    "use": "Companion journal",
+    "url": "https://www.amazon.com/Living-Fearless-Guided-Journal-Exchanging/dp/0800746899"
+   },
+   {
+    "by": "Karl Lehman",
+    "book": "The Immanuel Approach",
+    "use": "Deeper path (glad memory, safety net)",
+    "url": "https://www.amazon.com/Immanuel-Approach-Emotional-Healing-Life/dp/0997771909"
+   },
+   {
+    "by": "Karl Lehman",
+    "book": "Outsmarting Yourself",
+    "use": "Background on how the past shows up in the present",
+    "url": "https://us.amazon.com/Outsmarting-Yourself-Catching-Invading-Present/dp/0983454698"
+   },
+   {
+    "by": "Jim Wilder, Anna Kang, John and Sungshim Loppnow",
+    "book": "Joyful Journey: Listening to Immanuel",
+    "use": "Journaling path",
+    "url": "https://www.amazon.com/Joyful-Journey-Dr-James-Wilder/dp/171183145X"
+   },
+   {
+    "by": "Charles Kraft",
+    "book": "Deep Wounds, Deep Healing",
+    "use": "Healing path",
+    "url": "https://www.amazon.com/Deep-Wounds-Healing-Discovering-Spiritual/dp/0892837845",
+    "warfare": true
+   },
+   {
+    "by": "Charles Kraft",
+    "book": "Two Hours to Freedom",
+    "use": "A shorter model for healing. Includes deliverance teaching that this app leaves out.",
+    "url": "https://www.amazon.com/Two-Hours-Freedom-Effective-Deliverance/dp/0800794982",
+    "warfare": true
+   },
+   {
+    "by": "Andrew Murray",
+    "book": "Waiting on God",
+    "use": "Stillness before and during prayer, with room for silence",
+    "url": "https://www.amazon.com/Waiting-God-Andrew-Murray/dp/172741778X"
+   },
+   {
+    "by": "Charles Spurgeon",
+    "book": "Sermon, \"The Security of Believers\" (free)",
+    "use": "The Shepherd's voice, known and distinguished",
+    "url": "https://www.spurgeongems.org/sermon/chs2120.pdf",
+    "linkLabel": "Spurgeon Gems"
+   },
+   {
+    "by": "Oswald Chambers",
+    "book": "My Utmost for His Highest",
+    "use": "The habit of \"Speak, Lord,\" in ordinary days",
+    "url": "https://www.amazon.com/My-Utmost-His-Highest-Paperback/dp/1572937718"
+   },
+   {
+    "by": "John Eldredge",
+    "book": "Walking with God",
+    "use": "Follow-up questions, everyday conversation with God",
+    "url": "https://www.amazon.com/Walking-God-Talk-Hear-Really/dp/0785206965"
+   },
+   {
+    "by": "Mark Virkler",
+    "book": "4 Keys to Hearing God's Voice",
+    "use": "Stillness and two-way journaling",
+    "url": "https://www.amazon.com/4-Keys-Hearing-Gods-Voice/dp/076843436X"
+   },
+   {
+    "by": "C. S. Lewis",
+    "book": "Letters to Malcolm: Chiefly on Prayer",
+    "use": "Prayer as personal encounter, and honesty about silence",
+    "url": "https://www.amazon.com/Letters-Malcolm-Chiefly-Prayer-Lewis/dp/0062565478"
+   },
+   {
+    "by": "Dallas Willard",
+    "book": "Hearing God",
+    "use": "Hearing God in relationship, tested by Scripture",
+    "url": "https://www.amazon.com/Hearing-God-Developing-Conversational-Relationship/dp/0830835695"
+   }
+  ]
+ },
+ "about": {
+  "title": "About",
+  "paras": [
+   "With. God with us (Immanuel, Matthew 1:23).",
+   "This app helps you hear from God. It is training wheels for listening prayer: get still and turn toward Christ, bring one real thing to Him, ask a simple question, write down whatever comes, test it, and keep it.",
+   "It is a guided form, not a teacher and not a voice. The app asks the questions. You ask God and write the answers. The app never composes words for God.",
+   "This app is inspired by the work of Jamie and Donna Winship, Karl and Charlotte Lehman, Jim Wilder and colleagues, Charles Kraft, John Eldredge, Mark Virkler and Dallas Willard. It borrows the shape of their practices and is free to adapt, combine, shorten or leave out parts. It does not reproduce their methods, claim to teach them as they teach them, or speak for them. None of them has endorsed or reviewed it.",
+   "Scripture teaches that God speaks and that we are to listen, test and obey. It does not prescribe breathing exercises, glad memories, or a seven-step journal. Those are wise helps drawn from teachers.",
+   "Everything stays on this device. There are no accounts. The only links that leave the app are the passage links and the book links.",
+   "This app is a prayer aid. It is not counseling or medical care."
+  ]
+ },
+ "safetyPage": {
+  "title": "Safety",
+  "paras": [
+   "This is a prayer aid. You need a church, a pastor or priest, a friend, and sometimes a counselor or doctor. This doesn't replace any of them.",
+   "No one else gets to tell you what God said. There's no leader here. You can stop any time.",
+   "Stop. Test it. If it condemns you, tells you to harm yourself or someone else, or contradicts Scripture, it isn't from Him.",
+   "Tell a trusted person.",
+   "If you hear voices that aren't like your own thoughts, are distressing or give commands, that deserves a doctor's care and not a prayer form.",
+   "This app is a poor place for deep trauma work. A trained person is the right help.",
+   "\"I'm done for today\" is always a valid ending.",
+   "This app is a prayer aid. It is not counseling or medical care."
+  ],
+  "line": "If you are in danger, call or text 988 in the US."
+ },
+ "firstLaunch": {
+  "lines": [
+   "With. God with us (Immanuel, Matthew 1:23).",
+   "This is a prayer aid. You need a church, a pastor or priest, a friend, and sometimes a counselor or doctor. This doesn't replace any of them.",
+   "It is not counseling or medical care.",
+   "No one else gets to tell you what God said. There's no leader here. You can stop any time."
+  ],
+  "ok": "Got it"
+ },
+ "firstSave": "These stay on this device only. Export a copy to keep them safe.",
+ "why": {
+  "title": "Why practice hearing from God?",
+  "short": "Why practice?",
+  "status": "draft",
+  "lead": "Jesus said it plainly.",
+  "leadRef": "John 10:27",
+  "leadText": "My sheep hear My voice.",
+  "doors": [
+   {
+    "id": "case",
+    "to": "why/case",
+    "title": "The Case",
+    "line": "nine small steps from Scripture"
+   },
+   {
+    "id": "reach",
+    "to": "why/reach",
+    "title": "The Reach of Faith",
+    "line": "what any hearing requires"
+   },
+   {
+    "id": "speaks",
+    "to": "why/speaks",
+    "title": "How He speaks",
+    "line": "what to listen for"
+   },
+   {
+    "id": "witnesses",
+    "to": "why/witnesses",
+    "title": "The Witnesses",
+    "line": "Christians of the ages"
+   },
+   {
+    "id": "life",
+    "to": "why/life",
+    "title": "The Life",
+    "line": "what interactive faith looks like"
+   },
+   {
+    "id": "scripture",
+    "to": "why/scripture",
+    "title": "Scripture",
+    "line": "the verses, grouped"
+   }
+  ],
+  "offer": "Want to try one question?",
+  "tryIt": "Try it"
+ }
+}

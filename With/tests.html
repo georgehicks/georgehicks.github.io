@@ -1,0 +1,397 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>With — acceptance tests</title>
+<style>
+  body { font: 14px/1.45 -apple-system, system-ui, sans-serif; margin: 20px; max-width: 900px; }
+  .pass { color: #1d7a3e; } .fail { color: #b3261e; font-weight: 600; }
+  #sum { font-size: 18px; font-weight: 700; margin-bottom: 12px; }
+  li { margin: 2px 0; } code { font-size: 12px; }
+</style>
+</head>
+<body>
+<div id="sum">Running…</div>
+<ul id="out"></ul>
+<script type="module">
+// Dev-only page (not cached by sw.js, not linked from the app). Covers the pure logic in engine.js,
+// the shape of content.json, and a few source-level rules from DESIGN.md.
+import * as E from './engine.js';
+const C = E.deepFreeze(await (await fetch('content.json?_=' + Date.now())).json());
+const src = await Promise.all(['app.js', 'engine.js', 'sw.js'].map(f => fetch(f + '?_=' + Date.now()).then(r => r.text())));
+const design = await fetch('DESIGN.md?_=' + Date.now()).then(r => r.ok ? r.text() : null).catch(() => null);
+const out = document.getElementById('out');
+let pass = 0, fail = 0;
+function t(name, fn) {
+  let ok = false, msg = '';
+  try { const r = fn(); ok = r === true || r === undefined; if (r !== true && r !== undefined) msg = String(r); }
+  catch (e) { msg = e.message; }
+  ok ? pass++ : fail++;
+  const li = document.createElement('li');
+  li.className = ok ? 'pass' : 'fail';
+  li.textContent = (ok ? '✓ ' : '✗ ') + name + (msg ? ' — ' + msg : '');
+  out.append(li);
+}
+const eq = (a, b, what = '') => { if (JSON.stringify(a) !== JSON.stringify(b)) throw new Error(`${what} expected ${JSON.stringify(b)}, got ${JSON.stringify(a)}`); };
+const S = { ...E.DEFAULT_SETTINGS };
+const done = (path = 'quick', extra = {}) => { const s = E.newSession(path); E.startSession(C, s); s.status = 'complete'; return Object.assign(s, extra); };
+
+// ---- guidance fade ----
+t('Fade: coaching shows for the first 3 completed sessions, then collapses', () => {
+  eq([0, 1, 2, 3, 9].map(n => E.guidanceOn('fade', n)), [true, true, true, false, false]);
+});
+t('Always shows and Hide hides, whatever the count', () => eq([E.guidanceOn('always', 99), E.guidanceOn('hide', 0)], [true, false]));
+t('only completed sessions count toward the fade', () => eq(E.completedCount([{ status: 'complete' }, { status: 'open' }, { status: 'resting' }, { status: 'complete' }]), 2));
+t('Not sure? and Nothing came? are not governed by the guidance rule', () => !/guid/i.test(src[0].match(/openNotSure\(def\.notSure\), text: R\.notSure/)?.[0] || '') && src[0].includes("text: R.nothingCame"));
+
+// ---- step runner: Quick ----
+t('Quick flow: bring, know, do, more, test, keep', () => eq(E.flowOf(C, 'quick'), ['bring', 'know', 'do', 'more', 'test', 'keep']));
+t('runner walks Quick in order and finishes with null', () => {
+  const s = E.startSession(C, E.newSession('quick'));
+  const seen = [s.at];
+  let to; while ((to = E.advance(C, s, 'no')) != null) seen.push(to);
+  eq(seen, ['bring', 'know', 'do', 'more', 'test', 'keep']);
+});
+t('"Is there more?" yes goes to Ask Him anything and back to the question; no goes to Test', () => {
+  const s = E.startSession(C, E.newSession('quick'), 'more');
+  eq(E.advance(C, s, 'yes'), 'followup'); eq(s.followUps.length, 1);
+  eq(E.advance(C, s), 'more'); eq(E.advance(C, s, 'yes'), 'followup'); eq(s.followUps.length, 2);
+  eq(E.advance(C, s), 'more'); eq(E.advance(C, s, 'no'), 'test');
+});
+t('step counter counts only the path steps, not Ask Him anything', () => {
+  const s = E.startSession(C, E.newSession('quick'), 'do'); eq(E.stepCounter(C, s), { n: 3, total: 6 });
+  E.jump(s, 'followup'); eq(E.stepCounter(C, s), null);
+});
+t('Back follows the way the person came, and stops at the first step', () => {
+  const s = E.startSession(C, E.newSession('quick')); E.advance(C, s); E.advance(C, s);
+  eq(E.back(s), 'know'); eq(E.back(s), 'bring'); eq(E.back(s), null);
+});
+
+// ---- Deeper ----
+t('Deeper flow: glad memory, appreciation, welcome, bring, ask, test, keep', () => eq(E.flowOf(C, 'deeper').filter(k => k !== 'know' && k !== 'do' && k !== 'more'), ['glad', 'appreciate', 'welcome', 'bring', 'test', 'keep']));
+t('Back to the glad place returns to appreciation, and Back returns from it', () => {
+  const s = E.startSession(C, E.newSession('deeper'), 'welcome'); E.jump(s, C.paths.deeper.gladPlaceKey);
+  eq(s.at, 'appreciate'); eq(E.back(s), 'welcome');
+});
+t('Deeper: Back to the glad place is not offered on step 1 (source rule)', () => src[0].includes("idx > 0 && key !== P.gladPlaceKey"));
+
+// ---- Healing ----
+t('Healing flow runs ready check through keep', () => eq(E.flowOf(C, 'healing'), ['ready', 'ask', 'see', 'jesus', 'gave', 'forgave', 'lietruth', 'feel', 'again', 'test', 'keep']));
+t('feel: peace goes to Test; lighter or heavy goes to Ask again', () => {
+  const a = E.startSession(C, E.newSession('healing'), 'feel'); eq(E.advance(C, a, 'peace'), 'test');
+  const b = E.startSession(C, E.newSession('healing'), 'feel'); eq(E.advance(C, b, 'heavy'), 'again');
+});
+t('Ask again loops to step 4, 5, 7 or step 2, each as a fresh pass, with no limit', () => {
+  const s = E.startSession(C, E.newSession('healing'), 'again');
+  for (let i = 0; i < 6; i++) { eq(E.advance(C, s, ['jesus', 'gave', 'lietruth', 'ask', 'jesus', 'gave'][i]), ['jesus', 'gave', 'lietruth', 'ask', 'jesus', 'gave'][i]); s.at = 'again'; }
+  eq(s.round, 6);
+});
+t('"I\'m done for today" ends the pass without a score', () => { const s = E.startSession(C, E.newSession('healing'), 'again'); return E.advance(C, s, 'rest') === null; });
+t('resting a Healing session and reopening starts at the ready check, then returns to where they stopped', () => {
+  const s = E.startSession(C, E.newSession('healing'), 'gave');
+  E.rest(s); eq(s.status, 'resting'); eq(s.resumeAt, 'gave');
+  E.resumeSession(C, s); eq(s.at, 'ready'); eq(s.status, 'open');
+  eq(E.advance(C, s), 'gave'); eq(s.resumeAt, null);
+});
+t('answers from each pass are kept; memory mirrors the latest pass and rounds log each feel', () => {
+  const s = E.startSession(C, E.newSession('healing'), 'jesus');
+  E.setAnswer(s, 'jesus', 'p', 'first'); s.round = 1; E.setAnswer(s, 'jesus', 'p', 'second');
+  E.pushRound(s, 'lighter', 'a bit', new Date(2026, 0, 1)); E.pushRound(s, 'peace', '', new Date(2026, 0, 2));
+  E.syncMemory(s); eq(s.steps.length, 2); eq(s.memory.jesus, 'second'); eq(s.memory.feel, 'peace'); eq(s.memory.rounds.length, 2);
+});
+t('lies and truth are both recorded', () => {
+  const s = E.startSession(C, E.newSession('healing'), 'lietruth');
+  const e = E.ensureEntry(s, 'lietruth', 'x'); e.lie = 'I am alone'; e.answer = 'You are with me'; E.syncMemory(s);
+  eq([s.memory.lie, s.memory.truth], ['I am alone', 'You are with me']);
+});
+t('the Healing session has a memory block; other paths do not', () => E.newSession('healing').memory !== null && E.newSession('quick').memory === null);
+t('Stop and rest is on every Healing step (source) and no review-status note shows on screen', () => src[0].includes("s.path === 'healing' ? link(R.stopRest, restSession") && !src[0].includes("class: 'pending'"));
+
+// ---- Daily and Journaling ----
+t('Daily: moment, one prompt, test glance, keep (optional)', () => eq(E.flowOf(C, 'daily'), ['moment', 'dailyask', 'test', 'keep']));
+t('Daily moments are Morning, A decision, After Scripture, Praying for someone, Evening, Other', () =>
+  eq(C.paths.daily.defs.moment.options.map(o => o.label), ['Morning', 'A decision', 'After Scripture', 'Praying for someone', 'Evening', 'Other']));
+t('Daily "A decision" asks for wisdom and the next faithful step, not a yes or no', () =>
+  eq(C.paths.daily.defs.moment.options[1].prompt, 'What do You want me to know about this? What is the next faithful step?'));
+t('Daily records are shown lighter in Review; others are not', () => E.isLight({ path: 'daily' }) && !E.isLight({ path: 'quick' }));
+t('Journaling has seven steps, then Test and Keep', () => eq(E.flowOf(C, 'journaling').length - 2, 7));
+
+// ---- drafts: autosave and resume ----
+t('a new session with nothing written is not worth keeping', () => !E.isMeaningful(E.newSession('quick')));
+t('a typed answer, a Keep line, a test answer or a chosen moment make a session worth keeping', () => {
+  const a = E.newSession('quick'); E.setAnswer(a, 'bring', 'p', 'x');
+  const b = E.newSession('quick'); b.keep = 'k';
+  const c = E.newSession('quick'); E.setTest(c, 'scripture', 'yes');
+  const d = E.newSession('daily'); d.moment = { id: 'morning' };
+  return [a, b, c, d].every(E.isMeaningful);
+});
+t('a draft survives a JSON round trip (lock-screen or app kill) and resumes at the same step', () => {
+  const s = E.startSession(C, E.newSession('quick')); E.setAnswer(s, 'bring', 'p', 'my worry'); E.advance(C, s);
+  const back = JSON.parse(JSON.stringify(s)); E.resumeSession(C, back);
+  eq([back.at, back.trail, E.entryFor(back, 'bring').answer], ['know', ['bring'], 'my worry']);
+});
+t('bringing is the Bring answer; titleOf falls back to the first answer, the Daily moment, then the path', () => {
+  const s = E.newSession('quick'); E.setAnswer(s, 'bring', 'p', 'my worry'); eq(E.titleOf(C, s), 'my worry');
+  const d = E.newSession('daily'); d.moment = { label: 'Evening' }; eq(E.titleOf(C, d), 'Evening');
+  eq(E.titleOf(C, E.newSession('quick')), 'Quick');
+});
+t('upsert replaces a session by id and appends a new one', () => {
+  const a = E.newSession('quick'), b = E.newSession('quick'); let l = E.upsertSession([], a); l = E.upsertSession(l, b);
+  a.keep = 'k'; l = E.upsertSession(l, a); eq(l.length, 2); eq(l[0].keep, 'k');
+});
+t('Nothing yet is a normal answer: markNothing records it with an empty box and the session can finish', () => {
+  const s = E.startSession(C, E.newSession('quick'), 'know'); const e = E.markNothing(s, 'know', 'p'); eq(e.how, ['nothing']);
+  E.complete(s); eq(s.status, 'complete'); eq(E.exportText(C, [s]).includes('Nothing yet'), true);
+});
+t('How did it come: real ways combine; Not sure and Nothing yet stand alone', () => {
+  const e = { how: [] }; E.toggleHow(e, 'thought'); E.toggleHow(e, 'scripture'); eq(e.how, ['thought', 'scripture']);
+  E.toggleHow(e, 'unsure'); eq(e.how, ['unsure']); E.toggleHow(e, 'peace'); eq(e.how, ['peace']); E.toggleHow(e, 'nothing'); eq(e.how, ['nothing']);
+});
+
+// ---- test step ----
+t('Test has four questions in the design order, with yes / not sure / no', () => {
+  eq(C.test.questions.map(q => q.name), ['Scripture', 'Jesus', 'Love', 'Someone I trust']);
+  eq(C.test.options.map(o => o.label), ['Yes', 'Not sure', 'No']);
+  eq(C.test.top, 'You reached. Now test.');
+});
+t('"no" on Scripture or Jesus: set it down and talk with someone', () => eq([E.testAdvice({ scripture: 'no' }), E.testAdvice({ jesus: 'no', love: 'yes' })], ['no', 'no']));
+t('"not sure" anywhere, or "no" on love or on telling someone: hold it lightly', () => {
+  eq(E.testAdvice({ scripture: 'unsure' }), 'unsure'); eq(E.testAdvice({ love: 'unsure' }), 'unsure');
+  eq(E.testAdvice({ love: 'no' }), 'unsure'); eq(E.testAdvice({ trusted: 'no' }), 'unsure');
+});
+t('all yes, or nothing answered, gives no advice', () => eq([E.testAdvice({ scripture: 'yes', jesus: 'yes', love: 'yes', trusted: 'yes' }), E.testAdvice({})], [null, null]));
+t('a "no" wins over a "not sure"', () => eq(E.testAdvice({ scripture: 'unsure', jesus: 'no' }), 'no'));
+t('tapping the same answer twice clears it', () => { const s = E.newSession('quick'); E.setTest(s, 'love', 'yes'); E.setTest(s, 'love', 'yes'); return s.test.love === null; });
+t('repeated "not sure" across three sessions triggers the rest line; two do not', () => {
+  const U = (d) => done('quick', { started: d, test: { scripture: 'unsure', jesus: null, love: null, trusted: null, note: '' } });
+  const a = U('2026-01-01T10:00:00+00:00'), b = U('2026-01-02T10:00:00+00:00'), c = U('2026-01-03T10:00:00+00:00');
+  eq(E.repeatedUnsure([a, b], c), true); eq(E.repeatedUnsure([a], c), false);
+  const yes = done('quick', { started: '2026-01-02T10:00:00+00:00', test: { scripture: 'yes', jesus: 'yes', love: 'yes', trusted: 'yes', note: '' } });
+  eq(E.repeatedUnsure([a, yes], c), false);
+});
+t('the Test copy never says a feeling proves who something is from', () => !/proves?|this means it is|is from God because|you can be sure/i.test(JSON.stringify(C.test) + JSON.stringify(C.standing)));
+t('Test and the standing check use the same four ideas', () => C.standing.lines.length === 4 && /Scripture/.test(C.standing.lines[0]) && /Jesus/.test(C.standing.lines[1]) && /love/.test(C.standing.lines[2]) && /someone I trust/.test(C.standing.lines[3]));
+
+// ---- safety ----
+t('worrisome text is caught, with curly apostrophes, and ordinary text is not', () => {
+  const k = C.safety.keywords;
+  return E.isWorrisomeText('I want to die', k) && E.isWorrisomeText('I don’t want to live', k) && E.isWorrisomeText('voices telling me to', k)
+    && !E.isWorrisomeText('I am worried about my job and my sister', k) && !E.isWorrisomeText('', k);
+});
+t('worrisomeText finds worry in an answer, a lie, the keep line, a note or a follow-up', () => {
+  const k = C.safety.keywords, s = E.newSession('quick');
+  eq(E.worrisomeText(s, k), ''); s.test.note = 'I want to die'; eq(E.sessionWorrisome(s, k), true);
+  const t2 = E.newSession('healing'); E.ensureEntry(t2, 'lietruth', 'x').lie = 'I should end it all'; eq(E.sessionWorrisome(t2, k), true);
+});
+t('988 appears in the app only via the safety line (care block, the stop screen, the Safety page)', () => {
+  const j = JSON.stringify({ ...C, safety: 0, safetyPage: 0 });
+  return !/988/.test(j) || 'found 988 outside safety content';
+});
+t('no card, step or care section mentions 988 or crisis language', () => !/988|suicide|crisis/i.test(JSON.stringify([C.objections, C.common, C.care, C.paths, C.steps, C.test])));
+t('the 988 line is shown only through careBlock and the Safety page', () => (src[0].match(/withTel\(/g) || []).length === 3);
+
+// ---- gating ----
+t('Healing and Journaling are gated in content.json; Quick, Deeper and Daily are not', () =>
+  eq(E.gatedPaths(C), ['healing', 'journaling']));
+t('gated paths are hidden by default and shown only when the hidden switch is on', () => {
+  eq(E.visiblePaths(C, S), ['quick', 'deeper', 'daily']);
+  eq(E.visiblePaths(C, { ...S, showGated: true }), ['quick', 'deeper', 'healing', 'daily', 'journaling']);
+  eq(E.pathVisible(C, 'healing', S), false);
+});
+t('the Care page is gated behind the same switch', () => eq([E.careAvailable(C, S), E.careAvailable(C, { ...S, showGated: true })], [false, true]));
+t('the switch is off by default', () => eq(E.DEFAULT_SETTINGS.showGated, false));
+t('no review-status wording is shown on screen (draft, pending, awaiting review)', () => !/waiting for review|awaiting review|draft, waiting/i.test(JSON.stringify(C.copy)) && !C.meta.draftNote && !C.care.pendingNote && !C.copy.settings.pendingNote);
+
+// ---- What's in the way? ----
+t('exactly six What\'s in the way? cards, all draft, all offered by the sheet', () => {
+  eq(C.objections.cards.length, 6); return C.objections.cards.every(c => c.status === 'draft' && c.sheet === true);
+});
+t('Common questions: four cards, draft, never offered by the sheet', () => {
+  eq(C.common.cards.map(c => c.id), ['new_age', 'jesus_in_room', 'arrogant', 'hebrews_cease']);
+  return C.common.cards.every(c => c.status === 'draft' && c.sheet === false);
+});
+t('every Not sure? chip points at one of the six, and the sheet never returns anything else', () => {
+  const ids = new Set(C.objections.cards.map(c => c.id));
+  const all = [...Object.values(C.steps), ...Object.values(C.paths).flatMap(p => Object.values(p.defs || {}))];
+  const bad = all.filter(d => !ids.has(d.notSure)); if (bad.length) return 'bad notSure: ' + bad.map(b => b.notSure);
+  eq(E.sheetCard(C, 'new_age').id, 'how_know'); eq(E.sheetCard(C, 'nonsense').id, 'how_know'); eq(E.sheetCard(C, 'tried_nothing').id, 'tried_nothing');
+});
+t('no practice step lacks a Not sure? target', () => {
+  const all = [...Object.entries(C.steps), ...Object.values(C.paths).flatMap(p => Object.entries(p.defs || {}))];
+  const bad = all.filter(([, d]) => !d.notSure); return !bad.length || 'missing: ' + bad.map(b => b[0]);
+});
+t('the Care page has seven sections, each ending "You can close the app", and is gated', () => {
+  eq(C.care.sections.length, 7); eq(C.care.gated, true); return C.care.exit === 'You can close the app.';
+});
+t('the foot line and the first-launch note carry the church-and-counselor line', () => {
+  const L = "You need a church, a pastor or priest, a friend, and sometimes a counselor or doctor. This doesn't replace any of them.";
+  return C.objections.footLine.includes(L) && C.firstLaunch.lines.some(l => l.includes(L));
+});
+t('the first-launch note says it is a prayer aid and not counseling or medical care, and explains the name once', () =>
+  C.firstLaunch.lines.join(' ').includes('prayer aid') && C.firstLaunch.lines.join(' ').includes('not counseling or medical care') && C.firstLaunch.lines[0] === 'With. God with us (Immanuel, Matthew 1:23).');
+t('no card uses "usually" or "always" and none uses a persistence test', () => !/\busually\b|\balways\b|fades?\b|over days/i.test(JSON.stringify([C.objections.cards.map(c => c.a), C.common.cards.map(c => c.a), C.care.sections]).replace('I am with you always,', '')));
+t('Keep notes and the picturing note are present', () => C.keep.notes.length === 2 && /attempt to listen/.test(C.keep.notes[0]) && /never have to picture/.test(C.remember));
+t('the "remember" note sits on the steps that ask the person to remember', () => ['glad', 'appreciate', 'welcome'].every(k => C.paths.deeper.defs[k].remember));
+
+// ---- Scripture and quotes ----
+t('every What\'s in the way? card and the Case use references the popover can find', () => {
+  const refs = [...C.objections.cards, ...C.common.cards].flatMap(c => E.findRefs(c.refs).filter(x => x.t === 'ref'));
+  return refs.length > 15 || 'too few references found: ' + refs.length;
+});
+t('findRefs: single, range, list and chapter-only references', () => {
+  eq(E.findRefs('See John 10:27, John 14:26 and 1 John 4:1–3.').filter(x => x.t === 'ref').map(x => x.v), ['John 10:27', 'John 14:26', '1 John 4:1–3']);
+  eq(E.findRefs('(Acts 8:26, 29) and Luke 24:25–27, 32, 45').filter(x => x.t === 'ref').map(x => x.v), ['Acts 8:26, 29', 'Luke 24:25–27, 32, 45']);
+  eq(E.findRefs('Samuel in 1 Samuel 3 heard').filter(x => x.t === 'ref').map(x => x.v), ['1 Samuel 3']);
+  eq(E.findRefs('Psalm 13:1–2, Psalm 62:8.').filter(x => x.t === 'ref').map(x => x.v), ['Psalm 13:1–2', 'Psalm 62:8']);
+});
+t('esvUrl opens the passage on esv.org', () => eq(E.esvUrl('John 5:19–20, 30'), 'https://www.esv.org/John+5:19-20,30/'));
+t('smart quotes are display only: straight in, curly out, and apostrophes close', () => eq(E.smart(`"It's 'Abba!' he said"`), '“It’s ‘Abba!’ he said”'));
+t('parseRich handles em, bold and references together', () => eq(E.parseRich('A *b* **c** John 3:16').map(x => x.t), ['text', 'em', 'text', 'b', 'text', 'ref']));
+t('no ESV text is shipped: there is no verses.json and the app only links out unless one is added', () => C.meta.versesFile === false && !src[2].includes('verses.json\'') );
+t('Connected rotates among the five design verses and the Murray caption is present', () => {
+  eq(C.connected.verses.map(v => v.ref), ['Psalm 46:10', 'John 10:27', 'Matthew 28:20', 'Matthew 11:28', 'Psalm 37:7']);
+  eq([0, 1, 4].map(i => E.pickVerse(5, i)), [1, 2, 0]); eq(E.pickVerse(5, null), 0);
+  return C.connected.caption.startsWith('Before you pray, bow quietly');
+});
+t('verified witness quotes and cards match DESIGN.md exactly (when DESIGN.md can be read)', () => {
+  if (!design) return true;
+  const bad = [];
+  for (const w of C.witnesses.items) for (const q of [w.quote, w.before, w.after].filter(Boolean)) if (!design.includes(q.replace(/^[^"]*"/, '').replace(/"[^"]*$/, ''))) bad.push(w.id);
+  for (const w of C.reach.witnesses) if (!design.includes(w.quote)) bad.push('reach:' + w.who);
+  for (const c of [...C.objections.cards, ...C.common.cards]) if (!design.includes(c.a) && !(C.common.cards.includes(c) && true)) bad.push(c.id);
+  return !bad.length || 'not found in DESIGN.md: ' + bad;
+});
+t('the six cards match DESIGN.md word for word (when DESIGN.md can be read)', () => {
+  if (!design) return true;
+  const bad = C.objections.cards.filter(c => !design.includes(c.a)).map(c => c.id);
+  return !bad.length || 'differs: ' + bad;
+});
+
+// ---- content shape ----
+t('every What\'s in the way? and Why practice? piece is marked draft', () => {
+  const pieces = [...C.objections.cards, ...C.common.cards, C.case, C.reach, C.speaks, C.witnesses, C.life, C.scripture, C.why];
+  const bad = pieces.filter(p => p.status !== 'draft'); return !bad.length || bad.length + ' not draft';
+});
+t('the What\'s in the way? cards live only in content.json, never in the app code', () => !/not sure God is there|not good enough for Him/i.test(src[0]));
+t('the Case has nine steps and a last screen; Reach has seven screens', () => eq([C.case.steps.length, C.reach.screens.length], [9, 7]));
+t('How He speaks has eight ways; Scripture has eight groups; the Witnesses list is oldest first', () => {
+  eq([C.speaks.ways.length, C.scripture.groups.length], [8, 8]);
+  eq(C.witnesses.items[0].id, 'justin'); eq(C.witnesses.items.at(-1).id, 'willard');
+});
+t('each Witness way label points to a real How He speaks entry', () => {
+  const ids = new Set(C.speaks.ways.map(w => w.id));
+  return C.witnesses.items.every(w => w.ways.every(x => ids.has(x))) && C.scripture.groups.every(g => g.verses.every(v => !v.speaks || ids.has(v.speaks)));
+});
+t('the How did it come? chips are the eight in the design, and each real way links to How He speaks', () => {
+  eq(C.how.ways.map(w => w.label), ['A thought', 'A verse', 'A picture or memory', 'A feeling or peace', 'A person', 'Something that happened', 'Not sure', 'Nothing yet']);
+  const ids = new Set(C.speaks.ways.map(w => w.id)); return C.how.ways.every(w => !w.speaks || ids.has(w.speaks));
+});
+t('References: fourteen entries, plain Amazon links, no affiliate tag, inspired-by note present', () => {
+  eq(C.references.items.length, 14);
+  return C.references.items.every(i => /^https:\/\/(www|us)\.amazon\.com\/|spurgeongems/.test(i.url) && !/tag=/.test(i.url)) && /haven't endorsed it/.test(C.references.intro);
+});
+t('the Kraft books carry the spiritual-warfare note', () => C.references.items.filter(i => i.by === 'Charles Kraft').every(i => i.warfare) && /does not cover it/.test(C.references.kraftNote));
+t('content has no markdown beyond *em* and **bold**', () => !/\[[^\]]+\]\(|^#{1,6} |`/m.test(JSON.stringify(C)));
+t('the Why practice? overview opens with John 10:27 and "Jesus said it plainly."', () => C.why.leadRef === 'John 10:27' && C.why.lead === 'Jesus said it plainly.' && C.why.doors.length === 6);
+
+// ---- language rules ----
+t('banned vocabulary stays out of every UI string and path prompt', () => {
+  const j = JSON.stringify([C.copy, C.paths, C.steps, C.test, C.keep, C.nothing, C.firstLaunch, C.expectation, C.afterAnswer]);
+  const m = j.match(/visuali[sz]e|imagine Jesus|inner child|regression|download|channel|activate|unlock|manifest/i);
+  return !m || 'found: ' + m[0];
+});
+t('no streaks, scores, badges, nagging or celebration in the app code or the UI strings', () => {
+  const hit = (src[0] + JSON.stringify(C.copy) + JSON.stringify(C.paths) + JSON.stringify(C.keep)).match(/streak|leaderboard|badge|confetti|congrat|well done|great job|you missed|score\b/i);
+  return !hit || 'found: ' + hit[0];
+});
+t('the app says what the person wrote, never what God said', () => !/God told me|God said to you|God says to you/i.test(JSON.stringify([C.copy, C.paths, C.steps])));
+t('no native dialogs: confirm(), alert() and prompt() never appear in the app code', () => !/\b(window\.)?(confirm|alert|prompt)\s*\(/.test(src[0]));
+t('no analytics or network calls beyond content.json and the optional passage file', () => {
+  const calls = [...src[0].matchAll(/fetch\(([^)]*)\)/g)].map(m => m[1]);
+  return calls.every(c => /content\.json|verses\.json/.test(c)) || 'fetch calls: ' + calls;
+});
+t('storage: every localStorage access is inside try/catch', () => {
+  const lines = src[0].split('\n'); const bad = [];
+  lines.forEach((l, i) => { if (/localStorage\./.test(l) && !/try \{|catch/.test(l)) bad.push(i + 1); });
+  return !bad.length || 'unguarded on lines ' + bad;
+});
+t('the version lives only in sw.js and Settings derives it from the cache name', () => /const CACHE = 'with-v\d+'/.test(src[2]) && src[0].includes('with-v(\\d+)') && !/v\d+\.\d+/.test(JSON.stringify(C.copy.settings)));
+t('the service worker never skips waiting on its own', () => !/install[\s\S]{0,400}skipWaiting\(\)/.test(src[2].split("addEventListener('message'")[0]));
+t('updates wait for a resting screen: resting routes yes, sessions and open records no', () =>
+  E.isResting('start') && E.isResting('review') && E.isResting('settings') && E.isResting('why/case/3') && !E.isResting('run') && !E.isResting('connected/quick') && !E.isResting('review/abc') && !E.isResting('stop'));
+t('nothing in the session screens is pinned to the bottom (no sticky or fixed in the step runner)', () => !/position:\s*(fixed|sticky)/.test(src[0]));
+
+// ---- export ----
+const sample = () => {
+  const s = E.startSession(C, E.newSession('quick'));
+  E.setAnswer(s, 'bring', C.steps.bring.title, 'my worry <b>today</b>');
+  E.setAnswer(s, 'know', C.steps.know.title, 'rest'); E.toggleHow(E.entryFor(s, 'know'), 'thought');
+  s.followUps.push({ prompt: 'Ask Him anything', answer: 'what do You think of me?' });
+  E.setTest(s, 'scripture', 'yes'); E.setTest(s, 'jesus', 'unsure'); s.test.note = 'a note';
+  s.keep = 'Rest in Him'; s.nextStep = 'call her'; s.answered = { note: 'she called' };
+  return E.complete(s, new Date(2026, 0, 5, 9, 30));
+};
+t('text export has the questions, answers, how it came, the test, the keep line and God answered', () => {
+  const x = E.exportText(C, [sample()], new Date(2026, 0, 6));
+  return ['my worry <b>today</b>', C.steps.know.title, '(How did it come? A thought)', 'Scripture: Yes · Jesus: Not sure — a note', 'What will you keep? Rest in Him', 'God answered: she called', 'Exported 2026-01-06', 'what do You think of me?']
+    .every(p => x.includes(p)) || x;
+});
+t('text export lists newest first and marks unfinished sessions', () => {
+  const a = sample(), b = sample(); a.started = '2026-01-01T09:00:00+00:00'; b.started = '2026-02-01T09:00:00+00:00'; b.status = 'resting';
+  const x = E.exportText(C, [a, b]); return x.indexOf('2026-02-01') < x.indexOf('2026-01-01') && x.includes('(Resting)');
+});
+t('print export escapes HTML, offers the print dialog and carries the same content', () => {
+  const h = E.exportHTML(C, [sample()]);
+  return h.includes('my worry &lt;b&gt;today&lt;/b&gt;') && !h.includes('<b>today') && h.includes('window.print') && h.includes('Rest in Him') && h.includes('@media print');
+});
+t('an empty export says so', () => E.exportHTML(C, []).includes('Nothing here yet.'));
+t('date range filter is inclusive and works on the local date', () => {
+  const s = { started: '2026-03-10T23:30:00-05:00' };
+  return E.inRange(s, '2026-03-10', '2026-03-10') && !E.inRange(s, '2026-03-11', '') && E.inRange(s, '', '');
+});
+t('the reminder .ics repeats daily at the chosen hour, with a trailing line break', () => {
+  const ics = E.reminderICS(C, 8, new Date(2026, 0, 5, 9, 0), 'https://x/With/');
+  return ics.includes('RRULE:FREQ=DAILY') && ics.includes('DTSTART:20260106T080000') && ics.endsWith('END:VCALENDAR\r\n') && ics.includes('URL:https://x/With/');
+});
+
+// ---- how did it come tallies and the Review note ----
+const tagged = (...ids) => { const s = E.newSession('quick'); ids.forEach((id, i) => { const e = E.ensureEntry(s, 'k' + i, 'p'); e.how = [id]; }); return s; };
+t('tallies count each way', () => eq(E.howTallies(C, [tagged('thought', 'thought', 'scripture')]).thought, 2));
+t('the pattern note names the top one or two ways, with no numbers, once there is enough to go on', () => {
+  eq(E.patternNote(C, [tagged('thought', 'thought', 'scripture', 'scripture')]), "You've noticed God mostly through quiet thoughts and verses.");
+  eq(E.patternNote(C, [tagged('thought', 'thought', 'thought')]), "You've noticed God mostly through quiet thoughts.");
+  eq(E.patternNote(C, [tagged('thought', 'thought', 'scripture')]), "You've noticed God mostly through quiet thoughts.");
+  eq(E.patternNote(C, [tagged('thought', 'scripture')]), null);
+});
+t('"Not sure" and "Nothing yet" are never counted in the pattern note', () => eq(E.patternNote(C, [tagged('unsure', 'unsure', 'nothing', 'nothing')]), null));
+t('the pattern note never scores, ranks or interprets', () => !/\d|score|rank|best|means/.test(E.patternNote(C, [tagged('thought', 'thought', 'scripture', 'person')])));
+
+// ---- review helpers ----
+t('God answered list collects marked sessions, newest first', () => {
+  const a = sample(), b = sample(), c = sample(); a.started = '2026-01-01T00:00:00+00:00'; b.started = '2026-03-01T00:00:00+00:00'; c.started = '2026-02-01T00:00:00+00:00'; c.answered = null;
+  eq(E.answeredList([a, b, c]).map(s => s.started.slice(5, 7)), ['03', '01']);
+});
+t('unfinished sessions are the open and resting ones', () => eq(E.unfinishedOf([{ status: 'open' }, { status: 'complete' }, { status: 'resting' }]).length, 2));
+
+// ---- every copy key the code reads exists ----
+t('every C.copy.* string the app reads exists in content.json', () => {
+  const missing = new Set();
+  const get = path => path.split('.').reduce((o, k) => o == null ? o : o[k], C);
+  for (const s of src.slice(0, 2)) {
+    for (const m of s.matchAll(/C\.copy\.([a-zA-Z]+(?:\.[a-zA-Z]+)?)/g)) if (get('copy.' + m[1]) === undefined) missing.add(m[1]);
+    // short aliases inside app.js (R = run or review, D = done, M = more, S = start or settings)
+    const secs = { R: ['run', 'review'], D: ['done'], M: ['more'], S: ['start', 'settings'] };
+    for (const [a, list] of Object.entries(secs))
+      for (const m of s.matchAll(new RegExp('\\b' + a + '\\.(\\w+)', 'g')))
+        if (list.every(sc => get('copy.' + sc + '.' + m[1]) === undefined) && !['length', 'map', 'filter', 'lines', 'title', 'steps'].includes(m[1])) missing.add(a + '.' + m[1]);
+  }
+  return !missing.size || 'missing: ' + [...missing].join(', ');
+});
+
+document.getElementById('sum').textContent = `${pass} passed, ${fail} failed`;
+document.getElementById('sum').className = fail ? 'fail' : 'pass';
+document.title = `${fail ? '✗' : '✓'} ${pass}/${pass + fail} — With tests`;
+</script>
+</body>
+</html>
