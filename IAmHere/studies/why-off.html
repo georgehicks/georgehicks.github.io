@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Why Off</title>
+<style>
+  :root {
+    --paper: #f4f0e7; --ink: #1c2430; --dim: #5c6572; --navy: #1b3358;
+    --gold: #c4a46a; --line: #ddd6c8; --card: #fbf9f4; --sage: #e7efe4;
+    --slate: #e6edf4; --sand: #f6ecd8; --rose: #f3e6e1;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; background: #cfc8bb; }
+  body { font-family: "Iowan Old Style", Palatino, Georgia, serif; color: var(--ink); }
+  .sheet {
+    width: 8.5in; height: 11in; margin: 0 auto; background: var(--paper);
+    padding: 0.42in 0.42in 0.36in; position: relative; overflow: hidden;
+  }
+  .sheet::before {
+    content: ""; position: absolute; inset: 12px;
+    border: 1px solid rgba(27, 51, 88, 0.18); pointer-events: none;
+  }
+  .kicker {
+    font-family: "Gill Sans", "Trebuchet MS", sans-serif;
+    letter-spacing: 0.2em; text-transform: uppercase; font-size: 11px;
+    color: var(--navy); margin: 0 0 4px;
+  }
+  h1 { font-weight: 500; font-size: 32px; line-height: 0.95; margin: 0; letter-spacing: -0.03em; }
+  .rule { height: 3px; width: 64px; background: var(--gold); margin: 8px 0 6px; }
+  .lede { font-size: 13px; line-height: 1.32; margin: 0 0 8px; max-width: 7.4in; }
+  .row3 { display: grid; grid-template-columns: 1.15fr 1fr 1fr; gap: 10px; margin-bottom: 10px; }
+  .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px; }
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 10px 12px 8px; }
+  .card.navy { background: var(--navy); color: #f7f3ea; border-color: var(--navy); }
+  .card.sand { background: var(--sand); }
+  .card.slate { background: var(--slate); }
+  .card.sage { background: var(--sage); }
+  .card.rose { background: var(--rose); }
+  .num {
+    font-family: "Gill Sans", "Trebuchet MS", sans-serif;
+    font-size: 10px; letter-spacing: 0.14em; text-transform: uppercase;
+    color: var(--gold); margin-bottom: 3px;
+  }
+  .card.navy .num { color: #e4c98a; }
+  h2 { font-size: 15px; margin: 0 0 4px; font-weight: 600; }
+  p { margin: 0; font-size: 11.5px; line-height: 1.28; }
+  ul { margin: 0; padding: 0; list-style: none; }
+  li { font-size: 11.2px; line-height: 1.26; margin: 0 0 3px; padding-left: 9px; position: relative; }
+  li::before {
+    content: ""; width: 4px; height: 4px; border-radius: 50%; background: var(--gold);
+    position: absolute; left: 0; top: 0.45em;
+  }
+  .card.navy li::before { background: #e4c98a; }
+  .band { background: var(--navy); color: #f7f3ea; border-radius: 14px; padding: 12px 16px; }
+  .band h2 { color: #f7f3ea; font-size: 16px; margin: 0 0 3px; }
+  .band p { font-size: 12px; line-height: 1.32; }
+  @page { size: letter portrait; margin: 0; }
+  @media print { html, body { background: white; margin: 0; } .sheet { margin: 0; } }
+</style>
+</head>
+<body>
+<section class="sheet">
+  <p class="kicker">The structure of the gift</p>
+  <h1>Why off</h1>
+  <div class="rule"></div>
+  <p class="lede">God created us, so we are not God. He gave us room to love and know Him, or to reject Him, and an unfinished world He called good.</p>
+  <div class="row3">
+    <article class="card navy">
+      <div class="num">The room</div>
+      <h2>Free to join Him</h2>
+      <p>He wanted us to work this world with Him, in that freedom. We have used the freedom to reject Him.</p>
+    </article>
+    <article class="card sand">
+      <div class="num">The mercy</div>
+      <h2>Guardrails, hazards</h2>
+      <p>Reality protects us from becoming self-righteous, self-absorbed, and trapped inside ourselves.</p>
+    </article>
+    <article class="card sage">
+      <div class="num">The rescue</div>
+      <h2>Save, and grow</h2>
+      <p>He gave a rescue. To save us, and to grow us up in Him.</p>
+    </article>
+  </div>
+  <div class="row2">
+    <article class="card slate">
+      <div class="num">Exact enough to be here</div>
+      <h2>What had to be met</h2>
+      <ul>
+        <li>Near enough for water to run. Far enough that it does not boil off.</li>
+        <li>Air thick enough to hold heat and water. Thin enough not to crush the surface.</li>
+        <li>A magnetic field, or the star’s wind strips the air.</li>
+        <li>A crust that moves, so carbon is buried and returned.</li>
+        <li>Land and sea together. Oxygen enough to live, not enough to keep the world on fire.</li>
+        <li>A moon large enough to pull the tides and steady the tilt. Not so large that the tides scour the world clean.</li>
+        <li>Met at once, and then lasting. Outside them, the chemistry stops.</li>
+      </ul>
+    </article>
+    <article class="card rose">
+      <div class="num">The cycles do not divide</div>
+      <h2>The count will not close</h2>
+      <ul>
+        <li>The expected cycles are the day, the moon, and the year. They do not divide one another.</li>
+        <li>The year is about 365.24 days. A moon-month is about 29.5. Twelve of them fall short of the year.</li>
+        <li>That mismatch forced the calendar, and then the watching. Seasons, tides, leap days, and a science of weather.</li>
+        <li>The week is seven because it was given, not because the sky produced it.</li>
+        <li>The pieces are precise. They will not line up into a clean human number.</li>
+      </ul>
+    </article>
+  </div>
+  <div class="row3">
+    <article class="card sand">
+      <div class="num">Who He is</div>
+      <h2>Not our drawing</h2>
+      <ul>
+        <li>Father, Son, and Spirit. Not the family picture we would have drawn.</li>
+        <li>One man, one people, one cross. Not an idea spread evenly.</li>
+        <li>Scripture in human words. God speaking, and men still arguing.</li>
+      </ul>
+    </article>
+    <article class="card slate">
+      <div class="num">Already, not yet</div>
+      <h2>Unfinished on purpose</h2>
+      <ul>
+        <li>The kingdom already, and not yet.</li>
+        <li>Soul, spirit, heart, mind, conscience. Not one neat room.</li>
+        <li>The end is not yet. The fall left the gift crooked. The gift is still the gift.</li>
+      </ul>
+    </article>
+    <article class="card">
+      <div class="num">Left open</div>
+      <h2>So love can be love</h2>
+      <ul>
+        <li>Faith cannot be sight and still be faith. Room for faith is room for doubt.</li>
+        <li>A love that cannot be refused is not love.</li>
+        <li>God does not finish our picture of family. He tells us who He is.</li>
+        <li>Persons come one by one. He came as a person.</li>
+      </ul>
+    </article>
+  </div>
+  <div class="band">
+    <div class="num">The invitation</div>
+    <h2>The off place is the room He left.</h2>
+    <p>A certainty that already knows cannot be met. It has closed the door from its own side. We do not wait until the picture is clean. We bring the unfinished place to Jesus, and take a step toward Home.</p>
+  </div>
+</section>
+</body>
+</html>

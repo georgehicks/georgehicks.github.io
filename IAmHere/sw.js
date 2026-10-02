@@ -1,6 +1,7 @@
-const CACHE = 'iamhere-v54';
+const CACHE = 'iamhere-v60';
 const ASSETS = ['./', './index.html', './app.js', './engine.js', './content.json', './manifest.json', './icon.svg',
-  './links/inner-and-outer-man-1.jpg', './links/why-off-1.jpg', './links/why-he-came-1.jpg'];
+  './studies/inner-and-outer-man.html', './studies/inner-and-outer-man-mobile.html', './studies/why-off.html',
+  './studies/why-off-mobile.html', './studies/why-he-came.html', './studies/why-he-came-mobile.html'];
 
 self.addEventListener('install', e => {
   // cache: 'reload' skips the HTTP cache so a version bump really fetches fresh files
@@ -37,12 +38,6 @@ self.addEventListener('fetch', e => {
         return res;
       }).catch(() => caches.match('./index.html', { ignoreSearch: true }))
     );
-  } else if (new URL(req.url).pathname.includes('/IAmHere/links/')) {
-    // study pages: saved the first time they're viewed (the phone pages are precached above)
-    e.respondWith(caches.match(req, { ignoreSearch: true }).then(c => c || fetch(req).then(res => {
-      if (res.ok) { const copy = res.clone(); caches.open(CACHE).then(cache => cache.put(req, copy)); }
-      return res;
-    })));
   } else {
     e.respondWith(caches.match(req, { ignoreSearch: true }).then(c => c || fetch(req)));
   }

@@ -1,0 +1,390 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Why He Came, and What He Is Up To</title>
+<style>
+  :root {
+    --paper: #f4f0e7;
+    --ink: #1c2430;
+    --dim: #5c6572;
+    --navy: #1b3358;
+    --navy-2: #243e68;
+    --gold: #c4a46a;
+    --line: #ddd6c8;
+    --card: #fbf9f4;
+    --sage: #e7efe4;
+    --slate: #e6edf4;
+    --sand: #f6ecd8;
+    --rose: #f3e6e1;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; background: #cfc8bb; }
+  body {
+    font-family: "Iowan Old Style", Palatino, "Palatino Linotype", Georgia, serif;
+    color: var(--ink);
+  }
+  .sheet {
+    width: 1100px;
+    height: 1420px;
+    margin: 28px auto;
+    background: var(--paper);
+    padding: 42px 46px 36px;
+    position: relative;
+    overflow: hidden;
+    box-shadow: 0 18px 50px rgba(28, 36, 48, 0.16);
+  }
+  .sheet::before {
+    content: "";
+    position: absolute;
+    inset: 14px;
+    border: 1px solid rgba(27, 51, 88, 0.18);
+    pointer-events: none;
+  }
+  .kicker {
+    font-family: "Gill Sans", "Trebuchet MS", sans-serif;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    font-size: 12px;
+    color: var(--navy);
+    margin: 0 0 8px;
+  }
+  h1 {
+    font-weight: 500;
+    font-size: 46px;
+    line-height: 0.98;
+    margin: 0 0 10px;
+    letter-spacing: -0.02em;
+    max-width: 760px;
+  }
+  .rule {
+    height: 3px;
+    width: 86px;
+    background: var(--gold);
+    margin: 14px 0 18px;
+  }
+  .lede {
+    font-size: 16px;
+    color: var(--dim);
+    margin: 0 0 22px;
+    max-width: 720px;
+  }
+  .grid {
+    display: grid;
+    grid-template-columns: 1.15fr 1fr 1fr;
+    gap: 14px;
+  }
+  .span2 { grid-column: span 2; }
+  .card {
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: 16px;
+    padding: 14px 16px 12px;
+    position: relative;
+  }
+  .card.navy { background: var(--navy); color: #f7f3ea; border-color: var(--navy); }
+  .card.sand { background: var(--sand); }
+  .card.slate { background: var(--slate); }
+  .card.sage { background: var(--sage); }
+  .card.rose { background: var(--rose); }
+  .num {
+    font-family: "Gill Sans", "Trebuchet MS", sans-serif;
+    font-size: 11px;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--gold);
+    margin-bottom: 4px;
+  }
+  .card.navy .num { color: #e4c98a; }
+  h2 {
+    font-size: 20px;
+    font-weight: 600;
+    margin: 0 0 8px;
+    letter-spacing: -0.01em;
+  }
+  ul { margin: 0; padding: 0; list-style: none; }
+  li {
+    font-size: 13.5px;
+    line-height: 1.35;
+    margin: 0 0 6px;
+    padding-left: 12px;
+    position: relative;
+  }
+  li::before {
+    content: "";
+    width: 5px;
+    height: 5px;
+    border-radius: 50%;
+    background: var(--gold);
+    position: absolute;
+    left: 0;
+    top: 0.45em;
+  }
+  .card.navy li::before { background: #e4c98a; }
+  .ref {
+    font-family: "Gill Sans", "Trebuchet MS", sans-serif;
+    font-size: 11px;
+    color: var(--dim);
+    letter-spacing: 0.01em;
+  }
+  .card.navy .ref { color: #d5dbe6; }
+  .close {
+    margin-top: 16px;
+    display: grid;
+    grid-template-columns: 1.4fr 1fr;
+    gap: 14px;
+  }
+  .close .card { min-height: 118px; }
+  .verse {
+    font-size: 22px;
+    line-height: 1.25;
+    margin: 8px 0 0;
+  }
+    position: absolute;
+    left: 46px;
+    right: 46px;
+    bottom: 22px;
+    display: flex;
+    justify-content: space-between;
+    font-family: "Gill Sans", "Trebuchet MS", sans-serif;
+    font-size: 11px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--dim);
+  }
+  .page2 h1 { font-size: 40px; }
+  .quad {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+  }
+  .band {
+    margin-top: 14px;
+    background: var(--navy);
+    color: #f7f3ea;
+    border-radius: 16px;
+    padding: 16px 18px 12px;
+  }
+  .band h2 { color: #f7f3ea; }
+  .cols3 {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 8px 18px;
+  }
+  .cols3 li { font-size: 13px; }
+  @media print {
+    html, body { background: white; margin: 0; }
+    .sheet {
+      margin: 0;
+      box-shadow: none;
+      page-break-after: always;
+      break-after: page;
+    }
+  }
+  @page { size: 1100px 1420px; margin: 0; }
+</style>
+</head>
+<body>
+
+<section class="sheet">
+  <p class="kicker">A working outline</p>
+  <h1>Why He Came,<br>and What He Is Up To</h1>
+  <div class="rule"></div>
+  <p class="lede">The errand, in the lines Scripture gives. First coming. What He opened, and what He is still doing.</p>
+
+  <div class="grid">
+    <article class="card navy">
+      <div class="num">01 · Sent</div>
+      <h2>The Father’s will</h2>
+      <ul>
+        <li>To do the Father’s will, not His own. <span class="ref">John 6:38</span></li>
+        <li>To finish the work He was given, and so glorify the Father. <span class="ref">John 17:4</span></li>
+      </ul>
+    </article>
+    <article class="card sand">
+      <div class="num">02 · Reveal</div>
+      <h2>Make Him known</h2>
+      <ul>
+        <li>To make the Father known. <span class="ref">John 1:18</span></li>
+        <li>To bear witness to the truth. <span class="ref">John 18:37</span></li>
+        <li>To come as light. <span class="ref">John 12:46</span></li>
+      </ul>
+    </article>
+    <article class="card slate">
+      <div class="num">03 · Fulfill</div>
+      <h2>Law, promise, sons</h2>
+      <ul>
+        <li>Not to abolish the Law and the Prophets, but to fulfill them. <span class="ref">Matthew 5:17</span></li>
+        <li>To redeem those under the Law, and give adoption. <span class="ref">Galatians 4:4–5</span></li>
+      </ul>
+    </article>
+    <article class="card sage">
+      <div class="num">04 · Kingdom</div>
+      <h2>This is why He was sent</h2>
+      <ul>
+        <li>To preach the good news of the kingdom. <span class="ref">Luke 4:43; Mark 1:38</span></li>
+        <li>Good news to the poor, liberty to the captives, sight to the blind, the Lord’s favor. <span class="ref">Luke 4:18–19</span></li>
+      </ul>
+    </article>
+    <article class="card span2 rose">
+      <div class="num">05 · Save</div>
+      <h2>Not to condemn. To seek and save.</h2>
+      <ul>
+        <li>To save His people from their sins. <span class="ref">Matthew 1:21</span></li>
+        <li>Not to condemn the world, but that the world might be saved through Him. <span class="ref">John 3:17</span></li>
+        <li>To call sinners, not the righteous. <span class="ref">Mark 2:17</span></li>
+        <li>To seek and save the lost. <span class="ref">Luke 19:10</span></li>
+      </ul>
+    </article>
+    <article class="card span2">
+      <div class="num">06 · Give His life</div>
+      <h2>Ransom, sin, a way home</h2>
+      <ul>
+        <li>Not to be served, but to serve, and to give His life as a ransom for many. <span class="ref">Mark 10:45</span></li>
+        <li>To take away sin. <span class="ref">John 1:29; 1 John 3:5</span></li>
+        <li>To make propitiation. <span class="ref">Hebrews 2:17</span></li>
+        <li>To suffer once for sins, the righteous for the unrighteous, to bring us to God. <span class="ref">1 Peter 3:18</span></li>
+        <li>To redeem a people for His own, and reconcile us to God. <span class="ref">Titus 2:14; 2 Corinthians 5:18–19</span></li>
+      </ul>
+    </article>
+    <article class="card navy">
+      <div class="num">07 · Break</div>
+      <h2>Captivity undone</h2>
+      <ul>
+        <li>To destroy the works of the devil. <span class="ref">1 John 3:8</span></li>
+        <li>To break the one who had the power of death. <span class="ref">Hebrews 2:14</span></li>
+      </ul>
+    </article>
+    <article class="card sand span2">
+      <div class="num">08 · Life, and a people</div>
+      <h2>One flock. The Spirit sent.</h2>
+      <ul>
+        <li>That they may have life, and have it abundantly. <span class="ref">John 10:10</span></li>
+        <li>Other sheep, one flock, one shepherd. <span class="ref">John 10:16</span></li>
+        <li>To make peace, and one new people. <span class="ref">Ephesians 2:14–16</span></li>
+        <li>To go, so the Helper would come. <span class="ref">John 16:7</span></li>
+      </ul>
+    </article>
+  </div>
+  <div class="close">
+    <article class="card navy">
+      <div class="num">The aim</div>
+      <p class="verse">To bring us to God.</p>
+      <ul><li>The righteous for the unrighteous. <span class="ref">1 Peter 3:18</span></li></ul>
+    </article>
+    <article class="card sand">
+      <div class="num">The life</div>
+      <p class="verse">Life, and life abundant.</p>
+      <ul><li>He came that they may have it. <span class="ref">John 10:10</span></li></ul>
+    </article>
+  </div>
+</section>
+
+<section class="sheet page2">
+  <p class="kicker">What He reveals · what He is still doing</p>
+  <h1>God’s intentions,<br>and the life He is after</h1>
+  <div class="rule"></div>
+
+  <div class="quad">
+    <article class="card sand">
+      <div class="num">Wanted</div>
+      <h2>Loved, and given the kingdom</h2>
+      <ul>
+        <li>God so loved the world that He gave His Son. <span class="ref">John 3:16</span></li>
+        <li>The Father Himself loves us. <span class="ref">John 16:27</span></li>
+        <li>It is the Father’s good pleasure to give the kingdom. <span class="ref">Luke 12:32</span></li>
+      </ul>
+    </article>
+    <article class="card slate">
+      <div class="num">Saved, not lost</div>
+      <h2>None of His lost</h2>
+      <ul>
+        <li>Not to perish, but to have eternal life. <span class="ref">John 3:16</span></li>
+        <li>Not sent to condemn, but that the world might be saved. <span class="ref">John 3:17</span></li>
+        <li>Of all the Father gives Him, He should lose nothing. <span class="ref">John 6:39</span></li>
+      </ul>
+    </article>
+    <article class="card sage">
+      <div class="num">Brought home</div>
+      <h2>Where He is, we may be</h2>
+      <ul>
+        <li>To bring us to God. <span class="ref">1 Peter 3:18</span></li>
+        <li>A place prepared, that where He is, we may be also. <span class="ref">John 14:2–3</span></li>
+        <li>Father, I desire that they also be with Me where I am. <span class="ref">John 17:24</span></li>
+      </ul>
+    </article>
+    <article class="card rose">
+      <div class="num">Sons · free · one</div>
+      <h2>Children, and one people</h2>
+      <ul>
+        <li>Adoption, and power to become children of God. <span class="ref">Galatians 4:5; John 1:12</span></li>
+        <li>If the Son sets us free, we are free indeed. <span class="ref">John 8:36</span></li>
+        <li>One flock. That they may be one. Peace, one new people. <span class="ref">John 10:16; 17:21; Ephesians 2:14–16</span></li>
+      </ul>
+    </article>
+    <article class="card">
+      <div class="num">Alive to Him</div>
+      <h2>Rest, life, a shared home</h2>
+      <ul>
+        <li>Life, and life abundant. <span class="ref">John 10:10</span></li>
+        <li>Come, and He will give rest. <span class="ref">Matthew 11:28</span></li>
+        <li>Abide in Him, and He in us. <span class="ref">John 15:4</span></li>
+        <li>The Father and the Son make their home with the one who loves Him. <span class="ref">John 14:23</span></li>
+      </ul>
+    </article>
+    <article class="card navy">
+      <div class="num">Kept, and finished</div>
+      <h2>Held to the end</h2>
+      <ul>
+        <li>No one snatches them from His hand, or the Father’s. <span class="ref">John 10:28–29</span></li>
+        <li>He who began the work will bring it to completion. <span class="ref">Philippians 1:6</span></li>
+        <li>A new heaven and a new earth, God dwelling with His people. <span class="ref">Revelation 21:1–3</span></li>
+      </ul>
+    </article>
+  </div>
+
+  <div class="quad" style="margin-top:14px">
+    <article class="card slate">
+      <div class="num">The Spirit</div>
+      <h2>What He wants</h2>
+      <ul>
+        <li>Given, and remaining with us. <span class="ref">John 14:16–17</span></li>
+        <li>To teach, and bring His words to mind. <span class="ref">John 14:26</span></li>
+        <li>To guide into truth, and glorify Jesus. <span class="ref">John 16:13–14</span></li>
+        <li>Witness that we are children. Love poured out. Help in weakness. <span class="ref">Romans 8:16; 5:5; 8:26</span></li>
+        <li>Sealed for the day of redemption. Power to witness. <span class="ref">Ephesians 1:13–14; Acts 1:8</span></li>
+      </ul>
+    </article>
+    <article class="card sage">
+      <div class="num">Transformed</div>
+      <h2>What we look like</h2>
+      <ul>
+        <li>A new creation. A new heart and a new spirit. <span class="ref">2 Corinthians 5:17; Ezekiel 36:26</span></li>
+        <li>Conformed to the image of the Son. <span class="ref">Romans 8:29</span></li>
+        <li>Changed into His likeness, from glory to glory. <span class="ref">2 Corinthians 3:18</span></li>
+        <li>Fruit: love, joy, peace, patience, kindness, goodness, faithfulness, gentleness, self-control. <span class="ref">Galatians 5:22–23</span></li>
+        <li>Mind renewed. A body made like His. <span class="ref">Romans 12:2; Philippians 3:21</span></li>
+      </ul>
+    </article>
+  </div>
+
+  <div class="band">
+    <div class="num">Still up to</div>
+    <h2>Greater works, because He goes to the Father</h2>
+    <ul class="cols3">
+      <li>Whoever believes will do the works He does, and greater works. <span class="ref">John 14:12</span></li>
+      <li>As the Father sent Him, so He sends us. <span class="ref">John 20:21</span></li>
+      <li>Ask in His name, and He will do it, that the Father be glorified. <span class="ref">John 14:13–14</span></li>
+      <li>His sheep hear His voice, and follow. <span class="ref">John 10:27</span></li>
+      <li>Authority over the power of the enemy. <span class="ref">Luke 10:19</span></li>
+      <li>Signs accompanying those who believe. <span class="ref">Mark 16:17–18</span></li>
+      <li>He ascended and gave gifts. <span class="ref">Ephesians 4:8</span></li>
+      <li>The Spirit gives gifts to each, for the common good. <span class="ref">1 Corinthians 12:7–11</span></li>
+      <li>Power when the Spirit comes, and we are witnesses. <span class="ref">Acts 1:8</span></li>
+    </ul>
+  </div>
+</section>
+
+</body>
+</html>

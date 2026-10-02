@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Inner and Outer Man</title>
+<style>
+  :root {
+    --paper: #f4f0e7;
+    --ink: #1c2430;
+    --dim: #5c6572;
+    --navy: #1b3358;
+    --gold: #c4a46a;
+    --line: #ddd6c8;
+    --card: #fbf9f4;
+    --sage: #e7efe4;
+    --slate: #e6edf4;
+    --sand: #f6ecd8;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; background: #cfc8bb; }
+  body { font-family: "Iowan Old Style", Palatino, Georgia, serif; color: var(--ink); }
+  .sheet {
+    width: 1100px; height: 1420px; margin: 28px auto; background: var(--paper);
+    padding: 40px 46px 34px; position: relative; overflow: hidden;
+  }
+  .sheet::before {
+    content: ""; position: absolute; inset: 14px;
+    border: 1px solid rgba(27, 51, 88, 0.18); pointer-events: none;
+  }
+  .kicker {
+    font-family: "Gill Sans", "Trebuchet MS", sans-serif;
+    letter-spacing: 0.22em; text-transform: uppercase; font-size: 12px;
+    color: var(--navy); margin: 0 0 8px;
+  }
+  h1 { font-weight: 500; font-size: 44px; line-height: 0.98; margin: 0; letter-spacing: -0.02em; }
+  .rule { height: 3px; width: 86px; background: var(--gold); margin: 14px 0 8px; }
+  .lede { font-size: 18px; color: var(--dim); margin: 0 0 16px; max-width: 820px; }
+  .stage { display: grid; grid-template-columns: 520px 1fr; gap: 28px; align-items: center; }
+  .figure { position: relative; height: 460px; }
+  .outer {
+    position: absolute; left: 70px; top: 20px; width: 380px; height: 420px;
+    border: 2px solid #6d8a68; border-radius: 190px 190px 150px 150px;
+    background: rgba(122, 148, 116, 0.28);
+  }
+  .outer-label {
+    position: absolute; top: 18px; left: 0; right: 0; text-align: center;
+    font-family: "Gill Sans", "Trebuchet MS", sans-serif;
+    letter-spacing: 0.16em; text-transform: uppercase; font-size: 13px; color: #2d4630;
+  }
+  .brain {
+    position: absolute; top: 54px; left: 125px; width: 130px; height: 52px;
+    border: 1.5px dashed #6d8a68; border-radius: 40px;
+    font-family: "Gill Sans", "Trebuchet MS", sans-serif;
+    font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase;
+    color: #2d4630; display: flex; align-items: center; justify-content: center;
+  }
+  .inner {
+    position: absolute; left: 108px; top: 124px; width: 304px; height: 276px;
+    border-radius: 50%; background: rgba(196, 164, 106, 0.42);
+    border: 2px solid #b89555;
+  }
+  .inner-label {
+    position: absolute; bottom: 22px; left: 0; right: 0; text-align: center;
+    font-family: "Gill Sans", "Trebuchet MS", sans-serif;
+    letter-spacing: 0.14em; text-transform: uppercase; font-size: 13px; color: #6d5424;
+  }
+  .spirit {
+    position: absolute; left: 78px; top: 48px; width: 148px; height: 148px;
+    border-radius: 50%; background: #1b3358; color: #f7f3ea;
+    display: flex; align-items: center; justify-content: center; text-align: center;
+    font-family: "Gill Sans", "Trebuchet MS", sans-serif;
+    letter-spacing: 0.14em; text-transform: uppercase; font-size: 13px;
+    box-shadow: 0 0 0 10px rgba(27, 51, 88, 0.12);
+  }
+  .side h2 { margin: 0 0 8px; font-size: 22px; }
+  .side p { margin: 0 0 12px; font-size: 16.5px; line-height: 1.38; }
+  .cards { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 14px; margin-top: 18px; }
+  .card { border-radius: 16px; border: 1px solid var(--line); padding: 16px 16px 12px; min-height: 280px; background: var(--card); }
+  .card.sage { background: var(--sage); }
+  .card.sand { background: var(--sand); }
+  .card.navy { background: var(--navy); color: #f7f3ea; border-color: var(--navy); }
+  .num {
+    font-family: "Gill Sans", "Trebuchet MS", sans-serif;
+    font-size: 11px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--gold); margin-bottom: 4px;
+  }
+  .card.navy .num { color: #e4c98a; }
+  h3 { margin: 0 0 8px; font-size: 24px; }
+  ul { margin: 0; padding: 0; list-style: none; }
+  li { font-size: 15px; line-height: 1.35; margin: 0 0 7px; padding-left: 12px; position: relative; }
+  li::before {
+    content: ""; width: 5px; height: 5px; border-radius: 50%; background: var(--gold);
+    position: absolute; left: 0; top: 0.48em;
+  }
+  .card.navy li::before { background: #e4c98a; }
+  .home {
+    margin-top: 14px; background: var(--navy); color: #f7f3ea; border-radius: 16px;
+    padding: 16px 20px; display: grid; grid-template-columns: 160px 1fr; gap: 14px; align-items: center;
+  }
+  .home h2 { margin: 0; font-size: 26px; color: #f7f3ea; }
+  .home p { margin: 0; font-size: 16.5px; line-height: 1.4; }
+  .verse-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  .verse-grid .card { min-height: 0; }
+  .verse-grid .span { grid-column: span 2; }
+  .ref { font-family: "Gill Sans", "Trebuchet MS", sans-serif; font-size: 12px; color: var(--dim); }
+  .card.navy .ref { color: #d5dbe6; }
+  .card.slate { background: var(--slate); }
+  @page { size: 1100px 1420px; margin: 0; }
+  @media print {
+    html, body { background: white; margin: 0; }
+    .sheet { margin: 0; break-after: page; page-break-after: always; }
+    .sheet:last-child { break-after: auto; page-break-after: auto; }
+  }
+</style>
+</head>
+<body>
+<section class="sheet">
+  <p class="kicker">One person · two men · spirit inside the soul</p>
+  <h1>Inner and Outer Man</h1>
+  <div class="rule"></div>
+  <p class="lede">The outer man is the body. The inner man is the soul. Spirit is the God-breath in that inner life, alive to Him or not.</p>
+  <div class="stage">
+    <div class="figure">
+      <div class="outer">
+        <div class="outer-label">Outer man · body</div>
+        <div class="brain">Brain</div>
+        <div class="inner">
+          <div class="spirit">Spirit</div>
+          <div class="inner-label">Inner man · soul</div>
+        </div>
+      </div>
+    </div>
+    <div class="side">
+      <h2>The inner-life words</h2>
+      <p><b>Inner man</b> · eso anthropos. The person turned inward. Not a synonym for soul.</p>
+      <p><b>Soul</b> · psyche, nephesh. Life, self, person. Thoughts, feelings, memory, will.</p>
+      <p><b>Spirit</b> · pneuma, ruach. God-breath in that life. Alive to Him, managing, or far.</p>
+      <p><b>Heart</b> · kardia, leb. The center the Scriptures most often name. Seat of will, treasure, and faith.</p>
+      <p><b>Mind</b> · nous. Understanding, the grasp of what is true. Not the brain.</p>
+      <p><b>Conscience</b> · suneidesis. The inner witness, accusing or confirming.</p>
+    </div>
+  </div>
+  <div class="cards">
+    <article class="card sage">
+      <div class="num">Outer</div>
+      <h3>Body</h3>
+      <ul>
+        <li>Flesh, breath, gut, hands.</li>
+        <li>The brain is included.</li>
+        <li>Rest, gripping, or taken.</li>
+        <li>Fight, flight, freeze, collapse.</li>
+      </ul>
+    </article>
+    <article class="card sand">
+      <div class="num">Inner</div>
+      <h3>Soul</h3>
+      <ul>
+        <li>Thoughts, feelings, memory, will.</li>
+        <li>Open, narrowed, elsewhere, or blank.</li>
+        <li>The inner man. Not the brain.</li>
+        <li>Still present when the spirit is far.</li>
+      </ul>
+    </article>
+    <article class="card navy">
+      <div class="num">Within</div>
+      <h3>Spirit</h3>
+      <ul>
+        <li>God-breath in the inner life.</li>
+        <li>Alive. Receiving, not straining.</li>
+        <li>Managing. Strength may not be His.</li>
+        <li>Fading. Love is hard to hear.</li>
+      </ul>
+    </article>
+  </div>
+  <div class="home">
+    <h2>Home</h2>
+    <p>Spirit alive to God, inside a soul that is present and open, in a body free to be still or move. Received, not earned.</p>
+  </div>
+</section>
+
+<section class="sheet">
+  <p class="kicker">The word itself · ψυχή</p>
+  <h1>Psyche in the New Testament</h1>
+  <div class="rule"></div>
+  <p class="lede">Life, self, person, soul. Not a second word for the inner man. The inner man is <em>eso anthropos</em>.</p>
+  <div class="verse-grid">
+    <article class="card sand">
+      <div class="num">Life and self</div>
+      <h3>The person</h3>
+      <ul>
+        <li>Fear him who can destroy both soul and body in hell. <span class="ref">Matthew 10:28</span></li>
+        <li>Whoever loses his soul for my sake will find it. <span class="ref">Matthew 16:25</span></li>
+        <li>What shall it profit a man, if he gain the whole world, and lose his own soul? <span class="ref">Matthew 16:26</span></li>
+        <li>Soul, you have many goods laid up for many years. This night your soul is required of you. <span class="ref">Luke 12:19–20</span></li>
+      </ul>
+    </article>
+    <article class="card slate">
+      <div class="num">Love and worship</div>
+      <h3>The inner life</h3>
+      <ul>
+        <li>Love the Lord your God with all your heart, and with all your soul, and with all your mind. <span class="ref">Matthew 22:37</span></li>
+        <li>My soul magnifies the Lord. <span class="ref">Luke 1:46</span></li>
+        <li>Now is my soul troubled. <span class="ref">John 12:27</span></li>
+        <li>You will not abandon my soul to Hades. <span class="ref">Acts 2:27</span></li>
+      </ul>
+    </article>
+    <article class="card sage">
+      <div class="num">Kept and saved</div>
+      <h3>The whole</h3>
+      <ul>
+        <li>Spirit and soul and body kept blameless. <span class="ref">1 Thessalonians 5:23</span></li>
+        <li>The word divides soul and spirit, joints and marrow. <span class="ref">Hebrews 4:12</span></li>
+        <li>An anchor of the soul. <span class="ref">Hebrews 6:19</span></li>
+        <li>Obtain the salvation of your souls. <span class="ref">1 Peter 1:9</span></li>
+        <li>Abstain from fleshly lusts, which war against the soul. <span class="ref">1 Peter 2:11</span></li>
+        <li>Souls of those slain, under the altar. <span class="ref">Revelation 6:9</span></li>
+      </ul>
+    </article>
+    <article class="card navy span">
+      <div class="num">Not the same phrase</div>
+      <h3>Inner man is another line</h3>
+      <ul>
+        <li>Though our outer man is decaying, our inner man is renewed day by day. <span class="ref">2 Corinthians 4:16</span></li>
+        <li>I joyfully concur with the law of God in the inner man. <span class="ref">Romans 7:22</span></li>
+        <li>Strengthened with power through His Spirit in the inner man. <span class="ref">Ephesians 3:16</span></li>
+      </ul>
+    </article>
+  </div>
+</section>
+</body>
+</html>

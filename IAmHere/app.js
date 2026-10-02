@@ -126,14 +126,17 @@ const NEEDS_VISIT = ['pin', 'strategy', 'breathe', 'home-state', 'again'];
 function render(requested) {
   if (teardown) { teardown(); teardown = null; }
   let route = requested;
-  // a study inside the app: #/links/<id> or #/links/<id>/full
-  const study = /^links\/([a-z-]+)(\/full)?$/.exec(route || '');
+  // a study inside the app: #/links/<id>
+  const study = /^links\/([a-z-]+)$/.exec(route || '');
   const studyItem = study && C.copy.links.items.find(it => it.id === study[1]);
+  document.body.classList.toggle('wide', !!(studyItem && isOnboarded()));
   if (studyItem && isOnboarded()) {
     current = 'links';
     if (updateReady) applyUpdate();
-    $app.replaceChildren(studyView(studyItem, !!study[2]));
+    $app.replaceChildren(studyView(studyItem));
     window.scrollTo(0, 0);
+    const head = $app.querySelector('h1');
+    if (head) { head.tabIndex = -1; head.focus({ preventScroll: true }); }
     return;
   }
   if (!(route in VIEWS)) route = 'start';
@@ -522,17 +525,62 @@ const VIEWS = {
 };
 
 // ===================== a study, inside the app =====================
-// George's phone-width layout shown as images (an installed iPhone app can't show a PDF and
-// still offer a way back), with the full text behind it for screen readers. Pinch-zoom works.
-function studyView(it, full) {
+// George's own HTML studies, shown in a frame under the app's Back (an installed iPhone app
+// opening a page directly leaves no way back). Narrow screens get his phone layout, wide ones
+// his full sheet; a link swaps them. Each <span class="ref"> becomes ESV links once loaded,
+// so his files stay untouched and new versions can simply be dropped in.
+const NARROW = 860; // the full sheet is 8.5in (816px) wide
+const studyLayout = {}; // a layout picked by hand, per study, for this session
+function studyView(it) {
   const K = C.copy.links;
-  const pages = full ? it.full : it.pages;
+  const chosen = studyLayout[it.id];
+  const layout = chosen || (window.innerWidth < NARROW ? 'mobile' : 'full');
+  const frame = h('iframe', { class: 'study-frame ' + layout, src: it[layout], title: it.title, scrolling: 'no' });
+  const wrap = h('div', { class: 'study-frame-wrap' }, frame);
+  frame.addEventListener('load', () => {
+    const doc = frame.contentDocument;
+    if (!doc) return;
+    // fit the frame (the phone file is a fixed 390px; let it take the width it's given)
+    const st = doc.createElement('style');
+    st.textContent = 'html, body { background: transparent !important; } .phone { width: auto !important; max-width: 430px; min-height: 0 !important; }'
+      + ' .ref a { color: inherit; text-decoration: underline; text-decoration-color: color-mix(in srgb, currentColor 40%, transparent); text-underline-offset: 2px; }';
+    doc.head.append(st);
+    doc.querySelectorAll('.ref').forEach(span => {
+      const links = E.refLinks(span.textContent.trim());
+      span.replaceChildren(...links.flatMap((l, i) => {
+        const a = doc.createElement('a');
+        a.href = l.url; a.target = '_blank'; a.rel = 'noopener'; a.textContent = l.label;
+        return i ? ['; ', a] : [a];
+      }));
+    });
+    // the frame is as tall as the page; the full sheet renders at its real width and, on a
+    // narrow screen, the whole frame is scaled down to fit (pinch-zoom to read closely)
+    const fit = () => {
+      if (layout === 'full') {
+        // sheets differ in width (8.5in, 1100px…): render the frame as wide as the sheet itself
+        const natural = Math.max(doc.documentElement.scrollWidth, doc.body.scrollWidth);
+        if (natural > frame.offsetWidth) frame.style.width = natural + 'px';
+      }
+      const docH = doc.documentElement.scrollHeight;
+      const scale = layout === 'full' ? Math.min(1, wrap.clientWidth / frame.offsetWidth) : 1;
+      frame.style.height = docH + 'px';
+      frame.style.transform = scale < 1 ? 'scale(' + scale + ')' : '';
+      wrap.style.height = Math.ceil(docH * scale) + 'px';
+    };
+    fit();
+    if (window.ResizeObserver) new ResizeObserver(fit).observe(doc.body);
+  });
+  const other = layout === 'full' ? 'mobile' : 'full';
+  const swap = link(layout === 'full' ? K.showPhone : K.showFull, () => {
+    studyLayout[it.id] = other;
+    render('links/' + it.id);
+  }, 'small');
   return h('section', { class: 'view study' },
-    link(C.copy.back, () => go(full ? 'links/' + it.id : 'links'), 'back'),
-    h('h2', { class: 'sr-only', text: full ? it.title + ' — ' + K.fullTitle : it.title }),
-    h('p', { class: 'sr-only', text: it.text }),
-    pages.map((src, i) => h('img', { class: 'study-page' + (full ? ' full' : ''), src, alt: '', loading: i ? 'lazy' : 'eager', decoding: 'async' })),
-    !full && it.full && it.full.length && h('div', { class: 'center' }, link(K.fullLabel, () => go('links/' + it.id + '/full'), 'small')),
+    link(C.copy.back, () => go('links'), 'back'),
+    h('h1', { class: 'sr-only', text: it.title }),
+    wrap,
+    h('div', { class: 'center study-foot' }, swap),
+    h('p', { class: 'fine center', text: K.refHint }),
   );
 }
 

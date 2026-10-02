@@ -257,9 +257,26 @@ const src = await Promise.all(['app.js', 'index.html', 'engine.js'].map(f => fet
 t('John 8:44 lives only in the Stand firm description, never on the sentence picker', () =>
   C.copy.start.paths.find(p => p.id === 'stand').body.includes('John 8:44') && !src[0].includes('father-of-lies')
   && !JSON.stringify(C.copy.pin).includes('John 8:44'));
-const linkOk = await Promise.all(C.copy.links.items.flatMap(it => [...it.pages, ...(it.full || [])]).map(u => fetch(u, { method: 'HEAD' }).then(r => r.ok, () => false)));
-t('Links: every study has its page images and screen-reader text', () => C.copy.links.items.every(it => it.id && it.pages.length && it.text.length > 200) || 'missing');
-t('Links: every item points at a file that exists', () => linkOk.every(Boolean) || JSON.stringify(linkOk));
+t('Links: three studies, each with a phone file and a full file', () => C.copy.links.items.length === 3 && C.copy.links.items.every(it => it.id && it.mobile && it.full));
+t('Scripture references open the ESV, one link per reference, carrying the book', () => {
+  eq(E.refLinks('John 3:16'), [{ label: 'John 3:16', url: 'https://www.esv.org/John+3:16/' }]);
+  eq(E.refLinks('Luke 12:19–20')[0].url, 'https://www.esv.org/Luke+12:19-20/');
+  eq(E.refLinks('John 10:16; 17:21; Ephesians 2:14–16').map(l => l.url),
+    ['https://www.esv.org/John+10:16/', 'https://www.esv.org/John+17:21/', 'https://www.esv.org/Ephesians+2:14-16/']);
+  eq(E.refLinks('Galatians 4:5; 1 John 3:5').map(l => l.url), ['https://www.esv.org/Galatians+4:5/', 'https://www.esv.org/1+John+3:5/']);
+});
+const studyRefs = [];
+const studyFilesOk = [];
+for (const it of C.copy.links.items) for (const f of [it.mobile, it.full]) {
+  const r = await fetch(f + '?_=' + Date.now()).catch(() => null);
+  studyFilesOk.push(!!(r && r.ok));
+  if (r && r.ok) new DOMParser().parseFromString(await r.text(), 'text/html').querySelectorAll('.ref').forEach(s => studyRefs.push(s.textContent.trim()));
+}
+t('every study file exists', () => studyFilesOk.length === 6 && studyFilesOk.every(Boolean) || JSON.stringify(studyFilesOk));
+t('every reference in George’s study files makes a well-formed ESV link', () => {
+  const bad = studyRefs.flatMap(r => E.refLinks(r)).filter(l => !/^https:\/\/www\.esv\.org\/(\d\+)?[A-Z][a-z]+(\+[A-Z][a-z]+)*\+\d+(:\d+(-\d+)?)?\/$/.test(l.url));
+  return (studyRefs.length > 50 && !bad.length) || (bad.length ? JSON.stringify(bad[0]) : 'only ' + studyRefs.length + ' refs');
+});
 t('end card shows the home line', () => src[0].includes("text: C.copy.home.line"));
 t('app code has no streak, score, badge, leaderboard, or celebration', () => {
   const hit = src.join('\n').match(/streak|leaderboard|badge|confetti|congrat|well done|great job/i);
