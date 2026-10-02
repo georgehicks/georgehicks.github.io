@@ -257,6 +257,8 @@ const src = await Promise.all(['app.js', 'index.html', 'engine.js'].map(f => fet
 t('John 8:44 lives only in the Stand firm description, never on the sentence picker', () =>
   C.copy.start.paths.find(p => p.id === 'stand').body.includes('John 8:44') && !src[0].includes('father-of-lies')
   && !JSON.stringify(C.copy.pin).includes('John 8:44'));
+const linkOk = await Promise.all(C.copy.links.items.map(it => fetch(it.href, { method: 'HEAD' }).then(r => r.ok, () => false)));
+t('Links: every item points at a file that exists', () => linkOk.every(Boolean) || JSON.stringify(linkOk));
 t('end card shows the home line', () => src[0].includes("text: C.copy.home.line"));
 t('app code has no streak, score, badge, leaderboard, or celebration', () => {
   const hit = src.join('\n').match(/streak|leaderboard|badge|confetti|congrat|well done|great job/i);

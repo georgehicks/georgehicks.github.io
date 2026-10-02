@@ -164,7 +164,7 @@ const VIEWS = {
 
   // ---------- /start : the home line and four plain paths ----------
   start() {
-    const go1 = { checkin: resetToHere, lie: nameLie, stand: () => breatheNow('stand'), above: () => breatheNow('above'), with: () => breatheNow('with') };
+    const go1 = { checkin: resetToHere, lie: nameLie, stand: () => breatheNow('stand'), above: () => breatheNow('above'), with: () => breatheNow('with'), links: () => go('links') };
     return h('section', { class: 'view' },
       h('div', { class: 'topbar' },
         h('h1', { class: 'wordmark', text: C.copy.wordmark }),
@@ -175,6 +175,20 @@ const VIEWS = {
           h('span', { class: 'path-title', text: p.title }),
           h('span', { class: 'path-body', text: p.body })))),
       h('div', { class: 'spacer' }),
+    );
+  },
+
+  // ---------- /links : one-page studies (PDFs, saved for offline with the app) ----------
+  links() {
+    const K = C.copy.links;
+    return h('section', { class: 'view' },
+      link(C.copy.back, () => go('start'), 'back'),
+      h('h2', { text: K.title, style: 'margin-bottom:14px' }),
+      h('div', { class: 'paths' }, K.items.map(it =>
+        h('a', { class: 'path', href: it.href, target: '_blank', rel: 'noopener' },
+          h('span', { class: 'path-title', text: it.title }),
+          h('span', { class: 'path-body', text: it.body }),
+          h('span', { class: 'path-kind', text: K.kind })))),
     );
   },
 
@@ -726,7 +740,7 @@ async function showVersion(el, tries = 0) {
 // so this page keeps getting every file from its own version — old code never meets new
 // content. On a resting screen we let the new version take over and reload onto it at once;
 // never mid-breath or mid-check-in (that would lose the taps).
-const SAFE_TO_RELOAD = ['start', 'settings', 'log', ''];
+const SAFE_TO_RELOAD = ['start', 'settings', 'log', 'links', ''];
 let updateReady = null; // the installed, waiting worker
 function applyUpdate() { if (updateReady) updateReady.postMessage('skipWaiting'); }
 if ('serviceWorker' in navigator && navigator.serviceWorker.controller) { // first-ever install isn't an update

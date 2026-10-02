@@ -393,8 +393,18 @@
         { "id": "lie", "title": "Name a lie", "body": "Pick the sentence that feels true, and breathe a line of Scripture with Him." },
         { "id": "stand", "title": "Stand firm", "body": "Stand in Christ’s strength when it feels like more than a bad day. Jesus called the enemy “the father of lies” (John 8:44)." },
         { "id": "above", "title": "Thanks and prayer", "body": "Set your mind on things above with gratitude and prayer." },
-        { "id": "with", "title": "Rest with Him", "body": "Be with the Father, Jesus, and the Holy Spirit." }
+        { "id": "with", "title": "Rest with Him", "body": "Be with the Father, Jesus, and the Holy Spirit." },
+        { "id": "links", "title": "Links", "body": "One-page studies to read slowly." }
       ]
+    },
+    "links": {
+      "title": "Links",
+      "items": [
+        { "title": "Inner and Outer Man", "body": "Body, soul, and spirit: how they fit together, and the words Scripture uses for them.", "href": "links/Inner-and-Outer-Man.pdf" },
+        { "title": "Why Off", "body": "Why the world feels unfinished: the room He left, the mercy, and the rescue.", "href": "links/Why-Off.pdf" },
+        { "title": "Why He Came, and What He Is Up To", "body": "Jesus’ errand in Scripture’s own lines, and what He is still doing.", "href": "links/Why-He-Came-and-What-He-Is-Up-To.pdf" }
+      ],
+      "kind": "PDF"
     },
     "pin": {
       "titleDying": "Which sentence feels true right now?",

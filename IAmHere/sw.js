@@ -1,5 +1,6 @@
-const CACHE = 'iamhere-v49';
-const ASSETS = ['./', './index.html', './app.js', './engine.js', './content.json', './manifest.json', './icon.svg'];
+const CACHE = 'iamhere-v50';
+const ASSETS = ['./', './index.html', './app.js', './engine.js', './content.json', './manifest.json', './icon.svg',
+  './links/Inner-and-Outer-Man.pdf', './links/Why-Off.pdf', './links/Why-He-Came-and-What-He-Is-Up-To.pdf'];
 
 self.addEventListener('install', e => {
   // cache: 'reload' skips the HTTP cache so a version bump really fetches fresh files
@@ -25,7 +26,9 @@ self.addEventListener('fetch', e => {
   const isHTML = req.mode === 'navigate' || (req.headers.get('accept') || '').includes('text/html');
   // only the app's own page refreshes the cached shell (not e.g. tests.html)
   const isShell = /\/IAmHere\/(index\.html)?$/.test(new URL(req.url).pathname);
-  if (isHTML && !isShell) return;
+  // other pages (e.g. a Links PDF opened directly): saved copy if we have one, else network;
+  // never stored as the app shell
+  if (isHTML && !isShell) { e.respondWith(caches.match(req, { ignoreSearch: true }).then(c => c || fetch(req))); return; }
   if (isHTML) {
     e.respondWith(
       fetch(req).then(res => {
