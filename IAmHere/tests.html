@@ -164,7 +164,7 @@ t('feelings never change the recommendation', () => eq(E.recommendAxis({ ...L('r
 t('the middle part is Soul, holding thoughts and feelings', () => C.axes.mind.label === 'Soul' && /feelings/.test(C.axes.mind.question) && C.copy.home.line.includes('soul present and open'));
 t('breath is 8 by default', () => eq(E.breathPlan({ loc: L('dying', 'rest', 'present_open') }).total, 8));
 t('no PRD shorthand left in the copy', () => {
-  const hit = JSON.stringify({ ...C, verseByPin: 0, verseByBody: 0, verseByMind: 0 }).match(/this year’s face|old broadcast|two columns|second half|weather|provision|reading attack|not a moral|running the desk|Zombie|Anti-love/i);
+  const hit = JSON.stringify({ ...C, verseByPin: 0, verseByBody: 0, verseByMind: 0, copy: { ...C.copy, links: 0 } /* studies are George's own writing */ }).match(/this year’s face|old broadcast|two columns|second half|weather|provision|reading attack|not a moral|running the desk|Zombie|Anti-love/i);
   return !hit || 'found: ' + hit[0];
 });
 t('no copy mentions a list or a desk', () => !/\blist\b|\bdesk\b/i.test(JSON.stringify(C)) || JSON.stringify(C).match(/.{30}\b(list|desk)\b.{30}/i)[0]);
@@ -257,7 +257,8 @@ const src = await Promise.all(['app.js', 'index.html', 'engine.js'].map(f => fet
 t('John 8:44 lives only in the Stand firm description, never on the sentence picker', () =>
   C.copy.start.paths.find(p => p.id === 'stand').body.includes('John 8:44') && !src[0].includes('father-of-lies')
   && !JSON.stringify(C.copy.pin).includes('John 8:44'));
-const linkOk = await Promise.all(C.copy.links.items.flatMap(it => [it.href, it.full].filter(Boolean)).map(u => fetch(u, { method: 'HEAD' }).then(r => r.ok, () => false)));
+const linkOk = await Promise.all(C.copy.links.items.flatMap(it => [...it.pages, ...(it.full || [])]).map(u => fetch(u, { method: 'HEAD' }).then(r => r.ok, () => false)));
+t('Links: every study has its page images and screen-reader text', () => C.copy.links.items.every(it => it.id && it.pages.length && it.text.length > 200) || 'missing');
 t('Links: every item points at a file that exists', () => linkOk.every(Boolean) || JSON.stringify(linkOk));
 t('end card shows the home line', () => src[0].includes("text: C.copy.home.line"));
 t('app code has no streak, score, badge, leaderboard, or celebration', () => {

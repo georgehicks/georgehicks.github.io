@@ -177,8 +177,10 @@
   }
   .path-title { font-weight: 600; font-size: 1.1rem; }
   a.path { text-decoration: none; }
-  .link-item { display: flex; flex-direction: column; }
-  .link-full { align-self: flex-end; font-size: 0.82rem; color: var(--ink-faint); padding: 8px 6px 2px; text-underline-offset: 3px; text-decoration-color: var(--line); }
+  /* a study: the page images fill the column; full pages get a hairline so page edges read */
+  /* the study's own layout already has margins, so it runs edge to edge for the largest text */
+  .study-page { display: block; width: calc(100% + 32px); max-width: none; height: auto; margin: 4px -16px 10px; }
+  .study-page.full { border-radius: 4px; border: 1px solid var(--line); }
   .path-kind { font-size: 0.7rem; font-weight: 700; letter-spacing: 0.12em; color: var(--ink-faint); margin-top: 4px; }
   .path-body { font-size: 0.9rem; color: var(--ink-dim); line-height: 1.4; }
   .path.primary { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }

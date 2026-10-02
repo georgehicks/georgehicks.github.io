@@ -126,6 +126,16 @@ const NEEDS_VISIT = ['pin', 'strategy', 'breathe', 'home-state', 'again'];
 function render(requested) {
   if (teardown) { teardown(); teardown = null; }
   let route = requested;
+  // a study inside the app: #/links/<id> or #/links/<id>/full
+  const study = /^links\/([a-z-]+)(\/full)?$/.exec(route || '');
+  const studyItem = study && C.copy.links.items.find(it => it.id === study[1]);
+  if (studyItem && isOnboarded()) {
+    current = 'links';
+    if (updateReady) applyUpdate();
+    $app.replaceChildren(studyView(studyItem, !!study[2]));
+    window.scrollTo(0, 0);
+    return;
+  }
   if (!(route in VIEWS)) route = 'start';
   if (!isOnboarded() && route !== '') route = '';
   if (route === '' && isOnboarded()) route = 'start';
@@ -187,13 +197,12 @@ const VIEWS = {
     return h('section', { class: 'view' },
       link(C.copy.back, () => go('start'), 'back'),
       h('h2', { text: K.title, style: 'margin-bottom:14px' }),
-      // the card opens the phone-sized PDF; the full page (more verses, for printing) sits just below
-      h('div', { class: 'paths' }, K.items.map(it => h('div', { class: 'link-item' },
-        h('a', { class: 'path', href: it.href, target: '_blank', rel: 'noopener' },
+      // each study opens inside the app (#/links/<id>), so there's always a Back
+      h('div', { class: 'paths' }, K.items.map(it =>
+        h('button', { type: 'button', class: 'path', onclick: () => go('links/' + it.id) },
           h('span', { class: 'path-title', text: it.title }),
           h('span', { class: 'path-body', text: it.body }),
-          h('span', { class: 'path-kind', text: K.kind })),
-        it.full && h('a', { class: 'link-full', href: it.full, target: '_blank', rel: 'noopener', text: K.fullLabel })))),
+          h('span', { class: 'path-kind', text: K.kind })))),
     );
   },
 
@@ -511,6 +520,21 @@ const VIEWS = {
     );
   },
 };
+
+// ===================== a study, inside the app =====================
+// George's phone-width layout shown as images (an installed iPhone app can't show a PDF and
+// still offer a way back), with the full text behind it for screen readers. Pinch-zoom works.
+function studyView(it, full) {
+  const K = C.copy.links;
+  const pages = full ? it.full : it.pages;
+  return h('section', { class: 'view study' },
+    link(C.copy.back, () => go(full ? 'links/' + it.id : 'links'), 'back'),
+    h('h2', { class: 'sr-only', text: full ? it.title + ' — ' + K.fullTitle : it.title }),
+    h('p', { class: 'sr-only', text: it.text }),
+    pages.map((src, i) => h('img', { class: 'study-page' + (full ? ' full' : ''), src, alt: '', loading: i ? 'lazy' : 'eager', decoding: 'async' })),
+    !full && it.full && it.full.length && h('div', { class: 'center' }, link(K.fullLabel, () => go('links/' + it.id + '/full'), 'small')),
+  );
+}
 
 // ===================== breath (PRD §12) =====================
 function breathView(homePath) {
