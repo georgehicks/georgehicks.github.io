@@ -206,7 +206,12 @@ const VIEWS = {
         h('button', { type: 'button', class: 'path', onclick: () => go('links/' + it.id) },
           h('span', { class: 'path-title', text: it.title }),
           h('span', { class: 'path-body', text: it.body }),
-          h('span', { class: 'path-kind', text: K.kind })))),
+          h('span', { class: 'path-kind', text: K.kind }))),
+        // another app: opens in its own tab (an installed iPhone app shows it in a Safari panel with Done)
+        K.apps.map(it => h('a', { class: 'path', href: it.url, target: '_blank', rel: 'noopener', style: 'text-decoration:none;color:inherit' },
+          h('span', { class: 'path-title', text: it.title }),
+          h('span', { class: 'path-body', text: it.body }),
+          h('span', { class: 'path-kind', text: K.appKind })))),
     );
   },
 

@@ -400,6 +400,10 @@
     "links": {
       "title": "Links",
       "kind": "Study",
+      "apps": [
+        {"id": "with", "title": "With", "body": "An app to practice being with God.", "url": "https://georgehicks.github.io/With/"}
+      ],
+      "appKind": "App",
       "showFull": "Show the full page",
       "showPhone": "Show the phone layout",
       "refHint": "Tap a reference to read it here.",
