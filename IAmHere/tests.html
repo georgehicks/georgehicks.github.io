@@ -264,7 +264,7 @@ t('Scripture references name their passage, one per reference, carrying the book
   eq(E.refParts('Romans 8:16; 5:5; 8:26').map(p => p.key), ['Romans 8:16', 'Romans 5:5', 'Romans 8:26']);
   eq(E.refParts('Galatians 4:5; 1 John 3:5').map(p => p.key), ['Galatians 4:5', '1 John 3:5']);
 });
-t('references open a sheet in the app, never an off-site link', () => !/esv\.org/.test(src.join('\n')) && !/refLinks/.test(src[0]));
+t('references open a popover in the app, never an off-site link', () => !/esv\.org/.test(src.join('\n')) && !/refLinks/.test(src[0]));
 const studyRefs = [];
 const studyFilesOk = [];
 for (const it of C.copy.links.items) for (const f of [it.mobile, it.full]) {

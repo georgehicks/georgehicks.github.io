@@ -124,7 +124,7 @@ window.addEventListener('hashchange', () => {
 
 const NEEDS_VISIT = ['pin', 'strategy', 'breathe', 'home-state', 'again'];
 function render(requested) {
-  closeSheet(true);
+  closePassage();
   if (teardown) { teardown(); teardown = null; }
   let route = requested;
   // a study inside the app: #/links/<id>
@@ -529,45 +529,74 @@ const VIEWS = {
 // George's own HTML studies, shown in a frame under the app's Back (an installed iPhone app
 // opening a page directly leaves no way back). Narrow screens get his phone layout, wide ones
 // his full sheet; a link swaps them. Each <span class="ref"> becomes tap targets once loaded
-// (the passage opens in a sheet over the study, from verses.json — ESV, never leaving the app),
+// (the passage opens in a small popover beside the reference, from verses.json — ESV, never leaving the app),
 // so his files stay untouched and new versions can simply be dropped in.
 // verses.json: exact ESV text for every reference in the studies, saved with the app (and cached
 // by the service worker), so a passage opens instantly and offline. { "John 3:16": [[16, "…"]] }
 let versesLoad = null;
 const loadVerses = () => versesLoad || (versesLoad = fetch('verses.json').then(r => r.json()).catch(() => { versesLoad = null; return {}; }));
 
-// The passage sheet: slides up over the study. The phone's Back, Escape, a tap outside, or Close
-// all dismiss it (opening adds one history step so Back closes the sheet, not the study).
-let sheet = null;
-function openPassage(key, verses) {
-  closeSheet(true);
+// The passage popover: a small panel beside the tapped reference, like a tooltip. It follows the
+// reference if the page scrolls, flips above it when there's no room below, and goes away on a
+// tap anywhere else, Escape, the × button, or tapping the same reference again.
+let pop = null;
+function placePop() {
+  if (!pop) return;
+  const { el, anchor, frame } = pop;
+  // the reference lives in the study's iframe, which may be scaled down: map its box to the screen
+  const f = frame.getBoundingClientRect(), s = f.width / frame.offsetWidth || 1, r = anchor.getBoundingClientRect();
+  const box = { l: f.left + r.left * s, r: f.left + r.right * s, t: f.top + r.top * s, b: f.top + r.bottom * s };
+  const M = 12, vw = document.documentElement.clientWidth, vh = window.innerHeight;
+  const w = Math.min(320, vw - 2 * M);
+  const left = Math.max(M, Math.min(vw - M - w, (box.l + box.r) / 2 - w / 2));
+  const roomBelow = vh - box.b - M - 10, roomAbove = box.t - M - 10;
+  const below = roomBelow >= Math.min(el.firstChild.scrollHeight, 260) || roomBelow >= roomAbove;
+  el.style.width = w + 'px';
+  el.style.left = left + 'px';
+  el.style.maxHeight = Math.max(120, below ? roomBelow : roomAbove) + 'px';
+  el.style.top = below ? (box.b + 10) + 'px' : 'auto';
+  el.style.bottom = below ? 'auto' : (vh - box.t + 10) + 'px';
+  el.classList.toggle('above', !below);
+  el.style.setProperty('--caret', Math.max(16, Math.min(w - 16, (box.l + box.r) / 2 - left)) + 'px');
+  // out of sight (scrolled off the screen): nothing to point at, so close
+  if (box.b < 0 || box.t > vh) closePassage();
+}
+function openPassage(key, verses, anchor, frame) {
+  const same = pop && pop.key === key && pop.anchor === anchor;
+  closePassage();
+  if (same) return;
   const K = C.copy.links;
-  const body = verses.map(([n, text]) => h('p', { class: 'passage-verse' },
-    verses.length > 1 && h('sup', { text: n }), verses.length > 1 && ' ', text));
-  const closeBtn = btn(K.close, () => closeSheet(), 'quiet');
-  const panel = h('div', { class: 'sheet', role: 'dialog', 'aria-modal': 'true', 'aria-labelledby': 'sheet-ref', tabindex: '-1' },
-    h('h2', { id: 'sheet-ref', text: key }),
-    h('div', { class: 'passage' }, body),
-    h('p', { class: 'fine esv-notice', text: K.esvNotice }),
-    closeBtn);
-  const scrim = h('div', { class: 'sheet-scrim', onclick: ev => { if (ev.target === scrim) closeSheet(); } }, panel);
-  const onKey = ev => { if (ev.key === 'Escape') closeSheet(); };
+  const el = h('div', { class: 'popover', role: 'dialog', 'aria-label': key },
+    h('div', { class: 'pop-scroll' },
+      h('div', { class: 'pop-head' },
+        h('strong', { text: key }),
+        h('button', { type: 'button', class: 'pop-close', 'aria-label': K.close, text: '×', onclick: () => closePassage() })),
+      h('div', { class: 'passage' }, verses.map(([n, text]) => h('p', { class: 'passage-verse' },
+        verses.length > 1 && h('sup', { text: n }), verses.length > 1 && ' ', text))),
+      h('p', { class: 'esv-notice', text: K.esvNotice })));
+  const onDown = ev => { if (!el.contains(ev.target)) closePassage(); };
+  const onKey = ev => { if (ev.key === 'Escape') closePassage(); };
+  const onMove = () => placePop();
+  document.addEventListener('pointerdown', onDown, true);
   document.addEventListener('keydown', onKey);
-  sheet = { scrim, onKey, pushed: true };
-  history.pushState({ sheet: true }, '');
-  document.body.append(scrim);
-  requestAnimationFrame(() => { scrim.classList.add('open'); panel.focus({ preventScroll: true }); });
+  window.addEventListener('scroll', onMove, { passive: true });
+  window.addEventListener('resize', onMove);
+  pop = { el, key, anchor, frame, off: () => {
+    document.removeEventListener('pointerdown', onDown, true);
+    document.removeEventListener('keydown', onKey);
+    window.removeEventListener('scroll', onMove);
+    window.removeEventListener('resize', onMove);
+  } };
+  document.body.append(el);
+  placePop();
 }
-// quiet = tearing down for a new sheet or a route change: no history step to undo
-function closeSheet(quiet) {
-  if (!sheet) return;
-  const { scrim, onKey, pushed } = sheet;
-  sheet = null;
-  document.removeEventListener('keydown', onKey);
-  scrim.remove();
-  if (pushed && !quiet && history.state && history.state.sheet) history.back();
+function closePassage() {
+  if (!pop) return;
+  const { el, off } = pop;
+  pop = null;
+  off();
+  el.remove();
 }
-window.addEventListener('popstate', () => { if (sheet) { sheet.pushed = false; closeSheet(true); } });
 
 const NARROW = 860; // the full sheet is 8.5in (816px) wide
 const studyLayout = {}; // a layout picked by hand, per study, for this session
@@ -585,13 +614,14 @@ function studyView(it) {
     st.textContent = 'html, body { background: transparent !important; } .phone { width: auto !important; max-width: 430px; min-height: 0 !important; }'
       + ' .ref a { color: inherit; text-decoration: underline; text-decoration-color: color-mix(in srgb, currentColor 40%, transparent); text-underline-offset: 2px; }';
     doc.head.append(st);
+    doc.addEventListener('pointerdown', ev => { if (!ev.target.closest('.ref a')) closePassage(); });
     loadVerses().then(verses => doc.querySelectorAll('.ref').forEach(span => {
       const parts = E.refParts(span.textContent.trim());
       span.replaceChildren(...parts.flatMap((p, i) => {
         if (!verses[p.key]) return i ? ['; ', p.label] : [p.label];
         const a = doc.createElement('a');
         a.href = '#'; a.setAttribute('role', 'button'); a.textContent = p.label;
-        a.addEventListener('click', ev => { ev.preventDefault(); openPassage(p.key, verses[p.key]); });
+        a.addEventListener('click', ev => { ev.preventDefault(); openPassage(p.key, verses[p.key], a, frame); });
         return i ? ['; ', a] : [a];
       }));
       fit();

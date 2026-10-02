@@ -180,23 +180,28 @@
   /* a study: the page images fill the column; full pages get a hairline so page edges read */
   /* ---------- a study: George's page in a frame, as wide as it was made to be ---------- */
   body.wide #app { max-width: 1164px; }
-  /* ---------- passage sheet (a Links reference, read in the app) ---------- */
-  .sheet-scrim {
-    position: fixed; inset: 0; z-index: 50; display: flex; align-items: flex-end; justify-content: center;
-    background: rgba(0, 0, 0, 0); transition: background 0.25s ease;
+  /* ---------- passage popover (a Links reference, read in the app) ---------- */
+  .popover {
+    position: fixed; z-index: 50; box-sizing: border-box; display: flex; flex-direction: column;
+    background: var(--paper-raised); color: var(--ink); border: 1px solid var(--line); border-radius: 14px;
+    box-shadow: 0 8px 28px rgba(0, 0, 0, 0.22);
+    animation: fade-in 0.15s ease;
   }
-  .sheet-scrim.open { background: rgba(0, 0, 0, 0.4); }
-  .sheet {
-    width: 100%; max-width: 440px; max-height: 80vh; max-height: 80dvh; overflow-y: auto; outline: none;
-    background: var(--paper-raised); color: var(--ink); border-radius: 18px 18px 0 0;
-    padding: 22px 20px calc(16px + env(safe-area-inset-bottom)); display: flex; flex-direction: column; gap: 14px;
-    transform: translateY(100%); transition: transform 0.28s ease;
+  html.reduce-motion .popover { animation: none; }
+  .pop-scroll { overflow-y: auto; overscroll-behavior: contain; min-height: 0; padding: 12px 14px; border-radius: 14px; }
+  /* the pointer: a small square, turned, on the edge facing the reference */
+  .popover::before {
+    content: ''; position: absolute; left: var(--caret, 24px); top: -6px; width: 10px; height: 10px; margin-left: -5px;
+    background: var(--paper-raised); border-left: 1px solid var(--line); border-top: 1px solid var(--line);
+    transform: rotate(45deg);
   }
-  .sheet-scrim.open .sheet { transform: none; }
-  html.reduce-motion .sheet, html.reduce-motion .sheet-scrim { transition: none; }
-  .passage { font-size: 1.12rem; line-height: 1.55; display: flex; flex-direction: column; gap: 10px; }
+  .popover.above::before { top: auto; bottom: -6px; transform: rotate(225deg); }
+  .pop-head { display: flex; align-items: center; justify-content: space-between; font-size: 0.9rem; margin-bottom: 6px; }
+  .pop-close { border: none; background: none; color: var(--ink-faint); font-size: 1.4rem; line-height: 1; width: 36px; height: 36px; margin: -8px -10px -8px 0; }
+  .passage { font-size: 1rem; line-height: 1.5; display: flex; flex-direction: column; gap: 8px; }
+  .passage-verse { margin: 0; }
   .passage-verse sup { font-size: 0.7em; color: var(--ink-faint); font-weight: 600; }
-  .sheet .esv-notice { font-size: 0.72rem; color: var(--ink-faint); line-height: 1.4; margin-top: 0; }
+  .popover .esv-notice { font-size: 0.68rem; color: var(--ink-faint); line-height: 1.35; margin: 10px 0 0; }
 
   .study-frame-wrap { width: calc(100% + 32px); margin: 0 -16px; overflow: hidden; min-height: 40vh; }
   .study-frame { display: block; width: 100%; border: 0; background: transparent; transform-origin: 0 0; }
