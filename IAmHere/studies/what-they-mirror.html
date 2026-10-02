@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>What Thinkers, Feelers, Doers Mirror</title>
+<style>
+  :root {
+    --paper: #f4f0e7;
+    --ink: #1c2430;
+    --dim: #5c6572;
+    --navy: #1b3358;
+    --gold: #c4a46a;
+    --line: #ddd6c8;
+    --card: #fbf9f4;
+    --sage: #e7efe4;
+    --slate: #e6edf4;
+    --sand: #f6ecd8;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; background: #cfc8bb; }
+  body { font-family: "Iowan Old Style", Palatino, Georgia, serif; color: var(--ink); }
+  .sheet {
+    width: 1100px; height: 1420px; margin: 28px auto; background: var(--paper);
+    padding: 40px 46px 34px; position: relative; overflow: hidden;
+  }
+  .sheet::before {
+    content: ""; position: absolute; inset: 14px;
+    border: 1px solid rgba(27, 51, 88, 0.18); pointer-events: none;
+  }
+  .kicker {
+    font-family: "Gill Sans", "Trebuchet MS", sans-serif;
+    letter-spacing: 0.22em; text-transform: uppercase; font-size: 12px;
+    color: var(--navy); margin: 0 0 8px;
+  }
+  h1 { font-weight: 500; font-size: 44px; line-height: 0.98; margin: 0; letter-spacing: -0.02em; }
+  .rule { height: 3px; width: 86px; background: var(--gold); margin: 14px 0 8px; }
+  .lede { font-size: 18px; color: var(--dim); margin: 0 0 16px; max-width: 820px; }
+  .stage { display: grid; grid-template-columns: 520px 1fr; gap: 28px; align-items: center; }
+  .figure { position: relative; height: 460px; }
+  .outer {
+    position: absolute; left: 70px; top: 20px; width: 380px; height: 420px;
+    border: 2px solid #6d8a68; border-radius: 190px 190px 150px 150px;
+    background: rgba(122, 148, 116, 0.28);
+  }
+  .outer-label {
+    position: absolute; top: 18px; left: 0; right: 0; text-align: center;
+    font-family: "Gill Sans", "Trebuchet MS", sans-serif;
+    letter-spacing: 0.16em; text-transform: uppercase; font-size: 13px; color: #2d4630;
+  }
+  .brain {
+    position: absolute; top: 54px; left: 125px; width: 130px; height: 52px;
+    border: 1.5px dashed #6d8a68; border-radius: 40px;
+    font-family: "Gill Sans", "Trebuchet MS", sans-serif;
+    font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase;
+    color: #2d4630; display: flex; align-items: center; justify-content: center;
+  }
+  .inner {
+    position: absolute; left: 108px; top: 124px; width: 304px; height: 276px;
+    border-radius: 50%; background: rgba(196, 164, 106, 0.42);
+    border: 2px solid #b89555;
+  }
+  .inner-label {
+    position: absolute; bottom: 22px; left: 0; right: 0; text-align: center;
+    font-family: "Gill Sans", "Trebuchet MS", sans-serif;
+    letter-spacing: 0.14em; text-transform: uppercase; font-size: 13px; color: #6d5424;
+  }
+  .spirit {
+    position: absolute; left: 78px; top: 48px; width: 148px; height: 148px;
+    border-radius: 50%; background: #1b3358; color: #f7f3ea;
+    display: flex; align-items: center; justify-content: center; text-align: center;
+    font-family: "Gill Sans", "Trebuchet MS", sans-serif;
+    letter-spacing: 0.14em; text-transform: uppercase; font-size: 13px;
+    box-shadow: 0 0 0 10px rgba(27, 51, 88, 0.12);
+  }
+  .side h2 { margin: 0 0 8px; font-size: 22px; }
+  .side p { margin: 0 0 12px; font-size: 16.5px; line-height: 1.38; }
+  .cards { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 14px; margin-top: 18px; }
+  .card { border-radius: 16px; border: 1px solid var(--line); padding: 16px 16px 12px; min-height: 280px; background: var(--card); }
+  .card.sage { background: var(--sage); }
+  .card.sand { background: var(--sand); }
+  .card.navy { background: var(--navy); color: #f7f3ea; border-color: var(--navy); }
+  .num {
+    font-family: "Gill Sans", "Trebuchet MS", sans-serif;
+    font-size: 11px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--gold); margin-bottom: 4px;
+  }
+  .card.navy .num { color: #e4c98a; }
+  h3 { margin: 0 0 8px; font-size: 24px; }
+  ul { margin: 0; padding: 0; list-style: none; }
+  li { font-size: 15px; line-height: 1.35; margin: 0 0 7px; padding-left: 12px; position: relative; }
+  li::before {
+    content: ""; width: 5px; height: 5px; border-radius: 50%; background: var(--gold);
+    position: absolute; left: 0; top: 0.48em;
+  }
+  .card.navy li::before { background: #e4c98a; }
+  .home {
+    margin-top: 14px; background: var(--navy); color: #f7f3ea; border-radius: 16px;
+    padding: 16px 20px; display: grid; grid-template-columns: 160px 1fr; gap: 14px; align-items: center;
+  }
+  .home h2 { margin: 0; font-size: 26px; color: #f7f3ea; }
+  .home p { margin: 0; font-size: 16.5px; line-height: 1.4; }
+  .verse-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  .verse-grid .card { min-height: 0; }
+  .verse-grid .span { grid-column: span 2; }
+  .ref { white-space: nowrap; font-family: "Gill Sans", "Trebuchet MS", sans-serif; font-size: 12px; color: var(--dim); }
+  .card.navy .ref { color: #d5dbe6; }
+  .card.slate { background: var(--slate); }
+  @page { size: 1100px 1420px; margin: 0; }
+  @media print {
+    html, body { background: white; margin: 0; }
+    .sheet { margin: 0; break-after: page; page-break-after: always; }
+    .sheet:last-child { break-after: auto; page-break-after: auto; }
+  }
+</style>
+<style>
+  .tiers { display: grid; grid-template-columns: repeat(3, 1fr); grid-template-rows: repeat(5, auto); column-gap: 14px; margin-top: 20px; }
+  .col { display: grid; grid-row: span 5; grid-template-rows: subgrid; row-gap: 8px; }
+  .tier { border-radius: 16px; padding: 16px 18px 14px; border: 1px solid var(--line); background: var(--card); }
+  .tier.navy { background: var(--navy); color: #f7f3ea; border-color: var(--navy); }
+  .tier.sand { background: var(--sand); }
+  .tier.sage { background: var(--sage); }
+  .tier.navy .ref { color: #d5dbe6; }
+  .tier .num { margin-bottom: 4px; }
+  .tier.navy .num { color: #e4c98a; }
+  .tier h3 { margin: 0 0 6px; font-size: 26px; }
+  .tier p { margin: 0 0 8px; font-size: 16px; line-height: 1.38; }
+  .tier .sub { font-size: 14px; color: var(--dim); }
+  .arrow { text-align: center; font-family: "Gill Sans", "Trebuchet MS", sans-serif; font-size: 12px; letter-spacing: .14em; text-transform: uppercase; color: var(--dim); }
+  .note { margin-top: 18px; font-size: 16.5px; line-height: 1.4; color: var(--dim); max-width: 860px; }
+  table.cross { width: 100%; border-collapse: separate; border-spacing: 10px; margin-top: 8px; table-layout: fixed; }
+  table.cross th { font-family: "Gill Sans", "Trebuchet MS", sans-serif; font-weight: 500; letter-spacing: .12em; text-transform: uppercase; font-size: 13px; padding: 10px; border-radius: 12px; }
+  table.cross th.col-h { background: var(--navy); color: #f7f3ea; }
+  table.cross th.row-h { background: var(--sage); color: #2d4630; width: 120px; }
+  table.cross td { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 14px; font-size: 16px; line-height: 1.38; vertical-align: top; }
+  .cards .card { min-height: 0; }
+  .big { font-size: 26px; line-height: 1.3; margin: 0 0 6px; font-weight: 500; }
+  .sheet .big.xl { font-size: 38px; line-height: 1.25; margin: 0 0 22px; }
+  .claim { margin-top: 14px; background: var(--navy); color: #f7f3ea; border-radius: 16px; padding: 20px 24px; font-size: 18px; line-height: 1.45; }
+</style>
+</head>
+<body>
+<section class="sheet">
+  <p class="kicker">Truth · Grace · Power</p>
+  <h1>What Thinkers, Feelers, Doers Mirror</h1>
+  <div class="rule"></div>
+  <p class="lede">Thinkers, feelers, and doers mirror omniscience, omnipresence, and omnipotence. Not a copy of God, and not three personality types wearing divine names. Two layers of one image.</p>
+  <div class="tiers"><div class="col"><div class="tier navy"><div class="num">God, without limit</div><h3>Omniscience</h3><p>God knows what is. Nothing true is outside that knowledge, and God does not lie. <span class="ref">Psalm 139:1–4</span></p></div><div class="arrow">aimed at</div><div class="tier sand"><div class="num">The human aim</div><h3>Truth</h3><p class="sub">What is the case?</p><p><b>Good:</b> Fidelity to reality, including unwelcome reality.</p><p><b>Counterfeit:</b> Prosecution: accurate, and unloving.</p></div><div class="arrow">carried by</div><div class="tier sage"><div class="num">The instrument</div><h3>Thinking</h3><p>Takes in what is the case and sorts it.</p></div></div><div class="col"><div class="tier navy"><div class="num">God, without limit</div><h3>Omnipresence</h3><p>God is present in every place. Not a dot on a map, but attentive nearness: nothing stands outside God’s regard. It becomes personal when it is turned toward someone as favor. <span class="ref">Psalm 139:7–10</span></p></div><div class="arrow">aimed at</div><div class="tier sand"><div class="num">The human aim</div><h3>Grace</h3><p class="sub">Who is regarded, and how?</p><p><b>Good:</b> Being actually with. Favor toward what did not have to be favored.</p><p><b>Counterfeit:</b> Indulgence: nearness with no anchor, favor without reality.</p></div><div class="arrow">carried by</div><div class="tier sage"><div class="num">The instrument</div><h3>Feeling</h3><p>Takes in what matters to persons and is moved by it. Regard and value, not merely emotion.</p></div></div><div class="col"><div class="tier navy"><div class="num">God, without limit</div><h3>Omnipotence</h3><p>God can act. Nothing God wills to bring about fails for lack of power. This power is not bare force. It is bound to knowing and to favor.</p></div><div class="arrow">aimed at</div><div class="tier sand"><div class="num">The human aim</div><h3>Power</h3><p class="sub">What can be brought about, and at what cost?</p><p><b>Good:</b> Agency that makes an intention hold.</p><p><b>Counterfeit:</b> Control: force that neither tells the truth nor spends itself for someone.</p></div><div class="arrow">carried by</div><div class="tier sage"><div class="num">The instrument</div><h3>Doing</h3><p>Takes an intention and makes it hold in the world.</p></div></div></div>
+  <p class="note">The attributes are the original. The aims are the finite echo of each attribute, not the attribute itself. The instruments are how a finite person registers and responds. Everyone has all three instruments; temperament is mostly which one leads.</p>
+  <p class="note">Grace is the name of the middle aim because feeling was too psychological and bare omnipresence was too spatial. Omnipresence is still the attribute. Grace is how it shows up as an aim: presence as favor.</p>
+</section>
+<section class="sheet">
+  <p class="kicker">Any instrument can serve any aim</p>
+  <h1>The Grid</h1>
+  <div class="rule"></div>
+  <p class="lede">The image is the whole grid, not the diagonal. The mature form is a leading instrument given to all three aims. The distortion is an instrument serving only its favorite aim.</p>
+  <table class="cross"><tr><th></th><th class="col-h">Truth</th><th class="col-h">Grace</th><th class="col-h">Power</th></tr><tr><th class="row-h">Thinking</th><td>Discern what is real, including the hard case.</td><td>Understand mercy without sentimentalizing it.</td><td>Judge what force can and cannot do.</td></tr><tr><th class="row-h">Feeling</th><td>Be moved by reality, including reality that does not flatter.</td><td>Be moved by persons as persons.</td><td>Feel the weight of what action will cost.</td></tr><tr><th class="row-h">Doing</th><td>Act in line with what is true.</td><td>Make favor concrete.</td><td>Make the change, so intention takes on weight.</td></tr></table>
+  <h2 style="margin:22px 0 4px;font-size:24px">When one instrument serves one aim</h2>
+  <div class="cards" style="margin-top:10px"><article class="card sand"><div class="num">Aimed at one thing</div><h3 style="font-size:20px">Thinking aimed only at truth</h3><p style="margin:0;font-size:16px">Cold knowledge.</p></article><article class="card slate"><div class="num">Aimed at one thing</div><h3 style="font-size:20px">Feeling aimed only at grace</h3><p style="margin:0;font-size:16px">Flood: empathy with no anchor.</p></article><article class="card sage"><div class="num">Aimed at one thing</div><h3 style="font-size:20px">Doing aimed only at power</h3><p style="margin:0;font-size:16px">Tyranny: action without listening.</p></article></div>
+  <h2 style="margin:26px 0 8px;font-size:24px">The same instrument can serve an aim people do not expect from it</h2>
+  <p class="big">A feeler can be fiercely truth-oriented. A thinker can be the one who enacts grace. A doer can be the one who refuses false power.</p>
+</section>
+<section class="sheet">
+  <p class="kicker">Why all three</p>
+  <h1>The Whole</h1>
+  <div class="rule"></div>
+  <p class="big xl">Drop grace and truth becomes a weapon.</p><p class="big xl">Drop truth and grace becomes permission.</p><p class="big xl">Drop power and both stay sentiment.</p>
+  <div class="claim">Omniscience, omnipresence, and omnipotence are the three unlimited originals. Truth, grace, and power are the aims by which a person reaches for them. Thinking, feeling, and doing are the instruments that carry the aim. Image-bearing is not becoming one of the three. It is one instrument held toward all three, because each one alone counterfeits what it reflects.</div>
+</section>
+</body>
+</html>

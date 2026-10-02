@@ -257,7 +257,7 @@ const src = await Promise.all(['app.js', 'index.html', 'engine.js'].map(f => fet
 t('John 8:44 lives only in the Stand firm description, never on the sentence picker', () =>
   C.copy.start.paths.find(p => p.id === 'stand').body.includes('John 8:44') && !src[0].includes('father-of-lies')
   && !JSON.stringify(C.copy.pin).includes('John 8:44'));
-t('Links: three studies, each with a phone file and a full file', () => C.copy.links.items.length === 3 && C.copy.links.items.every(it => it.id && it.mobile && it.full));
+t('Links: four studies, each with a phone file and a full file', () => C.copy.links.items.length === 4 && C.copy.links.items.every(it => it.id && it.mobile && it.full));
 t('Scripture references name their passage, one per reference, carrying the book', () => {
   eq(E.refParts('John 3:16'), [{ label: 'John 3:16', key: 'John 3:16' }]);
   eq(E.refParts('John 10:16; 17:21; Ephesians 2:14–16').map(p => p.key), ['John 10:16', 'John 17:21', 'Ephesians 2:14–16']);
@@ -272,7 +272,7 @@ for (const it of C.copy.links.items) for (const f of [it.mobile, it.full]) {
   studyFilesOk.push(!!(r && r.ok));
   if (r && r.ok) new DOMParser().parseFromString(await r.text(), 'text/html').querySelectorAll('.ref').forEach(s => studyRefs.push(s.textContent.trim()));
 }
-t('every study file exists', () => studyFilesOk.length === 6 && studyFilesOk.every(Boolean) || JSON.stringify(studyFilesOk));
+t('every study file exists', () => studyFilesOk.length === 8 && studyFilesOk.every(Boolean) || JSON.stringify(studyFilesOk));
 const verses = await fetch('verses.json?_=' + Date.now()).then(r => r.json());
 t('every reference in George’s study files has its exact ESV text saved in verses.json', () => {
   const keys = studyRefs.flatMap(r => E.refParts(r)).map(p => p.key);
