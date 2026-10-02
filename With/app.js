@@ -130,7 +130,6 @@ function render(requested) {
   if (NEEDS_SESSION.includes(base) && !cur) base = 'start';
   if (base === 'done' && !lastDone) base = 'start';
   if (base === 'rest' && !lastRest) base = 'start';
-  if (base === 'care' && !E.careAvailable(C, settings)) base = 'start';
   if (cur && base === 'run' && !E.pathVisible(C, cur.path, settings)) base = 'start';
   const route = [base, ...(base === requested.split('/')[0] ? args : [])].join('/');
   if (route !== requested) history.replaceState(null, '', '#/' + route);
@@ -204,9 +203,8 @@ function messageDialog(body) {
 }
 
 // ===================== the passage popover =====================
-// A small panel beside the tapped reference. It shows the reference and opens the passage on esv.org
-// in a new view. Passage text is NOT shipped (ESV licensing is unconfirmed): if a verses.json is added
-// later and content.json sets meta.versesFile to true, the text shows here and works offline.
+// A small panel beside the tapped reference with the passage text (Berean Standard Bible, public domain),
+// read from verses.json and cached for offline use. Nothing here leaves the app.
 let versesLoad = null;
 const loadVerses = () => !C.meta.versesFile ? Promise.resolve({})
   : (versesLoad || (versesLoad = fetch('verses.json').then(r => r.ok ? r.json() : {}).catch(() => { versesLoad = null; return {}; })));
@@ -240,13 +238,12 @@ function openPassage(ref, anchor) {
       h('div', { class: 'pop-head' },
         h('strong', { text: ref }),
         h('button', { type: 'button', class: 'pop-close', 'aria-label': P.close, text: '×', onclick: () => closePassage() })),
-      body,
-      h('a', { class: 'pop-open link', href: E.esvUrl(ref), target: '_blank', rel: 'noopener', text: P.open })));
+      body));
   loadVerses().then(verses => {
     const v = verses[E.verseKey(ref)];
     if (!v || pop?.el !== el) return;
     body.append(...v.map(([n, text]) => h('p', { class: 'passage-verse' }, v.length > 1 && h('sup', { text: n }), v.length > 1 && ' ', text)));
-    el.firstChild.append(h('p', { class: 'esv-notice', text: P.esvNotice }));
+    el.firstChild.append(h('p', { class: 'esv-notice', text: P.notice }));
     placePop();
   });
   const onDown = ev => { if (!el.contains(ev.target) && !anchor.contains(ev.target)) closePassage(); };
@@ -330,19 +327,17 @@ VIEWS.start = () => {
   const S = C.copy.start, sess = sessions();
   const last = E.sortNewest(sess.filter(s => s.status === 'complete'))[0];
   const resumable = cur && E.isMeaningful(cur) ? cur : E.sortNewest(E.unfinishedOf(sess))[0];
-  const fl = seen().launchNoteSeen ? null : C.firstLaunch;
   const others = E.visiblePaths(C, settings).filter(id => id !== 'quick');
-  const dismiss = () => { setSeen({ launchNoteSeen: true }); render('start'); };
   return h('section', { class: 'view' },
     h('div', { class: 'topbar' },
       h('h1', { class: 'wordmark', text: C.copy.wordmark }),
       h('button', { type: 'button', class: 'icon-btn', 'aria-label': C.copy.settings.title, onclick: () => go('settings') }, gearIcon())),
+    h('p', { class: 'name-line' }, rich(S.nameLine)),
     h('p', { class: 'home-line', text: tx(S.line) }),
-    h('button', { type: 'button', class: 'path primary', onclick: () => { setSeen({ launchNoteSeen: true }); begin('quick'); } },
+    h('button', { type: 'button', class: 'path primary', onclick: () => begin('quick') },
       h('span', { class: 'path-title', text: S.begin }),
       h('span', { class: 'path-body', text: tx(S.beginLine) })),
     resumable && h('div', { class: 'foot-links' }, link(S.continue, () => resumeSession(resumable))),
-    fl && h('div', { class: 'note-card', role: 'note' }, fl.lines.map(l => h('p', { text: tx(l) })), careLink(), btn(fl.ok, dismiss, 'quiet')),
     h('div', { class: 'paths' }, others.map(id => {
       const p = C.paths[id];
       return h('button', { type: 'button', class: 'path', onclick: () => begin(id) },
@@ -582,7 +577,6 @@ function gladPlace() {
   else stashDraft();
   startAt('deeper', seen().gladPlace ? C.paths.deeper.gladPlaceKey : null, true);
 }
-const careLink = () => E.careAvailable(C, settings) ? link(C.care.title, () => go('care'), 'small') : null;
 
 const STEP = {
   // a plain box: bring, glad memory, see it, give Him the hurt, forgive, gratitude
@@ -755,8 +749,7 @@ VIEWS.run = () => {
     built.body,
     h('div', { class: 'under-box' }, h('button', { type: 'button', class: 'chip small', onclick: () => openNotSure(def.notSure), text: R.notSure }),
       built.nothing && h('button', { type: 'button', class: 'chip small', onclick: built.nothing, text: R.nothingCame })),
-    h('div', { class: 'session-foot' }, cont, built.foot, showGlad && btn(R.gladPlace, gladPlace, 'quiet'),
-      key === 'ready' && careLink()));
+    h('div', { class: 'session-foot' }, cont, built.foot, showGlad && btn(R.gladPlace, gladPlace, 'quiet')));
 };
 
 // ---------- /stop : after a worrisome input, the method stops and care comes first ----------
@@ -778,7 +771,6 @@ VIEWS.rest = () => {
     h('div', { class: 'spacer' }),
     h('h2', { class: 'quiet-title', text: tx(K.title) }),
     h('div', { class: 'prose', style: 'margin-top:12px' }, K.lines.map(l => para(l))),
-    careLink(),
     h('div', { class: 'spacer' }),
     h('div', { class: 'stack' }, btn(K.glad, () => startAt('deeper', seen().gladPlace ? C.paths.deeper.gladPlaceKey : null, true)), btn(K.done, () => { lastRest = null; go('start'); }, 'quiet')));
 };
@@ -827,10 +819,8 @@ VIEWS.way = ([id]) => {
     h('p', { class: 'home-line', style: 'margin-bottom:14px', text: tx(O.intro) }),
     O.cards.map(c => h('button', { type: 'button', class: 'tile', onclick: () => go('way/' + c.id) }, h('span', { class: 't', text: tx('"' + c.q + '"') }))),
     h('div', { class: 'offer' }, h('p', { class: 'ask', text: tx(O.close.line) }),
-      btn(O.close.tryButton, () => go('way/close'), 'quiet'),
-      E.careAvailable(C, settings) && h('p', { class: 'fine', style: 'margin-top:10px' }, tx(O.close.careLead) + ' ', h('button', { type: 'button', class: 'ref-btn', onclick: () => go('care'), text: tx(O.close.careLink) }), '.')),
+      btn(O.close.tryButton, () => go('way/close'), 'quiet')),
     standingCheck(),
-    h('p', { class: 'fine', text: tx(O.footLine) }),
     h('div', { class: 'spacer' }),
     tabs('way'));
 };
@@ -861,19 +851,6 @@ VIEWS.common = ([id]) => {
     K.cards.map(c => h('button', { type: 'button', class: 'tile', onclick: () => go('common/' + c.id) }, h('span', { class: 't', text: tx('"' + c.q + '"') }))),
     h('div', { class: 'spacer' }), tabs('more'));
 };
-VIEWS.care = () => {
-  const K = C.care;
-  return h('section', { class: 'view' },
-    link(C.copy.back, () => go('more'), 'back'),
-    h('h1', { text: tx(K.title), style: 'margin-bottom:8px' }),
-    K.sections.map(sec => h('div', { class: 'way-block', style: 'padding-bottom:10px;border-bottom:1px solid var(--line)' },
-      h('h3', { text: tx(sec.title) }),
-      h('p', { class: 'prose', style: 'margin-top:6px', text: tx(sec.body) }),
-      h('p', { class: 'card-refs' }, '(', rich(sec.refs), ')'),
-      h('p', { class: 'dim', style: 'margin-top:6px', text: tx(K.exit) }))),
-    h('div', { class: 'spacer' }), tabs('more'));
-};
-
 // ===================== Why practice hearing from God? =====================
 const speaksTitle = id => (C.speaks.ways.find(w => w.id === id) || {}).title;
 VIEWS.why = ([sub, arg]) => {
@@ -1075,7 +1052,6 @@ VIEWS.more = () => {
   const tile = (t, d, to) => h('button', { type: 'button', class: 'tile', onclick: () => go(to) }, h('span', { class: 't', text: tx(t) }), d && h('span', { class: 'd', text: tx(d) }));
   return h('section', { class: 'view menu-list' },
     h('h1', { text: tx(M.title), style: 'margin-bottom:14px' }),
-    E.careAvailable(C, settings) && tile(C.care.title, null, 'care'),
     tile(C.common.title, M.commonLine, 'common'),
     tile(C.references.title, M.referencesLine, 'references'),
     tile(M.safety, null, 'safety'),

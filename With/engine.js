@@ -217,8 +217,6 @@ export function sheetCard(C, id, fallback = 'how_know') {
   const ok = c => c && c.sheet === true;
   return [id, fallback].map(i => allCards(C).find(c => c.id === i)).find(ok);
 }
-// the Care page and the paths awaiting review stay hidden behind the same Settings switch
-export const careAvailable = (C, settings) => !C.care.gated || !!settings.showGated;
 
 // ===================== safety =====================
 export function isWorrisomeText(text, keywords) {
@@ -274,8 +272,6 @@ export function parseRich(text) {
   return out;
 }
 export const stripRich = text => String(text).replace(/\*\*([^*]+)\*\*/g, '$1').replace(/\*([^*]+)\*/g, '$1');
-// the first reference in a label ("John 5:19–20, 30" → the whole thing) as an esv.org address
-export const esvUrl = ref => 'https://www.esv.org/' + encodeURIComponent(ref.replace(/–/g, '-').replace(/,\s+/g, ',')).replace(/%20/g, '+').replace(/%3A/g, ':').replace(/%2C/g, ',') + '/';
 export const verseKey = ref => ref; // verses.json is keyed by the label as written: { "John 3:16": [[16, "…"]] }
 
 // ===================== export (plain text and print page) =====================
@@ -375,7 +371,7 @@ export function pickVerse(count, last) {
 
 // ===================== routes =====================
 // Screens where it is safe to swap in a new version of the app (never mid-session or mid-edit).
-export const RESTING = ['start', 'way', 'why', 'review', 'more', 'settings', 'references', 'about', 'safety', 'nothing', 'care', 'common', ''];
+export const RESTING = ['start', 'way', 'why', 'review', 'more', 'settings', 'references', 'about', 'safety', 'nothing', 'common', ''];
 export function isResting(route) {
   const parts = String(route || '').split('/');
   if (parts[0] === 'review' && parts[1]) return false; // a record may be open for editing

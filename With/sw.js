@@ -1,7 +1,5 @@
-const CACHE = 'with-v6';
-// verses.json is not listed: ESV text is not shipped until the licence is confirmed (see BUILD_NOTES.md).
-// When it is added, list it here so it works offline.
-const ASSETS = ['./', './index.html', './app.js', './engine.js', './content.json', './manifest.json', './icon.svg'];
+const CACHE = 'with-v13';
+const ASSETS = ['./', './index.html', './app.js', './engine.js', './content.json', './verses.json', './manifest.json', './icon.svg'];
 
 self.addEventListener('install', e => {
   // cache: 'reload' skips the HTTP cache so a version bump really fetches fresh files

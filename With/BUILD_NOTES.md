@@ -26,7 +26,7 @@ Status words are the tracker's. "Built" means working and tested in the browser 
 | Test, Keep, How did it come? | Built | Four questions, yes/not sure/no, the response rules (no on Scripture or Jesus → set it down plus glad place or break; not sure → hold it lightly; repeated not sure across 3 sessions → rest-and-counselor line). The app never says a feeling proves anything. Keep with next step and the two notes. How did it come? chips link to How He speaks; Review pattern note names one or two ways, no numbers, needs 3 tagged answers. |
 | Not sure? sheet | Built | On every step, bottom sheet, returns to the same step with the draft intact. Offers only the six cards (engine rule, tested), never Common questions. |
 | What's in the way? | Built, draft | Six cards from `content.json` only (nothing hardcoded), the close (a blank box, written to God, not saved), the care link, standing check and foot line. |
-| Care page, Common questions | Built, **Care gated** | Care page behind the same Settings switch as Healing and Journaling, with a visible "awaiting review by a clinician and a pastor" note. Common questions are quiet, browse-only, status draft. |
+| Common questions | Built | Quiet, browse-only list under More. |
 | Why: The Case, Reach of Faith, How He speaks, Witnesses, The Life, Scripture | Built, draft | Case (9 steps plus last screen) and Reach (7 screens plus claims and witnesses) are pagers. Everything is `status: "draft"`. Verses are tappable. |
 | Review and export | Built | List, detail, edit Keep, delete one or all (in-app confirm), God answered list and marking, print-styled PDF page, plain text file, copy text, date range, first-save note. |
 | References and More | Built | 14 references with plain Amazon links (no affiliate tag), the inspired-by note, the Kraft warfare note. More also holds Safety, Settings, About. |
@@ -39,11 +39,11 @@ Tests: `tests.html`, 104 checks, all passing on the last run.
 - Serve the repo root with any static server, for example `python3 -m http.server 8791` from `/Users/georgehicks/Code/georgehicks.github.io`, then open `http://localhost:8791/With/index.html`. (In the Claude pane, `preview_start` with `with-static`.)
 - Tests: open `http://localhost:8791/With/tests.html`. It reads `DESIGN.md` from the same folder to check quotes and the six cards word for word; if that file is not served it skips those two checks.
 - **Dev gotcha:** the service worker is cache-first, so during development either bump `CACHE` in `sw.js` or unregister it and clear caches (otherwise the page and even `tests.html` fetches serve old files).
-- Hidden switch: Settings → tap the version line five times → "Show paths and pages awaiting review" appears. It reveals Healing, Journaling and the Care page (and the links to the Care page).
+- Hidden switch: Settings → tap the version line five times → "Show all paths and pages" appears. It reveals Healing and Journaling.
 
 ## Deviations from DESIGN.md, and why
 
-- **The Care page being gated hides the safety exit by default.** The coordinator asked for it. The links to it (Stop and rest, Healing ready check, first-launch note, the close) only appear when the switch is on. Note that Healing is itself gated, so its own links are only reachable when the page is too. Decide before release whether the Care page should ship ungated once reviewed (gate 9).
+- **The Care page was removed on 2026-10-02** at the author's direction (care and safety were leading the app and read as overdone). Safety is the Safety page plus the quiet stop screen after a worrisome input. The last draft is in `parked/care-page-draft.md`.
 - **Breath is 4 breaths (about 32 s)**, one verse line shown whole rather than split per inhale and exhale (splitting would have meant editing Scripture wording).
 - **Not sure? mapping** (which of the six cards each step offers) is my choice, kept in `content.json` (`notSure` on each step).
 - **Session data additions:** `at`, `trail`, `round`, `moment`, `nextStep`, `resumeAt` (to resume, loop and back up), `lie` on the lies-and-truth step, and `test` uses the four ids `scripture, jesus, love, trusted`. Answers carry a `round` so Ask again keeps every pass.
@@ -58,11 +58,11 @@ Tests: `tests.html`, 104 checks, all passing on the last run.
 - Coaching lines under each prompt (taken from nearest design phrases: "One thing, in your own words", "Write whatever comes, even if slight", "A short box, not a full replay", and so on).
 - All plain UI labels: tabs, buttons, Settings, Review, export, dialogs, the reminder offer text, the draft note ("This page is a draft, waiting for pastoral review."), the pending note ("waiting for review by a qualified person").
 - Healing "Ask again" option names ("Where is Jesus?", "Give Him the hurt", "Lies and truth", "Another memory").
-- The care screen after a worrisome input uses the 988 line plus lines from the Care page and the Safety section; there is no dedicated design text.
+- The stop screen after a worrisome input uses the 988 line plus the lines in the Safety section.
 - Worrisome-input keywords (a plain list in `content.json`), and the "3 tagged answers" threshold for the pattern note.
 - Verses in Scripture's "How He speaks" labels: only the ones the design lists under a way.
 - **Stories** (The Life): none supplied, none shown. **Witnesses to source** (Bernard, Teresa, etc.): not shown, as designed. **"Why this matters for hearing God"** line on the Scripture page: not supplied. **Samuel's "Speak, Lord" opening line** before the first ask: not added.
-- No `verses.json` and no ESV text (licence unconfirmed, gate 5). Tapping a reference shows a popover with the reference and a "Read on esv.org" link (new tab). To add text later: create `verses.json` (`{ "John 3:16": [[16, "…"]] }`), set `meta.versesFile` to true, add `esvNotice` text, and list the file in `sw.js` `ASSETS`.
+- `verses.json` ships the passage text for every reference in the content (143 labels, Berean Standard Bible, public domain, from bible.helloao.org), keyed by the label as written. The popover shows the text and a one-line notice. There is no link out. A test fails if a reference has no text.
 - "What's in the way?" cards that have no explicit See link in the design were given one (flagged `seeAssigned: true`).
 
 ## Files
@@ -80,7 +80,7 @@ Tests: `tests.html`, 104 checks, all passing on the last run.
 7. Reminder `.ics` downloads and opens in Calendar.
 8. Breath animation, tone (sound), reduced motion, Dynamic Type with "Larger type", dark and light.
 9. Lock-screen and app-kill mid-step: reopen shows Continue and lands on the same step with the draft intact.
-10. Passage popover placement near the edges, and the esv.org link opening in the in-app Safari panel with a way back.
+10. Passage popover placement near the edges, and long passages (such as Acts 10 and Matthew 13:1–23) scrolling inside the popover.
 11. Storage cleared by Safari: the app opens clean with no errors.
 
 ## Gates still open (from DESIGN.md)
@@ -89,7 +89,6 @@ Healing review (1), pastoral review of What's in the way?, The Case, Reach (2), 
 
 ## Needed from the author
 
-- Whether the Care page should be reachable by default once reviewed.
 - Wording for the gaps above, especially the start-screen path lines and per-step coaching.
-- ESV licence decision, then `verses.json`.
+- Scripture text now ships as `verses.json` (Berean Standard Bible, public domain).
 - Any stories (with permission).

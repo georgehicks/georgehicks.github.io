@@ -20,6 +20,7 @@
 import * as E from './engine.js';
 const C = E.deepFreeze(await (await fetch('content.json?_=' + Date.now())).json());
 const src = await Promise.all(['app.js', 'engine.js', 'sw.js'].map(f => fetch(f + '?_=' + Date.now()).then(r => r.text())));
+const versesJson = await fetch('verses.json?_=' + Date.now()).then(r => r.json());
 const design = await fetch('DESIGN.md?_=' + Date.now()).then(r => r.ok ? r.text() : null).catch(() => null);
 const out = document.getElementById('out');
 let pass = 0, fail = 0;
@@ -188,7 +189,7 @@ t('988 appears in the app only via the safety line (care block, the stop screen,
   const j = JSON.stringify({ ...C, safety: 0, safetyPage: 0 });
   return !/988/.test(j) || 'found 988 outside safety content';
 });
-t('no card, step or care section mentions 988 or crisis language', () => !/988|suicide|crisis/i.test(JSON.stringify([C.objections, C.common, C.care, C.paths, C.steps, C.test])));
+t('no card, step or care section mentions 988 or crisis language', () => !/988|suicide|crisis/i.test(JSON.stringify([C.objections, C.common, C.paths, C.steps, C.test])));
 t('the 988 line is shown only through careBlock and the Safety page', () => (src[0].match(/withTel\(/g) || []).length === 3);
 
 // ---- gating ----
@@ -199,9 +200,8 @@ t('gated paths are hidden by default and shown only when the hidden switch is on
   eq(E.visiblePaths(C, { ...S, showGated: true }), ['quick', 'deeper', 'healing', 'daily', 'journaling']);
   eq(E.pathVisible(C, 'healing', S), false);
 });
-t('the Care page is gated behind the same switch', () => eq([E.careAvailable(C, S), E.careAvailable(C, { ...S, showGated: true })], [false, true]));
 t('the switch is off by default', () => eq(E.DEFAULT_SETTINGS.showGated, false));
-t('no review-status wording is shown on screen (draft, pending, awaiting review)', () => !/waiting for review|awaiting review|draft, waiting/i.test(JSON.stringify(C.copy)) && !C.meta.draftNote && !C.care.pendingNote && !C.copy.settings.pendingNote);
+t('no review-status wording is shown on screen (draft, pending, awaiting review)', () => !/waiting for review|awaiting review|draft, waiting/i.test(JSON.stringify(C.copy)) && !C.meta.draftNote && !C.copy.settings.pendingNote);
 
 // ---- What's in the way? ----
 t('exactly six What\'s in the way? cards, all draft, all offered by the sheet', () => {
@@ -221,16 +221,13 @@ t('no practice step lacks a Not sure? target', () => {
   const all = [...Object.entries(C.steps), ...Object.values(C.paths).flatMap(p => Object.entries(p.defs || {}))];
   const bad = all.filter(([, d]) => !d.notSure); return !bad.length || 'missing: ' + bad.map(b => b[0]);
 });
-t('the Care page has seven sections, each ending "You can close the app", and is gated', () => {
-  eq(C.care.sections.length, 7); eq(C.care.gated, true); return C.care.exit === 'You can close the app.';
-});
-t('the foot line and the first-launch note carry the church-and-counselor line', () => {
-  const L = "You need a church, a pastor or priest, a friend, and sometimes a counselor or doctor. This doesn't replace any of them.";
-  return C.objections.footLine.includes(L) && C.firstLaunch.lines.some(l => l.includes(L));
-});
-t('the first-launch note says it is a prayer aid and not counseling or medical care, and explains the name once', () =>
-  C.firstLaunch.lines.join(' ').includes('prayer aid') && C.firstLaunch.lines.join(' ').includes('not counseling or medical care') && C.firstLaunch.lines[0] === 'With. God with us (Immanuel, Matthew 1:23).');
-t('no card uses "usually" or "always" and none uses a persistence test', () => !/\busually\b|\balways\b|fades?\b|over days/i.test(JSON.stringify([C.objections.cards.map(c => c.a), C.common.cards.map(c => c.a), C.care.sections]).replace('I am with you always,', '')));
+t('safety is spoken in God\'s terms: no clinical or policy phrasing anywhere in the content', () => !/prayer form|trained person|trauma work|medical care|counseling or medical|doctor.s care/i.test(JSON.stringify(C)));
+t('there is no Care page: no route, no More tile, no links to it, and no top-level care content', () => !('care' in C) && !/VIEWS\.care|go\('care'\)|careLink|careAvailable/.test(src[0] + src[1]) && !JSON.stringify(C.objections.close).includes('heavy'));
+t('the name line sits permanently on the start screen, there is no first-launch card, and the care disclaimer lives once in About and Safety', () =>
+  C.copy.start.nameLine === 'God with us (Immanuel, Matthew 1:23).' && !C.firstLaunch && !C.objections.footLine
+  && C.about.paras.some(x => /doesn't take the place of church, or of the people God has put around you/.test(x))
+  && C.safetyPage.paras.some(x => /doesn't take the place of church, or of the people God has put around you/.test(x)));
+t('no card uses "usually" or "always" and none uses a persistence test', () => !/\busually\b|\balways\b|fades?\b|over days/i.test(JSON.stringify([C.objections.cards.map(c => c.a), C.common.cards.map(c => c.a)]).replace('I am with you always,', '')));
 t('Keep notes and the picturing note are present', () => C.keep.notes.length === 2 && /attempt to listen/.test(C.keep.notes[0]) && /never have to picture/.test(C.remember));
 t('the "remember" note sits on the steps that ask the person to remember', () => ['glad', 'appreciate', 'welcome'].every(k => C.paths.deeper.defs[k].remember));
 
@@ -245,10 +242,13 @@ t('findRefs: single, range, list and chapter-only references', () => {
   eq(E.findRefs('Samuel in 1 Samuel 3 heard').filter(x => x.t === 'ref').map(x => x.v), ['1 Samuel 3']);
   eq(E.findRefs('Psalm 13:1–2, Psalm 62:8.').filter(x => x.t === 'ref').map(x => x.v), ['Psalm 13:1–2', 'Psalm 62:8']);
 });
-t('esvUrl opens the passage on esv.org', () => eq(E.esvUrl('John 5:19–20, 30'), 'https://www.esv.org/John+5:19-20,30/'));
+t('every scripture reference in the content has passage text in verses.json (nothing links out)', () => { const missing = []; const walk = o => { if (typeof o === 'string') E.parseRich(o).forEach(n => { if (!['text', 'em', 'b'].includes(n.t) && !versesJson[n.v]) missing.push(n.v); }); else if (Array.isArray(o)) o.forEach(walk); else if (o && typeof o === 'object') Object.values(o).forEach(walk); }; walk(C); return missing.length === 0 || 'missing: ' + [...new Set(missing)].join('; '); });
 t('smart quotes are display only: straight in, curly out, and apostrophes close', () => eq(E.smart(`"It's 'Abba!' he said"`), '“It’s ‘Abba!’ he said”'));
 t('parseRich handles em, bold and references together', () => eq(E.parseRich('A *b* **c** John 3:16').map(x => x.t), ['text', 'em', 'text', 'b', 'text', 'ref']));
-t('no ESV text is shipped: there is no verses.json and the app only links out unless one is added', () => C.meta.versesFile === false && !src[2].includes('verses.json\'') );
+t('verses.json is shipped (Berean Standard Bible, public domain), includes Matthew 1:23, and is cached for offline', () => {
+  const v = versesJson;
+  return C.meta.versesFile === true && v['Matthew 1:23'] && /God with us/.test(v['Matthew 1:23'][0][1]) && /verses\.json/.test(src[2]) && C.copy.passage.notice === 'Berean Standard Bible, public domain.';
+});
 t('Connected rotates among the five design verses and the Murray caption is present', () => {
   eq(C.connected.verses.map(v => v.ref), ['Psalm 46:10', 'John 10:27', 'Matthew 28:20', 'Matthew 11:28', 'Psalm 37:7']);
   eq([0, 1, 4].map(i => E.pickVerse(5, i)), [1, 2, 0]); eq(E.pickVerse(5, null), 0);
@@ -275,7 +275,7 @@ t('every What\'s in the way? and Why practice? piece is marked draft', () => {
 });
 t('the What\'s in the way? cards live only in content.json, never in the app code', () => !/not sure God is there|not good enough for Him/i.test(src[0]));
 t('the Case has nine steps and a last screen; Reach has seven screens', () => eq([C.case.steps.length, C.reach.screens.length], [9, 7]));
-t('How He speaks has eight ways; Scripture has eight groups; the Witnesses list is oldest first', () => {
+t('How He speaks has eight ways; Scripture has eight groups; the With-nesses list is oldest first', () => {
   eq([C.speaks.ways.length, C.scripture.groups.length], [8, 8]);
   eq(C.witnesses.items[0].id, 'justin'); eq(C.witnesses.items.at(-1).id, 'willard');
 });
@@ -297,7 +297,7 @@ t('the Why practice? overview opens with John 10:27 and "Jesus said it plainly."
 
 // ---- language rules ----
 t('banned vocabulary stays out of every UI string and path prompt', () => {
-  const j = JSON.stringify([C.copy, C.paths, C.steps, C.test, C.keep, C.nothing, C.firstLaunch, C.expectation, C.afterAnswer]);
+  const j = JSON.stringify([C.copy, C.paths, C.steps, C.test, C.keep, C.nothing, C.expectation, C.afterAnswer]);
   const m = j.match(/visuali[sz]e|imagine Jesus|inner child|regression|download|channel|activate|unlock|manifest/i);
   return !m || 'found: ' + m[0];
 });

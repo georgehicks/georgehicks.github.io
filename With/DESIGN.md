@@ -27,7 +27,7 @@ Consequences:
 3. **One experience for everyone.** Training wheels fade by use, not by a choice made on day one.
 4. **Connection before content.** Stillness and turning toward Him come before asking anything.
 5. **No invented words from God.** No AI, no generated "responses." The person types or dictates their own.
-6. **Private by default.** Everything lives on the device. No accounts, no network calls beyond loading the app and the optional ESV passage links already used in IAmHere.
+6. **Private by default.** Everything lives on the device. No accounts, no network calls beyond loading the app. Scripture text is in the app, so nothing links out except the book links on References.
 7. **A safe way out.** If a path gets heavy, the app sends the person back to something glad and points to human help when needed.
 8. **Matches IAmHere.** Same stack, same look, same breathing component, same conventions.
 
@@ -88,7 +88,7 @@ The people this app is for do not know how to do this. Many are not sure it is a
 - **Fear of deception is real and common.** The usual answer is to stay close to the Word, compare what comes against it, and let time in His presence train the ear. The shepherd-and-sheep picture of John 10 is the standard way to explain it to beginners. ([Ellel](https://ellel.org/au/daily-devotionals/sheep-i), [World Challenge](https://worldchallenge.org/devotions?page=239))
 - **There is a real theological objection.** Some Christians hold that God's direct speech ended with Scripture. Willard answers them in *Hearing God*, but his critics say the biblical case for treating this as a normal part of every Christian's life is weak, and that it can make people feel defective if they don't hear. ([Pneuma Review](https://pneumareview.com/?p=23481), [Spirituality & Practice](https://www.spiritualityandpractice.com/book-reviews/view/23631/hearing-god)) The app must not imply that a person is behind or failing.
 - **Inner-healing methods draw criticism.** Critics raise visualization and imagination, New Age origins, the risk of false or fabricated memories, and whether Christ is "in the room" after His ascension. ([Christian Answers for the New Age](https://www.christiananswersnewage.com/article/the-immanuel-approach-prayer-and-the-contemplative-invasion), [Inner Healing Movement](https://en.wikipedia.org/wiki/Inner_Healing_Movement)) Defenders say the method is orthodox. ([Lehman notes on Catholic orthodoxy](https://www.immanuelapproach.com/wp-content/uploads/2024/02/Catholic-orthodoxy-of-Immanuel.pdf)) The app should answer these honestly and let the person skip anything they aren't comfortable with.
-- **Hearing voices has a mental-health side.** People who hear distressing or commanding voices need care, not a prayer form. ([Christopher Cook](https://sanctuarymentalhealth.org/2020/06/14/chris-cook-christians-hearing-voices/)) The app must make this distinction explicit.
+- **Hearing voices has a mental-health side.** People who hear distressing or commanding voices need wise counsel and care. ([Christopher Cook](https://sanctuarymentalhealth.org/2020/06/14/chris-cook-christians-hearing-voices/)) The app must make this distinction explicit.
 - **Prayer and meditation apps lose most people fast.** Across 93 mental-health apps the median 15-day retention was 3.9%. For prayer apps the onboarding itself is the friction: unfamiliar vocabulary, awkward silence, not knowing what comes next. Reminders set after a first session were reported to triple retention in Calm. ([Haifa study via UTHSCSA](https://scholars.uthscsa.edu/en/publications/mindfulness-meditation-app-abandonment-during-the-covid-19-pandem/), [Hallow review](https://yespress.io/hallow), [Amplitude on Calm](https://amplitude.com/blog/meditate-every-day))
 
 Caveat: these sources are mostly popular teaching, blogs and secondary summaries. They are good for finding the real objections. They are not authority for the answers, which come from Scripture and should be reviewed by pastors.
@@ -156,6 +156,7 @@ Appears in every path wherever the person asks God something, as a quiet link un
 - In cards about harm, speak plainly in the first person: "I'm sorry," not "we are sorry."
 - Never use persistence over time as a test of whether something is from God.
 - Never use 988 or crisis language inside a card. It appears only after a worrisome input.
+- Speak safety in God's terms (Scripture, the Shepherd, the tests of the spirits, wise counsel), never in clinical or policy terms. No "prayer form," "trained person," "trauma work," "not counseling or medical care."
 
 ### Teaching placement
 
@@ -207,9 +208,9 @@ Practice is the app. Three main places, plus a small More menu.
 | Place | What it is |
 |---|---|
 | **Practice** | The start screen and the guided paths. Connected (the breath) is the first step of every session. |
-| **What's in the way?** | Two frames behind a toggle, opening on this one: **What's in the way?** (Answering Objections) and **Why practice hearing from God?** (The Case, How He speaks, The Witnesses, The Life, Scripture). |
+| **What's in the way?** | Two frames behind a toggle, opening on this one: **What's in the way?** (Answering Objections) and **Why practice hearing from God?** (The Case, How He speaks, The With-nesses, The Life, Scripture). |
 | **Review** | Past sessions, the person's own "God answered" list, and export to PDF. |
-| **More** | **When it's heavy** (the Care page), **Common questions** (quiet, browse only), References (the books, with Amazon links), Settings (theme, type size, reduced motion, tone, Guidance), and About. |
+| **More** | **Common questions** (quiet, browse only), References (the books, with Amazon links), Settings (theme, type size, reduced motion, tone, Guidance), and About. |
 
 ### Start screen
 
@@ -315,7 +316,7 @@ This is the content of the *What's in the way?* frame. The frame is the flow (th
 **Six cards.** Gentle first.
 
 **Where everything else lives** (full drafts are kept in `parked/objection-cards-full-draft.md`):
-- **Care page, "When it's heavy"**: frightening experiences, mental illness and medication, quiet that isn't safe, grief, being hurt by spiritual leaders, someone else's "word" about you, anger and unanswered pain. See Safety.
+- **Nowhere in the app: the Care page.** A "When it's heavy" page (frightening experiences, mental illness and medication, grief, spiritual hurt, anger) was drafted and then removed at the author's direction: leading with care and safety moved the app toward managed self-care and away from faith. The Safety page is sufficient. The last draft is parked in `parked/care-page-draft.md`.
 - **Practice notes at the right step**: big life decisions (Keep step), asking about decisions (Daily prompt), "this is your attempt to listen, not God's dictation" (Keep note), and no picturing required (the remember steps).
 - **More > Common questions** (quiet, browse only): imagination and New Age, Jesus "in the room," arrogance, prophecy and Hebrews.
 - **Why practice? > The Case and The Reach of Faith**: the arguments for those who want them.
@@ -332,7 +333,7 @@ Wording is **draft** and needs real pastors. No card claims more than Scripture 
 - **Each card:** the question in the person's words, a short answer, verses that carry the point in context, and a small **Try this** where it fits.
 - **The Not sure? sheet offers only these six**, plus the Nothing came? step. Nothing else ever interrupts a prayer.
 
-**Shown once, early, in the first-launch note and at the foot of this area:** *"This is a prayer aid. You need a church, a pastor or priest, a friend, and sometimes a counselor or doctor. This doesn't replace any of them."*
+**Disclaimers are not repeated here.** The one soft line about the app being a prayer aid lives in About and Safety (see Safety). It is not shown at the foot of this area or on first launch.
 
 #### The six
 
@@ -362,7 +363,7 @@ It may be your own thoughts. Often that's how God speaks, through a mind He made
 
 #### The close
 
-*"Is something else in the way? Tell Him. That is a fine first prayer."* A **Try this** opens a blank box: *What's in the way?* The person writes it to God and carries on. Beneath it, quietly: *"If this is heavy or frightening, see **When it's heavy**."*
+*"Is something else in the way? Tell Him. That is a fine first prayer."* A **Try this** opens a blank box: *What's in the way?* The person writes it to God and carries on.
 
 #### Standing check
 
@@ -376,7 +377,7 @@ Offered as **"Three things to look at, when you're ready,"** after a session and
 #### Open design questions for this area
 
 - **Reviewers.** Named pastors across traditions for these six cards.
-- **First reader.** Is the doubter, the curious believer, or the fragile reader the one these six speak to? The fragile are served by the Care page, not by this list.
+- **First reader.** Is the doubter, the curious believer, or the fragile reader the one these six speak to? The Safety page, not this list, handles real danger.
 - **Long silence.** What does the app say to someone who finishes every card, tries, and hears nothing for a year?
 - **Are six too many?** Could "not sure God is there" and "not good enough" merge into one?
 
@@ -385,13 +386,13 @@ Offered as **"Three things to look at, when you're ready,"** after a session and
 The positive side of the toggle. A short page, not a library.
 
 - Opens with John 10:27 and the line "Jesus said it plainly."
-- Six doors, each short and skippable: **The Case** (nine small steps from Scripture), **The Reach of Faith** (what any hearing requires), **How He speaks** (what to listen for), **The Witnesses** (Christians of the ages), **The Life** (what interactive faith looks like), **Scripture** (the verses, grouped).
+- Six doors, each short and skippable: **The Case** (nine small steps from Scripture), **The Reach of Faith** (what any hearing requires), **How He speaks** (what to listen for), **The With-nesses** (Christians of the ages), **The Life** (what interactive faith looks like), **Scripture** (the verses, grouped).
 - Every door ends the same way: *Want to try one question?* → Practice.
 - The sections below hold the content for each door.
 
 ### Scripture (in Why practice?)
 
-A reading page in groups, each with the verse, a one-line plain-language note, and a tap-through to the ESV passage using the popover already in IAmHere. The page opens with John 10:27 and the sentence "Jesus said it plainly."
+A reading page in groups, each with the verse, a one-line plain-language note, and the passage text in the verse popover (same pattern as IAmHere, Berean Standard Bible). The page opens with John 10:27 and the sentence "Jesus said it plainly."
 
 Verse selection is provisional. Each passage must be read in context before it ships, and notes must say only what the text says.
 
@@ -467,7 +468,7 @@ Before the first ask, the expectation line: "It's often small: a thought, a word
 
 ### The Case (in Why practice?)
 
-A stepped argument, one short screen per step, each ending with the next. Every step is built on texts people can open in the ESV popover. Draft wording follows, and every reference must be read in context before shipping.
+A stepped argument, one short screen per step, each ending with the next. Every step is built on texts people can open in the verse popover. Draft wording follows, and every reference must be read in context before shipping.
 
 **Step 1. From the beginning, God talks with the people He loves.**
 He walked in the garden and spoke with Adam and Eve (Genesis 3:8–9). He spoke with Abraham, called "the friend of God" (Isaiah 41:8, James 2:23). He spoke with Moses "face to face, as a man speaks to his friend" (Exodus 33:11). Samuel was a boy when the LORD called him by name (1 Samuel 3). Speaking is how this God relates to His people. The only question is whether that stopped.
@@ -584,7 +585,7 @@ The Test step in every path is the second hand. Scripture is the measure, mature
 **7. What we're asking you to do.**
 Not to be certain first. To reach: to call Him "Thou," to say "Speak, Lord, I'm listening," and to see what stirs. Then to test, and to answer.
 
-**Witnesses for this page.**
+**With-nesses for this page.**
 - **Spurgeon** on John 10:27, verified: "They can hear, because they have had spiritual ears given them. Once the Shepherd might have spoken all day long and they would not have heard Him." (Sermon 2120, 1889.)
 - **Lewis**, verified: "He speaks as 'I' when we truly call Him 'Thou.'" (*Letters to Malcolm*, Letter 4.) The reach of addressing Him as a person.
 - **Tozer**, verified in part: approach the Bible "with the idea that it is not only a book which was once spoken, but a book which is now speaking."
@@ -609,56 +610,56 @@ Framing, stated once at the top: *"This isn't a rulebook or a ranking. Scripture
 **1. Through Scripture** *(the plainest and most reliable)*
 A verse or passage that comes alive, answers the question you brought, or keeps returning to mind.
 - *In Scripture:* Luke 24:27, 32 (the Emmaus road: "Did not our hearts burn within us while He talked to us on the road, while He opened to us the Scriptures?"). Hebrews 4:12. Matthew 4:4 (Jesus answered by the Word). Psalm 119:105.
-- *Witnesses:* Tozer, "a book which is now speaking." Ambrose, "We hear Him when we read the divine saying." Müller, who sought God's will "through the instrumentality of the Word of God."
+- *With-nesses:* Tozer, "a book which is now speaking." Ambrose, "We hear Him when we read the divine saying." Müller, who sought God's will "through the instrumentality of the Word of God."
 - *Test:* It must mean what the passage actually means in context.
 - *Try this:* Read a short passage slowly and ask, "What are You saying to me in this?"
 
 **2. A quiet thought or impression** *(the most common)*
 A thought that arrives with weight. A word, a phrase, a settled "knowing." It often sounds like your own mind, because the Spirit works through it.
 - *In Scripture:* 1 Kings 19:12 (the gentle whisper). Isaiah 30:21 (a word behind you). John 14:26 (He will bring to your remembrance). Acts 8:29, 10:19, 13:2 ("the Spirit said").
-- *Witnesses:* Wesley, "an inward impression on the soul." Willard (describes the voice as an impression on the mind). Brother Lawrence, "continually conversing with Him." Chambers, "Speak, Lord."
+- *With-nesses:* Wesley, "an inward impression on the soul." Willard (describes the voice as an impression on the mind). Brother Lawrence, "continually conversing with Him." Chambers, "Speak, Lord."
 - *Test:* The Test step. Does it agree with Scripture, point to Jesus, and lead toward love? Write it down, and tell someone you trust.
 - *Try this:* Ask one question, wait one breath, and write the first thing that comes.
 
 **3. Peace, and its absence** *(a settled sense)*
 A deep rightness or calm about a path, or a quiet unease that won't settle.
 - *In Scripture:* Colossians 3:15 (let the peace of Christ rule in your hearts). Philippians 4:7. Romans 8:16 (the Spirit bears witness with our spirit). Acts 16:6–7 (the Spirit of Jesus did not allow). 2 Corinthians 2:12–13 (no rest in his spirit).
-- *Witnesses:* Wesley on the witness of the Spirit. Edwards' tests of what the Spirit's work produces (love, humility, a turning toward Jesus).
+- *With-nesses:* Wesley on the witness of the Spirit. Edwards' tests of what the Spirit's work produces (love, humility, a turning toward Jesus).
 - *Test:* Anxiety and the Spirit's unrest are not the same. Peace from the Spirit is deeper than mood and does not demand certainty. Be honest about fatigue, hunger and fear.
 - *Try this:* Hold a decision before Him and notice what your body and spirit do.
 
 **4. Another person** *(a friend, a pastor, a stranger with the right word)*
 Someone says what you needed, or confirms what you've been sensing.
 - *In Scripture:* 1 Samuel 3:8–9 (Eli helps Samuel recognize the voice). Acts 9:17 (Ananias to Saul). Acts 21:10–11 (Agabus). 1 Corinthians 14:3, 29–31. Proverbs 11:14.
-- *Witnesses:* Samuel's story. Müller's warning that counsel of others is never to outrank the Word of God.
+- *With-nesses:* Samuel's story. Müller's warning that counsel of others is never to outrank the Word of God.
 - *Test:* Weigh it as Scripture asks. People can be wrong, and the confirmation of mature believers helps.
 - *Try this:* Share what you wrote with one trusted person and ask what they notice.
 
 **5. Circumstances: open and closed doors**
 Events line up, or something blocks the way, and both turn out to matter.
 - *In Scripture:* 1 Corinthians 16:8–9 (a wide door and many adversaries). Colossians 4:3. Revelation 3:8. Acts 16:6–10 (blocked, then a vision, then a door).
-- *Witnesses:* To source. Candidates include Müller's own accounts of prayer and provision.
+- *With-nesses:* To source. Candidates include Müller's own accounts of prayer and provision.
 - *Test:* Circumstances alone interpret poorly. Use them to confirm what you've heard some other way, not to replace it.
 - *Try this:* Look back over the last week. Where did something open, close, or arrive just when you needed it?
 
 **6. Pictures, memories and dreams**
 An image, a remembered scene, or a dream that carries meaning. This is the way the app's *remember* prompts lean on, and the one many people find hardest.
 - *In Scripture:* Acts 10:9–16 (Peter's vision). Acts 16:9–10 (Paul's vision). Matthew 1:20, 2:12 (dreams). Joel 2:28, Acts 2:17.
-- *Witnesses:* Ignatius' practice of praying a Gospel scene with the imagination. Virkler lists it among his keys.
+- *With-nesses:* Ignatius' practice of praying a Gospel scene with the imagination. Virkler lists it among his keys.
 - *Test:* Never required. The app never asks anyone to invent an image. If something comes, write it. If not, that's fine. Test it like everything else, and hold it loosely.
 - *Try this:* Remember one place where you felt God was near, and notice what stands out.
 
 **7. Conviction and comfort**
 Conviction is a specific, clear, loving "this is not you" about something. It leads to repentance and relief, not to shame. Comfort is the quiet word that you are held.
 - *In Scripture:* John 16:8 (He convicts). Acts 2:37. 2 Corinthians 7:10 (godly grief). Romans 8:1 (no condemnation). John 14:16–18 (the Comforter, not left as orphans).
-- *Witnesses:* Fox, "There is one, even Christ Jesus, that can speak to thy condition." Spurgeon, the sheep who "distinguish between His voice and other voices."
+- *With-nesses:* Fox, "There is one, even Christ Jesus, that can speak to thy condition." Spurgeon, the sheep who "distinguish between His voice and other voices."
 - *Test:* This is where the voices differ most. The Spirit convicts specifically and leads to Jesus. Accusation is general, crushing and sends you away from Him. If it condemns, it isn't Him.
 - *Try this:* Ask, "Is there anything You want me to see?" and notice whether what comes draws you toward Him or away.
 
 **8. Rarer ways** *(not to be sought, not to be feared)*
 A spoken word, a prophetic word through another believer, a word of knowledge, a clear visitation.
 - *In Scripture:* 1 Samuel 3:4–10. Acts 9:4–6. 1 Corinthians 12:7–11, 14:24–25.
-- *Witnesses:* Justin Martyr and Irenaeus, who said the gifts continued in the church of their day. Fox, whose account is of hearing a voice.
+- *With-nesses:* Justin Martyr and Irenaeus, who said the gifts continued in the church of their day. Fox, whose account is of hearing a voice.
 - *Test:* Held to the strictest test. The more unusual the claim, the more it needs mature confirmation. None of this is required for a real walk with God.
 - *Try this:* Nothing. If this happens, bring it to someone mature.
 
@@ -668,10 +669,10 @@ A spoken word, a prophetic word through another believer, a word of knowledge, a
 
 Notes:
 - The list is a teaching aid. Scripture does not catalog ways, and the app says so.
-- Each way carries a small icon-free label, and the Scripture list and The Witnesses cards carry the same labels, so they cross-link.
+- Each way carries a small icon-free label, and the Scripture list and The With-nesses cards carry the same labels, so they cross-link.
 - In practice, an optional **How did it come?** row appears after an answer (see Practice), so the person can learn their own patterns.
 
-### The Witnesses (in Why practice?)
+### The With-nesses (in Why practice?)
 
 "A great cloud of witnesses" (Hebrews 12:1). A list, oldest first, each with name, dates, a short line of who they were, one short quote, and where it comes from. The aim is to show that hearing God and expecting to is not a modern trend. Public-domain texts are quoted directly. Modern works are quoted in a phrase.
 
@@ -848,27 +849,22 @@ content.json   paths and step prompts, Test questions, What's in the way? cards,
 verses.json    passage text for the popover
 ```
 
-The ESV passage popover and link behavior from IAmHere is reused. Check ESV usage terms before shipping any longer quotation.
+The verse popover from IAmHere is reused, with the passage text in the popover itself (no link out). **Translation: Berean Standard Bible (BSB), public domain**, so there is no copyright notice beyond one short line (*"Berean Standard Bible, public domain."*). Chosen because it is modern, readable, and free of licensing. `verses.json` is keyed by the reference label as written in the content, and a test fails if any reference lacks text. Short quotations written into cards may follow familiar wording; the popover text is BSB.
 
 ## Safety
 
-- If the person writes or taps something that suggests self-harm or crisis, stop the method and show care and the 988 line (US). Follow IAmHere's approach to when this appears: after a worrisome input, not as a standing banner.
-- Deeper path: if it gets heavy, the glad-place button is always visible. The app never asks the person to go further into a painful memory. It says clearly that chat-sized tools are a poor place for deep trauma work and that a trained person is the right help.
-- Healing path: it is gated behind the breath and the glad place, and it does not use the person's worst memories as a starting point. If the memory is overwhelming, the app says to stop, return to the glad place, and seek a trained person. It repeats that the person can stop at any time.
-- No deliverance or demonization content. Kraft's spiritual-warfare teaching is out of scope. If a person describes things beyond a prayer aid, the app points them to a trusted pastor or trained minister.
+**Voice rule: God first, always.** Truth about safety is spoken, but in God's terms: Scripture, the Shepherd's voice, the tests of the spirits, and the wise counsel of people who know Him. It is never spoken in clinical or policy language ("a doctor's care, not a prayer form," "a poor place for trauma work," "a trained person is the right help," "this is not counseling or medical care"). Those phrases put managed self-care above the One the app is about and were removed. Safety follows faith. It does not lead it and does not replace it.
+
+- If the person writes or taps something that suggests self-harm or crisis, stop the method and show the quiet stop screen with the 988 line (US) and two lines in faith voice: *"Tell someone who loves you and knows Him, today. You don't have to carry this alone."* and *"He came that you might have life (John 10:10). Stay close to Him, and let the people He has given you stay close to you."* This appears after a worrisome input, never as a standing banner (IAmHere's pattern).
+- **The Safety page** (in More) says, in order: His sheep hear His voice and won't follow a stranger, so test what you hear (John 10:3–5, 1 John 4:1); what is from Him agrees with Scripture, points to Jesus and leads toward love, and never tells you to harm yourself or anyone, hide something from people who love you, or turn from Christ; God is not a God of confusion but of peace, and a voice that accuses and crushes, drives you from Jesus, commands harm or won't let go is not the Shepherd's, so don't obey it, put it down, bring it to Jesus, and ask Him to speak what is true (1 Corinthians 14:33); don't carry it alone, bring it to someone mature in the faith (Proverbs 11:14), and where the body needs tending a physician is one of His gifts too (Colossians 4:14); some things are heavy, He is gentle with the bruised reed and not in a hurry (Isaiah 42:3), take one step at a time with someone who knows Him beside you, and you can stop at any time; then the 988 line.
+- Deeper and Healing: if it gets heavy, the glad-place button is always visible and the app never asks the person to go further into a painful memory. Healing carries the note: *"Go gently. Take only what He puts in front of you, one step at a time, with someone who knows Him beside you."* Healing is gated behind the breath and the glad place and does not start from the person's worst memories. Rest screen: *"You can stop at any time. He is not in a hurry. Come back when you are ready."*
+- No deliverance or demonization content. Kraft's spiritual-warfare teaching is out of scope. If a person describes things beyond a prayer aid, the app points them to a trusted pastor or mature believer.
 - "Keep asking until healed" is never a demand. The only measure is the person's own report, and "I'm done for today" is always a valid ending.
 - Never ask the app's user to forgive as a requirement, and never imply that holding back forgiveness is failure.
 - The wording must not promise that God will speak, or that silence means anything is wrong.
-- **The Care page, "When it's heavy."** Lives in More, and is linked quietly from the Stop and rest screen, the Healing ready check, and the first-launch note. It is not an objection list and is not shown among the cards. Sections, each short, each ending "You can close the app," with no 988 inside (988 appears only after a worrisome input). All wording is **draft and HOLD until a clinician and a pastor have rewritten or approved it:**
-  - *If something frightening comes.* If what you hear or see frightens you, tells you to hurt yourself or anyone else, feels like it's watching or controlling you, or comes when you haven't slept or your mind is racing, stop, and tell someone today: a doctor, a counselor, a pastor, a friend. Prayer is not a substitute for care, and you haven't done anything wrong. We'll be here when you're ready. *(1 Corinthians 14:33)*
-  - *If you live with anxiety, depression, OCD, bipolar or trauma.* It can be safe, gently. Tell your counselor or doctor you're trying it. Don't change or stop any medication because of something you think you heard. If quiet or testing makes your mind louder, or you keep going round and round asking whether it was God, stop and close the app. Rest and care are not a lack of faith. Elijah was fed and slept before he heard anything. *(1 Kings 19:5–8)*
-  - *If quiet brings up loud things.* Then stillness isn't safe for you right now, and that isn't your failure. Keep your eyes open, keep a light on, keep it short. Use the glad place, or stop. Many people need a counselor to help them find quiet safely. *(Psalm 46:1, Matthew 11:28)*
-  - *If you're grieving.* Grief is welcome here, and you can bring all of it to God, including the wish for one more word from the one you lost. This app is for listening to God. Scripture asks us not to seek the dead for answers, and it also promises that God is near to the brokenhearted. A pastor, a counselor or a friend can sit with you. *(Deuteronomy 18:10–12, Psalm 34:18, John 11:35, 1 Thessalonians 4:13–14)*
-  - *If you've been hurt by a spiritual leader.* I'm sorry. That should never have happened to you. Nobody has the right to tell you what God said. There's no leader here and nothing to join. You decide what to write and what to keep. A counselor who understands spiritual abuse can help. *(Matthew 23:8–10, Ezekiel 34)*
-  - *If someone told you God said something about you.* Weigh it. You don't have to obey it, or even accept it. Test it like anything else, with Scripture, prayer, and people who know you. A word that needs you to hurry, keep it secret, or pull away from people who love you is a reason to slow down. *(1 Thessalonians 5:20–21)*
-  - *If you're angry, or hurting and it feels like silence.* Then tell Him. The Psalms are full of honest anger and He kept them in the Bible. Anger told to God is still talking to God. You don't have to be polite, and you don't have to hear anything back today. *(Psalm 13:1–2, Psalm 62:8, John 11:21, 35)*
+- **No Care page.** There is no "When it's heavy" page and no care links at the top of or inside practice screens. Care and safety do not lead the app. The removed draft is parked in `parked/care-page-draft.md`.
 - **More > Common questions** (quiet, browse only, never in the sheet): imagination and New Age; Jesus "in the room"; arrogance; prophecy and Hebrews. Wording from the parked draft (`parked/objection-cards-full-draft.md`), to be reviewed.
-- The app is a prayer aid, not counseling or medical care, and says so once on first launch, with the line: "You need a church, a pastor or priest, a friend, and sometimes a counselor or doctor. This doesn't replace any of them." The same line sits at the foot of *What's in the way?*.
+- **Disclaimers stay light.** There is no first-launch card. The start screen carries a permanent line under the wordmark, never dismissed: *"With"* with *"God with us (Immanuel, Matthew 1:23)."* The one note about the app's place lives in About and on the Safety page: *"With is a way to practice listening to Him. It doesn't take the place of church, or of the people God has put around you."* No first-run wall of cautions, no "you need a church" instruction, no "not counseling or medical care" language.
 
 ## Look and feel
 
@@ -906,7 +902,7 @@ Statuses used in the tracker at the end: **Designed** (in this document), **Draf
 
 ### Global criteria (apply to everything)
 
-- Works fully offline after the first load. No accounts, no network calls beyond loading the app and the optional ESV passage links.
+- Works fully offline after the first load. No accounts, no network calls beyond loading the app. Scripture text ships in the app (Berean Standard Bible, public domain).
 - All data stays on the device. Nothing is sent anywhere. Local storage reads and writes are wrapped in try/catch, and every screen works if storage is blocked.
 - Works in light, dark and auto themes, with large type and reduced motion respected, at phone width with no horizontal scroll.
 - Plain-language rules are followed. No banned vocabulary, the app never says what God said, and no promise of results.
@@ -982,9 +978,9 @@ Statuses used in the tracker at the end: **Designed** (in this document), **Draf
 - *The Case:* each step's verses are read in context and accurate. The strongest objections (Hebrews 1, Revelation 22, 2 Timothy 3, 1 Corinthians 13) have fair answers.
 - *The Reach of Faith:* nowhere reads as "Scripture is subjective" or "impressions equal Scripture."
 - *How He speaks:* each way has a description, examples, a witness where one is verified, a test and a try-this. Circumstances either gets a verified witness or is shown without one.
-- *The Witnesses:* every quote verified from an online page with the translation or edition named, no long quotations from modern works, and context notes where a quote could mislead.
+- *The With-nesses:* every quote verified from an online page with the translation or edition named, no long quotations from modern works, and context notes where a quote could mislead.
 - *The Life:* Scripture portraits checked in context. Stories included only with permission.
-- *Scripture:* every verse checked in context, with ESV text through the popover.
+- *Scripture:* every verse checked in context, with BSB text in the popover.
 - Nothing in this area is a prerequisite. Each door is short and skippable.
 
 **Review and export**
@@ -996,17 +992,13 @@ Statuses used in the tracker at the end: **Designed** (in this document), **Draf
 - Every Amazon link checked and working. Inspired-by note present. No affiliate tag.
 - Settings: theme, type size, reduced motion, tone, Guidance, reminder `.ics`.
 
-**Care page (When it's heavy)**
-- Reachable from More, the Stop and rest screen, the Healing ready check and the first-launch note. Never listed as an objection.
-- Every section wording rewritten or approved by a clinician and a pastor before release. No 988 inside it.
-
 **Common questions**
 - Quiet, browse-only, in More. Never offered by the Not sure? sheet.
 
 **Safety**
 - 988 shown only after a worrisome input, never as a standing banner.
 - The voice-hearing distinction is explicit.
-- First-launch note: a prayer aid, not counseling or medical care.
+- The start screen carries the permanent name line, *God with us (Immanuel, Matthew 1:23).*, with "Matthew 1:23" as a tap target that opens the verse popover (the same pattern as IAmHere, showing the ESV text and the Crossway notice). There is no first-launch card and no "Got it" button. The prayer-aid line lives once in About and on the Safety page.
 - Heavy-path off-ramps tested by walking each path with a fragile-user scenario.
 
 ### Gates (cannot ship without these)
@@ -1015,11 +1007,10 @@ Statuses used in the tracker at the end: **Designed** (in this document), **Draf
 2. **Human pastoral review of What's in the way?, The Case and The Reach of Faith.** More than one tradition if possible. An AI review written from a pastoral frame exists to prepare for this but does not satisfy the gate. The review and its revisions are recorded in `reviews/`.
 3. **Position on Jesus's presence settled** and applied consistently in the cards, Deeper and Healing.
 4. **Every quote and verse verified**, with the translation or edition named.
-5. **ESV usage confirmed** to be within the publisher's terms for this app.
+5. ~~ESV usage confirmed~~ Resolved: the app uses the public-domain Berean Standard Bible, so no licensing gate remains.
 6. **Real-iPhone pass** on install, offline, update, dictation, keyboard behavior and PDF export.
 7. **Journaling path reviewed**, or removed from the build until it is.
 8. **Name and icon decided.** Icon chosen (With). Name proposed (With), pending the conflict check.
-9. **Clinical review** of the Care page and of the quiet-and-breath practice for people with trauma, by a named clinician or pastoral counselor.
 
 ### Tracker
 
@@ -1037,12 +1028,11 @@ Statuses used in the tracker at the end: **Designed** (in this document), **Draf
 | Test, Keep, How did it come? | Designed | |
 | Not sure? sheet | Designed | |
 | What's in the way? (six cards) | Cut back to the barriers to believing He wants to talk with us. Draft. | Gates 2, 4 |
-| Care page (When it's heavy) | Drafted, HOLD for clinician and pastor | Gates 2, 9 |
 | Common questions | Parked draft, to move | Gates 2, 3 |
 | Why: The Case | Drafted | Gates 2, 4 |
 | Why: The Reach of Faith | Drafted | Gates 2, 4 |
 | Why: How He speaks | Drafted | Gate 4 |
-| Why: The Witnesses | Drafted, mostly verified | Gate 4 |
+| Why: The With-nesses | Drafted, mostly verified | Gate 4 |
 | Why: The Life | Drafted | Gate 4, permissions |
 | Why: Scripture | Drafted | Gates 4, 5 |
 | Review and export | Designed | Gate 6 |
@@ -1058,8 +1048,8 @@ Everything ships as one app. There are no staged releases. The order below is on
 3. Practice engine: step runner, autosave drafts, resume, optional mic, and the **Not sure?** chip with its bottom sheet.
 4. Paths, in this order: Quick (Winship), Deeper (Lehman), Healing (Kraft), Journaling (Wilder). Each path reuses the Test and Keep steps. Eldredge's questions are optional follow-ups inside Quick and Journaling.
 5. Review: list, detail, edit, delete, "God answered," PDF and text export.
-6. *What's in the way?* (Answering Objections), then *Why practice?*: The Case, **The Reach of Faith**, **How He speaks**, and Scripture (content plus the ESV popover and the shared labels).
-7. *Why practice?*: The Witnesses and The Life, with stories. "God answered" in Review. The Daily path.
+6. *What's in the way?* (Answering Objections), then *Why practice?*: The Case, **The Reach of Faith**, **How He speaks**, and Scripture (content plus the verse popover and the shared labels).
+7. *Why practice?*: The With-nesses and The Life, with stories. "God answered" in Review. The Daily path.
 8. References page and optional reminder `.ics`.
 9. Offline checks and tests on a real iPhone.
 
@@ -1068,7 +1058,7 @@ Risk note: the Healing path carries the most weight. It gets the most review bef
 ## Open questions
 
 1. **Name.** Settled in direction: **With**, with the icon. Remaining: a conflict check, whether to add the "Immanuel prayer" subtitle in store and share text, and whether to rename the folder later.
-2. **Scripture translation.** ESV links, as in IAmHere?
+2. **Scripture translation.** Settled: Berean Standard Bible (public domain), text in the popover. Remaining: confirm you are happy with BSB wording where it differs from familiar ESV phrasing used in short quotes.
 3. **Wording review.** Settled: inspired-by, so no fidelity check against the teachers. Still open: who reads the Healing path and the *What's in the way?* cards for safety, Scripture and tone?
 4. **Kraft's spiritual-warfare teaching.** This draft leaves it out. Is that right, or do you want a pointer to Kraft's books for it?
 5. **Stories.** Which of your own, if any, and are any other people's willing to be included?
@@ -1082,5 +1072,5 @@ Risk note: the Healing path carries the most weight. It gets the most review bef
 13. **References.** Plain Amazon links, or an affiliate tag? Any other books or authors to include, including a more cautious voice for balance?
 14. **Claim scope.** The draft says the *principle* (God speaks, we listen, test, obey) is entirely scriptural, and that the forms (breath, glad memory, steps) are wise helps. Do you want it phrased that way, or stronger?
 15. **The Case.** Does the nine-step argument cover what you'd say? Anything to add, cut, or reorder? Any texts you lean on that I've missed?
-16. **Witnesses.** Which others do you want, and are there any in this list you'd drop? I can source quotes for Bernard, Teresa and others.
+16. **With-nesses.** Which others do you want, and are there any in this list you'd drop? I can source quotes for Bernard, Teresa and others.
 17. **Quote checking.** The quotes here were verified against online texts in one research pass. Before shipping, each is checked in a standard edition, with the translation named.
