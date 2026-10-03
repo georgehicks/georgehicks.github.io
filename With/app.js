@@ -131,12 +131,15 @@ function render(requested) {
   if (base === 'done' && !lastDone) base = 'start';
   if (base === 'rest' && !lastRest) base = 'start';
   if (cur && base === 'run' && !E.pathVisible(C, cur.path, settings)) base = 'start';
+  if (base === 'run' && fromStep) { restoreScroll = fromStep.scroll; fromStep = null; }
+  else if (base !== 'why') fromStep = null;
   const route = [base, ...(base === requested.split('/')[0] ? args : [])].join('/');
   if (route !== requested) history.replaceState(null, '', '#/' + route);
   current = route;
   if (updateReady && E.isResting(route)) applyUpdate();
   $app.replaceChildren(VIEWS[base](args));
-  window.scrollTo(0, 0);
+  window.scrollTo(0, base === 'run' && restoreScroll != null ? restoreScroll : 0);
+  if (base === 'run') restoreScroll = null;
   const head = $app.querySelector('h1, h2');
   if (head) { head.tabIndex = -1; head.focus({ preventScroll: true }); }
   const anchor = $app.querySelector('[data-anchor]');
@@ -268,13 +271,23 @@ function closePassage() {
   pop = null; off(); el.remove();
 }
 
+// Leaving a practice step to read something (See how He speaks, or a link in a card): Back returns
+// to exactly that step. The session is already saved, so the step and its draft come back as they were,
+// and the scroll position is restored. Tapping any tab instead simply leaves.
+let fromStep = null, restoreScroll = null;
+function goFromStep(route) {
+  flushDraft();
+  fromStep = { scroll: window.scrollY };
+  closeSheet(); go(route);
+}
+
 // ===================== What's in the way? cards =====================
 const findCard = id => E.allCards(C).concat(C.common.cards).find(c => c.id === id);
 // one card: the objection, a plain answer, verses, where to read more, and the same low-stakes offer.
 // In a sheet (the Not sure? chip) nothing leaves the step unless a link is tapped, and Try it just closes it.
 function cardBody(card, { inSheet = false } = {}) {
   const K = C.objections.cardLabels;
-  const goTo = to => { closeSheet(); go(to); };
+  const goTo = to => { if (inSheet) goFromStep(to); else { closeSheet(); go(to); } };
   return h('div', {},
     h('h2', { class: 'card-q', text: tx('"' + card.q + '"') }),
     h('div', { class: 'prose' }, para(card.a)),
@@ -303,7 +316,7 @@ function nothingBody({ inSheet = false, onNothing = null } = {}) {
   const more = btn(N.next, () => { shown++; paint(); }, 'quiet');
   const paint = () => {
     list.replaceChildren(...N.items.slice(0, shown).map((t, i) => h('li', {}, rich(t),
-      i === 3 && [' ', link(N.speaksLink, () => { closeSheet(); go('why/speaks'); }, 'small')])));
+      i === 3 && [' ', link(N.speaksLink, () => { if (inSheet) goFromStep('why/speaks'); else go('why/speaks'); }, 'small')])));
     more.hidden = shown >= N.items.length;
   };
   paint();
@@ -598,13 +611,15 @@ const STEP = {
       const e = E.entryFor(s, key) || { how: [] };
       howChips.replaceChildren(...C.how.ways.map(w => chip({ label: w.label, cls: 'small', pressed: e.how.includes(w.id), onclick: () => { E.toggleHow(E_(), w.id); saveDraft(); paintHow(); } })));
       const first = (C.how.ways.find(w => e.how.includes(w.id) && w.speaks) || {}).speaks;
-      howLink.onclick = () => go('why/speaks' + (first ? '/' + first : ''));
+      howLink.onclick = () => goFromStep('why/speaks' + (first ? '/' + first : ''));
     };
     const howLink = link(C.expectation.seeLink, null, 'small how-link');
+    // only one See how He speaks link on the step at a time: this one until there is an answer, then the one under it
+    const seeExpect = link(C.expectation.seeLink, () => goFromStep('why/speaks'), 'small');
     const note = hint(h('p', { text: tx(C.afterAnswer.line) }), on);
     const refresh = text => {
       const has = text.trim() || (E.entryFor(s, key) || { how: [] }).how.length;
-      post.hidden = !has; if (has) paintHow();
+      post.hidden = !has; seeExpect.hidden = !!has; if (has) paintHow();
     };
     const box = answerBox({ get: () => entryText(s, key), set: (t, via) => E.setAnswer(s, key, prompt, t, via), label: def.label, starters: C.starters, on, onChange: refresh });
     const howBody = h('div', {}, h('div', { class: 'lbl', text: tx(C.how.title) }), howChips, howLink);
@@ -621,7 +636,7 @@ const STEP = {
     const nothingBtn = () => openNothing(() => { E.markNothing(s, key, prompt); saveDraft(); paintHow(); refresh(box.ta.value); post.hidden = false; closeSheet(); });
     return { body: [
       def.expect && hint(h('div', { class: 'expect' }, para(C.expectation.line), para('"' + C.expectation.refText + '." ' + C.expectation.ref),
-        h('div', { class: 'links' }, link(C.expectation.seeLink, () => go('why/speaks'), 'small'))), on),
+        h('div', { class: 'links' }, seeExpect)), on),
       pauseBtn, box.el, post, nothingBlock],
       nothing: nothingBtn };
   },
@@ -864,7 +879,7 @@ VIEWS.why = ([sub, arg]) => {
     W.doors.map(d => h('button', { type: 'button', class: 'tile', onclick: () => go(d.to) }, h('span', { class: 't', text: tx(d.title) }), h('span', { class: 'd', text: tx(d.line) }))),
     tryOffer(), h('div', { class: 'spacer' }), tabs('way'));
 };
-const whyFrame = (...kids) => h('section', { class: 'view' }, link(C.copy.back, () => go('why'), 'back'), kids, h('div', { class: 'spacer' }), tabs('way'));
+const whyFrame = (...kids) => h('section', { class: 'view' }, fromStep ? link(C.copy.backToStep, () => go('run'), 'back') : link(C.copy.back, () => go('why'), 'back'), kids, h('div', { class: 'spacer' }), tabs('way'));
 function pager(base, n, total, { last = false } = {}) {
   const lastN = total + 1;
   return h('div', { class: 'pager' },
