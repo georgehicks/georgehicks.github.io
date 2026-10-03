@@ -47,21 +47,21 @@ t('only completed sessions count toward the fade', () => eq(E.completedCount([{ 
 t('Not sure? and Nothing came? are not governed by the guidance rule', () => !/guid/i.test(src[0].match(/openNotSure\(def\.notSure\), text: R\.notSure/)?.[0] || '') && src[0].includes("text: R.nothingCame"));
 
 // ---- step runner: Quick ----
-t('Quick flow: bring, know, do, more, test, keep', () => eq(E.flowOf(C, 'quick'), ['bring', 'know', 'do', 'more', 'test', 'keep']));
+t('Quick flow: bring, know, do, more, keep (no forced test step)', () => eq(E.flowOf(C, 'quick'), ['bring', 'know', 'do', 'more', 'keep']));
 t('runner walks Quick in order and finishes with null', () => {
   const s = E.startSession(C, E.newSession('quick'));
   const seen = [s.at];
   let to; while ((to = E.advance(C, s, 'no')) != null) seen.push(to);
-  eq(seen, ['bring', 'know', 'do', 'more', 'test', 'keep']);
+  eq(seen, ['bring', 'know', 'do', 'more', 'keep']);
 });
-t('"Is there more?" yes goes to Ask Him anything and back to the question; no goes to Test', () => {
+t('"Is there more?" yes goes to Ask Him anything and back to the question; no goes to Keep', () => {
   const s = E.startSession(C, E.newSession('quick'), 'more');
   eq(E.advance(C, s, 'yes'), 'followup'); eq(s.followUps.length, 1);
   eq(E.advance(C, s), 'more'); eq(E.advance(C, s, 'yes'), 'followup'); eq(s.followUps.length, 2);
-  eq(E.advance(C, s), 'more'); eq(E.advance(C, s, 'no'), 'test');
+  eq(E.advance(C, s), 'more'); eq(E.advance(C, s, 'no'), 'keep');
 });
 t('step counter counts only the path steps, not Ask Him anything', () => {
-  const s = E.startSession(C, E.newSession('quick'), 'do'); eq(E.stepCounter(C, s), { n: 3, total: 6 });
+  const s = E.startSession(C, E.newSession('quick'), 'do'); eq(E.stepCounter(C, s), { n: 3, total: 5 });
   E.jump(s, 'followup'); eq(E.stepCounter(C, s), null);
 });
 t('Back follows the way the person came, and stops at the first step', () => {
@@ -70,7 +70,7 @@ t('Back follows the way the person came, and stops at the first step', () => {
 });
 
 // ---- Deeper ----
-t('Deeper flow: glad memory, appreciation, welcome, bring, ask, test, keep', () => eq(E.flowOf(C, 'deeper').filter(k => k !== 'know' && k !== 'do' && k !== 'more'), ['glad', 'appreciate', 'welcome', 'bring', 'test', 'keep']));
+t('Deeper flow: glad memory, appreciation, welcome, bring, ask, keep', () => eq(E.flowOf(C, 'deeper').filter(k => k !== 'know' && k !== 'do' && k !== 'more'), ['glad', 'appreciate', 'welcome', 'bring', 'keep']));
 t('Back to the glad place returns to appreciation, and Back returns from it', () => {
   const s = E.startSession(C, E.newSession('deeper'), 'welcome'); E.jump(s, C.paths.deeper.gladPlaceKey);
   eq(s.at, 'appreciate'); eq(E.back(s), 'welcome');
@@ -78,9 +78,9 @@ t('Back to the glad place returns to appreciation, and Back returns from it', ()
 t('Deeper: Back to the glad place is not offered on step 1 (source rule)', () => src[0].includes("idx > 0 && key !== P.gladPlaceKey"));
 
 // ---- Healing ----
-t('Healing flow runs ready check through keep', () => eq(E.flowOf(C, 'healing'), ['ready', 'ask', 'see', 'jesus', 'gave', 'forgave', 'lietruth', 'feel', 'again', 'test', 'keep']));
-t('feel: peace goes to Test; lighter or heavy goes to Ask again', () => {
-  const a = E.startSession(C, E.newSession('healing'), 'feel'); eq(E.advance(C, a, 'peace'), 'test');
+t('Healing flow runs ready check through keep', () => eq(E.flowOf(C, 'healing'), ['ready', 'ask', 'see', 'jesus', 'gave', 'forgave', 'lietruth', 'feel', 'again', 'keep']));
+t('feel: peace goes to Keep; lighter or heavy goes to Ask again', () => {
+  const a = E.startSession(C, E.newSession('healing'), 'feel'); eq(E.advance(C, a, 'peace'), 'keep');
   const b = E.startSession(C, E.newSession('healing'), 'feel'); eq(E.advance(C, b, 'heavy'), 'again');
 });
 t('Ask again loops to step 4, 5, 7 or step 2, each as a fresh pass, with no limit', () => {
@@ -110,13 +110,13 @@ t('the Healing session has a memory block; other paths do not', () => E.newSessi
 t('Stop and rest is on every Healing step (source) and no review-status note shows on screen', () => src[0].includes("s.path === 'healing' ? link(R.stopRest, restSession") && !src[0].includes("class: 'pending'"));
 
 // ---- Daily and Journaling ----
-t('Daily: moment, one prompt, test glance, keep (optional)', () => eq(E.flowOf(C, 'daily'), ['moment', 'dailyask', 'test', 'keep']));
+t('Daily: moment, one prompt, keep (optional)', () => eq(E.flowOf(C, 'daily'), ['moment', 'dailyask', 'keep']));
 t('Daily moments are Morning, A decision, After Scripture, Praying for someone, Evening, Other', () =>
   eq(C.paths.daily.defs.moment.options.map(o => o.label), ['Morning', 'A decision', 'After Scripture', 'Praying for someone', 'Evening', 'Other']));
 t('Daily "A decision" asks for wisdom and the next faithful step, not a yes or no', () =>
   eq(C.paths.daily.defs.moment.options[1].prompt, 'What do You want me to know about this? What is the next faithful step?'));
 t('Daily records are shown lighter in Review; others are not', () => E.isLight({ path: 'daily' }) && !E.isLight({ path: 'quick' }));
-t('Journaling has seven steps, then Test and Keep', () => eq(E.flowOf(C, 'journaling').length - 2, 7));
+t('Journaling has seven steps, then Keep', () => eq(E.flowOf(C, 'journaling').length - 1, 7));
 
 // ---- drafts: autosave and resume ----
 t('a new session with nothing written is not worth keeping', () => !E.isMeaningful(E.newSession('quick')));
@@ -154,7 +154,7 @@ t('How did it come: real ways combine; Not sure and Nothing yet stand alone', ()
 t('Test has four questions in the design order, with yes / not sure / no', () => {
   eq(C.test.questions.map(q => q.name), ['Scripture', 'Jesus', 'Love', 'Someone I trust']);
   eq(C.test.options.map(o => o.label), ['Yes', 'Not sure', 'No']);
-  eq(C.test.top, 'You reached. Now test.');
+  eq(C.test.top, 'Looking at it:');
 });
 t('"no" on Scripture or Jesus: set it down and talk with someone', () => eq([E.testAdvice({ scripture: 'no' }), E.testAdvice({ jesus: 'no', love: 'yes' })], ['no', 'no']));
 t('"not sure" anywhere, or "no" on love or on telling someone: hold it lightly', () => {
@@ -231,9 +231,17 @@ t('outlines list every step of a path together, in order, with prompts and start
   const d = E.outlineFor(C, 'deeper'), q = E.outlineFor(C, 'quick'), y = E.outlineFor(C, 'daily');
   eq(d.map(x => x.key), C.paths.deeper.flow); eq(q.map(x => x.key), C.paths.quick.flow); eq(y.map(x => x.key), C.paths.daily.flow);
   const doStep = q.find(x => x.key === 'do');
-  return d.every(x => x.title) && y.find(x => x.key === 'moment').items.length >= 5 && /want me to/.test(doStep.starters[0]) && doStep.pause === 'Reach, then listen.' && q.find(x => x.key === 'test').items.length === 4;
+  return d.every(x => x.title) && y.find(x => x.key === 'moment').items.length >= 5 && /want me to/.test(doStep.starters[0]) && doStep.pause === 'Reach, then listen.' && !q.find(x => x.key === 'test') && /optional/.test(q.find(x => x.key === 'keep').items.join(' '));
 });
 t('the start screen has a quiet Outline link for Quick and for each visible path, and an outline route exists', () => src[0].includes("go('outline/quick')") && src[0].includes("go('outline/' + id)") && src[0].includes('VIEWS.outline') && E.RESTING.includes('outline') && C.copy.outline.link === 'Outline');
+t('testing is optional: no path has a test step, Keep carries a folded optional look, and nothing requires it', () =>
+  Object.values(C.paths).every(p => !p.flow.includes('test')) && !('test' in C.steps) && src[0].includes('function optionalLook') && src[0].includes("h('details', { class: 'optional-look'") && !/You reached\. Now test/.test(JSON.stringify(C.copy)));
+t('Continue where you left off offers only the newest session, and only while it is unfinished', () => {
+  const a = { id: 'a', started: '2026-01-01T10:00:00Z', status: 'open', steps: [{ answer: 'x' }] }, b = { id: 'b', started: '2026-01-02T10:00:00Z', status: 'complete' };
+  eq(E.resumableOf([a], null).id, 'a');
+  eq(E.resumableOf([a, b], null), null);
+  return E.resumableOf([b, a], null) === null;
+});
 t('there is no Care page: no route, no More tile, no links to it, and no top-level care content', () => !('care' in C) && !/VIEWS\.care|go\('care'\)|careLink|careAvailable/.test(src[0] + src[1]) && !JSON.stringify(C.objections.close).includes('heavy'));
 t('the name line sits permanently on the start screen, there is no first-launch card, and the care disclaimer lives once in About and Safety', () =>
   C.copy.start.nameLine === 'God with us (Immanuel, Matthew 1:23).' && !C.firstLaunch && !C.objections.footLine

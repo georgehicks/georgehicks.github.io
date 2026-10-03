@@ -24,7 +24,7 @@
   },
   "start": {
    "nameLine": "God with us (Immanuel, Matthew 1:23).",
-   "line": "Get still. Bring one real thing to Him. Ask. Write down whatever comes. Test it. Keep it.",
+   "line": "Get still. Bring one real thing to Him. Ask. Write down whatever comes. Keep it.",
    "begin": "Begin",
    "beginLine": "Breathe, then bring one thing to Him.",
    "continue": "Continue where you left off",
@@ -237,7 +237,7 @@
   "seeLink": "See how He speaks"
  },
  "afterAnswer": {
-  "line": "It may sound like your own thoughts. That's often how it comes. Write it down and test it."
+  "line": "It may sound like your own thoughts. That's often how it comes. Write it down, and look at it when you're ready."
  },
  "starters": [
   "I think I heard...",
@@ -293,10 +293,6 @@
    ],
    "notSure": "tried_nothing"
   },
-  "test": {
-   "type": "test",
-   "notSure": "how_know"
-  },
   "keep": {
    "type": "keep",
    "notSure": "how_know"
@@ -306,13 +302,12 @@
   "quick": {
    "title": "Quick",
    "credit": "Inspired by Jamie and Donna Winship",
-   "line": "Bring one thing, ask what He wants you to know and do, test it, keep it.",
+   "line": "Bring one thing, ask what He wants you to know and do, keep it.",
    "flow": [
     "bring",
     "know",
     "do",
     "more",
-    "test",
     "keep"
    ]
   },
@@ -328,7 +323,6 @@
     "know",
     "do",
     "more",
-    "test",
     "keep"
    ],
    "gladPlaceKey": "appreciate",
@@ -383,7 +377,6 @@
     "lietruth",
     "feel",
     "again",
-    "test",
     "keep"
    ],
    "gladPlaceFrom": "see",
@@ -532,7 +525,6 @@
    "flow": [
     "moment",
     "dailyask",
-    "test",
     "keep"
    ],
    "defs": {
@@ -605,11 +597,6 @@
      "coach": "Write whatever comes, even if slight.",
      "notSure": "how_know"
     },
-    "test": {
-     "type": "test",
-     "glance": true,
-     "notSure": "how_know"
-    },
     "keep": {
      "type": "keep",
      "optional": true,
@@ -632,7 +619,6 @@
     "understand",
     "glad_you",
     "do_you",
-    "test",
     "keep"
    ],
    "defs": {
@@ -682,7 +668,7 @@
   }
  },
  "test": {
-  "top": "You reached. Now test.",
+  "top": "Looking at it:",
   "lead": "Three things to look at, when you're ready.",
   "questions": [
    {
@@ -745,7 +731,8 @@
   "notes": [
    "This is your attempt to listen. It isn't God's dictation. Hold it loosely.",
    "If it touches your marriage, your children, your health or medication, a large sum of money, or a choice that can't be undone, don't act on it alone and don't act on it quickly. Ask the people who love you."
-  ]
+  ],
+  "testOptional": "Want to look at it? (optional)"
  },
  "how": {
   "title": "How did it come?",
@@ -922,7 +909,7 @@
      }
     ],
     "try": {
-     "text": "the Test step."
+     "text": "a look at it, on the last step."
     }
    }
   ],
@@ -1182,7 +1169,7 @@
        "Testing without reaching never hears. The leaders had the text and missed the Man."
       ]
      },
-     "The Test step in every path is the second hand. Scripture is the measure, mature believers help, and fruit shows over time. The app asks for both."
+     "The optional look at it, at the end of a session, is the second hand. Scripture is the measure, mature believers help, and fruit shows over time."
     ]
    },
    {
@@ -1270,7 +1257,7 @@
     "what": "A thought that arrives with weight. A word, a phrase, a settled \"knowing.\" It often sounds like your own mind, because the Spirit works through it.",
     "scripture": "1 Kings 19:12 (the gentle whisper). Isaiah 30:21 (a word behind you). John 14:26 (He will bring to your remembrance). Acts 8:29, 10:19, 13:2 (\"the Spirit said\").",
     "witnesses": "Wesley, \"an inward impression on the soul.\" Willard (describes the voice as an impression on the mind). Brother Lawrence, \"continually conversing with Him.\" Chambers, \"Speak, Lord.\"",
-    "test": "The Test step. Does it agree with Scripture, point to Jesus, and lead toward love? Write it down, and tell someone you trust.",
+    "test": "A look at it, if you like. Does it agree with Scripture, point to Jesus, and lead toward love? Write it down, and tell someone you trust.",
     "try": "Ask one question, wait one breath, and write the first thing that comes."
    },
    {
@@ -1956,7 +1943,7 @@
   "title": "About",
   "paras": [
    "With. God with us (Immanuel, Matthew 1:23).",
-   "This app helps you hear from God. It is training wheels for listening prayer: get still and turn toward Christ, bring one real thing to Him, ask a simple question, write down whatever comes, test it, and keep it.",
+   "This app helps you hear from God. It is training wheels for listening prayer: get still and turn toward Christ, bring one real thing to Him, ask a simple question, write down whatever comes, and keep it. You can look at it whenever you like.",
    "It is a guided form, not a teacher and not a voice. The app asks the questions. You ask God and write the answers. The app never composes words for God.",
    "This app is inspired by the work of Jamie and Donna Winship, Karl and Charlotte Lehman, Jim Wilder and colleagues, Charles Kraft, John Eldredge, Mark Virkler and Dallas Willard. It borrows the shape of their practices and is free to adapt, combine, shorten or leave out parts. It does not reproduce their methods, claim to teach them as they teach them, or speak for them. None of them has endorsed or reviewed it.",
    "Scripture teaches that God speaks and that we are to listen, test and obey. It does not prescribe breathing exercises, glad memories, or a seven-step journal. Those are wise helps drawn from teachers.",

@@ -339,7 +339,7 @@ const VIEWS = {};
 VIEWS.start = () => {
   const S = C.copy.start, sess = sessions();
   const last = E.sortNewest(sess.filter(s => s.status === 'complete'))[0];
-  const resumable = cur && E.isMeaningful(cur) ? cur : E.sortNewest(E.unfinishedOf(sess))[0];
+  const resumable = E.resumableOf(sess, cur);
   const others = E.visiblePaths(C, settings).filter(id => id !== 'quick');
   return h('section', { class: 'view' },
     h('div', { class: 'topbar' },
@@ -593,6 +593,31 @@ function gladPlace() {
   startAt('deeper', seen().gladPlace ? C.paths.deeper.gladPlaceKey : null, true);
 }
 
+// An optional look at what came, folded away on the last step. Nothing is required, nothing is scored.
+function optionalLook(s) {
+  const T = C.test;
+  const advice = h('div', { 'aria-live': 'polite' });
+  const paint = () => {
+    const a = E.testAdvice(s.test);
+    const rep = E.repeatedUnsure(sessions(), s);
+    advice.replaceChildren(...(a || rep ? [h('div', { class: 'advice' },
+      a === 'no' && h('p', { text: tx(T.no) }), a === 'unsure' && h('p', { text: tx(T.unsure) }), rep && h('p', { text: tx(T.repeated), style: a ? 'margin-top:8px' : '' }),
+      a === 'no' && h('div', { class: 'stack', style: 'margin-top:10px' }, btn(T.gladPlace, gladPlace, 'quiet'), btn(T.takeBreak, restSession, 'quiet')))] : []));
+  };
+  const rows = T.questions.map((q, i) => {
+    const row = h('div', { class: 'opt-row' });
+    const draw = () => row.replaceChildren(...T.options.map(o => chip({ label: o.label, pressed: s.test[q.id] === o.id, onclick: () => { E.setTest(s, q.id, o.id); saveDraft(); draw(); paint(); } })));
+    draw();
+    return h('div', { class: 'q-block' + (i === 3 ? ' sep-top' : ''), style: i === 3 ? 'border-top:1px solid var(--line);padding-top:12px' : '' },
+      h('div', { class: 'qn', text: tx(q.name) }), h('div', { class: 'qt dim', text: tx(q.text) }), row);
+  });
+  paint();
+  const opened = Object.values(s.test).some(v => v && v !== '');
+  return h('details', { class: 'optional-look', open: opened },
+    h('summary', { text: tx(C.keep.testOptional) }),
+    h('p', { class: 'coach', text: tx(T.lead) }), rows, advice);
+}
+
 const STEP = {
   // a plain box: bring, glad memory, see it, give Him the hurt, forgive, gratitude
   bring({ s, def, on, key }) {
@@ -660,32 +685,11 @@ const STEP = {
     const hold = h('p', { class: 'coach', hidden: true, text: tx(def.coach) });
     return { body: [box.el, hold], noCont: true, foot: [btn(def.yes, () => { setSeen({ gladPlace: true }); next(); }), btn(def.notYet, () => { hold.hidden = false; }, 'quiet')] };
   },
-  test({ s, def, on }) {
-    const T = C.test, glance = !!def.glance;
-    const advice = h('div', { 'aria-live': 'polite' });
-    const paint = () => {
-      const a = E.testAdvice(s.test);
-      const rep = E.repeatedUnsure(sessions(), s);
-      advice.replaceChildren(...(a || rep ? [h('div', { class: 'advice' },
-        a === 'no' && h('p', { text: tx(T.no) }), a === 'unsure' && h('p', { text: tx(T.unsure) }), rep && h('p', { text: tx(T.repeated), style: a ? 'margin-top:8px' : '' }),
-        a === 'no' && h('div', { class: 'stack', style: 'margin-top:10px' }, btn(T.gladPlace, gladPlace, 'quiet'), btn(T.takeBreak, restSession, 'quiet')))] : []));
-    };
-    const rows = T.questions.map((q, i) => {
-      const row = h('div', { class: 'opt-row' });
-      const draw = () => row.replaceChildren(...T.options.map(o => chip({ label: o.label, pressed: s.test[q.id] === o.id, onclick: () => { E.setTest(s, q.id, o.id); saveDraft(); draw(); paint(); } })));
-      draw();
-      return h('div', { class: 'q-block' + (i === 3 ? ' sep-top' : ''), style: i === 3 ? 'border-top:1px solid var(--line);padding-top:12px' : '' },
-        h('div', { class: 'qn', text: tx(q.name) }), h('div', { class: 'qt dim', text: tx(q.text) }), row);
-    });
-    const note = glance ? null : answerBox({ get: () => s.test.note, set: t => { s.test.note = t; }, label: T.noteLabel, short: true, on });
-    paint();
-    return { body: [h('p', { class: 'coach', text: tx(T.lead) }), rows, note && note.el, advice], title: T.top };
-  },
   keep({ s, def, on }) {
     const K = C.keep;
     const box = answerBox({ get: () => s.keep, set: t => { s.keep = t; }, short: true, on });
     const nextBox = answerBox({ get: () => s.nextStep, set: t => { s.nextStep = t; }, label: K.nextLabel, short: true, on });
-    return { body: [box.el, hint(h('div', {}, K.notes.map(n => h('p', { class: 'after-answer', text: tx(n) }))), on), nextBox.el], title: K.title, cont: K.cta };
+    return { body: [box.el, hint(h('div', {}, K.notes.map(n => h('p', { class: 'after-answer', text: tx(n) }))), on), nextBox.el, optionalLook(s)], title: K.title, cont: K.cta };
   },
   // Healing: breath done? glad place found? Then on.
   ready({ s, def }) {

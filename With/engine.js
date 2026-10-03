@@ -77,7 +77,7 @@ export function advance(C, s, choice) {
   if (def.type === 'more') {
     if (choice === 'yes') { s.followUps.push({ prompt: '', answer: '' }); to = 'followup'; } else to = flowNext(C, s, cur);
   } else if (cur === 'followup') to = 'more';
-  else if (def.type === 'scale') to = choice === 'peace' ? 'test' : 'again';
+  else if (def.type === 'scale') to = choice === 'peace' ? 'keep' : 'again';
   else if (def.type === 'again') {
     if (choice === 'rest') return null;
     s.round += 1; // each ask-again is a fresh pass, so earlier answers are kept as they were written
@@ -172,6 +172,13 @@ export function upsertSession(list, s) {
   const out = list.slice(); out[i] = s; return out;
 }
 export const unfinishedOf = list => list.filter(s => s.status === 'open' || s.status === 'resting');
+// "Continue where you left off" offers only the most recent session, and only while it is unfinished.
+// Finishing something newer clears it, so an old half-done session never lingers on the start screen.
+export function resumableOf(list, cur) {
+  if (cur && isMeaningful(cur)) return cur;
+  const newest = sortNewest(list)[0];
+  return newest && (newest.status === 'open' || newest.status === 'resting') ? newest : null;
+}
 
 // ===================== titles and labels for Review =====================
 export function titleOf(C, s) {
@@ -396,8 +403,7 @@ export function outlineFor(C, pathId) {
     if (d.prompts) st.items = d.prompts.slice();
     if (d.options) st.items = d.options.map(o => o.label + ': ' + o.prompt);
     if (d.type === 'ask') { st.pause = d.pause || ''; st.starters = (d.starters || C.starters || []).slice(); }
-    if (key === 'test') { st.title = C.test.lead; st.items = C.test.questions.map(q => q.text); }
-    if (key === 'keep') { st.title = C.keep.title; st.items = [C.keep.nextLabel]; }
+    if (key === 'keep') { st.title = C.keep.title; st.items = [C.keep.nextLabel, C.keep.testOptional + ' ' + C.test.lead]; }
     if (key === 'dailyask') st.title = d.pause || '';
     return st;
   });

@@ -99,10 +99,10 @@ Caveat: these sources are mostly popular teaching, blogs and secondary summaries
 |---|---|---|
 | **Unfamiliar vocabulary** ("inner healing," "Immanuel," "visualize," "regression") | Sounds like a program or like New Age | Plain words: *ask, notice, remember, write down what comes.* Explain "Immanuel" once ("God with us," Matthew 1:23), then use it sparingly. |
 | **A wall of teaching before any experience** | Feels like homework | **Experience before explanation.** A first try is under two minutes. *What's in the way?* cards surface at the moment of doubt, not as a prerequisite. |
-| **Fear it's not real or not safe** | Stops people before they start | A **Not sure?** chip on every practice step opens the matching card without leaving the step. The Test step and the stop button appear from the first session. |
+| **Fear it's not real or not safe** | Stops people before they start | A **Not sure?** chip on every practice step opens the matching card without leaving the step. The optional look under Keep and the stop button are there from the first session. |
 | **Expecting a dramatic voice** | Quiet impressions are dismissed | An expectation line before the first ask: "Often it's a thought, a word, a verse, a picture, or a settled feeling. It can be small." A **See how He speaks** link sits beside it. |
 | **Silence** | Reads as failure or rejection | A built-in "Nothing came?" step (below). Silence is a valid ending, never an error. |
-| **Fear of making it up** | Paralysis | Say up front it may feel like your own thoughts, then give the Test and the idea of "write it down and see over time." |
+| **Fear of making it up** | Paralysis | Say up front it may feel like your own thoughts, then offer the optional look and the idea of "write it down and see over time." |
 | **Imagination and visualization** | Seen as New Age | Use *remember* not *picture*. Say "if you see something, write it; if you don't, that's fine." Every sensory prompt is skippable. |
 | **"Jesus is in the room"** | Theological discomfort | Wording: "welcome Him," "ask where He was," with Matthew 28:20 and John 14:23. No instruction to invent or summon anything. |
 | **Long forms** | Drop-off | Quick path under five minutes, a step counter, autosave, and "continue later" on every step. |
@@ -127,7 +127,7 @@ Training wheels are *guidance* that appears on practice screens. It fades by use
 | "It may sound like your own thoughts" note | Shown after each answer | Collapsed |
 | **Not sure?** chip | Always visible | Always visible |
 | **Nothing came?** link | Always visible | Always visible |
-| Test and Keep steps | Always | Always |
+| The optional look under Keep | Folded | Folded |
 
 Settings has a **Guidance** control: *Fade* (default), *Always show*, or *Hide*. A seasoned person can switch it to *Hide* straight away, and a newcomer never has to touch it.
 
@@ -167,7 +167,7 @@ Not a lesson. A line, at the point of need.
 | Before the first ask | The expectation line, plus John 10:27. |
 | Under a box | A one-line prompt, and the **Not sure?** chip that opens the matching *What's in the way?* card as a sheet. |
 | After an answer is written | "It may sound like your own thoughts. That's often how it comes. Write it down and test it." |
-| At Test | The four questions, offered as three things to look at plus telling someone. |
+| At Keep | The optional look: three things to look at plus telling someone, folded and optional. |
 | After Keep | The reminder offer, and "Come back and see how it holds up." |
 
 
@@ -189,7 +189,7 @@ The practices differ in vocabulary but share one spine:
 | **Charles Kraft, Deep Wounds, Deep Healing** | Ask the Holy Spirit to bring to mind the memory He wants to heal. Picture it, see that Jesus was there, give Him the hurt, forgive, let go of the lies, receive His truth. Keep asking and receiving until the healing comes. | The Healing path. Its repeat-until-healed shape becomes a return-as-often-as-needed loop. |
 | **Mark Virkler, Four Keys** | Stillness, vision, spontaneity, two-way journaling. | Teaching behind Connected and the writing box. Not its own path. |
 | **John Eldredge** | Questions put to God: what do You think of me, what do You want me to know, what do You want me to do. | Optional follow-up prompts after the Winship pair. |
-| **Dallas Willard** | Hearing God as relationship, tested by Scripture and fruit. | Informs the Test step and *What's in the way?*. |
+| **Dallas Willard** | Hearing God as relationship, tested by Scripture and fruit. | Informs the optional look and *What's in the way?*. |
 
 Sources used: [Winship episode](https://podcastaddict.com/episode/https%3A%2F%2Fmedia.transistor.fm%2F334eea43%2F3bd4b406.mp3&podcastId=6584064), [Immanuel Prayer Training](https://www.anglicandoma.org/messenger-articles/immanuel-prayer), [Immanuel Journaling overview](https://susankuenzi.substack.com/p/immanuel-journaling), [Virkler, 4 Keys](https://ebooks.faithlife.com/product/36940/4-keys-to-hearing-gods-voice), [Kraft, Deep Wounds, Deep Healing](https://www.goodreads.com/book/show/65581244), [Charles H. Kraft (Wikipedia)](https://en.wikipedia.org/wiki/Charles_H._Kraft), [Inner Healing overview](https://www.itsforfreedom.com/inner-healing).
 
@@ -227,6 +227,8 @@ Practice is the app. Three main places, plus a small More menu.
 
 The first screen is Practice's home. A calm page with one primary button, **Begin**, that opens Connected and then Quick. Below it, quietly, the other ways to pray: Deeper, Healing, Daily, Journaling, each with one line of description, so a seasoned person can go straight to what they want. Returning users see their last session and a **Continue** link if one is unfinished. Small links to *Why practice?* and *What's in the way?* sit at the foot, not in the way.
 
+**Continue resets.** *Continue where you left off* offers only the most recent session, and only while it is unfinished. Finishing something newer removes it, so an old half-done session never lingers on the start screen. Older unfinished sessions stay in Review.
+
 ### Connected
 
 - Reuses the breath component from IAmHere (`breathView` in `IAmHere/app.js`), with the same reduced-motion and tone settings.
@@ -243,9 +245,8 @@ The first screen is Practice's home. A calm page with one primary button, **Begi
 1. *What are you bringing to Him?* One thing, in the person's own words.
 2. Invite: "God, what do You want me to know about this?" Then a quiet, non-clickable line, **Reach, then listen.**, and a box: *What came?*
 3. "God, what do You want me to do?" Then a box.
-4. *Is there more?* If yes, loop to a free-form "Ask Him anything" step with a box. If no, go to Test.
-5. **Test** (see below).
-6. **Keep:** one line they'll take with them.
+4. *Is there more?* If yes, loop to a free-form "Ask Him anything" step with a box. If no, go to Keep.
+5. **Keep:** one line they'll take with them, with the optional look folded beneath it.
 
 **Deeper (Lehman).**
 
@@ -253,7 +254,7 @@ The first screen is Practice's home. A calm page with one primary button, **Begi
 2. Appreciation: "What do you appreciate most?" Stay until it's felt. A "Not yet" option keeps them here rather than advancing.
 3. Welcome: "Jesus, I know You were with me here. I welcome You now. Help me perceive Your presence." Then: *Describe whatever comes, even if slight.*
 4. Bring the thing, then the Quick questions.
-5. Test, Keep.
+5. Keep.
 6. A persistent **Back to the glad place** button on every step after 1. It returns to step 2.
 
 **A note on every path that asks the person to remember.** *"You never have to picture anything. Remembering, noticing or simply asking is enough. Skip any step that asks for more than you want to give."*
@@ -268,7 +269,7 @@ The first screen is Practice's home. A calm page with one primary button, **Begi
 6. **Forgive, if it comes up.** A prompt only: "Is there anyone you need to forgive? Ask Jesus if you are ready, and what He wants." No pressure and no skipping ahead. Forgiving is the person's own choice, not a step to complete.
 7. **Lies and truth.** "What did you come to believe about yourself or God in that moment?" Then: "Jesus, what is true?" Record both. The truth is what the person receives, not what the app supplies.
 8. **Is it done?** *How does that memory feel now?* A simple scale (heavy / lighter / peace) with a note.
-   - Peace: go to Test and Keep.
+   - Peace: go to Keep.
    - Lighter or heavy: **Ask again.** "Jesus, is there more here, or something else You want to heal?" This loops back to step 4, 5 or 7, or to step 2 for another memory, as the person chooses.
 9. **Come back.** If it is heavy or the person is tired, the app offers the glad place and a rest, and saves the session as unfinished. Reopening an unfinished healing session starts at the ready check, then picks up where they stopped. There is no limit on how many times they return, and no score for finishing.
 
@@ -306,16 +307,18 @@ After the person writes an answer, a quiet optional row asks **How did it come?*
 
 The starters under a writing box must fit the question above it. Under *What do You want me to know?* they are *"I think I heard..."* and *"What stood out was..."*. Under *What do You want me to do?* they are *"I think You want me to..."*, *"A next step could be..."* and *"What I'm drawn to do is..."*. Each step may carry its own starters, and a step without any uses the general two.
 
-#### Test step
+#### The optional look (replaces the Test step)
 
-The second hand of the reach. The line at the top reads: *You reached. Now test.* Offered as **"Three things to look at, when you're ready,"** plus a fourth, each a tap (yes / not sure / no) with a note field. A lamp, not a grade.
+**Testing is never forced.** There is no Test step in any path and no screen that asks the person to check themselves. A forced test turned a quiet prayer into a performance, so it was removed from every flow. What remains is an **optional look**, folded away at the bottom of the Keep step: a quiet line, *"Want to look at it? (optional)"*, that opens when tapped. It is closed by default, never required, and never reopens by itself unless the person already used it.
+
+Inside, *"Three things to look at, when you're ready,"* plus a fourth, each a tap (yes / not sure / no):
 
 1. **Scripture.** Does it agree with what Scripture says?
 2. **Jesus.** Does it point to Jesus? Does it make me proud, or demand that I be sure?
 3. **Love.** Does it lead toward love for God and for people? Peace can take time, and conviction can be real. If I can't tell, I don't decide alone.
 4. **Someone I trust.** Have I told someone I trust?
 
-Rules for what the app says in response:
+Rules for what the app says in response, if the person chooses to use it:
 - **Content decides, not feeling.** Heaviness or peace alone never settles who something is from. The app never tells a person that a feeling proves it is or isn't God.
 - **If any answer is "no" on the first two:** the app says plainly that this is a reason to set it down and talk with a pastor, priest, spiritual director or mature friend, and offers the glad place or a break.
 - **If "not sure," or the person can't tell on the third:** "Hold it lightly. You don't have to decide alone. Bring it to someone you trust."
@@ -382,7 +385,7 @@ The Bible is God's word and the standard for everything. Nothing here adds to it
 
 **"How do I know it's Him, and not me or something else?"** *(sheet)*
 It may be your own thoughts. Often that's how God speaks, through a mind He made. You don't have to be sure. Ask: does it agree with Scripture? Does it honor Jesus? Does it ask me to hurt anyone, or to hide something from people who love me? Write it down, and tell someone you trust. If it asks something big, wait. If it only leaves you feeling heavy, that alone doesn't tell you who it's from. When you can't tell, don't decide alone. Put it down and come back another day.
-*1 Thessalonians 5:20–21, 1 John 4:1–3.* **See:** The Reach of Faith. **Try this:** the Test step. [draft]
+*1 Thessalonians 5:20–21, 1 John 4:1–3.* **See:** The Reach of Faith. **Try this:** a look at it, on the last step. [draft]
 
 #### The close
 
@@ -603,7 +606,7 @@ The practice, then, is to notice what stirs, and to answer it: ask, write, take 
 Reaching and testing are two hands.
 - Reach without testing is credulity.
 - Testing without reaching never hears. The leaders had the text and missed the Man.
-The Test step in every path is the second hand. Scripture is the measure, mature believers help, and fruit shows over time. The app asks for both.
+The optional look at it, at the end of a session, is the second hand. Scripture is the measure, mature believers help, and fruit shows over time. The app asks for both.
 
 **7. What we're asking you to do.**
 Not to be certain first. To reach: to call Him "Thou," to say "Speak, Lord, I'm listening," and to see what stirs. Then to test, and to answer.
@@ -619,7 +622,7 @@ Not to be certain first. To reach: to call Him "Thou," to say "Speak, Lord, I'm 
 **Where this page connects.**
 - **In practice.** The pause before each ask carries the plain line **Reach, then listen.** It is not a link. Nothing on a practice screen should send the person away mid-prayer. The page is found from *Why practice?* and from the cards that point to it. No new step.
 - **In What's in the way?** The cards "What if I'm making it up?", "Isn't the Bible enough?" and "Isn't hearing just subjective?" link here.
-- **In Test.** The step is framed as the second hand: "You reached. Now test."
+- **In the optional look.** It is the second hand of the reach, offered, never required.
 - **In How He speaks.** The intro line reminds the person that each way is a reach and a test.
 
 **Review notes.** The claim that reading Scripture requires the Spirit's illumination is mainstream (1 Corinthians 2:12–14, Ephesians 1:17–18) and should read as a familiar doctrine applied further, not as a novelty. Pastors reviewing this page should check that it nowhere reads as saying Scripture is subjective or that impressions equal Scripture.
@@ -641,7 +644,7 @@ A verse or passage that comes alive, answers the question you brought, or keeps 
 A thought that arrives with weight. A word, a phrase, a settled "knowing." It often sounds like your own mind, because the Spirit works through it.
 - *In Scripture:* 1 Kings 19:12 (the gentle whisper). Isaiah 30:21 (a word behind you). John 14:26 (He will bring to your remembrance). Acts 8:29, 10:19, 13:2 ("the Spirit said").
 - *With-nesses:* Wesley, "an inward impression on the soul." Willard (describes the voice as an impression on the mind). Brother Lawrence, "continually conversing with Him." Chambers, "Speak, Lord."
-- *Test:* The Test step. Does it agree with Scripture, point to Jesus, and lead toward love? Write it down, and tell someone you trust.
+- *Test:* A look at it, if you like. Does it agree with Scripture, point to Jesus, and lead toward love? Write it down, and tell someone you trust.
 - *Try this:* Ask one question, wait one breath, and write the first thing that comes.
 
 **3. Peace, and its absence** *(a settled sense)*
@@ -778,7 +781,7 @@ Last screen: "You've seen the case and the witnesses. Now ask one question." →
 
 A fifth path, short and repeatable, for the rhythms above. One tap from Home.
 1. Choose a moment: Morning, A decision, After Scripture, Praying for someone, Evening, or Other.
-2. One prompt for that moment, one box, a Test glance, and a Keep line if wanted.
+2. One prompt for that moment, one box, and a Keep line if wanted.
 3. It saves as a lightweight record. Review shows these in a lighter style so they don't swamp the longer sessions.
 4. It never nags. The reminder is a single optional `.ics`.
 
@@ -792,7 +795,7 @@ The app will not invent testimonies. Two parts, neither a main tab:
 ### Review
 
 - A list of sessions, newest first, each showing date, the thing brought, and the Keep line.
-- Opening a session shows the full record: the questions, what the person wrote, and the Test answers.
+- Opening a session shows the full record: the questions, what the person wrote, and any answers from the optional look.
 - Edit the Keep line, delete a session, or delete all.
 - A **God answered** list collects marked sessions.
 - **Export PDF.** A print-styled HTML page built from the session (or a date range), opened in a new view with the print dialog. This is the same approach other pages in this repo already use, and it avoids a PDF library. The app encourages saving a copy, since local storage can be cleared by the browser.
@@ -959,11 +962,11 @@ Statuses used in the tracker at the end: **Designed** (in this document), **Draf
 - **Not sure?** and **Nothing came?** are always visible, whatever the setting.
 
 **Quick (Winship-inspired)**
-- Complete flow: bring, ask what to know, ask what to do, is there more, Test, Keep.
+- Complete flow: bring, ask what to know, ask what to do, is there more, Keep (with the optional look folded under it).
 - Finishable in about five minutes, and finishable with "nothing yet" as a valid answer.
 
 **Deeper (Lehman-inspired)**
-- Glad memory, appreciation, welcome, bring, Test, Keep.
+- Glad memory, appreciation, welcome, bring, Keep.
 - "Not yet" holds the person at appreciation. **Back to the glad place** is on every step after the first.
 
 **Healing (Kraft-inspired)**
@@ -974,15 +977,15 @@ Statuses used in the tracker at the end: **Designed** (in this document), **Draf
 - **Reviewed by a qualified human before release** (see gates).
 
 **Daily**
-- Moment chooser, one prompt, one box, Test glance, optional Keep.
+- Moment chooser, one prompt, one box, optional Keep.
 - Saves as a light record that does not swamp longer sessions in Review.
 
 **Journaling (Wilder-inspired)**
 - Seven-step form with its own wording, framed as writing what the person perceives, never dictating what God must say.
 - **Reviewed by a qualified human before release.**
 
-**Test, Keep and "How did it come?"**
-- Test appears in every path, framed as "You reached. Now test." It uses the four questions, and the app never says that a feeling proves something is or isn't God. A "no" on the first two gives the set-it-down guidance, "not sure" gives the hold-it-lightly guidance, and repeated "not sure" across sessions triggers the gentle rest-and-counselor line.
+**Keep, the optional look, and "How did it come?"**
+- The optional look is folded under Keep and never required. It uses the four questions, and the app never says that a feeling proves something is or isn't God. A "no" on the first two gives the set-it-down guidance, "not sure" gives the hold-it-lightly guidance, and repeated "not sure" across sessions triggers the gentle rest-and-counselor line.
 - Keep is one line.
 - "How did it come?" is optional, always skippable, never an error, and each chip links to **How He speaks**.
 - The Review pattern note never scores, ranks or interprets.
@@ -1048,7 +1051,7 @@ Statuses used in the tracker at the end: **Designed** (in this document), **Draf
 | Healing | Drafted | Gates 1, 3 |
 | Daily | Drafted | |
 | Journaling | Designed | Gate 7 |
-| Test, Keep, How did it come? | Designed | |
+| Keep, optional look, How did it come? | Built | |
 | Not sure? sheet | Designed | |
 | What's in the way? (six cards) | Cut back to the barriers to believing He wants to talk with us. Draft. | Gates 2, 4 |
 | Common questions | Parked draft, to move | Gates 2, 3 |
@@ -1069,7 +1072,7 @@ Everything ships as one app. There are no staged releases. The order below is on
 1. Shell: routing, storage, settings, theme, service worker, manifest, tests harness.
 2. Start screen, Connected with the breath component, the guidance-fade logic, and the "Nothing came?" step.
 3. Practice engine: step runner, autosave drafts, resume, optional mic, and the **Not sure?** chip with its bottom sheet.
-4. Paths, in this order: Quick (Winship), Deeper (Lehman), Healing (Kraft), Journaling (Wilder). Each path reuses the Test and Keep steps. Eldredge's questions are optional follow-ups inside Quick and Journaling.
+4. Paths, in this order: Quick (Winship), Deeper (Lehman), Healing (Kraft), Journaling (Wilder). Each path ends in the Keep step, with the optional look folded beneath it. Eldredge's questions are optional follow-ups inside Quick and Journaling.
 5. Review: list, detail, edit, delete, "God answered," PDF and text export.
 6. *What's in the way?* (Answering Objections), then *Why practice?*: The Case, **The Reach of Faith**, **How He speaks**, and Scripture (content plus the verse popover and the shared labels).
 7. *Why practice?*: The With-nesses and The Life, with stories. "God answered" in Review. The Daily path.
