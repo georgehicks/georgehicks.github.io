@@ -533,7 +533,8 @@ const VIEWS = {
 // ===================== a study, inside the app =====================
 // George's own HTML studies, shown in a frame under the app's Back (an installed iPhone app
 // opening a page directly leaves no way back). Narrow screens get his phone layout, wide ones
-// his full sheet; a link swaps them. Each <span class="ref"> becomes tap targets once loaded
+// his full sheet (shown at its natural height, so the fixed 11in page doesn't leave blank space; the files
+// keep their print size); a link swaps them. Each <span class="ref"> becomes tap targets once loaded
 // (the passage opens in a small popover beside the reference, from verses.json — ESV, never leaving the app),
 // so his files stay untouched and new versions can simply be dropped in.
 // verses.json: exact ESV text for every reference in the studies, saved with the app (and cached
@@ -617,6 +618,7 @@ function studyView(it) {
     // fit the frame (the phone file is a fixed 390px; let it take the width it's given)
     const st = doc.createElement('style');
     st.textContent = 'html, body { background: transparent !important; } .phone { width: auto !important; max-width: 430px; min-height: 0 !important; }'
+      + ' .sheet { height: auto !important; min-height: 0 !important; padding-bottom: 40px !important; } .card, .tier { min-height: 0 !important; }'
       + ' .ref a { color: inherit; text-decoration: underline; text-decoration-color: color-mix(in srgb, currentColor 40%, transparent); text-underline-offset: 2px; }';
     doc.head.append(st);
     doc.addEventListener('pointerdown', ev => { if (!ev.target.closest('.ref a')) closePassage(); });
