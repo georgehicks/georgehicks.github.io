@@ -287,6 +287,10 @@ After the person writes an answer, a quiet optional row asks **How did it come?*
 - Stored with the answer. In Review a private, on-device note shows patterns over time: "You've noticed God mostly through quiet thoughts and verses." It never scores or ranks, and never says what the pattern means.
 - It does two jobs: it teaches newcomers what counts, and it gives seasoned people a way to see how they actually hear.
 
+#### Sentence starters match the question
+
+The starters under a writing box must fit the question above it. Under *What do You want me to know?* they are *"I think I heard..."* and *"What stood out was..."*. Under *What do You want me to do?* they are *"I think You want me to..."*, *"A next step could be..."* and *"What I'm drawn to do is..."*. Each step may carry its own starters, and a step without any uses the general two.
+
 #### Test step
 
 The second hand of the reach. The line at the top reads: *You reached. Now test.* Offered as **"Three things to look at, when you're ready,"** plus a fourth, each a tap (yes / not sure / no) with a note field. A lamp, not a grade.

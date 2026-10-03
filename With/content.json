@@ -256,6 +256,11 @@
    "pause": "Reach, then listen.",
    "label": "What came?",
    "coach": "Write whatever comes, even if slight.",
+   "starters": [
+    "I think You want me to...",
+    "A next step could be...",
+    "What I'm drawn to do is..."
+   ],
    "notSure": "how_know"
   },
   "more": {

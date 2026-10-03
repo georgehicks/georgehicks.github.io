@@ -621,7 +621,7 @@ const STEP = {
       const has = text.trim() || (E.entryFor(s, key) || { how: [] }).how.length;
       post.hidden = !has; seeExpect.hidden = !!has; if (has) paintHow();
     };
-    const box = answerBox({ get: () => entryText(s, key), set: (t, via) => E.setAnswer(s, key, prompt, t, via), label: def.label, starters: C.starters, on, onChange: refresh });
+    const box = answerBox({ get: () => entryText(s, key), set: (t, via) => E.setAnswer(s, key, prompt, t, via), label: def.label, starters: def.starters || C.starters, on, onChange: refresh });
     const howBody = h('div', {}, h('div', { class: 'lbl', text: tx(C.how.title) }), howChips, howLink);
     let howShown = on;
     const howToggle = link(C.how.title, () => { howShown = !howShown; howWrap.hidden = !howShown; }, 'small');
