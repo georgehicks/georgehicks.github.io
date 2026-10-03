@@ -230,7 +230,7 @@
     <button class="icon-btn insight-close" id="insight-close-btn" type="button" aria-label="Close">✕</button>
     <div class="insight-word" id="insight-word"></div>
     <div class="insight-section judgment" id="insight-judgment-section" style="display:none">
-      <h3>Feeling or judgment?</h3>
+      <h3 id="insight-judgment-heading">Feeling or judgment?</h3>
       <p id="insight-judgment-text"></p>
       <a class="insight-more-link" id="insight-more-link" href="https://a.co/d/06qSg5e8" target="_blank" rel="noopener noreferrer">This idea comes from Nonviolent Communication — more info ↗</a>
     </div>
@@ -257,7 +257,8 @@
       <button class="preset-btn" data-preset="identity" type="button">Identity</button>
       <button class="preset-btn" data-preset="emotions" type="button">Emotions</button>
       <button class="preset-btn" data-preset="realemotions" type="button">Real Emotions</button>
-      <button class="preset-btn" data-preset="needs" type="button">Needs</button>
+      <button class="preset-btn" data-preset="strategies" type="button">“Needs”</button>
+      <button class="preset-btn" data-preset="needs" type="button">Real Needs</button>
       <button class="preset-btn" data-preset="values" type="button">Values</button>
     </div>
     <textarea id="words-textarea" class="words-textarea" placeholder="One word per line" spellcheck="false"></textarea>
@@ -280,8 +281,9 @@
   var PRESETS = {
     emotions: ['Abandoned','Betrayed','Rejected','Attacked','Manipulated','Judged','Unappreciated','Ignored','Misunderstood','Neglected','Controlled','Unwanted','Used','Disrespected','Trapped','Humiliated','Threatened','Pressured','Excluded','Belittled','Cheated','Violated','Criticized','Loved','Resentful','Lost','Alone','Worthless','Broken','Hopeless','Unlovable','Failure','Powerless','Hate','Unforgiveness','Jealous','Frustrated','Victimized','Wronged'],
     realemotions: ['Joyful','Angry','Grateful','Sad','Hopeful','Afraid','Calm','Ashamed','Peaceful','Guilty','Excited','Lonely','Safe','Overwhelmed','Content','Hurting','Worried','Uncertain','Confused','Disappointed','Embarrassed','Anxious','Relieved','Pleased'],
-    needs: ['Connection','Autonomy','Rest','Recognition','Clarity','Trust','Space','Purpose','Belonging','Acceptance','Safety','Growth'],
-    values: ['Honesty','Courage','Balance','Freedom','Integrity','Creativity','Stability','Justice','Compassion','Loyalty','Ambition','Humility'],
+    strategies: ['Control','Approval','Validation','Certainty','Success','Money','Perfection','Revenge','Apology','Closure','Winning','Attention','Comfort','Fairness'],
+    needs: ['Connection','Affection','Appreciation','Acceptance','Belonging','Respect','Understanding','Support','Trust','Safety','Rest','Touch','Peace','Play','Autonomy','Space','Clarity','Purpose','Contribution','Growth'],
+    values: ['Love','Faith','Grace','Forgiveness','Generosity','Wisdom','Service','Patience','Honesty','Courage','Integrity','Justice','Compassion','Loyalty','Humility','Freedom','Creativity','Balance','Stability','Ambition'],
     identity: ['Chosen','Beloved','Forgiven','Redeemed','Free','Righteous','Whole','Powerful','Strong','Adopted','Known','Clean','Treasured','Called','Renewed','Equipped','Lost','Condemned','Unworthy','Rejected','Orphaned','Deceived','Divided','Worthless','Broken','Failure','Unlovable','Fraud','Inadequate','Forgotten','Dirty','Stupid','Victim','Enslaved','Burden']
   };
 
@@ -355,7 +357,7 @@
       light: "God's power shows up most, not where you're strong, but exactly in the weakness you're naming right now." },
     safe: { scripture: { ref: "Psalm 4:8", text: "In peace I will both lie down and sleep; for you alone, O Lord, make me dwell in safety." },
       dark: "Safety chased through control tries to engineer certainty out of a world that was never going to hand it over.",
-      light: "Real safety was never about eliminating risk — it's resting in the hands of the One who holds you regardless of what happens." },
+      light: "When you notice you feel safe, let it land — it isn't naive, it's what being held actually feels like." },
     loved: { scripture: { ref: "1 John 4:19", text: "We love because he first loved us." },
       judgment: "\"Loved\" is actually a belief about someone else's heart toward you, not a feeling in you — the feeling underneath is usually warmth, safety, or joy, and it can be true even on the days you don't feel it at all.",
       dark: "\"Loved\" can get reduced to being needed or approved of — a love you must keep earning.",
@@ -469,9 +471,9 @@
     rest: { scripture: { ref: "Matthew 11:28", text: "Come to me, all who labor and are heavy laden, and I will give you rest." },
       dark: "Rest can be used as an escape — numbing out instead of actually resting.",
       light: "Real rest is received, not earned. Jesus offers it to the weary, not the deserving." },
-    recognition: { scripture: { ref: "Zephaniah 3:17", text: "he will rejoice over you with gladness… he will exult over you with loud singing." },
-      dark: "Chasing recognition can quietly reorder your life around being seen rather than being faithful.",
-      light: "You're already fully known and delighted in by God — that can loosen recognition's grip on you." },
+    appreciation: { scripture: { ref: "Zephaniah 3:17", text: "he will rejoice over you with gladness… he will exult over you with loud singing." },
+      dark: "Chasing appreciation can quietly reorder your life around being thanked rather than being faithful.",
+      light: "You're already fully known and delighted in by God — that can loosen appreciation's grip on you." },
     clarity: { scripture: { ref: "Psalm 119:105", text: "Your word is a lamp to my feet and a light to my path." },
       dark: "Demanding clarity before you'll move can become a way of refusing to trust.",
       light: "God usually gives a lamp for your feet, not a floodlight for the whole road — enough light for the next step, and Himself for the rest." },
@@ -587,6 +589,110 @@
       judgment: "\"Burden\" is a verdict that your needs cost others too much, not a feeling — the feeling underneath is usually shame, or fear of being left.",
       dark: "Believing you're a burden teaches you to hide your needs, which cuts you off from the very people who'd carry them gladly.",
       light: "God bears you up daily and keeps no tally of the weight — you were never too much for Him." },
+    affection: { scripture: { ref: "Isaiah 66:13", text: "As one whom his mother comforts, so I will comfort you." },
+      dark: "A hunger for affection can make you accept counterfeits — attention, intensity, being needed — because something feels better than nothing.",
+      light: "God describes His comfort as a mother's — warm and close. The affection you ache for isn't childish, it's how He made you." },
+    respect: { scripture: { ref: "Romans 12:10", text: "Love one another with brotherly affection. Outdo one another in showing honor." },
+      dark: "Needing respect can harden into demanding deference — and then you've traded being honored for being feared.",
+      light: "Your worth was settled in the image you carry, so you can honor others freely without waiting to be honored first." },
+    understanding: { scripture: { ref: "Proverbs 20:5", text: "The purpose in a man's heart is like deep water, but a man of understanding will draw it out." },
+      dark: "Needing to be understood can turn every conversation into a campaign to make someone see it your way.",
+      light: "You're fully understood by One who doesn't need it explained — which frees you to explain simply, not desperately." },
+    support: { scripture: { ref: "Galatians 6:2", text: "Bear one another's burdens, and so fulfill the law of Christ." },
+      dark: "Never asking for support can pass for strength while quietly exhausting you.",
+      light: "Bearing each other's burdens is what Christ asked of His people — receiving help is part of the obedience, not a failure of it." },
+    touch: { scripture: { ref: "Mark 1:41", text: "Moved with pity, he stretched out his hand and touched him and said to him, \"I will; be clean.\"" },
+      dark: "The hunger for touch is one of the most hidden needs, and one of the easiest to try to meet in the wrong places.",
+      light: "Jesus touched people no one else would — He treated the body's need to be held as real, and so can you." },
+    peace: { scripture: { ref: "Colossians 3:15", text: "And let the peace of Christ rule in your hearts." },
+      dark: "Peace pursued as \"no conflict\" trains you to avoid every hard conversation and call the silence peace.",
+      light: "The peace of Christ rules from the inside — it can be present while a hard thing is still being worked out." },
+    play: { scripture: { ref: "Zechariah 8:5", text: "And the streets of the city shall be full of boys and girls playing in its streets." },
+      dark: "Play gets squeezed out first when life feels serious, and the people squeezing it out are usually the ones who need it most.",
+      light: "In the restored city, children are playing in the streets — joy for its own sake is part of what God is making, not a distraction from it." },
+    contribution: { scripture: { ref: "1 Peter 4:10", text: "As each has received a gift, use it to serve one another, as good stewards of God's varied grace." },
+      dark: "Needing to contribute can curdle into needing to be needed — you give until you're depleted, then call the resentment duty.",
+      light: "Your gift was given to be shared, not to prove your worth — what you contribute matters, and so do you on the days you contribute nothing." },
+    love: { scripture: { ref: "John 13:34", text: "A new commandment I give to you, that you love one another: just as I have loved you, you also are to love one another." },
+      dark: "Love can shrink into sentiment — a warm feeling that costs nothing and changes nothing — or into enabling, where \"loving\" means never saying the hard thing.",
+      light: "Love in Scripture is measured by how Jesus loved: patient with failure, honest about the truth, and willing to pay for the other person." },
+    faith: { scripture: { ref: "Hebrews 11:1", text: "Now faith is the assurance of things hoped for, the conviction of things not seen." },
+      dark: "Faith can become a performance of certainty — confidence displayed, questions hidden.",
+      light: "Faith is trust placed in a Person, not a feeling of certainty — which is why it can keep walking forward in the dark." },
+    grace: { scripture: { ref: "Ephesians 2:8-9", text: "For by grace you have been saved through faith. And this is not your own doing; it is the gift of God, not a result of works." },
+      dark: "Grace can be believed on Sunday and quietly earned on Monday — taught as a gift, lived as a wage.",
+      light: "Grace is the one thing you can only receive — which is why you can stop paying toward it and start passing it on." },
+    forgiveness: { scripture: { ref: "Ephesians 4:32", text: "Be kind to one another, tenderhearted, forgiving one another, as God in Christ forgave you." },
+      dark: "Forgiveness mistaken for \"it didn't matter\" or \"it's safe again\" asks you to lie — real forgiveness names the debt and releases it, and trust is rebuilt separately.",
+      light: "Forgiving is releasing the debt, not pretending it was small or handing back the keys — and God supplies it when you can't manufacture it." },
+    generosity: { scripture: { ref: "2 Corinthians 9:7", text: "Each one must give as he has decided in his heart, not reluctantly or under compulsion, for God loves a cheerful giver." },
+      dark: "Generosity can turn into a way to be needed, or a quiet ledger of who owes you.",
+      light: "Real generosity gives the way the Father gives — freely, then lets go of the outcome." },
+    wisdom: { scripture: { ref: "Proverbs 9:10", text: "The fear of the Lord is the beginning of wisdom, and the knowledge of the Holy One is insight." },
+      dark: "Wisdom can harden into being the one who always has the answer — a quiet way of never needing anyone.",
+      light: "Wisdom begins with knowing who God is and who you aren't — which makes it available to the humble, not just the clever." },
+    service: { scripture: { ref: "Mark 10:45", text: "For even the Son of Man came not to be served but to serve, and to give his life as a ransom for many." },
+      dark: "Service can become a performance of humility, or a way to avoid ever receiving anything yourself.",
+      light: "Jesus served from security, not from need — He knew who He was, so He could kneel and wash feet without losing anything." },
+    patience: { scripture: { ref: "James 5:7", text: "Be patient, therefore, brothers, until the coming of the Lord. See how the farmer waits for the precious fruit of the earth, being patient about it." },
+      dark: "Patience can quietly turn into resignation — waiting that has stopped hoping.",
+      light: "Biblical patience is a farmer's patience — active, watching, expecting a harvest he can't rush." },
+    control: { scripture: { ref: "Proverbs 16:9", text: "The heart of man plans his way, but the Lord establishes his steps." },
+      strategy: "\"Control\" is a strategy for getting safety or trust, not a need itself — the need underneath is usually Safety, and the feeling is usually fear.",
+      dark: "Gripping for control is often fear wearing a competent disguise.",
+      light: "Loosening your grip isn't losing — it's trusting the hands that are actually steady." },
+    approval: { scripture: { ref: "Galatians 1:10", text: "Am I now seeking the approval of man, or of God? Or am I trying to please man? If I were still trying to please man, I would not be a servant of Christ." },
+      strategy: "\"Approval\" is a strategy for the needs for acceptance and belonging, not a need itself — and it hands the controls to whoever might withhold it.",
+      dark: "Living for approval makes you a different person for every audience, and none of them ever quite satisfied.",
+      light: "God's approval was given in Christ before you did anything — it was never up for a vote." },
+    validation: { scripture: { ref: "1 Corinthians 4:3-4", text: "But with me it is a very small thing that I should be judged by you or by any human court… It is the Lord who judges me." },
+      strategy: "\"Validation\" is a strategy for the needs to be understood and to matter, not a need itself — people can validate you and still leave the real need untouched.",
+      dark: "Needing someone to confirm you're right, or okay, makes their verdict the final one.",
+      light: "Paul called human judgment \"a very small thing\" — what finally settles you is the Lord's verdict, which in Christ is already in your favor." },
+    certainty: { scripture: { ref: "Proverbs 3:5-6", text: "Trust in the Lord with all your heart, and do not lean on your own understanding." },
+      strategy: "\"Certainty\" is a strategy for safety, not a need itself — and no one is given it about the future. The need underneath is usually Safety or Trust.",
+      dark: "Demanding certainty before you'll act keeps you waiting for a guarantee no one is offered.",
+      light: "Faith is trust without the full forecast — you're given a Shepherd, not a schedule." },
+    success: { scripture: { ref: "Psalm 127:1", text: "Unless the Lord builds the house, those who build it labor in vain." },
+      strategy: "\"Success\" is a strategy for needs like purpose, appreciation, or safety — it can deliver the badge without delivering the need.",
+      dark: "Chasing success to feel like enough turns every achievement into a raise in what you owe next.",
+      light: "What's built under Him isn't labor in vain, even when it never makes the scoreboard." },
+    money: { scripture: { ref: "1 Timothy 6:7-8", text: "we brought nothing into the world, and we cannot take anything out of the world. But if we have food and clothing, with these we will be content." },
+      strategy: "\"Money\" is a strategy for the needs for safety and support, not a need itself — which is why more of it rarely quiets the fear.",
+      dark: "Money asked to do the job of safety never quite finishes it — there's always a bigger number that would finally feel secure.",
+      light: "Enough is a gift from a Father who already knows what you need — not a number you have to reach first." },
+    perfection: { scripture: { ref: "Philippians 3:12", text: "Not that I have already obtained this or am already perfect, but I press on to make it my own." },
+      strategy: "\"Perfection\" is a strategy for acceptance and safety — the theory being that if nothing's wrong with you, no one can reject you.",
+      dark: "Perfection promises safety from criticism and delivers a life spent bracing for it.",
+      light: "Paul wrote \"I press on,\" not \"I've arrived\" — the acceptance you're chasing was handed to you before the first mistake." },
+    revenge: { scripture: { ref: "Romans 12:21", text: "Do not be overcome by evil, but overcome evil with good." },
+      strategy: "\"Revenge\" is a strategy for needs like justice, safety, or being understood — and it almost never meets any of them.",
+      dark: "Revenge promises relief and delivers a second wound, this time one you chose.",
+      light: "Handing the score to God isn't weakness — it's the only way you stop being defined by what was done to you." },
+    apology: { scripture: { ref: "Romans 12:18", text: "If possible, so far as it depends on you, live peaceably with all." },
+      strategy: "\"An apology\" is one strategy for the needs for respect, understanding, or peace — not the need itself, and those needs can be met without ever receiving it.",
+      dark: "Waiting on an apology can hand someone else the keys to your peace for years.",
+      light: "Healing can start without their words — what you're after is peace, and that's available to you before they ever say sorry." },
+    closure: { scripture: { ref: "Philippians 3:13-14", text: "forgetting what lies behind and straining forward to what lies ahead, I press on toward the goal." },
+      strategy: "\"Closure\" is a strategy for the needs for peace and understanding — waiting for an ending someone else controls can keep the wound open.",
+      dark: "Waiting for closure from a conversation or person who may never give it keeps you tethered to them.",
+      light: "Peace doesn't need anyone else's last word — it can begin the moment you decide the story doesn't need their ending." },
+    winning: { scripture: { ref: "Philippians 2:3", text: "Do nothing from selfish ambition or conceit, but in humility count others more significant than yourselves." },
+      strategy: "\"Winning\" is a strategy for the needs for respect or to matter — beating someone rarely delivers either.",
+      dark: "Needing to win turns every disagreement into a verdict on your worth.",
+      light: "You can lose the argument and keep your worth — it was never riding on the score." },
+    attention: { scripture: { ref: "Luke 12:7", text: "Why, even the hairs of your head are all numbered. Fear not; you are of more value than many sparrows." },
+      strategy: "\"Attention\" is a strategy for connection, affection, and to matter — you can be watched constantly and still be unknown.",
+      dark: "Chasing attention gets you an audience while the real need — to be known — stays hungry.",
+      light: "The One who counts the hairs on your head gives the kind of attention that actually fills: being known, not being watched." },
+    comfort: { scripture: { ref: "2 Corinthians 1:3-4", text: "Blessed be the God and Father of our Lord Jesus Christ, the Father of mercies and God of all comfort, who comforts us in all our affliction." },
+      strategy: "\"Comfort\" is a strategy for the needs for rest, ease, and safety — but seeking comfort and actually resting are not the same thing.",
+      dark: "Chasing comfort can narrow your life to whatever doesn't hurt, which is also whatever doesn't grow you.",
+      light: "God offers comfort that holds you through hard things, not comfort that spares you from all of them." },
+    fairness: { scripture: { ref: "Matthew 20:15", text: "Am I not allowed to do what I choose with what belongs to me? Or do you begrudge my generosity?" },
+      strategy: "\"Fairness\" as a demand is a strategy for respect, equality, and safety — real needs, but the scoreboard version of them never ends.",
+      dark: "Insisting on fairness can turn into keeping score of everyone's portion, including God's.",
+      light: "Grace isn't fair — it's better than fair, and it's the reason you're here at all. The need underneath, to be respected, is real and can be met without the scoreboard." },
     chosen: { scripture: { ref: "Ephesians 1:4", text: "he chose us in him before the foundation of the world." },
       dark: "\"Chosen\" can curdle into exclusivity — a status that looks down on who wasn't picked.",
       light: "You were chosen before you did anything to earn it — that's grace, not superiority." },
@@ -713,7 +819,7 @@
   var hintEl = document.getElementById('hint');
   var listBadgeEl = document.getElementById('list-badge');
 
-  var PRESET_LABELS = { identity: 'Identity', emotions: '“Emotions”', realemotions: 'Real Emotions', needs: 'Needs', values: 'Values' };
+  var PRESET_LABELS = { identity: 'Identity', emotions: '“Emotions”', realemotions: 'Real Emotions', strategies: '“Needs”', needs: 'Real Needs', values: 'Values' };
   function computeListName(words) {
     for (var key in PRESETS) {
       var preset = PRESETS[key];
@@ -740,7 +846,7 @@
   if (presetFromHash()) saveWords(state.words);
 
   /* ---------------- quick switch ---------------- */
-  var PRESET_ORDER = ['identity', 'emotions', 'realemotions', 'needs', 'values'];
+  var PRESET_ORDER = ['identity', 'emotions', 'realemotions', 'strategies', 'needs', 'values'];
   var quickSwitchBtn = document.getElementById('quick-switch-btn');
   var quickSwitchMenu = document.getElementById('quick-switch');
 
@@ -914,6 +1020,7 @@
   var insightJudgmentSection = document.getElementById('insight-judgment-section');
   var insightJudgmentText = document.getElementById('insight-judgment-text');
   var insightMoreLink = document.getElementById('insight-more-link');
+  var insightJudgmentHeading = document.getElementById('insight-judgment-heading');
   var insightDarkSection = document.getElementById('insight-dark-section');
   var insightDarkText = document.getElementById('insight-dark-text');
   var insightLightSection = document.getElementById('insight-light-section');
@@ -924,10 +1031,13 @@
     var entry = INSIGHTS[word.toLowerCase()];
     insightWordEl.textContent = word;
     if (entry) {
-      if (entry.judgment) {
-        insightJudgmentText.textContent = entry.judgment;
+      var note = entry.judgment || entry.strategy;
+      if (note) {
+        insightJudgmentHeading.textContent = entry.strategy ? 'Need or strategy?' : 'Feeling or judgment?';
+        insightJudgmentText.textContent = note;
         insightJudgmentSection.style.display = '';
-        insightMoreLink.style.display = computeListName(state.words) === PRESET_LABELS.emotions ? '' : 'none';
+        var activeList = computeListName(state.words);
+        insightMoreLink.style.display = (activeList === PRESET_LABELS.emotions || activeList === PRESET_LABELS.strategies) ? '' : 'none';
       } else {
         insightJudgmentSection.style.display = 'none';
       }
