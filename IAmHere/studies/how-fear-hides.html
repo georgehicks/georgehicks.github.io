@@ -115,8 +115,8 @@
   .heads { display: grid; grid-template-columns: 1fr 70px 1fr; gap: 0; margin: 16px 0 8px; }
   .heads div { font-family: "Gill Sans", "Trebuchet MS", sans-serif; letter-spacing: .16em; text-transform: uppercase; font-size: 13px; color: var(--dim); }
   .heads .r { padding-left: 4px; }
-  .pair { display: grid; grid-template-columns: 1fr 70px 1fr; align-items: stretch; margin-bottom: 10px; }
-  .cover, .fear { border-radius: 14px; padding: 12px 16px; }
+  .pair { display: grid; grid-template-columns: 1fr 70px 1fr; align-items: stretch; margin-bottom: 6px; }
+  .cover, .fear { border-radius: 14px; padding: 9px 16px; }
   .cover { background: var(--sand); border: 1px solid var(--line); }
   .fear { background: var(--navy); color: #f7f3ea; }
   .pair h3 { margin: 0 0 3px; font-size: 21px; }
@@ -124,6 +124,10 @@
   .cover p { color: var(--dim); font-style: italic; }
   .fear .ref { color: #d5dbe6; }
   .hides { display: flex; align-items: center; justify-content: center; font-family: "Gill Sans", "Trebuchet MS", sans-serif; font-size: 11px; letter-spacing: .12em; text-transform: uppercase; color: var(--dim); }
+  .mix { margin-top: 16px; background: var(--slate); border-radius: 16px; padding: 16px 20px; }
+  .mix h2 { margin: 0 0 8px; font-size: 22px; }
+  .mix p { margin: 0 0 6px; font-size: 16px; line-height: 1.4; }
+  .mix .sum { margin: 8px 0 0; color: var(--dim); }
   .end { margin-top: 16px; background: var(--sage); border-radius: 16px; padding: 16px 20px; }
   .end h2 { margin: 0 0 8px; font-size: 22px; }
   .end ul { display: grid; grid-template-columns: 1fr 1fr; column-gap: 24px; }
@@ -135,19 +139,25 @@
   <p class="kicker">Deceptive cover · Underlying fear</p>
   <h1>How Fear Hides</h1>
   <div class="rule"></div>
-  <p class="lede">Fear seldom says its own name. It borrows the name of something respectable. Each cover below is real on its face. Underneath, something else may be running it.</p>
+  <p class="lede">Fear seldom says its own name. It borrows the name of something respectable. Each cover below can be real on its face. Underneath, something else may be running it. These pairs are examples, not a code.</p>
   <div class="heads"><div>Deceptive cover</div><div></div><div class="r">Underlying fear</div></div>
-    <div class="pair"><div class="cover"><h3>Wise caution</h3><p>“I’m only being careful. No need to get pulled in.”</p></div><div class="hides">hides</div><div class="fear"><h3>Fear of involvement</h3><p>Getting close means being responsible, and being hurt. <span class="ref">Luke 10:31–32</span></p></div></div>
-    <div class="pair"><div class="cover"><h3>Realism</h3><p>“I’m just being realistic.”</p></div><div class="hides">hides</div><div class="fear"><h3>Fear of hoping</h3><p>If I don’t hope, I can’t be let down. <span class="ref">Proverbs 13:12</span></p></div></div>
-    <div class="pair"><div class="cover"><h3>Independence</h3><p>“I don’t need anyone.”</p></div><div class="hides">hides</div><div class="fear"><h3>Fear of needing</h3><p>Needing people means being a burden, or being refused. <span class="ref">Galatians 6:2</span></p></div></div>
-    <div class="pair"><div class="cover"><h3>Busyness</h3><p>“There’s too much to do.”</p></div><div class="hides">hides</div><div class="fear"><h3>Fear of stillness</h3><p>If I stop, I have to face what I’ve been outrunning. <span class="ref">Psalm 46:10</span></p></div></div>
-    <div class="pair"><div class="cover"><h3>High standards</h3><p>“I just want it done right.”</p></div><div class="hides">hides</div><div class="fear"><h3>Fear of not being enough</h3><p>If it’s flawless, no one can reject me. <span class="ref">1 John 4:18</span></p></div></div>
-    <div class="pair"><div class="cover"><h3>Keeping the peace</h3><p>“I don’t want to make trouble.”</p></div><div class="hides">hides</div><div class="fear"><h3>Fear of disapproval</h3><p>If I say what I think, they may turn on me. <span class="ref">Proverbs 29:25</span></p></div></div>
-    <div class="pair"><div class="cover"><h3>Staying in control</h3><p>“I like to have a plan.”</p></div><div class="hides">hides</div><div class="fear"><h3>Fear of the unknown</h3><p>If I can’t see what comes next, I can’t be safe. <span class="ref">Proverbs 16:9</span></p></div></div>
-    <div class="pair"><div class="cover"><h3>Privacy</h3><p>“That’s personal.”</p></div><div class="hides">hides</div><div class="fear"><h3>Fear of being known</h3><p>If they saw all of me, they would leave. <span class="ref">Genesis 3:10</span></p></div></div>
-    <div class="pair"><div class="cover"><h3>Cynicism</h3><p>“I’ve seen how this goes.”</p></div><div class="hides">hides</div><div class="fear"><h3>Fear of being hurt again</h3><p>If I expect the worst, I can’t be caught off guard. <span class="ref">Psalm 56:3</span></p></div></div>
-    <div class="pair"><div class="cover"><h3>Silence</h3><p>“It’s not my place.”</p></div><div class="hides">hides</div><div class="fear"><h3>Fear of speaking up</h3><p>My words might cost me. <span class="ref">2 Timothy 1:7</span></p></div></div>
+    <div class="pair"><div class="cover"><h3>Wise caution</h3><p>“I’m only being careful. No need to get pulled in.”</p></div><div class="hides">can hide</div><div class="fear"><h3>Fear of involvement</h3><p>Getting close means being responsible, and being hurt. <span class="ref">Luke 10:31–32</span></p></div></div>
+    <div class="pair"><div class="cover"><h3>Realism</h3><p>“I’m just being realistic.”</p></div><div class="hides">can hide</div><div class="fear"><h3>Fear of hoping</h3><p>If I don’t hope, I can’t be let down. <span class="ref">Proverbs 13:12</span></p></div></div>
+    <div class="pair"><div class="cover"><h3>Independence</h3><p>“I don’t need anyone.”</p></div><div class="hides">can hide</div><div class="fear"><h3>Fear of needing</h3><p>Needing people means being a burden, or being refused. <span class="ref">Galatians 6:2</span></p></div></div>
+    <div class="pair"><div class="cover"><h3>Busyness</h3><p>“There’s too much to do.”</p></div><div class="hides">can hide</div><div class="fear"><h3>Fear of stillness</h3><p>If I stop, I have to face what I’ve been outrunning. <span class="ref">Psalm 46:10</span></p></div></div>
+    <div class="pair"><div class="cover"><h3>High standards</h3><p>“I just want it done right.”</p></div><div class="hides">can hide</div><div class="fear"><h3>Fear of not being enough</h3><p>If it’s flawless, no one can reject me. <span class="ref">1 John 4:18</span></p></div></div>
+    <div class="pair"><div class="cover"><h3>Keeping the peace</h3><p>“I don’t want to make trouble.”</p></div><div class="hides">can hide</div><div class="fear"><h3>Fear of disapproval</h3><p>If I say what I think, they may turn on me. <span class="ref">Proverbs 29:25</span></p></div></div>
+    <div class="pair"><div class="cover"><h3>Staying in control</h3><p>“I like to have a plan.”</p></div><div class="hides">can hide</div><div class="fear"><h3>Fear of the unknown</h3><p>If I can’t see what comes next, I can’t be safe. <span class="ref">Proverbs 16:9</span></p></div></div>
+    <div class="pair"><div class="cover"><h3>Privacy</h3><p>“That’s personal.”</p></div><div class="hides">can hide</div><div class="fear"><h3>Fear of being known</h3><p>If they saw all of me, they would leave. <span class="ref">Genesis 3:10</span></p></div></div>
+    <div class="pair"><div class="cover"><h3>Cynicism</h3><p>“I’ve seen how this goes.”</p></div><div class="hides">can hide</div><div class="fear"><h3>Fear of being hurt again</h3><p>If I expect the worst, I can’t be caught off guard. <span class="ref">Psalm 56:3</span></p></div></div>
+    <div class="pair"><div class="cover"><h3>Silence</h3><p>“It’s not my place.”</p></div><div class="hides">can hide</div><div class="fear"><h3>Fear of speaking up</h3><p>My words might cost me. <span class="ref">2 Timothy 1:7</span></p></div></div>
     
+  <div class="mix">
+    <h2>Not one-to-one</h2>
+    <p><b>One cover, many fears.</b> Busyness can hide fear of stillness, but also fear of failing, or fear of being alone with grief.</p>
+    <p><b>One fear, many covers.</b> Fear of being known can look like privacy, humor, independence, or being helpful.</p>
+    <p class="sum">So these pairs are a place to start looking, not a verdict.</p>
+  </div>
   <div class="end">
     <h2>What Scripture says to the fear</h2>
     <ul><li>Fear has been hiding since the garden. <span class="ref">Genesis 3:10</span></li><li>Perfect love drives out fear. <span class="ref">1 John 4:18</span></li><li>God has not given us a spirit of fear. <span class="ref">2 Timothy 1:7</span></li><li>Do not fear, for I am with you. <span class="ref">Isaiah 41:10</span></li></ul>
