@@ -371,7 +371,7 @@ export function pickVerse(count, last) {
 
 // ===================== routes =====================
 // Screens where it is safe to swap in a new version of the app (never mid-session or mid-edit).
-export const RESTING = ['start', 'way', 'why', 'review', 'more', 'settings', 'references', 'about', 'safety', 'nothing', 'common', ''];
+export const RESTING = ['start', 'way', 'why', 'review', 'more', 'settings', 'references', 'about', 'safety', 'nothing', 'common', 'outline', ''];
 export function isResting(route) {
   const parts = String(route || '').split('/');
   if (parts[0] === 'review' && parts[1]) return false; // a record may be open for editing
@@ -384,4 +384,21 @@ export function deepFreeze(o) {
     Object.values(o).forEach(deepFreeze);
   }
   return o;
+}
+
+
+// ===================== outlines (all the steps of a path together, for leading a group) =====================
+export function outlineFor(C, pathId) {
+  const P = C.paths[pathId];
+  return P.flow.map((key, i) => {
+    const d = (P.defs && P.defs[key]) || C.steps[key] || {};
+    const st = { key, n: i + 1, title: d.title || '', coach: d.coach || '', items: [], pause: '', starters: [] };
+    if (d.prompts) st.items = d.prompts.slice();
+    if (d.options) st.items = d.options.map(o => o.label + ': ' + o.prompt);
+    if (d.type === 'ask') { st.pause = d.pause || ''; st.starters = (d.starters || C.starters || []).slice(); }
+    if (key === 'test') { st.title = C.test.lead; st.items = C.test.questions.map(q => q.text); }
+    if (key === 'keep') { st.title = C.keep.title; st.items = [C.keep.nextLabel]; }
+    if (key === 'dailyask') st.title = d.pause || '';
+    return st;
+  });
 }

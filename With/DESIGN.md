@@ -201,6 +201,17 @@ Kraft's method is memory-based. The summaries agree on the core: memories are st
 
 The "continue until healing happens" idea is kept, but as permission to return, not pressure to push through. Healing is God's pace, and the person can stop at any point.
 
+## Outlines, for leading a group
+
+Each path can be seen **all at once**, so one person can lead a group through it as a session exercise. On the start screen a quiet **Outline** link sits under Quick and under each other path, small and in the faint ink so it does not compete with Begin. It opens one read-only page:
+
+- the path's name, credit and one-line description;
+- one line for the leader: *"For a group: read each step aloud, take a quiet minute, and share what you wrote if you wish."*;
+- the steps in order, numbered: the question or prompt, the coaching line, any prompts under it, **Reach, then listen.** where the person asks God, and the sentence starters for that question;
+- **Print** (a print-friendly layout with navigation hidden) and **Start this one**.
+
+The outline is generated from the same content as the path, so it can never drift from the steps people actually take. It shows only paths that are visible. Quick's outline is the same page for the default path. Nothing is saved, and nothing on an outline sends anyone away.
+
 ## Information architecture
 
 Practice is the app. Three main places, plus a small More menu.

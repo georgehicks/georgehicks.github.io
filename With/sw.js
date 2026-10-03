@@ -1,4 +1,4 @@
-const CACHE = 'with-v16';
+const CACHE = 'with-v17';
 const ASSETS = ['./', './index.html', './app.js', './engine.js', './content.json', './verses.json', './manifest.json', './icon.svg'];
 
 self.addEventListener('install', e => {

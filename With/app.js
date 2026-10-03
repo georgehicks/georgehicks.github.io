@@ -350,13 +350,15 @@ VIEWS.start = () => {
     h('button', { type: 'button', class: 'path primary', onclick: () => begin('quick') },
       h('span', { class: 'path-title', text: S.begin }),
       h('span', { class: 'path-body', text: tx(S.beginLine) })),
-    resumable && h('div', { class: 'foot-links' }, link(S.continue, () => resumeSession(resumable))),
+    h('div', { class: 'foot-links' }, resumable && link(S.continue, () => resumeSession(resumable)), link(C.copy.outline.link, () => go('outline/quick'), 'small outline-link')),
     h('div', { class: 'paths' }, others.map(id => {
       const p = C.paths[id];
-      return h('button', { type: 'button', class: 'path', onclick: () => begin(id) },
-        h('span', { class: 'path-title', text: p.title }),
-        h('span', { class: 'path-body', text: tx(p.line) }),
-        h('span', { class: 'path-credit', text: tx(p.credit) }));
+      return h('div', { class: 'path-wrap' },
+        h('button', { type: 'button', class: 'path', onclick: () => begin(id) },
+          h('span', { class: 'path-title', text: p.title }),
+          h('span', { class: 'path-body', text: tx(p.line) }),
+          h('span', { class: 'path-credit', text: tx(p.credit) })),
+        link(C.copy.outline.link, () => go('outline/' + id), 'small outline-link'));
     })),
     h('div', { class: 'foot-links' }, link(S.connectedOnly, () => go('connected/alone'), 'small')),
     last && h('div', { class: 'last-session' },
@@ -781,6 +783,28 @@ VIEWS.stop = () => {
     h('div', { class: 'stack' },
       btn(K.stop, restSession),
       btn(K.cont, () => { cur.careSeen = E.worrisomeText(cur, C.safety.keywords); saveDraft(); careResume = null; next(resume && resume.choice); }, 'quiet')));
+};
+
+// ---------- /outline/<path> : every step of a path on one page, to lead a group through ----------
+VIEWS.outline = ([id]) => {
+  const O = C.copy.outline;
+  if (!E.pathVisible(C, id, settings)) { go('start'); return h('div'); }
+  const P = C.paths[id], steps = E.outlineFor(C, id);
+  return h('section', { class: 'view outline' },
+    link(C.copy.back, () => go('start'), 'back'),
+    h('h1', { text: P.title + ' · ' + tx(O.title) }),
+    h('p', { class: 'dim', text: tx(P.credit) }),
+    h('p', { class: 'prose', text: tx(P.line) }),
+    h('p', { class: 'coach', text: tx(O.group) }),
+    id !== 'daily' && h('p', { class: 'dim', text: tx(O.breath) }),
+    h('ol', { class: 'outline-steps' }, steps.map(st => h('li', {},
+      h('h3', { text: tx(st.title) }),
+      st.coach && h('p', { class: 'dim', text: tx(st.coach) }),
+      st.items.length > 0 && h('ul', { class: 'prompts' }, st.items.map(t => h('li', { text: tx(t) }))),
+      st.pause && h('p', { class: 'pause', text: st.pause }),
+      st.starters.length > 0 && h('p', { class: 'dim' }, O.starters + ': ' + st.starters.join('  ·  '))))),
+    h('div', { class: 'stack no-print', style: 'margin-top:18px' }, btn(O.print, () => window.print(), 'quiet'), btn(O.start, () => begin(id))),
+    h('div', { class: 'spacer' }), tabs('start'));
 };
 
 // ---------- /rest : stopped, saved as unfinished, free to return ----------

@@ -7,6 +7,15 @@
   "wordmark": "With",
   "back": "Back",
   "backToStep": "Back to your prayer",
+  "outline": {
+   "link": "Outline",
+   "title": "The steps together",
+   "breath": "Breathe first (the Connected screen).",
+   "group": "For a group: read each step aloud, take a quiet minute, and share what you wrote if you wish.",
+   "print": "Print",
+   "start": "Start this one",
+   "starters": "Starters"
+  },
   "tabs": {
    "practice": "Practice",
    "way": "What's in the way?",

@@ -227,6 +227,13 @@ t('See how He speaks from a step returns to exactly that step: the helper exists
   && src[0].includes('seeExpect.hidden = !!has') && C.copy.backToStep === 'Back to your prayer');
 t('the "do" question has its own sentence starters that fit doing, not the "know" ones', () => C.steps.do.starters.length === 3 && C.steps.do.starters.every(x => /want me to|next step|drawn to do/.test(x)) && !C.steps.know.starters && src[0].includes('def.starters || C.starters'));
 t('the note and the How did it come? row show once per session, on the first answered step, and not again under a later question', () => src[0].includes('s.howKey = key') && src[0].includes('s.howKey === key'));
+t('outlines list every step of a path together, in order, with prompts and starters, for leading a group', () => {
+  const d = E.outlineFor(C, 'deeper'), q = E.outlineFor(C, 'quick'), y = E.outlineFor(C, 'daily');
+  eq(d.map(x => x.key), C.paths.deeper.flow); eq(q.map(x => x.key), C.paths.quick.flow); eq(y.map(x => x.key), C.paths.daily.flow);
+  const doStep = q.find(x => x.key === 'do');
+  return d.every(x => x.title) && y.find(x => x.key === 'moment').items.length >= 5 && /want me to/.test(doStep.starters[0]) && doStep.pause === 'Reach, then listen.' && q.find(x => x.key === 'test').items.length === 4;
+});
+t('the start screen has a quiet Outline link for Quick and for each visible path, and an outline route exists', () => src[0].includes("go('outline/quick')") && src[0].includes("go('outline/' + id)") && src[0].includes('VIEWS.outline') && E.RESTING.includes('outline') && C.copy.outline.link === 'Outline');
 t('there is no Care page: no route, no More tile, no links to it, and no top-level care content', () => !('care' in C) && !/VIEWS\.care|go\('care'\)|careLink|careAvailable/.test(src[0] + src[1]) && !JSON.stringify(C.objections.close).includes('heavy'));
 t('the name line sits permanently on the start screen, there is no first-launch card, and the care disclaimer lives once in About and Safety', () =>
   C.copy.start.nameLine === 'God with us (Immanuel, Matthew 1:23).' && !C.firstLaunch && !C.objections.footLine
