@@ -262,7 +262,7 @@
       <button class="preset-btn" data-preset="values" type="button">Values</button>
     </div>
     <textarea id="words-textarea" class="words-textarea" placeholder="One word per line" spellcheck="false"></textarea>
-    <p class="modal-hint">One word per line (or comma-separated). Up to 40.</p>
+    <p class="modal-hint">One word per line (or comma-separated). Up to 45.</p>
     <div class="modal-actions">
       <button class="btn-secondary" id="cancel-btn" type="button">Cancel</button>
       <button class="btn-primary" id="save-btn" type="button">Save &amp; drift</button>
@@ -279,8 +279,8 @@
   var LS_THEME = 'notice-theme';
 
   var PRESETS = {
-    emotions: ['Abandoned','Betrayed','Rejected','Attacked','Manipulated','Judged','Unappreciated','Ignored','Misunderstood','Neglected','Controlled','Unwanted','Used','Disrespected','Trapped','Humiliated','Threatened','Pressured','Excluded','Belittled','Cheated','Violated','Criticized','Loved','Resentful','Lost','Alone','Worthless','Broken','Hopeless','Unlovable','Failure','Powerless','Hate','Unforgiveness','Jealous','Frustrated','Victimized','Wronged'],
-    realemotions: ['Joyful','Angry','Grateful','Sad','Hopeful','Afraid','Calm','Ashamed','Peaceful','Guilty','Excited','Lonely','Safe','Overwhelmed','Content','Hurting','Worried','Uncertain','Confused','Disappointed','Embarrassed','Anxious','Relieved','Pleased'],
+    emotions: ['Abandoned','Betrayed','Rejected','Attacked','Manipulated','Judged','Unappreciated','Ignored','Misunderstood','Neglected','Controlled','Unwanted','Used','Disrespected','Trapped','Humiliated','Threatened','Pressured','Excluded','Belittled','Cheated','Violated','Criticized','Loved','Resentful','Lost','Alone','Worthless','Broken','Hopeless','Unlovable','Failure','Powerless','Hate','Unforgiveness','Jealous','Frustrated','Victimized','Wronged','Inadequate','Forgotten','Blamed','Invalidated'],
+    realemotions: ['Joyful','Angry','Grateful','Sad','Hopeful','Afraid','Calm','Ashamed','Peaceful','Guilty','Excited','Lonely','Safe','Overwhelmed','Content','Hurting','Worried','Uncertain','Confused','Disappointed','Embarrassed','Anxious','Relieved','Pleased','Grieving','Exhausted'],
     strategies: ['Control','Approval','Validation','Certainty','Success','Money','Perfection','Revenge','Apology','Closure','Winning','Attention','Comfort','Fairness'],
     needs: ['Connection','Affection','Appreciation','Acceptance','Belonging','Respect','Understanding','Support','Trust','Safety','Rest','Touch','Peace','Play','Autonomy','Space','Clarity','Purpose','Contribution','Growth'],
     values: ['Love','Faith','Grace','Forgiveness','Generosity','Wisdom','Service','Patience','Honesty','Courage','Integrity','Justice','Compassion','Loyalty','Humility','Freedom','Creativity','Balance','Stability','Ambition'],
@@ -337,10 +337,10 @@
       light: "God's verdict on your worth was already spoken before you did anything to earn it — precious, honored, loved." },
     broken: { scripture: { ref: "2 Corinthians 4:7", text: "we have this treasure in jars of clay, to show that the surpassing power belongs to God and not to us." },
       judgment: "\"Broken\" names a verdict about your condition, not a feeling — the feeling underneath is usually grief, or shame about what's cracked or missing.",
-      dark: "Calling yourself broken as a permanent identity can talk you out of ever expecting repair.",
+      dark: "Calling yourself broken as a permanent identity quietly rules out ever expecting repair.",
       light: "Cracked jars of clay were exactly what God chose to carry His treasure — brokenness was never disqualifying." },
     hopeless: { scripture: { ref: "Lamentations 3:22-23", text: "The steadfast love of the Lord never ceases; his mercies never come to an end; they are new every morning." },
-      judgment: "\"Hopeless\" is a verdict about how your story ends, not a feeling — the feeling underneath is usually despair, sadness, or exhaustion.",
+      judgment: "\"Hopeless\" is a verdict about how your story ends, not a feeling — the feeling underneath is usually sadness, grief, or exhaustion.",
       dark: "Hopelessness insists the ending is already written, so there's no reason to take the next faithful step.",
       light: "His mercies are new every single morning — \"hopeless\" doesn't get to write tomorrow before it arrives." },
     unlovable: { scripture: { ref: "Jeremiah 31:3", text: "I have loved you with an everlasting love; therefore I have continued my faithfulness to you." },
@@ -359,7 +359,7 @@
       dark: "Safety chased through control tries to engineer certainty out of a world that was never going to hand it over.",
       light: "When you notice you feel safe, let it land — it isn't naive, it's what being held actually feels like." },
     loved: { scripture: { ref: "1 John 4:19", text: "We love because he first loved us." },
-      judgment: "\"Loved\" is actually a belief about someone else's heart toward you, not a feeling in you — the feeling underneath is usually warmth, safety, or joy, and it can be true even on the days you don't feel it at all.",
+      judgment: "\"Loved\" is actually a belief about someone else's heart toward you, not a feeling in you — the feeling underneath is usually safety or joy, and it can be true even on the days you don't feel it at all.",
       dark: "\"Loved\" can get reduced to being needed or approved of — a love you must keep earning.",
       light: "Before you did anything, you were loved. That love isn't performance-based, and it isn't going anywhere." },
     overwhelmed: { scripture: { ref: "Psalm 61:2", text: "From the ends of the earth, I cry to you for help when my heart is overwhelmed. Lead me to the towering rock of safety." },
@@ -386,7 +386,7 @@
       dark: "Treated as fact, feeling attacked puts you on permanent defense, answering every disagreement like a threat to survive.",
       light: "You don't have to run your own defense — you can hand the verdict to the One who judges justly and stand down." },
     manipulated: { scripture: { ref: "Genesis 50:20", text: "you meant evil against me, but God meant it for good." },
-      judgment: "\"Manipulated\" names a claim about someone else's motives — the feeling underneath is usually powerlessness, or anger at not being in control of what happened to you.",
+      judgment: "\"Manipulated\" names a claim about someone else's motives — the feeling underneath is usually fear, or anger at not being in control of what happened to you.",
       dark: "Certainty about someone's hidden motives can calcify into permanent suspicion, reading manipulation into everything, even kindness.",
       light: "You don't need to be certain of anyone's motives to be certain of God's — He can redeem what was meant to use you." },
     judged: { scripture: { ref: "Matthew 7:1-2", text: "Judge not, that you be not judged. For with the judgment you pronounce you will be judged." },
@@ -402,7 +402,7 @@
       dark: "Believing you've been written off by someone can quietly convince you to write yourself off first.",
       light: "You are not unseen — the God who numbers your days also notices when you sit down and when you rise." },
     misunderstood: { scripture: { ref: "1 Samuel 16:7", text: "man looks on the outward appearance, but the Lord looks on the heart." },
-      judgment: "\"Misunderstood\" is a verdict that someone got you wrong — the feeling underneath is usually loneliness, or the frustration of not being able to make yourself known.",
+      judgment: "\"Misunderstood\" is a verdict that someone got you wrong — the feeling underneath is usually loneliness, or the ache of not being able to make yourself known.",
       dark: "Convinced no one gets it, you can stop trying to be known at all — safer, but lonelier.",
       light: "One set of eyes has never misread you once — the God who sees the heart already knows exactly who you are." },
     neglected: { scripture: { ref: "Deuteronomy 31:8", text: "It is the Lord who goes before you. He will be with you; he will not leave you or forsake you." },
@@ -418,7 +418,7 @@
       dark: "Believed long enough, feeling unwanted rewrites the story so you stop letting anyone want you at all.",
       light: "You were wanted before you were born, called by name, and claimed — that verdict was settled before anyone else had a vote." },
     used: { scripture: { ref: "Ephesians 2:10", text: "we are his workmanship, created in Christ Jesus for good works." },
-      judgment: "\"Used\" names what you believe someone took from you without giving anything back — the feeling underneath is usually anger, or grief at being valued only for what you provide.",
+      judgment: "\"Used\" is a claim that someone took from you without giving anything back — the feeling underneath is usually anger, or grief at being valued only for what you provide.",
       dark: "Feeling used can teach you to guard so completely that you stop giving anything freely again.",
       light: "You were never made to be useful first — you're God's handiwork, valued before you did a single thing for anyone." },
     disrespected: { scripture: { ref: "Genesis 1:27", text: "God created man in his own image, in the image of God he created him." },
@@ -450,7 +450,7 @@
       dark: "Believed long enough, belittling can shrink your own sense of what you're capable of, long after the voice that said it is gone.",
       light: "God's estimate of you was set at creation — crowned with glory and honor — and no one else's opinion can revise it." },
     cheated: { scripture: { ref: "Genesis 31:7", text: "your father has cheated me and changed my wages ten times." },
-      judgment: "\"Cheated\" names what you believe someone took that was rightfully yours — the feeling underneath is usually anger, or grief over what was lost.",
+      judgment: "\"Cheated\" is a claim that someone took what was rightfully yours — the feeling underneath is usually anger, or grief over what was lost.",
       dark: "Keeping a ledger of what was taken can turn into a debt you're still collecting on years later.",
       light: "Jacob was cheated for years and God still made him prosper — the outcome was never actually in Laban's hands." },
     violated: { scripture: { ref: "Nahum 1:7", text: "The Lord is good, a stronghold in the day of trouble; he knows those who take refuge in him." },
@@ -693,6 +693,20 @@
       strategy: "\"Fairness\" as a demand is a strategy for respect, equality, and safety — real needs, but the scoreboard version of them never ends.",
       dark: "Insisting on fairness can turn into keeping score of everyone's portion, including God's.",
       light: "Grace isn't fair — it's better than fair, and it's the reason you're here at all. The need underneath, to be respected, is real and can be met without the scoreboard." },
+    grieving: { scripture: { ref: "John 11:35", text: "Jesus wept." },
+      dark: "Grief rushed or skipped doesn't go away — it hardens into numbness, or leaks out as anger at the wrong people.",
+      light: "Jesus wept at a tomb He was about to open — grieving isn't a failure of faith, it's love with nowhere to go yet." },
+    exhausted: { scripture: { ref: "1 Kings 19:7", text: "And the angel of the Lord came again a second time and touched him and said, \"Arise and eat, for the journey is too great for you.\"" },
+      dark: "Exhaustion pushed through gets read as weakness of character, so you keep going until your body makes the decision for you.",
+      light: "Elijah got food and sleep before he got a sermon — God often starts with what your body needs, not with what your faith should be doing." },
+    blamed: { scripture: { ref: "Romans 8:33-34", text: "Who shall bring any charge against God's elect? It is God who justifies. Who is to condemn?" },
+      judgment: "\"Blamed\" is a verdict that someone holds you responsible — true in part or not at all, the feeling underneath is usually anger, shame, or fear of what it will cost you.",
+      dark: "Carrying blame that isn't yours, or defending against blame that is, both keep you from sorting out what's actually yours to own.",
+      light: "God separates what's yours to own from what isn't — you can confess your part and put the rest down, because no charge against you stands." },
+    invalidated: { scripture: { ref: "Psalm 56:8", text: "You have kept count of my tossings; put my tears in your bottle. Are they not in your book?" },
+      judgment: "\"Invalidated\" is a verdict that someone dismissed your experience as wrong or unimportant — the feeling underneath is usually hurt, loneliness, or anger at not being taken seriously.",
+      dark: "Being told your experience isn't real can teach you to stop trusting it — and to stop telling anyone.",
+      light: "God keeps your tears in a bottle and counts your tossings — whatever someone else decided about your pain, He's taking it seriously." },
     chosen: { scripture: { ref: "Ephesians 1:4", text: "he chose us in him before the foundation of the world." },
       dark: "\"Chosen\" can curdle into exclusivity — a status that looks down on who wasn't picked.",
       light: "You were chosen before you did anything to earn it — that's grace, not superiority." },
@@ -1146,7 +1160,7 @@
         out.push(w);
       });
     });
-    return out.slice(0, 40);
+    return out.slice(0, 45);
   }
 
   document.getElementById('edit-btn').addEventListener('click', openModal);
