@@ -1,8 +1,8 @@
-const CACHE = 'iamhere-v73';
+const CACHE = 'iamhere-v75';
 const ASSETS = ['./', './index.html', './app.js', './engine.js', './content.json', './verses.json', './manifest.json', './icon.svg',
   './studies/inner-and-outer-man.html', './studies/inner-and-outer-man-mobile.html', './studies/not-quite.html',
   './studies/not-quite-mobile.html', './studies/why-he-came.html', './studies/why-he-came-mobile.html',
-  './studies/what-they-mirror.html', './studies/what-they-mirror-mobile.html'];
+  './studies/thinkers-feelers-doers.html', './studies/thinkers-feelers-doers-mobile.html'];
 
 self.addEventListener('install', e => {
   // cache: 'reload' skips the HTTP cache so a version bump really fetches fresh files
