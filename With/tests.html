@@ -226,6 +226,7 @@ t('See how He speaks from a step returns to exactly that step: the helper exists
   src[0].includes('function goFromStep') && (src[0].match(/goFromStep\(/g) || []).length >= 5 && src[0].includes('C.copy.backToStep') && src[0].includes('restoreScroll')
   && src[0].includes('seeExpect.hidden = !!has') && C.copy.backToStep === 'Back to your prayer');
 t('the "do" question has its own sentence starters that fit doing, not the "know" ones', () => C.steps.do.starters.length === 3 && C.steps.do.starters.every(x => /want me to|next step|drawn to do/.test(x)) && !C.steps.know.starters && src[0].includes('def.starters || C.starters'));
+t('the note and the How did it come? row show once per session, on the first answered step, and not again under a later question', () => src[0].includes('s.howKey = key') && src[0].includes('s.howKey === key'));
 t('there is no Care page: no route, no More tile, no links to it, and no top-level care content', () => !('care' in C) && !/VIEWS\.care|go\('care'\)|careLink|careAvailable/.test(src[0] + src[1]) && !JSON.stringify(C.objections.close).includes('heavy'));
 t('the name line sits permanently on the start screen, there is no first-launch card, and the care disclaimer lives once in About and Safety', () =>
   C.copy.start.nameLine === 'God with us (Immanuel, Matthew 1:23).' && !C.firstLaunch && !C.objections.footLine

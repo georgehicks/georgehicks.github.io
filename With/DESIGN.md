@@ -274,6 +274,10 @@ Every step after 2 has the **Back to the glad place** button. A **Stop and rest*
 - Following the repo's rule on mobile keyboards: do not lay out the UI around the iOS keyboard. Each step should read well before the keyboard opens, with the box near the top and the buttons not pinned to the bottom.
 - Drafts autosave so a lock-screen interruption loses nothing.
 
+#### The how-it-came row appears once
+
+The *How did it come?* row, and the note above it (*It may sound like your own thoughts...*), appear **once per session**: under the first step that gets an answer. Later questions in the same session (for example *What do You want me to do?* after *What do You want me to know?*) do not repeat them, so nothing looks left over from the step before.
+
 #### Leaving a step to read, and coming back
 
 Links on a practice step that lead to reading (**See how He speaks**, the *How did it come?* link, and the links inside a *Not sure?* card) behave one way: **Back returns to exactly the step the person left.** The button reads **Back to your prayer**. The draft, selected chips and scroll position come back as they were. Tapping a bottom tab instead simply leaves. Only **one** *See how He speaks* link shows on a step at a time: the one beside the expectation line until there is an answer, then the one under the answer.

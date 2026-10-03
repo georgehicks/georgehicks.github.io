@@ -617,9 +617,13 @@ const STEP = {
     // only one See how He speaks link on the step at a time: this one until there is an answer, then the one under it
     const seeExpect = link(C.expectation.seeLink, () => goFromStep('why/speaks'), 'small');
     const note = hint(h('p', { text: tx(C.afterAnswer.line) }), on);
+    // the note and the "How did it come?" row appear once per session, on the first step that gets an answer,
+    // so a later question (like "what do You want me to do?") never repeats them
     const refresh = text => {
       const has = text.trim() || (E.entryFor(s, key) || { how: [] }).how.length;
-      post.hidden = !has; seeExpect.hidden = !!has; if (has) paintHow();
+      if (has && !s.howKey) { s.howKey = key; saveDraftSoon(); }
+      const show = has && s.howKey === key;
+      post.hidden = !show; seeExpect.hidden = !!has; if (show) paintHow();
     };
     const box = answerBox({ get: () => entryText(s, key), set: (t, via) => E.setAnswer(s, key, prompt, t, via), label: def.label, starters: def.starters || C.starters, on, onChange: refresh });
     const howBody = h('div', {}, h('div', { class: 'lbl', text: tx(C.how.title) }), howChips, howLink);
