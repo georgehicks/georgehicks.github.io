@@ -535,9 +535,9 @@ const VIEWS = {
 // opening a page directly leaves no way back). Narrow screens get his phone layout, wide ones
 // his full sheet (shown at its natural height, so the fixed 11in page doesn't leave blank space; the files
 // keep their print size); a link swaps them. Each <span class="ref"> becomes tap targets once loaded
-// (the passage opens in a small popover beside the reference, from verses.json — ESV, never leaving the app),
+// (the passage opens in a small popover beside the reference, from verses.json — Berean Standard Bible, never leaving the app),
 // so his files stay untouched and new versions can simply be dropped in.
-// verses.json: exact ESV text for every reference in the studies, saved with the app (and cached
+// verses.json: Berean Standard Bible (public domain) text for every reference in the studies, saved with the app (and cached
 // by the service worker), so a passage opens instantly and offline. { "John 3:16": [[16, "…"]] }
 let versesLoad = null;
 const loadVerses = () => versesLoad || (versesLoad = fetch('verses.json').then(r => r.json()).catch(() => { versesLoad = null; return {}; }));
@@ -575,11 +575,10 @@ function openPassage(key, verses, anchor, frame) {
   const el = h('div', { class: 'popover', role: 'dialog', 'aria-label': key },
     h('div', { class: 'pop-scroll' },
       h('div', { class: 'pop-head' },
-        h('strong', { text: key }),
+        h('span', {}, h('strong', { text: key }), h('span', { class: 'pop-tr', text: K.translation })),
         h('button', { type: 'button', class: 'pop-close', 'aria-label': K.close, text: '×', onclick: () => closePassage() })),
       h('div', { class: 'passage' }, verses.map(([n, text]) => h('p', { class: 'passage-verse' },
-        verses.length > 1 && h('sup', { text: n }), verses.length > 1 && ' ', text))),
-      h('p', { class: 'esv-notice', text: K.esvNotice })));
+        verses.length > 1 && h('sup', { text: n }), verses.length > 1 && ' ', text)))));
   const onDown = ev => { if (!el.contains(ev.target)) closePassage(); };
   const onKey = ev => { if (ev.key === 'Escape') closePassage(); };
   const onMove = () => placePop();

@@ -409,7 +409,7 @@
       "showPhone": "Show the phone layout",
       "refHint": "Tap a reference to read it here.",
       "close": "Close",
-      "esvNotice": "Scripture quotations are from the ESV® Bible (The Holy Bible, English Standard Version®), © 2001 by Crossway, a publishing ministry of Good News Publishers. Used by permission. All rights reserved.",
+      "translation": "BSB",
       "items": [
         {"id": "why-he-came", "title": "Why He Came, and What He Is Up To", "body": "Jesus’ errand in Scripture’s own lines, and what He is still doing.", "mobile": "studies/why-he-came-mobile.html", "full": "studies/why-he-came.html"},
         {"id": "not-quite", "title": "Not Quite", "body": "Why the world feels unfinished: the room He left, the mercy, the rescue, and the measure Jesus uses.", "mobile": "studies/not-quite-mobile.html", "full": "studies/not-quite.html"},

@@ -274,7 +274,7 @@ for (const it of C.copy.links.items) for (const f of [it.mobile, it.full]) {
 }
 t('every study file exists', () => studyFilesOk.length === 8 && studyFilesOk.every(Boolean) || JSON.stringify(studyFilesOk));
 const verses = await fetch('verses.json?_=' + Date.now()).then(r => r.json());
-t('every reference in George’s study files has its exact ESV text saved in verses.json', () => {
+t('every reference in George’s study files has its Berean Standard Bible text saved in verses.json', () => {
   const keys = studyRefs.flatMap(r => E.refParts(r)).map(p => p.key);
   const missing = keys.filter(k => !verses[k]);
   return (studyRefs.length > 50 && !missing.length) || (missing.length ? 'missing ' + missing[0] : 'only ' + studyRefs.length + ' refs');
@@ -286,8 +286,8 @@ t('each saved passage has one text per verse in its range, none empty', () => {
   });
   return !bad.length || 'bad: ' + bad[0][0];
 });
-t('saved ESV text is plain text and the notice is in the app', () =>
-  Object.values(verses).flat().every(([, txt]) => !/[<>]/.test(txt)) && /Crossway/.test(C.copy.links.esvNotice));
+t('saved passage text is plain text, and the popover carries no copyright block', () =>
+  Object.values(verses).flat().every(([, txt]) => !/[<>]/.test(txt)) && C.copy.links.translation === 'BSB' && !/Crossway/.test(JSON.stringify(C.copy.links)) && !/esv-notice/.test(src[0] + src[1]));
 t('end card shows the home line', () => src[0].includes("text: C.copy.home.line"));
 t('app code has no streak, score, badge, leaderboard, or celebration', () => {
   const hit = src.join('\n').match(/streak|leaderboard|badge|confetti|congrat|well done|great job/i);

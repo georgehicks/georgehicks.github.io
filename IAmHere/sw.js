@@ -1,4 +1,4 @@
-const CACHE = 'iamhere-v76';
+const CACHE = 'iamhere-v77';
 const ASSETS = ['./', './index.html', './app.js', './engine.js', './content.json', './verses.json', './manifest.json', './icon.svg',
   './studies/inner-and-outer-man.html', './studies/inner-and-outer-man-mobile.html', './studies/not-quite.html',
   './studies/not-quite-mobile.html', './studies/why-he-came.html', './studies/why-he-came-mobile.html',
