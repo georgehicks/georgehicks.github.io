@@ -81,7 +81,7 @@ t('proverb strategy includes the not-in-Scripture note', () => eq(E.honestyNote(
 t('no other pin gets a note', () => [...C.dyingPins, ...C.managedPins].filter(p => p.id !== 'proverb').every(p => E.honestyNote(C, p.id) === null));
 t('proverb breath is Romans 5:6 fragments only', () => {
   const v = E.verseFor(C, { loc: L('managed', 'rest', 'present_open'), axis: 'spirit', pinId: 'proverb' });
-  eq(v, { inhale: 'while we were still weak', exhale: 'Christ died for the ungodly', ref: 'Romans 5:6' });
+  eq(v, { inhale: 'while we were still powerless', exhale: 'Christ died for the ungodly', ref: 'Romans 5:6' });
   return !JSON.stringify(v).includes('help themselves');
 });
 
@@ -136,13 +136,13 @@ t('worrisome = fading with collapse/freeze/blank, or "too much to stay in"', () 
     && !W('dying', 'fight', 'present_open') && !W('managed', 'collapse', 'blank') && !W('rising', 'freeze', 'blank')
     && !W('dying', 'rest', 'present_open', 'unloved');
 });
-t('stand firm: 3 breaths each of Eph 6:10, Jas 4:7, 1 John 4:4, exact ESV fragments', () => {
+t('stand firm: 3 breaths each of Eph 6:10, Jas 4:7, 1 John 4:4, exact Berean fragments', () => {
   const s = E.breathScript(C, { loc: {}, direct: true }, 'stand');
   eq(s.map(x => x.ref), ['Ephesians 6:10', 'Ephesians 6:10', 'Ephesians 6:10', 'James 4:7', 'James 4:7', 'James 4:7', '1 John 4:4', '1 John 4:4', '1 John 4:4']);
   eq([s[0], s[3], s[6]].map(x => [x.inhale, x.exhale]), [
-    ['be strong in the Lord', 'and in the strength of his might'],
-    ['Submit yourselves therefore to God', 'Resist the devil, and he will flee from you'],
-    ['he who is in you is greater', 'than he who is in the world']]);
+    ['be strong in the Lord', 'and in His mighty power'],
+    ['Submit yourselves, then, to God', 'Resist the devil, and he will flee from you'],
+    ['greater is He who is in you', 'than he who is in the world']]);
 });
 t('a named feeling closes the truth and opens the prayer under its own address', () => {
   const F = id => C.axes.mind.feelings.find(f => f.id === id);
@@ -172,7 +172,7 @@ t('pin pair wins over axis (moving body, pinned)', () => eq(sel(L('dying', 'figh
 t('time-travel future → Matt 6:34', () => eq(sel(L('rising', 'rest', 'time_travel', 'future'), 'mind', null), 'Matthew 6:34'));
 t('time-travel past → Isa 43:19', () => eq(sel(L('rising', 'rest', 'time_travel', 'past'), 'mind', null), 'Isaiah 43:19'));
 t('time-travel no flavor → Matt 6:34', () => eq(sel(L('rising', 'rest', 'time_travel'), 'mind', null), 'Matthew 6:34'));
-t('present-narrowed → Jas 1:19 (quick to hear)', () => eq(E.verseFor(C, { loc: L('rising', 'rest', 'present_narrowed'), axis: 'mind' }).inhale, 'be quick to hear'));
+t('present-narrowed → Jas 1:19 (quick to listen)', () => eq(E.verseFor(C, { loc: L('rising', 'rest', 'present_narrowed'), axis: 'mind' }).inhale, 'quick to listen'));
 t('body only (spirit rising) → pair by body tick', () => {
   const want = { control: 'Psalm 46:10', fight: 'James 1:19', flight: 'Psalm 139:10', freeze: 'Exodus 14:14', collapse: 'Matthew 11:28' };
   Object.entries(want).forEach(([b, ref]) => eq(sel(L('rising', b, 'present_open'), 'body', null), ref, b));
@@ -211,38 +211,38 @@ t('override only offers off-home axes', () => eq(E.axisChoices(L('managed', 'con
 const PRD = {
   verseByPin: {
     unloved: ['I have loved you', 'with an everlasting love', 'Jeremiah 31:3'],
-    unworthy: ['while we were still sinners', 'Christ died for us', 'Romans 5:8'],
-    unsafe: ['when you pass through the waters', 'I will be with you', 'Isaiah 43:2'],
+    unworthy: ['While we were still sinners', 'Christ died for us', 'Romans 5:8'],
+    unsafe: ['When you pass through the waters', 'I will be with you', 'Isaiah 43:2'],
     not_enough: ['My grace is sufficient', 'for you', '2 Corinthians 12:9'],
-    no_trust: ['When I am afraid', 'I put my trust in you', 'Psalm 56:3'],
-    alone: ['I have called you by name', 'you are mine', 'Isaiah 43:1'],
-    must_carry: ['Cast your burden on the Lord', 'and he will sustain you', 'Psalm 55:22'],
-    unknown_dying: ['I have called you by name', 'you are mine', 'Isaiah 43:1'],
+    no_trust: ['When I am afraid', 'I put my trust in You', 'Psalm 56:3'],
+    alone: ['I have called you by your name', 'you are Mine', 'Isaiah 43:1'],
+    must_carry: ['Cast your burden upon the LORD', 'and He will sustain you', 'Psalm 55:22'],
+    unknown_dying: ['I have called you by your name', 'you are Mine', 'Isaiah 43:1'],
     in_control: ['Be still', 'and know that I am God', 'Psalm 46:10'],
     earned_place: ['What do you have', 'that you did not receive?', '1 Corinthians 4:7'],
     better_than: ['What do you have', 'that you did not receive?', '1 Corinthians 4:7'],
-    mine_to_manage: ['Unless the Lord builds the house', 'those who build labor in vain', 'Psalm 127:1'],
-    up_to_me: ['apart from me', 'you can do nothing', 'John 15:5'],
-    proverb: ['while we were still weak', 'Christ died for the ungodly', 'Romans 5:6'],
-    abide_after: ['Abide in me', 'and I in you', 'John 15:4'],
-    need_nothing: ['The Lord is my shepherd', 'I shall not want', 'Psalm 23:1'],
+    mine_to_manage: ['Unless the LORD builds the house', 'its builders labor in vain', 'Psalm 127:1'],
+    up_to_me: ['apart from Me', 'you can do nothing', 'John 15:5'],
+    proverb: ['while we were still powerless', 'Christ died for the ungodly', 'Romans 5:6'],
+    abide_after: ['Remain in Me', 'and I will remain in you', 'John 15:4'],
+    need_nothing: ['The LORD is my shepherd', 'I shall not want', 'Psalm 23:1'],
     unknown_managed: ['Be still', 'and know that I am God', 'Psalm 46:10'],
   },
   verseByBody: {
     control: ['Be still', 'and know that I am God', 'Psalm 46:10'],
-    fight: ['slow to speak', 'slow to anger', 'James 1:19'],
-    flight: ['even there your hand', 'shall lead me', 'Psalm 139:10'], // was 139:7 in the PRD — presence, not pursuit, for someone escaping
-    freeze: ['The Lord will fight for you', 'you have only to be silent', 'Exodus 14:14'],
-    collapse: ['Come to me', 'I will give you rest', 'Matthew 11:28'],
-    rest: ['As the Father has loved me', 'so have I loved you', 'John 15:9'],
+    fight: ['slow to speak', 'and slow to anger', 'James 1:19'],
+    flight: ['even there Your hand', 'will guide me', 'Psalm 139:10'], // was 139:7 in the PRD — presence, not pursuit, for someone escaping
+    freeze: ['The LORD will fight for you', 'you need only to be still', 'Exodus 14:14'],
+    collapse: ['Come to Me', 'I will give you rest', 'Matthew 11:28'],
+    rest: ['As the Father has loved Me', 'so have I loved you', 'John 15:9'],
   },
   verseByMind: {
-    present_narrowed: ['be quick to hear', 'slow to speak', 'James 1:19'],
-    time_travel_future: ['do not be anxious', 'about tomorrow', 'Matthew 6:34'],
-    time_travel_past: ['Behold, I am doing', 'a new thing', 'Isaiah 43:19'],
-    time_travel: ['do not be anxious', 'about tomorrow', 'Matthew 6:34'],
-    blank: ['The Spirit himself', 'intercedes for us', 'Romans 8:26'],
-    present_open: ['As the Father has loved me', 'so have I loved you', 'John 15:9'],
+    present_narrowed: ['quick to listen', 'slow to speak', 'James 1:19'],
+    time_travel_future: ['do not worry', 'about tomorrow', 'Matthew 6:34'],
+    time_travel_past: ['Behold, I am about to do', 'something new', 'Isaiah 43:19'],
+    time_travel: ['do not worry', 'about tomorrow', 'Matthew 6:34'],
+    blank: ['The Spirit Himself', 'intercedes for us', 'Romans 8:26'],
+    present_open: ['As the Father has loved Me', 'so have I loved you', 'John 15:9'],
   },
 };
 for (const table of Object.keys(PRD)) {

@@ -307,48 +307,48 @@
 
   "verseByPin": {
     "unloved": { "inhale": "I have loved you", "exhale": "with an everlasting love", "ref": "Jeremiah 31:3" },
-    "unworthy": { "inhale": "while we were still sinners", "exhale": "Christ died for us", "ref": "Romans 5:8" },
-    "unsafe": { "inhale": "when you pass through the waters", "exhale": "I will be with you", "ref": "Isaiah 43:2" },
+    "unworthy": { "inhale": "While we were still sinners", "exhale": "Christ died for us", "ref": "Romans 5:8" },
+    "unsafe": { "inhale": "When you pass through the waters", "exhale": "I will be with you", "ref": "Isaiah 43:2" },
     "not_enough": { "inhale": "My grace is sufficient", "exhale": "for you", "ref": "2 Corinthians 12:9" },
-    "no_trust": { "inhale": "When I am afraid", "exhale": "I put my trust in you", "ref": "Psalm 56:3" },
-    "alone": { "inhale": "I have called you by name", "exhale": "you are mine", "ref": "Isaiah 43:1" },
-    "must_carry": { "inhale": "Cast your burden on the Lord", "exhale": "and he will sustain you", "ref": "Psalm 55:22" },
-    "unknown_dying": { "inhale": "I have called you by name", "exhale": "you are mine", "ref": "Isaiah 43:1" },
+    "no_trust": { "inhale": "When I am afraid", "exhale": "I put my trust in You", "ref": "Psalm 56:3" },
+    "alone": { "inhale": "I have called you by your name", "exhale": "you are Mine", "ref": "Isaiah 43:1" },
+    "must_carry": { "inhale": "Cast your burden upon the LORD", "exhale": "and He will sustain you", "ref": "Psalm 55:22" },
+    "unknown_dying": { "inhale": "I have called you by your name", "exhale": "you are Mine", "ref": "Isaiah 43:1" },
     "in_control": { "inhale": "Be still", "exhale": "and know that I am God", "ref": "Psalm 46:10" },
     "earned_place": { "inhale": "What do you have", "exhale": "that you did not receive?", "ref": "1 Corinthians 4:7" },
     "better_than": { "inhale": "What do you have", "exhale": "that you did not receive?", "ref": "1 Corinthians 4:7" },
-    "mine_to_manage": { "inhale": "Unless the Lord builds the house", "exhale": "those who build labor in vain", "ref": "Psalm 127:1" },
-    "up_to_me": { "inhale": "apart from me", "exhale": "you can do nothing", "ref": "John 15:5" },
-    "proverb": { "inhale": "while we were still weak", "exhale": "Christ died for the ungodly", "ref": "Romans 5:6" },
-    "abide_after": { "inhale": "Abide in me", "exhale": "and I in you", "ref": "John 15:4" },
-    "need_nothing": { "inhale": "The Lord is my shepherd", "exhale": "I shall not want", "ref": "Psalm 23:1" },
+    "mine_to_manage": { "inhale": "Unless the LORD builds the house", "exhale": "its builders labor in vain", "ref": "Psalm 127:1" },
+    "up_to_me": { "inhale": "apart from Me", "exhale": "you can do nothing", "ref": "John 15:5" },
+    "proverb": { "inhale": "while we were still powerless", "exhale": "Christ died for the ungodly", "ref": "Romans 5:6" },
+    "abide_after": { "inhale": "Remain in Me", "exhale": "and I will remain in you", "ref": "John 15:4" },
+    "need_nothing": { "inhale": "The LORD is my shepherd", "exhale": "I shall not want", "ref": "Psalm 23:1" },
     "unknown_managed": { "inhale": "Be still", "exhale": "and know that I am God", "ref": "Psalm 46:10" }
   },
 
   "verseByBody": {
     "control": { "inhale": "Be still", "exhale": "and know that I am God", "ref": "Psalm 46:10" },
-    "fight": { "inhale": "slow to speak", "exhale": "slow to anger", "ref": "James 1:19" },
-    "flight": { "inhale": "even there your hand", "exhale": "shall lead me", "ref": "Psalm 139:10" },
-    "freeze": { "inhale": "The Lord will fight for you", "exhale": "you have only to be silent", "ref": "Exodus 14:14" },
-    "collapse": { "inhale": "Come to me", "exhale": "I will give you rest", "ref": "Matthew 11:28" },
-    "rest": { "inhale": "As the Father has loved me", "exhale": "so have I loved you", "ref": "John 15:9" }
+    "fight": { "inhale": "slow to speak", "exhale": "and slow to anger", "ref": "James 1:19" },
+    "flight": { "inhale": "even there Your hand", "exhale": "will guide me", "ref": "Psalm 139:10" },
+    "freeze": { "inhale": "The LORD will fight for you", "exhale": "you need only to be still", "ref": "Exodus 14:14" },
+    "collapse": { "inhale": "Come to Me", "exhale": "I will give you rest", "ref": "Matthew 11:28" },
+    "rest": { "inhale": "As the Father has loved Me", "exhale": "so have I loved you", "ref": "John 15:9" }
   },
 
   "verseByMind": {
-    "present_narrowed": { "inhale": "be quick to hear", "exhale": "slow to speak", "ref": "James 1:19" },
-    "time_travel_future": { "inhale": "do not be anxious", "exhale": "about tomorrow", "ref": "Matthew 6:34" },
-    "time_travel_past": { "inhale": "Behold, I am doing", "exhale": "a new thing", "ref": "Isaiah 43:19" },
-    "time_travel": { "inhale": "do not be anxious", "exhale": "about tomorrow", "ref": "Matthew 6:34" },
-    "blank": { "inhale": "The Spirit himself", "exhale": "intercedes for us", "ref": "Romans 8:26" },
-    "present_open": { "inhale": "As the Father has loved me", "exhale": "so have I loved you", "ref": "John 15:9" }
+    "present_narrowed": { "inhale": "quick to listen", "exhale": "slow to speak", "ref": "James 1:19" },
+    "time_travel_future": { "inhale": "do not worry", "exhale": "about tomorrow", "ref": "Matthew 6:34" },
+    "time_travel_past": { "inhale": "Behold, I am about to do", "exhale": "something new", "ref": "Isaiah 43:19" },
+    "time_travel": { "inhale": "do not worry", "exhale": "about tomorrow", "ref": "Matthew 6:34" },
+    "blank": { "inhale": "The Spirit Himself", "exhale": "intercedes for us", "ref": "Romans 8:26" },
+    "present_open": { "inhale": "As the Father has loved Me", "exhale": "so have I loved you", "ref": "John 15:9" }
   },
 
   "breathModes": [
     { "id": "truth", "label": "Truth with Him" },
     { "id": "stand", "label": "Stand firm", "steps": [
-      { "inhale": "be strong in the Lord", "exhale": "and in the strength of his might", "ref": "Ephesians 6:10", "breaths": 3 },
-      { "inhale": "Submit yourselves therefore to God", "exhale": "Resist the devil, and he will flee from you", "ref": "James 4:7", "breaths": 3 },
-      { "inhale": "he who is in you is greater", "exhale": "than he who is in the world", "ref": "1 John 4:4", "breaths": 3 }
+      { "inhale": "be strong in the Lord", "exhale": "and in His mighty power", "ref": "Ephesians 6:10", "breaths": 3 },
+      { "inhale": "Submit yourselves, then, to God", "exhale": "Resist the devil, and he will flee from you", "ref": "James 4:7", "breaths": 3 },
+      { "inhale": "greater is He who is in you", "exhale": "than he who is in the world", "ref": "1 John 4:4", "breaths": 3 }
     ] },
     { "id": "above", "label": "Thanks and prayer", "steps": [
       { "inhale": "I am grateful for…", "exhale": "Thank You, Lord.", "breaths": 4 },
@@ -482,7 +482,7 @@
       "log": "Saved check-ins",
       "clear": "Clear all data",
       "clearConfirm": "Tap again to clear everything",
-      "scripture": "Quotations are from the ESV.",
+      "scripture": "Quotations are from the Berean Standard Bible.",
       "refresh": "Refresh",
       "refreshing": "Refreshing…",
       "about": "I Am Here helps you notice where you are — spirit, soul, and body — and take one step back toward home. Home is abiding in Christ: spirit alive to God, soul present and open, body free to be still or move."
