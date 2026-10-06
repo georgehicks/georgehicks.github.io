@@ -125,7 +125,7 @@
     transition:transform .2s ease, border-color .2s ease, background .2s ease, opacity .6s ease; opacity:.55; }
   .st-in .bk { opacity:1; }
   .bk svg { width:1.35rem; height:1.35rem; fill:none; stroke:currentColor; stroke-width:1.6; stroke-linecap:round; stroke-linejoin:round; }
-  .bk .lbl { font-size:.56rem; line-height:1.1; text-align:center; letter-spacing:.01em; }
+  .bk .lbl { font-size:.54rem; line-height:1.1; text-align:center; letter-spacing:.01em; }
   .bk.father { color:color-mix(in srgb, var(--gold) 80%, var(--ink-muted)); }
   .bk.spirit { color:#8FB0E8; } .bk.jesus { color:var(--heart); } .bk.bin { color:#B49A8A; }
   .bk.over { transform:scale(1.18); border-color:var(--gold); background:var(--surface-2); }
@@ -272,12 +272,12 @@
     <div class="holdnote" id="holdnote"></div>
     <div class="partpick" id="partpick" hidden></div>
     <div class="dock" id="dock">
-      <button class="bk father" data-b="hands" aria-label="Father, into your hands"><svg viewBox="0 0 24 24"><path d="M3 12c3 4 6 6 9 6s6-2 9-6M6 9l3-4M12 8V4M18 9l-3-4"/></svg><span class="lbl">Hands</span></button>
-      <button class="bk father" data-b="part" aria-label="Father, what is my part today"><svg viewBox="0 0 24 24"><path d="M9 4h6M10 4v4l-4 9a2 2 0 0 0 2 3h8a2 2 0 0 0 2-3l-4-9V4"/></svg><span class="lbl">My part</span></button>
-      <button class="bk father" data-b="thanks" aria-label="Father, thank you"><svg viewBox="0 0 24 24"><path d="M4 11V8a8 8 0 0 1 16 0v3M3 11h18v9H3zM3 14h18M12 13v3"/><circle cx="12" cy="16.5" r="1" fill="currentColor"/></svg><span class="lbl">Thanks</span></button>
-      <button class="bk spirit" id="b-spirit" data-b="spirit" aria-label="Holy Spirit, help me understand"><svg viewBox="0 0 24 24"><path d="M4 9h16l-2 10a2 2 0 0 1-2 1.7H8A2 2 0 0 1 6 19L4 9z"/><path d="M8 6c1.5-2 3-2 4 0s2.5 2 4 0"/></svg><span class="lbl">Spirit</span><span class="count" id="spirit-count" hidden></span></button>
+      <button class="bk father" data-b="hands" aria-label="Father, into your hands: release it"><svg viewBox="0 0 24 24"><path d="M8 13V5.5a1.5 1.5 0 0 1 3 0V11M11 10.5V4a1.5 1.5 0 0 1 3 0v6.5M14 10.5V5.5a1.5 1.5 0 0 1 3 0V14M17 9.5a1.5 1.5 0 0 1 3 0V15c0 4-3 7-7 7-3 0-4.5-1.5-6-4l-3-4.5a1.5 1.5 0 0 1 2.5-1.5L8 14"/></svg><span class="lbl">Release</span></button>
+      <button class="bk father" data-b="part" aria-label="Father, what is my part today"><svg viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="3.5"/><path d="M8.5 12.5l2.5 2.5 4.5-5.5"/></svg><span class="lbl">My part</span></button>
+      <button class="bk father" data-b="thanks" aria-label="Father, thank you: the treasure chest"><svg viewBox="0 0 24 24"><path d="M3 11.5V9a4 4 0 0 1 4-4h10a4 4 0 0 1 4 4v2.5z" fill="currentColor" fill-opacity=".22"/><rect x="3" y="11.5" width="18" height="8.5" rx="1.5" fill="currentColor" fill-opacity=".1"/><path d="M7.5 5.5v14.5M16.5 5.5v14.5M3 11.5h18"/><rect x="10.2" y="10" width="3.6" height="4.400" rx="1" fill="currentColor"/><path d="M21 2.5v3M19.5 4h3"/></svg><span class="lbl">Thanks</span></button>
+      <button class="bk spirit" id="b-spirit" data-b="spirit" aria-label="Holy Spirit, help me understand: insight"><svg viewBox="0 0 24 24"><path d="M9 18h6M10 21.5h4M12 2.5a6.5 6.5 0 0 0-3.800 11.8c.8.600 1.300 1.5 1.300 2.2h5c0-.7.5-1.600 1.300-2.2A6.5 6.5 0 0 0 12 2.5z"/></svg><span class="lbl">Insight</span><span class="count" id="spirit-count" hidden></span></button>
       <button class="bk jesus" data-b="hold" aria-label="Jesus, I hold this to you"><svg viewBox="0 0 24 24"><path d="M12 3v18M6 9h12"/></svg><span class="lbl">Hold</span></button>
-      <button class="bk father" id="b-pray" data-b="pray" aria-label="Let's pray now"><svg viewBox="0 0 24 24"><path d="M12 3c2.5 3 4 5 4 7.5a4 4 0 0 1-8 0C8 8 9.5 6 12 3z"/><path d="M8 21h8"/></svg><span class="lbl">Pray</span></button>
+      <button class="bk father" id="b-pray" data-b="pray" aria-label="Intercede for people"><svg viewBox="0 0 24 24"><path d="M12 2c1.8 2.2 2.8 3.6 2.8 5a2.8 2.8 0 0 1-5.6 0C9.2 5.6 10.2 4.2 12 2z" fill="currentColor" fill-opacity=".3"/><rect x="8.5" y="11" width="7" height="10" rx="1.2"/><path d="M12 9.5v1.5"/></svg><span class="lbl">Intercede</span></button>
       <button class="bk bin jesus" data-b="lie" aria-label="Jesus, I put this lie down"><svg viewBox="0 0 24 24"><path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13M10 11v6M14 11v6"/></svg><span class="lbl">Lies</span></button>
     </div>
   </main>

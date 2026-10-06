@@ -264,7 +264,7 @@
   function lieOrBounce(msg) { returnToHold(); flashNote(msg, 3000); }
   function bucketDrop(name) {
     var item = sit.drop; if (!item || sit.state !== 'holding') return;
-    if (name === 'pray' && item.kind !== 'person') { lieOrBounce('Prayer words are for a person.'); return; }
+    if (name === 'pray' && item.kind !== 'person') { lieOrBounce('Intercede is for a person you are praying for.'); return; }
     if (name === 'lie' && item.kind === 'person') { lieOrBounce('A person is never a lie. Give them to the Father.'); return; }
     if (name === 'lie' && item.kind === 'thanks') { lieOrBounce('Thanks is not a lie.'); return; }
     if (name === 'hold') { sit.hold(); save(); returnToHold(); flash(L.hold.text, ''); pulse(bucketEl('hold')); return; }
@@ -419,8 +419,8 @@
   var cloudStop = null;
   function activePeople() { return S.lists.people.filter(function (p) { return !p.paused; }); }
   function openPray(preId) {
-    var m = mountOverlay('ov-pray', 'Let’s pray now', closePray, 'flex');
-    var sel = preId || (activePeople()[0] && activePeople()[0].id) || null, recent = [];
+    var m = mountOverlay('ov-pray', 'Intercede', closePray, 'flex');
+    var sel = preId || (activePeople()[0] && activePeople()[0].id) || null, recent = [], claimed = {};
     function draw() {
       if (cloudStop) { cloudStop(); cloudStop = null; }
       m.body.innerHTML = '';
@@ -447,11 +447,11 @@
       requestAnimationFrame(function () {
         cloudStop = startCloud(field, words, function (w, wEl) {
           var line = sit.claim(pobj, w); if (!line) return;
-          save(); wEl.classList.add('claimed');
+          save(); wEl.classList.add('claimed'); (claimed[sel] = claimed[sel] || {})[w] = true;
           if (recent.indexOf(w) < 0) recent.push(w);
           bar.querySelector('.s1').textContent = line;
           bar.querySelector('.s2').textContent = recent.length > 1 ? recent.join(' · ') : '';
-        });
+        }, function (w) { return !!(claimed[sel] && claimed[sel][w]); });
       });
     }
     draw();
@@ -468,13 +468,13 @@
   }
 
   // Words drift slowly; each one stays a while, fades, and another takes its place.
-  function startCloud(field, words, onTap) {
+  function startCloud(field, words, onTap, isClaimed) {
     var W = field.clientWidth, H = field.clientHeight, running = true, last = performance.now();
     var n = Math.min(words.length, W < 400 ? 9 : 14), pool = words.slice().sort(function () { return Math.random() - .5; }), items = [];
     function nextWord() { var w = pool.shift(); pool.push(w); return w; }
     function rnd(a, b) { return a + Math.random() * (b - a); }
     function reset(it, first) {
-      it.word = nextWord(); it.btn.querySelector('.w').textContent = it.word; it.btn.classList.remove('claimed');
+      it.word = nextWord(); it.btn.querySelector('.w').textContent = it.word; it.btn.classList.toggle('claimed', !!(isClaimed && isClaimed(it.word)));
       it.btn.style.fontSize = rnd(1.05, 1.65).toFixed(2) + 'rem';
       var bw = it.btn.offsetWidth || 90, bh = it.btn.offsetHeight || 34;
       it.x = rnd(0, Math.max(1, W - bw)); it.y = rnd(0, Math.max(1, H - bh));
@@ -529,7 +529,7 @@
       }
       input.addEventListener('keydown', function (e) { if (e.key === 'Enter') { e.preventDefault(); add(); } });
       m.body.append(el('div', { class: 'addrow' }, [input, el('button', { class: 'btn primary', text: 'Add', onclick: add })]));
-      var hints = { people: 'Only the checked-in names drop: Pause rests someone, Remove takes them out. Tap a name to fix it.', claims: 'These drift in Let’s pray now: “…I claim ___ for them.” Tap one to fix it.' };
+      var hints = { people: 'Only the checked-in names drop: Pause rests someone, Remove takes them out. Tap a name to fix it.', claims: 'These drift when you intercede: “…I claim ___ for them.” Tap one to fix it.' };
       m.body.append(el('p', { class: 'quiet', text: hints[tab] || 'Pause rests one, Remove takes it out. Tap one to fix the wording.' }));
       if (!items.length) m.body.append(el('div', { class: 'emptynote', text: info.empty }));
       items.forEach(function (it) {
