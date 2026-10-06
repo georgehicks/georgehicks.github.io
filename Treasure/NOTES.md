@@ -31,3 +31,7 @@ Beyond the Father lines, three lines spoken to the Lord/Jesus (additions to sect
 - `Lord, what do you want me to know about this?` asks, then offers ways to record what came (a word, a verse, a picture),
   written by the person; the app never writes God's words. Shows a test-it reminder (1 John 4:1). Asking alone does not clear the item.
 - `Lord, what do you want me to do about this?` offers one-tap parts or "Nothing yet" (keeps it waiting).
+
+## Uncaught drops
+An uncaught drop passes by and fades. It is NOT sent to Insight (author's direction, overriding spec section 7/8).
+It is recorded in Noticed as "passed by". Insight holds only what the person sends there on purpose.

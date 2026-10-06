@@ -145,12 +145,11 @@
     if (this.state !== 'dropping') return false;
     this.state = 'holding'; this.uncaughtRun = 0; return true;
   };
-  // Arrives uncaught: nothing is subtracted; it enters the understand queue, the Spirit's line recorded.
+  // Arrives uncaught: nothing is subtracted and it is not sent anywhere. It passes by (recorded in Noticed).
+  // Only what the person deliberately sends to Insight waits there.
   P.arriveUncaught = function () {
     if (this.state !== 'dropping') return false;
-    var item = this.drop;
-    this._enqueue(item, 'uncaught');
-    this._record(item, 'understand', { uncaught: true });
+    this._record(this.drop, 'passed', { uncaught: true });
     this.drop = null; this.state = 'with'; this.uncaughtRun++;
     return true;
   };

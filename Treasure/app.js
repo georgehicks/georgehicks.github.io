@@ -183,8 +183,10 @@
   // Uncaught: it does not strike the heart. It goes to the Holy Spirit's bucket.
   function arrive() {
     fall = null; dropEl.style.pointerEvents = 'none';
-    dropEl.classList.add('glide'); put(dropEl, G.spirit.x, G.spirit.y, .2); dropEl.style.opacity = 0;
-    sit.arriveUncaught(); save(); pulse(bSpirit); updateSpirit();
+    // it passes by: a little further down, and gone. It is not sent to any bucket.
+    var tf = dropEl.style.transform.match(/translate\(([-\d.]+)px,\s*([-\d.]+)px\)/);
+    dropEl.classList.add('glide'); put(dropEl, tf ? +tf[1] : G.W / 2, (tf ? +tf[2] : G.yEnd) + 46, .9); dropEl.style.opacity = 0;
+    sit.arriveUncaught(); save();
     later(1000, function () { dropEl.classList.remove('glide'); });
     if (sit.uncaughtRun >= 4) { stopForNow('It has been quiet, so the drops are resting. Your heart is still with Him.'); return; }
     scheduleDrop(1800);
@@ -697,11 +699,11 @@
 
   // ---------- noticed ----------
   // Every spoken line is shown as it was said, naming who it was spoken to.
-  var SHORT = { 'pray-now': 'Father, I pray for them', claim: 'prayed', 'pray-all': 'Father, I pray all of this' };
+  var SHORT = { 'pray-now': 'Father, I pray for them', claim: 'prayed', passed: 'passed by', 'pray-all': 'Father, I pray all of this' };
   function lineName(l) { return SHORT[l] || (L[l] ? L[l].text.replace(/\.$/, '') : l); }
   function seqLabel(o) {
     if (o.line === 'claim') return 'claimed ' + o.word;
-    if (o.line === 'understand' && o.uncaught) return 'passed by';
+    if (o.line === 'passed' || (o.line === 'understand' && o.uncaught)) return 'passed by';
     if (o.line === 'my-part' && o.part) return 'Father, my part: ' + o.part;
     return lineName(o.line);
   }

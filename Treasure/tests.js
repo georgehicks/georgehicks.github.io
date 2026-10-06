@@ -17,6 +17,8 @@ const lists = (o) => Object.assign({ people: [], concerns: [], thanks: [], feeli
 const fresh = () => new E.Sitting({ queue: [], offers: [], pending: null });
 const itemOf = (kind) => ({ key: kind + ':x', kind, text: 'x ' + kind });
 const placed = () => { const s = fresh(); s.placeHeart(); return s; };
+// sends an item to Insight on purpose (catch, then the Spirit's line), then leaves Understanding
+const send = (s, key, kind) => { s.beginDrop({ key, kind: kind || 'feeling', text: key }); s.catchDrop(); s.offer('understand'); s.leaveUnderstanding(); };
 
 t('prayer copy matches spec section 3 exactly', () => {
   assert.strictEqual(C.LINES['place-heart'].text, 'Jesus, I place my heart with you.');
@@ -49,10 +51,14 @@ t('nothing can drop until the heart is placed', () => {
 t('place-heart is recorded', () => {
   const s = placed(); assert.strictEqual(s.data.offers[0].line, 'place-heart');
 });
-t('uncaught drop enters the queue, is recoverable, and does not end the sitting', () => {
+t('an uncaught drop passes by: it goes to no bucket, is recorded, and does not end the sitting', () => {
   const s = placed(); s.beginDrop(itemOf('feeling')); s.arriveUncaught();
-  assert.strictEqual(s.state, 'with'); assert.strictEqual(s.data.queue.length, 1);
-  assert.strictEqual(s.data.offers.pop().uncaught, true);
+  assert.strictEqual(s.state, 'with'); assert.strictEqual(s.data.queue.length, 0);
+  const last = s.data.offers.pop(); assert.strictEqual(last.line, 'passed'); assert.strictEqual(last.uncaught, true);
+  assert.strictEqual(s.beginDrop(itemOf('thought')), true);   // the next drop may begin
+});
+t('only what is sent to Insight on purpose waits there, and can be recovered', () => {
+  const s = placed(); send(s, 'feeling:a'); assert.strictEqual(s.data.queue.length, 1);
   assert(s.openQueue()); assert.strictEqual(s.understanding.kind, 'feeling');
   const r = s.offer('thank-you'); assert(r.ok); assert.strictEqual(s.data.queue.length, 0);
 });
@@ -97,14 +103,14 @@ t('mismatch in understanding is explained, not penalized', () => {
 });
 t('stopping mid-queue keeps the queue', () => {
   const s = placed();
-  for (let i = 0; i < 3; i++) { s.beginDrop({ key: 'feeling:' + i, kind: 'feeling', text: 'f' + i }); s.arriveUncaught(); }
+  for (let i = 0; i < 3; i++) send(s, 'feeling:' + i);
   s.openQueue(); s.leaveUnderstanding(); assert.strictEqual(s.data.queue.length, 3);
   s.pause(); assert.strictEqual(s.state, 'paused'); assert.strictEqual(s.data.queue.length, 3);
   s.resume(); assert.strictEqual(s.state, 'with');
 });
 t('leaving an item in the queue is allowed (skip rotates)', () => {
   const s = placed();
-  for (let i = 0; i < 2; i++) { s.beginDrop({ key: 'feeling:' + i, kind: 'feeling', text: 'f' + i }); s.arriveUncaught(); }
+  for (let i = 0; i < 2; i++) send(s, 'feeling:' + i);
   s.openQueue(); const first = s.understanding.key; s.skipUnderstanding();
   assert.notStrictEqual(s.understanding.key, first); assert.strictEqual(s.data.queue.length, 2);
 });
@@ -131,7 +137,7 @@ t('the lie bin: spoken to Jesus, explains an authored thought, never for a perso
   const f = placed(); f.beginDrop(itemOf('feeling')); f.catchDrop(); assert.strictEqual(f.offer('lie').verdict, null);
 });
 t('insight options: not from Him, ask what to know, ask what to do', () => {
-  const mk = () => { const s = placed(); s.beginDrop({ key: 'feeling:x', kind: 'feeling', text: 'Dread' }); s.arriveUncaught(); s.openQueue(); return s; };
+  const mk = () => { const s = placed(); send(s, 'feeling:x'); s.openQueue(); return s; };
   let s = mk(); const r = s.offer('not-him'); assert(r.ok && s.data.queue.length === 0);
   s = mk(); assert.strictEqual(s.ask('know'), C.LINES.know.text); assert.strictEqual(s.data.queue.length, 1);   // asking does not clear it
   assert(s.sense('A word or phrase', 'peace, be still', false)); assert.strictEqual(s.data.queue.length, 1);
