@@ -27,7 +27,7 @@ t('prayer copy matches spec section 3 exactly', () => {
   assert.strictEqual(C.LINES['hold'].text, 'Jesus, I hold this to you.');
 });
 t('every line names Jesus, the Father, or the Holy Spirit', () => {
-  Object.values(C.LINES).forEach(l => assert(/^(Jesus|Father|Holy Spirit),/.test(l.text), l.text));
+  Object.values(C.LINES).forEach(l => assert(/^(Jesus|Father|Holy Spirit|Lord),/.test(l.text), l.text));
   assert(/^Father,/.test(C.PRAY_NOW) && /^Father, in Jesus/.test(C.CLAIM));
 });
 t('authored thoughts are well-formed and plentiful', () => {
@@ -129,6 +129,20 @@ t('the lie bin: spoken to Jesus, explains an authored thought, never for a perso
   assert(/^That one was true/.test(s2.offer('lie').verdict));
   ['person', 'thanks'].forEach(k => { const q = placed(); q.beginDrop(itemOf(k)); q.catchDrop(); assert.strictEqual(q.offer('lie').ok, false); assert.strictEqual(q.state, 'holding'); });
   const f = placed(); f.beginDrop(itemOf('feeling')); f.catchDrop(); assert.strictEqual(f.offer('lie').verdict, null);
+});
+t('insight options: not from Him, ask what to know, ask what to do', () => {
+  const mk = () => { const s = placed(); s.beginDrop({ key: 'feeling:x', kind: 'feeling', text: 'Dread' }); s.arriveUncaught(); s.openQueue(); return s; };
+  let s = mk(); const r = s.offer('not-him'); assert(r.ok && s.data.queue.length === 0);
+  s = mk(); assert.strictEqual(s.ask('know'), C.LINES.know.text); assert.strictEqual(s.data.queue.length, 1);   // asking does not clear it
+  assert(s.sense('A word or phrase', 'peace, be still', false)); assert.strictEqual(s.data.queue.length, 1);
+  assert(s.sense('A verse', 'Psalm 46:10', true)); assert.strictEqual(s.data.queue.length, 0);
+  s = mk(); assert.strictEqual(s.ask('do'), C.LINES.do.text);
+  assert.strictEqual(s.answerDo('none').kept, true); assert.strictEqual(s.data.queue.length, 1);
+  assert.strictEqual(s.answerDo('Call her').kept, false); assert.strictEqual(s.data.queue.length, 0);
+  assert.strictEqual(s.data.offers.pop().part, 'Call her');
+  assert.strictEqual(s.ask('hold'), null);
+  const th = placed(); th.beginDrop({ key: 'thought:t01', kind: 'thought', text: 'x', truth: true, note: 'n' }); th.catchDrop(); th.offer('understand');
+  assert(/true/.test(th.offer('not-him').explain));   // a mismatch is explained, never penalized
 });
 t('pool: only checked (active) list items drop; unchecked ones rest', () => {
   const p = E.buildPool(lists({ people: [{ id: 'a', text: 'Sam', paused: true }, { id: 'b', text: 'Ann' }] }));

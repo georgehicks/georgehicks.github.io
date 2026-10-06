@@ -281,10 +281,10 @@
     return el('button', { class: 'linebtn' + (soft ? ' soft' : ''), 'data-line': id, onclick: onclick }, [
       el('span', { class: 'line', text: text || L[id].text }), el('span', { class: 'sub', text: sublabel || L[id].label })]);
   }
-  function partPicker(container, onPick, onCancel) {
-    container.append(el('div', { class: 'sheet-title', text: L['my-part'].text }));
+  function partPicker(container, onPick, onCancel, title, noneText) {
+    container.append(el('div', { class: 'sheet-title', text: title || L['my-part'].text }));
     var chips = el('div', { class: 'chips' });
-    chips.append(el('button', { class: 'chip', text: 'None today', onclick: function () { onPick('none'); } }));
+    chips.append(el('button', { class: 'chip', text: noneText || 'None today', onclick: function () { onPick('none'); } }));
     C.PARTS.forEach(function (p) { chips.append(el('button', { class: 'chip', text: p, onclick: function () { onPick(p); } })); });
     chips.append(el('button', { class: 'chip quiet', text: 'Write my own…', onclick: function () {
       askText({ label: 'Today’s part', placeholder: 'One thing', ok: function (v) { onPick(v); }, cancel: onCancel });
@@ -386,6 +386,10 @@
     var holdBtn = lineBtn('hold', true, null, function () { if (sit.hold()) { holdBtn.classList.add('said'); save(); } });
     if (sit.held.hold) holdBtn.classList.add('said');
     body.append(holdBtn,
+      lineBtn('not-him', false, null, function () { undOffer(it, 'not-him'); }),
+      lineBtn('know', false, null, function () { undKnow(it); }),
+      lineBtn('do', false, null, function () { undDo(it); }),
+      el('div', { class: 'sec', text: 'Or offer it' }),
       lineBtn('into-hands', false, null, function () { undOffer(it, 'into-hands'); }),
       lineBtn('my-part', false, null, function () { body.innerHTML = ''; partPicker(body, function (p) { undOffer(it, 'my-part', p); }, function () { renderUnd(body); }); }),
       lineBtn('thank-you', false, null, function () { undOffer(it, 'thank-you'); }));
@@ -404,8 +408,49 @@
       sub ? el('p', { class: 'quiet', text: sub }) : null,
       r.explain ? el('p', { class: 'note', style: 'text-align:left', text: r.explain }) : null]));
     function next() { sit.nextUnderstanding(); renderUnd(body); }
-    if (r.explain) body.append(el('div', { style: 'text-align:center' }, [el('button', { class: 'btn primary', text: 'Continue', onclick: next })]));
-    else later(1500, function () { if ($('ov-und')) next(); });
+    if (r.explain || id === 'not-him') {
+      body.append(el('div', { style: 'display:flex;gap:.5rem;justify-content:center;flex-wrap:wrap' }, [
+        id === 'not-him' ? el('button', { class: 'btn', text: 'Ask what is true instead', onclick: function () { sit.understanding = it; undKnow(it); } }) : null,
+        el('button', { class: 'btn primary', text: 'Continue', onclick: next })]));
+    } else later(1500, function () { if ($('ov-und')) next(); });
+  }
+  // "Lord, what do you want me to know about this?" The app asks; the person writes whatever comes, or nothing.
+  function undKnow(it) {
+    var line = sit.ask('know'); if (!line) return; save();
+    var body = undBody(); body.innerHTML = ''; body.scrollTop = 0;
+    body.append(el('div', { class: 'card', style: 'text-align:center' }, [
+      el('div', { class: 'tag', text: it.text }),
+      el('div', { class: 'big', style: 'font-style:italic;color:var(--gold)', text: line }),
+      el('p', { class: 'quiet', text: 'Wait a moment. If something comes, you can write it here. If nothing comes, that is all right.' })]));
+    var chips = el('div', { class: 'chips', style: 'justify-content:center' });
+    C.SENSED.forEach(function (how) {
+      chips.append(el('button', { class: 'chip', text: how, onclick: function () {
+        askText({ label: how + ' — what came?', placeholder: '', ok: function (v) { undSensed(it, how, v); } });
+      } }));
+    });
+    body.append(chips, el('div', { style: 'text-align:center' }, [el('button', { class: 'btn', text: 'Nothing yet — leave it here', onclick: function () { renderUnd(body); } })]));
+  }
+  function undSensed(it, how, text) {
+    sit.sense(how, text, false); save();
+    var body = undBody(); body.innerHTML = ''; body.scrollTop = 0;
+    body.append(el('div', { class: 'card' }, [el('div', { class: 'tag', text: how }), el('div', { class: 'big', text: text }), el('p', { class: 'note', text: C.TEST_IT })]));
+    body.append(lineBtn('thank-you', false, null, function () { undOffer(it, 'thank-you'); }));
+    body.append(el('div', { style: 'display:flex;gap:.5rem;flex-wrap:wrap' }, [
+      el('button', { class: 'btn', text: 'Ask again', onclick: function () { undKnow(it); } }),
+      el('button', { class: 'btn', text: 'Leave it here', onclick: function () { renderUnd(body); } })]));
+  }
+  // "Lord, what do you want me to do about this?" One part, or nothing yet.
+  function undDo(it) {
+    var line = sit.ask('do'); if (!line) return; save();
+    var body = undBody(); body.innerHTML = ''; body.scrollTop = 0;
+    partPicker(body, function (p) {
+      var r = sit.answerDo(p);
+      if (!r || r.kept) { renderUnd(body); return; }
+      rememberPart(it, p); save(); updateSpirit();
+      body.innerHTML = '';
+      body.append(el('div', { class: 'card', style: 'text-align:center' }, [el('div', { class: 'big', style: 'font-style:italic;color:var(--gold)', text: line }), el('p', { class: 'quiet', text: 'Today’s part: ' + p })]));
+      later(2800, function () { if ($('ov-und')) { sit.nextUnderstanding(); renderUnd(body); } });
+    }, function () { renderUnd(body); }, line, 'Nothing yet');
   }
   function openSpirit() {
     if (!S.queue.length) { pulse(bSpirit); flash(L.understand.text, 'Nothing is waiting yet. A drop you don’t catch will wait here for you.'); return; }
@@ -586,7 +631,7 @@
   }
 
   // ---------- noticed ----------
-  var SHORT = { 'into-hands': 'into your hands', 'my-part': 'my part', 'thank-you': 'thank you', understand: 'the Spirit', hold: 'held to Jesus', lie: 'put down', 'pray-now': 'prayed for', claim: 'prayed' };
+  var SHORT = { 'into-hands': 'into your hands', 'my-part': 'my part', 'thank-you': 'thank you', understand: 'the Spirit', hold: 'held to Jesus', lie: 'put down', 'not-him': 'not from Him', know: 'asked what to know', do: 'asked what to do', sensed: 'something came', 'pray-now': 'prayed for', claim: 'prayed' };
   function seqLabel(o) {
     if (o.line === 'claim') return 'claimed ' + o.word;
     if (o.line === 'understand' && o.uncaught) return 'passed by';

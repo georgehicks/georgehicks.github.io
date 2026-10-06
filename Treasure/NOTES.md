@@ -24,3 +24,10 @@ folder is `Treasure/`, the title is in `index.html`, `manifest.json` and the wor
 
 ## Tests
 Open `tests.html` (engine rules from section 12). Version bump = `CACHE` in `sw.js` only.
+
+## Insight screen (Understanding) options
+Beyond the Father lines, three lines spoken to the Lord/Jesus (additions to section 3):
+- `Jesus, this isn't from you.` clears the item; for a true authored thought it explains gently. Offers "Ask what is true instead".
+- `Lord, what do you want me to know about this?` asks, then offers ways to record what came (a word, a verse, a picture),
+  written by the person; the app never writes God's words. Shows a test-it reminder (1 John 4:1). Asking alone does not clear the item.
+- `Lord, what do you want me to do about this?` offers one-tap parts or "Nothing yet" (keeps it waiting).

@@ -11,8 +11,15 @@
     'understand':  { to: 'Holy Spirit', text: 'Holy Spirit, help me understand.',   label: 'ask what is true here' },
     'hold':        { to: 'Jesus',       text: 'Jesus, I hold this to you.',         label: 'stay with it a moment' },
     // Addition beyond spec section 3: the bin for a lie. It is spoken to Jesus, like the hold line.
-    'lie':         { to: 'Jesus',       text: 'Jesus, I put this lie down.',        label: 'put it down' }
+    'lie':         { to: 'Jesus',       text: 'Jesus, I put this lie down.',        label: 'put it down' },
+    // Additions beyond section 3, for the Insight screen. "Lord" is the author's wording for Jesus.
+    'not-him':     { to: 'Jesus',       text: 'Jesus, this isn\u2019t from you.',    label: 'it is not His' },
+    'know':        { to: 'Lord',        text: 'Lord, what do you want me to know about this?', label: 'ask, then listen' },
+    'do':          { to: 'Lord',        text: 'Lord, what do you want me to do about this?',   label: 'one thing, or none' }
   };
+  // How something may come, offered as options after asking. The app never writes God's words; the person does.
+  var SENSED = ['A word or phrase', 'A verse', 'A picture or memory'];
+  var TEST_IT = 'Test it: does it agree with Scripture, and with what a wise believer would say? (1 John 4:1)';
 
   // Additions beyond spec section 3 (flagged in the handoff): the prayer-for-a-person lines.
   var PRAY_NOW = 'Father, I pray for {name} now.';
@@ -99,7 +106,7 @@
 
   var content = {
     LINES: LINES, PRAY_NOW: PRAY_NOW, CLAIM: CLAIM, QUESTIONS: QUESTIONS,
-    THOUGHTS: THOUGHTS, SEEDS: SEEDS, PARTS: PARTS
+    THOUGHTS: THOUGHTS, SEEDS: SEEDS, PARTS: PARTS, SENSED: SENSED, TEST_IT: TEST_IT
     
   };
   if (typeof module !== 'undefined' && module.exports) module.exports = content;

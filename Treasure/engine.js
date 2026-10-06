@@ -7,7 +7,7 @@
   var KIND_WEIGHT = { thought: 1, person: 12, concern: 2, thanks: 2, feeling: 2 };
   var LIST_KIND = { people: 'person', concerns: 'concern', thanks: 'thanks', feelings: 'feeling' };
   var HOLD_OFFERS = ['into-hands', 'my-part', 'thank-you', 'understand', 'pray-now', 'lie'];
-  var UNDERSTAND_OFFERS = ['into-hands', 'my-part', 'thank-you'];
+  var UNDERSTAND_OFFERS = ['into-hands', 'my-part', 'thank-you', 'not-him'];
 
   function fill(s, map) { return s.replace(/\{(\w+)\}/g, function (_, k) { return map[k]; }); }
   function lineText(id, name) {
@@ -70,6 +70,9 @@
     }
     if (item.truth === true && lineId === 'into-hands') {
       return 'This one is true. Giving it into His hands is not wrong, and “Father, thank you” may be the truer word for it.';
+    }
+    if (item.truth === true && lineId === 'not-him') {
+      return 'This one is true, so it is from Him after all, even if it felt hard. You can ask Him what He wants you to know about it.';
     }
     return null;
   }
@@ -230,6 +233,29 @@
     var it = q.splice(i, 1)[0]; q.push(it);
     this.understanding = q[0]; this.held = { hold: false };
     return this.understanding;
+  };
+
+  // Asking the Lord about an item in Understanding. Asking does not clear it; an answer the person writes does.
+  P.ask = function (lineId) {
+    if (this.state !== 'understanding' || !this.understanding || (lineId !== 'know' && lineId !== 'do')) return null;
+    this._record(this.understanding, lineId, { asked: true });
+    return lineText(lineId);
+  };
+  // What came (a word, a verse, a picture), written by the person. finish=true clears it from the queue.
+  P.sense = function (how, text, finish) {
+    if (this.state !== 'understanding' || !this.understanding || !text) return false;
+    this._record(this.understanding, 'sensed', { how: how, sensed: text });
+    if (finish) { this._dequeue(this.understanding.key); this.understanding = null; }
+    return true;
+  };
+  // "What do you want me to do?" — one part, or none (none leaves it waiting).
+  P.answerDo = function (part) {
+    if (this.state !== 'understanding' || !this.understanding) return null;
+    var p = (part || '').trim(), none = !p || /^none\b/i.test(p), it = this.understanding;
+    if (none) return { kept: true };
+    this._record(it, 'do', { part: p, understood: true });
+    this._dequeue(it.key); this.understanding = null;
+    return { kept: false, part: p };
   };
 
   // Praying for a person (the drifting cloud of claims). Heart stays with him.
