@@ -6,7 +6,7 @@
   var PACE = { slow: 26000, gentle: 18000, brisk: 11000 };
   var KIND_LABEL = { thought: 'a thought', feeling: 'a feeling', person: 'a person', concern: 'a concern', thanks: 'a thanks' };
   var LIST_NAMES = [
-    { id: 'people', label: 'People', kind: 'person', add: 'Add a name', empty: 'No one yet. Add a name and they will drop here.' },
+    { id: 'people', label: 'People', kind: 'person', add: 'Add a name', empty: 'No one here. Add a name and they will drop.' },
     { id: 'concerns', label: 'Concerns', kind: 'concern', add: 'Add a concern', empty: 'Nothing here.' },
     { id: 'thanks', label: 'Thanks', kind: 'thanks', add: 'Add a thanks', empty: 'Nothing here.' },
     { id: 'feelings', label: 'Feelings', kind: 'feeling', add: 'Add a feeling', empty: 'Nothing here.' },
@@ -19,7 +19,7 @@
   function defaults() {
     return { v: 1, offers: [], queue: [], pending: null, deckState: { deck: [], drawn: [] }, lastKey: null,
       settings: { pace: 'gentle', theme: 'auto' },
-      lists: { people: [], concerns: seed(C.SEEDS.concerns, 'c'), thanks: seed(C.SEEDS.thanks, 'g'), feelings: seed(C.SEEDS.feelings, 'f'), claims: seed(C.SEEDS.claims, 'w') } };
+      lists: { people: seed(C.SEEDS.people, 'p'), concerns: seed(C.SEEDS.concerns, 'c'), thanks: seed(C.SEEDS.thanks, 'g'), feelings: seed(C.SEEDS.feelings, 'f'), claims: seed(C.SEEDS.claims, 'w') } };
   }
   function load() {
     var d = defaults();
@@ -28,6 +28,10 @@
       if (raw) { var s = JSON.parse(raw); for (var k in s) d[k] = s[k]; }
     } catch (e) {}
     d.settings = Object.assign({ pace: 'gentle', theme: 'auto' }, d.settings);
+    if (!d.peopleSeeded) { // the generic starters become ordinary, editable list items (once)
+      if (!d.lists.people.some(function (p) { return /^p\d+$/.test(p.id); })) d.lists.people = d.lists.people.concat(seed(C.SEEDS.people, 'p'));
+      d.peopleSeeded = true;
+    }
     return d;
   }
   var S = load();
@@ -188,8 +192,7 @@
     cancelAnimationFrame(raf); var item = fall.item; fall = null;
     sit.catchDrop(); save(); render();
     baseNote = '';
-    if (item.placeholder) baseNote = 'Drop it on Pray to give them a name, or add names in Lists.';
-    else if (item.kind === 'person' && item.part) baseNote = 'Your part last time: ' + item.part;
+    if (item.kind === 'person' && item.part) baseNote = 'Your part last time: ' + item.part;
     else if ((S.settings.hint || 0) < 4) { baseNote = 'Drag it to a bucket below, or tap one.'; S.settings.hint = (S.settings.hint || 0) + 1; save(); }
     return true;
   }
@@ -246,15 +249,6 @@
   function lieOrBounce(msg) { returnToHold(); flashNote(msg, 3000); }
   function bucketDrop(name) {
     var item = sit.drop; if (!item || sit.state !== 'holding') return;
-    if (name === 'pray' && item.placeholder) {
-      returnToHold(); setNote('', false);
-      askText({ label: item.text + ' — who is it? Their name:', placeholder: 'A name', cancel: function () { setNote(baseNote, true); }, ok: function (v) {
-        var p = { id: uid(), text: v, paused: false }; S.lists.people.push(p);
-        var real = { key: 'person:' + p.id, kind: 'person', text: v, listId: p.id }; sit.drop = real;
-        doOffer(real, 'pray-now', null, 'pray');
-      } });
-      return;
-    }
     if (name === 'pray' && item.kind !== 'person') { lieOrBounce('Prayer words are for a person.'); return; }
     if (name === 'lie' && item.kind === 'person') { lieOrBounce('A person is never a lie. Give them to the Father.'); return; }
     if (name === 'lie' && item.kind === 'thanks') { lieOrBounce('Thanks is not a lie.'); return; }
@@ -335,6 +329,7 @@
   function askText(o) {
     var host = $('topcard-host'); host.innerHTML = '';
     var input = el('input', { class: 'field', type: 'text', placeholder: o.placeholder || '', maxlength: '80', 'aria-label': o.label, autocomplete: 'off', autocapitalize: 'sentences' });
+    if (o.value) input.value = o.value;
     function close() { host.innerHTML = ''; }
     function ok() { var v = input.value.trim(); if (!v) return; close(); o.ok(v); }
     function cancel() { close(); if (o.cancel) o.cancel(); }
@@ -344,7 +339,7 @@
     card._cancel = cancel;
     input.addEventListener('keydown', function (e) { if (e.key === 'Enter') { e.preventDefault(); ok(); } });
     host.append(el('div', { class: 'scrim', onclick: cancel }), card);
-    setTimeout(function () { input.focus(); }, 60);
+    setTimeout(function () { input.focus(); input.select(); }, 60);
   }
 
   // ---------- understanding (the Holy Spirit's bucket) ----------
@@ -519,8 +514,8 @@
       }
       input.addEventListener('keydown', function (e) { if (e.key === 'Enter') { e.preventDefault(); add(); } });
       m.body.append(el('div', { class: 'addrow' }, [input, el('button', { class: 'btn primary', text: 'Add', onclick: add })]));
-      if (tab === 'people') m.body.append(el('p', { class: 'quiet', text: 'Only the names you write here drop. Pause keeps someone but lets them rest; Remove takes them out.' }));
-      if (tab === 'claims') m.body.append(el('p', { class: 'quiet', text: 'These drift in Let’s pray now: “…I claim ___ for them.”' }));
+      var hints = { people: 'Only the checked-in names drop: Pause rests someone, Remove takes them out. Tap a name to fix it.', claims: 'These drift in Let’s pray now: “…I claim ___ for them.” Tap one to fix it.' };
+      m.body.append(el('p', { class: 'quiet', text: hints[tab] || 'Pause rests one, Remove takes it out. Tap one to fix the wording.' }));
       if (!items.length) m.body.append(el('div', { class: 'emptynote', text: info.empty }));
       items.forEach(function (it) {
         var rm = el('button', { class: 'mini', text: 'Remove' }), armed = false;
@@ -528,7 +523,9 @@
           if (!armed) { armed = true; rm.textContent = 'Sure?'; rm.classList.add('warn'); setTimeout(function () { armed = false; rm.textContent = 'Remove'; rm.classList.remove('warn'); }, 3000); return; }
           var i = items.indexOf(it); if (i >= 0) items.splice(i, 1); save(); draw();
         });
-        var t = el('span', { class: 't', text: it.text });
+        var t = el('button', { class: 't edit', 'aria-label': 'Fix the wording of ' + it.text, onclick: function () {
+          askText({ label: 'Fix the wording', value: it.text, placeholder: info.add, ok: function (v) { it.text = v; save(); draw(); } });
+        } }, [el('span', { text: it.text })]);
         if (tab === 'people' && it.part) t.append(el('span', { class: 'part', text: 'Your part: ' + it.part }));
         m.body.append(el('div', { class: 'row' + (it.paused ? ' paused' : '') }, [t,
           el('button', { class: 'mini', text: it.paused ? 'Resume' : 'Pause', onclick: function () { it.paused = !it.paused; save(); draw(); } }), rm]));

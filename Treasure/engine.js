@@ -28,12 +28,6 @@
         pool[kind + ':' + i.id] = { key: kind + ':' + i.id, kind: kind, text: i.text, listId: i.id, part: i.part || null };
       });
     });
-    // A placeholder person exists only until the player has written a real name.
-    if (!(lists.people && lists.people.length)) {
-      C.STARTER_PEOPLE.forEach(function (t, i) {
-        pool['person:_starter' + i] = { key: 'person:_starter' + i, kind: 'person', text: t, placeholder: true };
-      });
-    }
     return pool;
   }
 

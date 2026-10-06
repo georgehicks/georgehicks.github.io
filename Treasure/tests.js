@@ -130,12 +130,11 @@ t('the lie bin: spoken to Jesus, explains an authored thought, never for a perso
   ['person', 'thanks'].forEach(k => { const q = placed(); q.beginDrop(itemOf(k)); q.catchDrop(); assert.strictEqual(q.offer('lie').ok, false); assert.strictEqual(q.state, 'holding'); });
   const f = placed(); f.beginDrop(itemOf('feeling')); f.catchDrop(); assert.strictEqual(f.offer('lie').verdict, null);
 });
-t('pool: placeholder person only until a real name exists; paused items do not drop', () => {
-  const sp = E.buildPool(lists()); assert(sp['person:_starter0'] && Object.keys(sp).filter(k => k.indexOf('person:_starter') === 0).length >= 6);
-  const p = E.buildPool(lists({ people: [{ id: 'a', text: 'Sam', paused: true }] }));
-  assert(!p['person:_starter0'] && !p['person:a']);
-  const q = E.buildPool(lists({ people: [{ id: 'a', text: 'Sam' }] }));
-  assert(q['person:a'] && !q['person:_starter0']);
+t('pool: only checked (active) list items drop; unchecked ones rest', () => {
+  const p = E.buildPool(lists({ people: [{ id: 'a', text: 'Sam', paused: true }, { id: 'b', text: 'Ann' }] }));
+  assert(!p['person:a'] && p['person:b']);
+  assert(Object.keys(E.buildPool(lists())).every(k => k.indexOf('thought:') === 0));
+  assert(C.SEEDS.people.length >= 6);
 });
 t('a long sitting does not repeat the active pool before it is exhausted', () => {
   const L = lists({ people: [{ id: 'a', text: 'Sam' }], concerns: [{ id: 'c', text: 'Money' }], thanks: [{ id: 'g', text: 'Meal' }], feelings: [{ id: 'f', text: 'Shame' }] });

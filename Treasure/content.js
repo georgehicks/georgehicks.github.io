@@ -87,6 +87,7 @@
   ];
 
   var SEEDS = {
+    people: ['A family member', 'A friend', 'An acquaintance', 'A neighbor', 'Someone at work', 'Someone who is sick', 'Someone hard to love', 'A leader over me'],
     concerns: ['Money', 'My health', 'Something I have to decide', 'A conversation I’m dreading', 'What I said earlier', 'The work waiting for me', 'The future', 'What someone thinks of me', 'A deadline', 'Being behind', 'Something I forgot', 'The news', 'A habit I can’t shake', 'Whether I’m doing enough'],
     thanks: ['A meal', 'Breath in my lungs', 'Someone who was kind', 'The quiet right now', 'A bed to sleep in', 'Something that went right today', 'Light through a window', 'A friend', 'That He is near', 'Forgiveness', 'A task finished', 'Something I almost missed'],
     feelings: ['Tightness in my chest', 'Shame', 'Wonder', 'The urge to check', 'Dread', 'Relief', 'The old accusation', 'Restlessness', 'Loneliness', 'Irritation', 'Heaviness', 'Gladness', 'Numbness', 'Weariness', 'Longing', 'Fear of being seen'],
@@ -98,8 +99,8 @@
 
   var content = {
     LINES: LINES, PRAY_NOW: PRAY_NOW, CLAIM: CLAIM, QUESTIONS: QUESTIONS,
-    THOUGHTS: THOUGHTS, SEEDS: SEEDS, PARTS: PARTS,
-    STARTER_PEOPLE: ['A family member', 'A friend', 'An acquaintance', 'A neighbor', 'Someone at work', 'Someone who is sick', 'Someone hard to love', 'A leader over me']
+    THOUGHTS: THOUGHTS, SEEDS: SEEDS, PARTS: PARTS
+    
   };
   if (typeof module !== 'undefined' && module.exports) module.exports = content;
   else root.TreasureContent = content;
