@@ -79,6 +79,14 @@
     heartline.style.top = (G.apart.y + 48) + 'px';
     spokenEl.style.top = (H * 0.345) + 'px'; restEl.style.top = (H * 0.44) + 'px';
     put(contBtn, W / 2, H * 0.58); holdnote.style.top = (G.hold.y + 62) + 'px'; partpick.style.top = (H * 0.36) + 'px';
+    // the buckets follow a bowl-shaped curve along the bottom: lowest in the middle, rising and tilting toward the ends
+    var bks = dock.querySelectorAll('.bk'), n = bks.length, side = 27, lift = Math.min(46, H * 0.065), dh = Math.round(lift + 64);
+    dock.style.height = dh + 'px'; dock.classList.add('nolayout');
+    Array.prototype.forEach.call(bks, function (b, i) {
+      var t = (i - (n - 1) / 2) / ((n - 1) / 2), x = side + (W - 2 * side) * (i / (n - 1)), y = dh - 33 - lift * t * t;
+      b.style.setProperty('--pos', 'translate(' + x.toFixed(1) + 'px,' + y.toFixed(1) + 'px) translate(-50%,-50%) rotate(' + (-t * 12).toFixed(1) + 'deg)');
+    });
+    requestAnimationFrame(function () { requestAnimationFrame(function () { dock.classList.remove('nolayout'); }); });
     var sb = bucketEl('spirit').getBoundingClientRect(), sr = stage.getBoundingClientRect();
     G.spirit = { x: sb.left + sb.width / 2 - sr.left, y: sb.top + sb.height / 2 - sr.top };
   }
@@ -186,12 +194,12 @@
   var BK = { hands: 'into-hands', part: 'my-part', thanks: 'thank-you', spirit: 'understand', hold: 'hold', pray: 'pray-now', lie: 'lie' };
   function bucketEl(name) { return dock.querySelector('[data-b="' + name + '"]'); }
   function bucketAt(cx, cy) {
-    var hit = null;
+    var best = null, bd = 40; // within about a bucket's reach of its centre; the nearest wins
     Array.prototype.forEach.call(dock.querySelectorAll('.bk'), function (b) {
-      var r = b.getBoundingClientRect(), pad = 10;
-      if (cx >= r.left - pad && cx <= r.right + pad && cy >= r.top - pad && cy <= r.bottom + pad) hit = b;
+      var r = b.getBoundingClientRect(), d = Math.hypot(cx - (r.left + r.width / 2), cy - (r.top + r.height / 2));
+      if (d < bd) { bd = d; best = b; }
     });
-    return hit;
+    return best;
   }
   function bucketCenter(name) {
     var r = bucketEl(name).getBoundingClientRect(), sr = stage.getBoundingClientRect();
