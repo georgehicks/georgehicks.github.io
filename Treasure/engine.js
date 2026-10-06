@@ -264,9 +264,9 @@
     if (this.state !== 'with' && this.state !== 'offered') return false;
     this.state = 'praying'; return true;
   };
-  P.claim = function (person, word) {
+  P.claim = function (person, word, spoken) {
     if (this.state !== 'praying' || !person || !word) return null;
-    var line = fill(C.CLAIM, { word: word, name: person.text });
+    var line = fill(C.CLAIM, { word: word, name: spoken || person.text });
     this._record(person, 'claim', { word: word });
     return line;
   };

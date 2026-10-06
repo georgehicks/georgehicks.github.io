@@ -205,7 +205,7 @@
     var r = bucketEl(name).getBoundingClientRect(), sr = stage.getBoundingClientRect();
     return { x: r.left + r.width / 2 - sr.left, y: r.top + r.height / 2 - sr.top };
   }
-  function lineFor(name, item) { return name === 'pray' ? E.lineText('pray-now', item ? item.text : '') : L[BK[name]].text; }
+  function lineFor(name, item) { return name === 'pray' ? E.lineText('pray-now', item ? spokenName(item.text) : '') : L[BK[name]].text; }
 
   var baseNote = '', noteTimer = 0;
   function setNote(t, on) { holdnote.textContent = t || ''; holdnote.classList.toggle('on', !!on && !!t); }
@@ -308,7 +308,9 @@
     if (!part || /^none\b/i.test(part)) delete p.part; else p.part = part;
   }
   // After "Father, thank you." lands, name what it was for — only where that reads true: a thanks, or a person.
+  var TREASURE = 'I treasure the gift.';
   var LEAD = /^(a|an|the|someone|something|that|my|our|his|her|this)\b/i;
+  function spokenName(t) { return LEAD.test(t || '') ? t.charAt(0).toLowerCase() + t.slice(1) : t; }
   function thanksLine(item, line) {
     if (!item) return line;
     var t = (item.text || '').trim(); if (!t) return line;
@@ -326,8 +328,8 @@
       dropEl.classList.remove('held', 'dragging'); dropEl.classList.add('glide'); put(dropEl, t.x, t.y, .2); dropEl.style.opacity = 0;
       render(); later(800, function () { hideDrop(); openUnderstanding(); }); return;
     }
-    var sub = id === 'my-part' && part && !/^none\b/i.test(part) ? 'Today’s part: ' + part : (r.verdict || '');
-    leave(id === 'thank-you' ? thanksLine(item, r.line) : r.line, sub, id === 'pray-now' ? function () { openPray(item.listId); } : null, t, r.verdict ? 4200 : 0);
+    var sub = id === 'my-part' && part && !/^none\b/i.test(part) ? 'Today’s part: ' + part : (r.verdict || (id === 'thank-you' ? TREASURE : ''));
+    leave(id === 'thank-you' ? thanksLine(item, r.line) : id === 'pray-now' ? E.lineText('pray-now', spokenName(item.text)) : r.line, sub, id === 'pray-now' ? function () { openPray(item.listId); } : null, t, r.verdict ? 4200 : 0);
   }
   // The short prayer flashes as the item lands in its bucket, then the item is gone.
   function leave(line, sub, after, t, extra) {
@@ -421,7 +423,7 @@
     if (id === 'my-part') rememberPart(it, part);
     save(); updateSpirit();
     var body = undBody(); body.innerHTML = '';
-    var sub = id === 'my-part' && part && !/^none\b/i.test(part) ? 'Today’s part: ' + part : '';
+    var sub = id === 'my-part' && part && !/^none\b/i.test(part) ? 'Today’s part: ' + part : (id === 'thank-you' ? TREASURE : '');
     body.append(el('div', { class: 'card', style: 'text-align:center' }, [
       el('div', { class: 'big', style: 'font-style:italic;color:var(--gold)', text: id === 'thank-you' ? thanksLine(it, r.line) : r.line }),
       sub ? el('p', { class: 'quiet', text: sub }) : null,
@@ -483,41 +485,54 @@
   var cloudStop = null;
   function activePeople() { return S.lists.people.filter(function (p) { return !p.paused; }); }
   function openPray(preId) {
-    var m = mountOverlay('ov-pray', 'Intercede', closePray, 'flex');
-    var sel = preId || (activePeople()[0] && activePeople()[0].id) || null, recent = [], claimed = {};
+    if (sit.state !== 'praying' && !sit.openPray()) return; // every way in (the bucket, or a person dropped on it) puts the sitting in prayer
+    render();
+    var m = mountOverlay('ov-pray', 'Intercede', closePray);
+    // Step 1 chooses the person (skipped when a person was dropped on Intercede). Step 2 is the cloud for that one person.
+    var sel = preId || null, recent = [], claimed = {};
+    function addName() {
+      askText({ label: 'Who is on your heart?', placeholder: 'A name', ok: function (v) {
+        var p = { id: uid(), text: v, paused: false }; S.lists.people.push(p); sel = p.id; recent = []; save(); draw();
+      } });
+    }
     function draw() {
       if (cloudStop) { cloudStop(); cloudStop = null; }
       m.body.innerHTML = '';
       var people = activePeople();
-      if (sel && !people.some(function (p) { return p.id === sel; })) sel = people[0] ? people[0].id : null;
-      var chips = el('div', { class: 'people' });
-      people.forEach(function (p) {
-        chips.append(el('button', { class: 'chip' + (p.id === sel ? ' on' : ''), text: p.text, onclick: function () { sel = p.id; recent = []; draw(); } }));
-      });
-      chips.append(el('button', { class: 'chip quiet', text: '+ Add a name', onclick: function () {
-        askText({ label: 'Who is on your heart?', placeholder: 'A name', ok: function (v) { var p = { id: uid(), text: v, paused: false }; S.lists.people.push(p); sel = p.id; save(); draw(); } });
-      } }));
-      m.body.append(chips);
       var person = people.filter(function (p) { return p.id === sel; })[0];
-      if (!person) {
-        m.body.append(el('div', { class: 'emptynote', text: 'Who is on your heart? Add a name, and the words will drift for them.' }));
+      m.body.classList.toggle('flex', !!person);
+      if (!person) { // step 1: who?
+        sel = null;
+        m.body.scrollTop = 0;
+        m.body.append(el('div', { class: 'sec', style: 'margin-top:.2rem', text: 'Who is on your heart?' }));
+        m.body.append(el('button', { class: 'linebtn soft', onclick: addName }, [el('span', { class: 'line', text: '+ Add a name' })]));
+        people.forEach(function (p) {
+          m.body.append(el('button', { class: 'linebtn', onclick: function () { sel = p.id; recent = []; draw(); } }, [el('span', { class: 'line', text: p.text })]));
+        });
+        if (!people.length) m.body.append(el('div', { class: 'emptynote', text: 'No one is checked in your People list. Add a name here.' }));
         return;
       }
+      // step 2: the words, for this person
+      m.body.append(el('div', { class: 'prayhead' }, [el('div', { class: 'pname', text: person.text }), el('button', { class: 'mini', text: 'Change person', onclick: function () { sel = null; recent = []; draw(); } })]));
       var words = S.lists.claims.filter(function (w) { return !w.paused; }).map(function (w) { return w.text; });
       var field = el('div', { class: 'cloudfield' });
-      var bar = el('div', { class: 'praybar' }, [el('div', { class: 's1', text: 'Touch a word, and say it for ' + person.text + '.' }), el('div', { class: 's2' })]);
+      var bar = el('div', { class: 'praybar' }, [el('div', { class: 's1', text: 'Touch a word, and say it for ' + spokenName(person.text) + '.' }), el('div', { class: 's2' })]);
       m.body.append(field, bar);
       var pobj = { key: 'person:' + person.id, kind: 'person', text: person.text };
-      requestAnimationFrame(function () {
-        claimed[sel] = claimed[sel] || {};
+      claimed[sel] = claimed[sel] || {};
+      var startedFor = sel;
+      function start() {
+        if (!field.clientHeight && field.isConnected) { requestAnimationFrame(start); return; }
+        if (sel !== startedFor) return;
         cloudStop = startCloud(field, words, function (w) {
-          var line = sit.claim(pobj, w); if (!line) return false;
+          var line = sit.claim(pobj, w, spokenName(person.text)); if (!line) return false;
           save(); if (recent.indexOf(w) < 0) recent.push(w);
           bar.querySelector('.s1').textContent = line;
           bar.querySelector('.s2').textContent = recent.length > 1 ? recent.join(' · ') : '';
           return true;
         }, claimed[sel]);
-      });
+      }
+      requestAnimationFrame(start);
     }
     draw();
   }
@@ -650,12 +665,14 @@
   }
 
   // ---------- noticed ----------
-  var SHORT = { 'into-hands': 'into your hands', 'my-part': 'my part', 'thank-you': 'thank you', understand: 'the Spirit', hold: 'held to Jesus', lie: 'put down', 'not-him': 'not from Him', know: 'asked what to know', do: 'asked what to do', sensed: 'something came', 'pray-now': 'prayed for', claim: 'prayed' };
+  // Every spoken line is shown as it was said, naming who it was spoken to.
+  var SHORT = { 'pray-now': 'Father, I pray for them', claim: 'prayed' };
+  function lineName(l) { return SHORT[l] || (L[l] ? L[l].text.replace(/\.$/, '') : l); }
   function seqLabel(o) {
     if (o.line === 'claim') return 'claimed ' + o.word;
     if (o.line === 'understand' && o.uncaught) return 'passed by';
-    if (o.line === 'my-part' && o.part) return 'my part: ' + o.part;
-    return SHORT[o.line] || o.line;
+    if (o.line === 'my-part' && o.part) return 'Father, my part: ' + o.part;
+    return lineName(o.line);
   }
   function openNoticed() {
     quiet();
@@ -671,7 +688,7 @@
       keys.forEach(function (k) {
         var recs = byKey[k], counts = {}, chips = el('div', { class: 'nchips' });
         recs.forEach(function (o) { counts[o.line] = (counts[o.line] || 0) + 1; });
-        Object.keys(counts).forEach(function (l) { chips.append(el('span', { class: 'nchip', text: (SHORT[l] || l) + (counts[l] > 1 ? ' ×' + counts[l] : '') })); });
+        Object.keys(counts).forEach(function (l) { chips.append(el('span', { class: 'nchip', text: lineName(l) + (counts[l] > 1 ? ' ×' + counts[l] : '') })); });
         m.body.append(el('div', { class: 'nrow' }, [el('div', { class: 'nt', text: recs[recs.length - 1].text }), chips,
           recs.length > 1 ? el('div', { class: 'nseq', text: recs.slice(-6).map(seqLabel).join(' → ') }) : null]));
       });

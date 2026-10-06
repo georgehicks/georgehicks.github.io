@@ -1,8 +1,8 @@
-const CACHE = 'treasure-v10';
+const CACHE = 'treasure-v11';
 const ASSETS = ['./', './index.html', './app.js', './engine.js', './content.js', './manifest.json', './icon.svg'];
 
 self.addEventListener('install', e => {
-  e.waitUntil(caches.open(CACHE).then(c => c.addAll(ASSETS)));
+  e.waitUntil(caches.open(CACHE).then(c => c.addAll(ASSETS.map(u => new Request(u, { cache: 'reload' })))));
   self.skipWaiting();
 });
 
@@ -11,13 +11,14 @@ self.addEventListener('activate', e => {
   self.clients.claim();
 });
 
-// Network first, so a new version is never mixed with old files; the cache is the offline fallback.
+// Network first, revalidated every time (so the browser's HTTP cache can't hand back an older file than its neighbours);
+// the service-worker cache is only the offline fallback.
 self.addEventListener('fetch', e => {
   if (e.request.method !== 'GET') return;
   const url = new URL(e.request.url);
   if (url.origin !== location.origin) return;
   e.respondWith(
-    fetch(e.request).then(res => {
+    fetch(new Request(e.request.url, { cache: 'no-cache' })).then(res => {
       const copy = res.clone();
       caches.open(CACHE).then(c => c.put(e.request, copy));
       return res;
