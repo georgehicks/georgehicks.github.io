@@ -107,7 +107,11 @@
     spokenEl.querySelector('.s1').textContent = l1; spokenEl.querySelector('.s2').textContent = l2 || '';
     spokenEl.classList.add('on');
   }
-  function unspeak() { spokenEl.classList.remove('on'); }
+  function unspeak() { clearTimeout(spokenTimer); spokenEl.classList.remove('on'); }
+  // A flashed line stays long enough to read: a base, plus time for any longer note beneath it.
+  var spokenTimer = 0;
+  function readMs(line, sub) { return 2600 + (sub ? 1200 + 45 * sub.length : 0); }
+  function flash(l1, l2) { speak(l1, l2); clearTimeout(spokenTimer); spokenTimer = setTimeout(unspeak, readMs(l1, l2)); }
 
   // ---------- flow control ----------
   function hideDrop() { cancelAnimationFrame(raf); fall = null; dropEl.classList.remove('glide', 'held', 'dragging'); dropEl.style.opacity = 0; dropEl.style.pointerEvents = 'none'; }
@@ -184,7 +188,7 @@
     cancelAnimationFrame(raf); var item = fall.item; fall = null;
     sit.catchDrop(); save(); render();
     baseNote = '';
-    if (item.placeholder) baseNote = 'Add a real name in Lists, and they will drop here instead.';
+    if (item.placeholder) baseNote = 'Drop it on Pray to give them a name, or add names in Lists.';
     else if (item.kind === 'person' && item.part) baseNote = 'Your part last time: ' + item.part;
     else if ((S.settings.hint || 0) < 4) { baseNote = 'Drag it to a bucket below, or tap one.'; S.settings.hint = (S.settings.hint || 0) + 1; save(); }
     return true;
@@ -234,18 +238,27 @@
       if (sit.state === 'holding') { bucketDrop(name); return; }
       if (name === 'spirit') { openSpirit(); return; }
       if (name === 'pray') { openPrayBucket(); return; }
-      var st = sit.state; if (st === 'apart' || st === 'placing') return;
-      speak(lineFor(name, null), ''); later(1800, unspeak);
+      var st = sit.state; if (st === 'apart' || st === 'placing') { flash('Jesus, I place my heart with you.', 'Drag your heart to Him first.'); return; }
+      flash(lineFor(name, null), '');
     });
   });
 
   function lieOrBounce(msg) { returnToHold(); flashNote(msg, 3000); }
   function bucketDrop(name) {
     var item = sit.drop; if (!item || sit.state !== 'holding') return;
-    if (name === 'pray' && (item.kind !== 'person' || item.placeholder)) { lieOrBounce(item.placeholder ? 'Add a real name in Lists first.' : 'Prayer words are for a person.'); return; }
+    if (name === 'pray' && item.placeholder) {
+      returnToHold(); setNote('', false);
+      askText({ label: item.text + ' — who is it? Their name:', placeholder: 'A name', cancel: function () { setNote(baseNote, true); }, ok: function (v) {
+        var p = { id: uid(), text: v, paused: false }; S.lists.people.push(p);
+        var real = { key: 'person:' + p.id, kind: 'person', text: v, listId: p.id }; sit.drop = real;
+        doOffer(real, 'pray-now', null, 'pray');
+      } });
+      return;
+    }
+    if (name === 'pray' && item.kind !== 'person') { lieOrBounce('Prayer words are for a person.'); return; }
     if (name === 'lie' && item.kind === 'person') { lieOrBounce('A person is never a lie. Give them to the Father.'); return; }
     if (name === 'lie' && item.kind === 'thanks') { lieOrBounce('Thanks is not a lie.'); return; }
-    if (name === 'hold') { sit.hold(); save(); returnToHold(); speak(L.hold.text); later(1700, unspeak); pulse(bucketEl('hold')); return; }
+    if (name === 'hold') { sit.hold(); save(); returnToHold(); flash(L.hold.text, ''); pulse(bucketEl('hold')); return; }
     if (name === 'part') { showPartPick(item); return; }
     doOffer(item, BK[name], null, name);
   }
@@ -292,7 +305,7 @@
   function leave(line, sub, after, t, extra) {
     speak(line, sub);
     dropEl.classList.remove('held', 'dragging'); dropEl.classList.add('glide'); put(dropEl, t.x, t.y, .2); dropEl.style.opacity = 0;
-    later(1700 + (extra || 0), function () {
+    later(readMs(line, sub), function () {
       unspeak(); hideDrop(); sit.finishOffer(); save(); render();
       if (after) after(); else scheduleDrop(900);
     });
@@ -385,8 +398,8 @@
     else later(1500, function () { if ($('ov-und')) next(); });
   }
   function openSpirit() {
-    if (!S.queue.length) { speak(L.understand.text, 'Nothing is here yet.'); later(1800, unspeak); return; }
-    var st = sit.state; if (st === 'apart' || st === 'placing') return;
+    if (!S.queue.length) { pulse(bSpirit); flash(L.understand.text, 'Nothing is waiting yet. A drop you don’t catch will wait here for you.'); return; }
+    var st = sit.state; if (st === 'apart' || st === 'placing') { flash('Jesus, I place my heart with you.', 'Drag your heart to Him first.'); return; }
     if (st === 'paused') sit.resume();
     abortFlow();
     if (sit.openQueue()) { save(); render(); openUnderstanding(); }
@@ -438,7 +451,7 @@
     sit.closePray(); save(); closeOverlay('ov-pray'); render(); scheduleDrop(1200);
   }
   function openPrayBucket() {
-    var st = sit.state; if (st === 'apart' || st === 'placing') return;
+    var st = sit.state; if (st === 'apart' || st === 'placing') { flash('Jesus, I place my heart with you.', 'Drag your heart to Him first.'); return; }
     if (st === 'paused') sit.resume();
     abortFlow();
     if (sit.openPray()) { save(); render(); openPray(); }
@@ -643,7 +656,7 @@
     heartPos = G.christ; heartEl.classList.add('glide'); put(heartEl, heartPos.x, heartPos.y);
     save(); render();
     speak(L['place-heart'].text);
-    later(2600, unspeak); scheduleDrop(3800);
+    later(3200, unspeak); scheduleDrop(4200);
   }
 
   // ---------- life cycle ----------

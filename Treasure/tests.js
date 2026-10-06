@@ -131,11 +131,11 @@ t('the lie bin: spoken to Jesus, explains an authored thought, never for a perso
   const f = placed(); f.beginDrop(itemOf('feeling')); f.catchDrop(); assert.strictEqual(f.offer('lie').verdict, null);
 });
 t('pool: placeholder person only until a real name exists; paused items do not drop', () => {
-  assert(E.buildPool(lists())['person:_starter']);
+  const sp = E.buildPool(lists()); assert(sp['person:_starter0'] && Object.keys(sp).filter(k => k.indexOf('person:_starter') === 0).length >= 6);
   const p = E.buildPool(lists({ people: [{ id: 'a', text: 'Sam', paused: true }] }));
-  assert(!p['person:_starter'] && !p['person:a']);
+  assert(!p['person:_starter0'] && !p['person:a']);
   const q = E.buildPool(lists({ people: [{ id: 'a', text: 'Sam' }] }));
-  assert(q['person:a'] && !q['person:_starter']);
+  assert(q['person:a'] && !q['person:_starter0']);
 });
 t('a long sitting does not repeat the active pool before it is exhausted', () => {
   const L = lists({ people: [{ id: 'a', text: 'Sam' }], concerns: [{ id: 'c', text: 'Money' }], thanks: [{ id: 'g', text: 'Meal' }], feelings: [{ id: 'f', text: 'Shame' }] });

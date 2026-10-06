@@ -4,7 +4,7 @@
   'use strict';
   var C = (typeof require !== 'undefined' && typeof module !== 'undefined') ? require('./content.js') : root.TreasureContent;
 
-  var KIND_WEIGHT = { thought: 1, person: 3, concern: 2, thanks: 2, feeling: 2 };
+  var KIND_WEIGHT = { thought: 1, person: 12, concern: 2, thanks: 2, feeling: 2 };
   var LIST_KIND = { people: 'person', concerns: 'concern', thanks: 'thanks', feelings: 'feeling' };
   var HOLD_OFFERS = ['into-hands', 'my-part', 'thank-you', 'understand', 'pray-now', 'lie'];
   var UNDERSTAND_OFFERS = ['into-hands', 'my-part', 'thank-you'];
@@ -30,7 +30,9 @@
     });
     // A placeholder person exists only until the player has written a real name.
     if (!(lists.people && lists.people.length)) {
-      pool['person:_starter'] = { key: 'person:_starter', kind: 'person', text: C.STARTER_PERSON, placeholder: true };
+      C.STARTER_PEOPLE.forEach(function (t, i) {
+        pool['person:_starter' + i] = { key: 'person:_starter' + i, kind: 'person', text: t, placeholder: true };
+      });
     }
     return pool;
   }

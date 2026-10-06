@@ -99,7 +99,7 @@
   var content = {
     LINES: LINES, PRAY_NOW: PRAY_NOW, CLAIM: CLAIM, QUESTIONS: QUESTIONS,
     THOUGHTS: THOUGHTS, SEEDS: SEEDS, PARTS: PARTS,
-    STARTER_PERSON: 'Someone I love'
+    STARTER_PEOPLE: ['A family member', 'A friend', 'An acquaintance', 'A neighbor', 'Someone at work', 'Someone who is sick', 'Someone hard to love', 'A leader over me']
   };
   if (typeof module !== 'undefined' && module.exports) module.exports = content;
   else root.TreasureContent = content;
