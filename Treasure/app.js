@@ -55,7 +55,7 @@
   }
   var stage = $('stage'), cloudEl = $('cloud'), christEl = $('christ'), heartEl = $('heart'), heartline = $('heartline'),
     dropEl = $('drop'), spokenEl = $('spoken'), restEl = $('restnote'), bPray = $('b-pray'), bSpirit = $('b-spirit'),
-    dock = $('dock'), holdnote = $('holdnote'), partpick = $('partpick'), barEl = $('bar'), overlays = $('overlays');
+    dock = $('dock'), holdnote = $('holdnote'), partpick = $('partpick'), contBtn = $('btn-continue'), pauseBtn = $('btn-pause'), overlays = $('overlays');
 
   function put(e, x, y, s) { e.style.transform = 'translate(' + x + 'px,' + y + 'px) translate(-50%,-50%) scale(' + (s || 1) + ')'; }
 
@@ -69,8 +69,8 @@
   function layout() {
     var W = stage.clientWidth, H = stage.clientHeight; if (!W || !H) return;
     var r = Math.max(40, Math.min(W * 0.2, H * 0.12, 82));
-    G = { W: W, H: H, r: r, christ: { x: W / 2, y: H * 0.60 }, cloud: { x: W / 2, y: H * 0.105 }, apart: { x: W / 2, y: H * 0.36 },
-      y0: H * 0.19, yEnd: H * 0.60 - r * 0.9, hold: { x: W / 2, y: H * 0.27 } };
+    G = { W: W, H: H, r: r, christ: { x: W / 2, y: H * 0.63 }, cloud: { x: W / 2, y: H * 0.105 }, apart: { x: W / 2, y: H * 0.36 },
+      y0: H * 0.19, yEnd: H * 0.63 - r * 0.9, hold: { x: W / 2, y: H * 0.27 } };
     christEl.style.setProperty('--r', r + 'px');
     put(cloudEl, G.cloud.x, G.cloud.y); put(christEl, G.christ.x, G.christ.y);
     var apart = sit.state === 'apart' || sit.state === 'placing';
@@ -78,7 +78,7 @@
     heartEl.classList.remove('glide'); put(heartEl, heartPos.x, heartPos.y);
     heartline.style.top = (G.apart.y + 48) + 'px';
     spokenEl.style.top = (H * 0.345) + 'px'; restEl.style.top = (H * 0.44) + 'px';
-    holdnote.style.top = (G.hold.y + 62) + 'px'; partpick.style.top = (H * 0.36) + 'px';
+    put(contBtn, W / 2, H * 0.58); holdnote.style.top = (G.hold.y + 62) + 'px'; partpick.style.top = (H * 0.36) + 'px';
     var sb = bucketEl('spirit').getBoundingClientRect(), sr = stage.getBoundingClientRect();
     G.spirit = { x: sb.left + sb.width / 2 - sr.left, y: sb.top + sb.height / 2 - sr.top };
   }
@@ -94,9 +94,8 @@
     heartEl.setAttribute('aria-label', apart ? 'Your heart. Press to place it with Jesus.' : 'Your heart, with Jesus. Press to take it back.');
     heartline.style.opacity = apart ? 1 : 0;
     restEl.textContent = restMsg; restEl.classList.toggle('on', st === 'paused');
-    barEl.innerHTML = '';
-    if (st === 'paused') barEl.append(el('button', { class: 'resume', text: run.over ? 'Keep going' : 'Continue', onclick: resume }));
-    else if (st === 'with' || st === 'dropping') barEl.append(el('button', { class: 'linkbtn', text: 'Pause', onclick: function () { stopForNow('Resting. Your heart stays with Him.'); } }));
+    pauseBtn.hidden = !(st === 'with' || st === 'dropping');
+    contBtn.hidden = st !== 'paused'; contBtn.textContent = run.over ? 'Keep going' : 'Continue';
     updateSpirit();
   }
   function updateSpirit() {
@@ -136,6 +135,8 @@
   function stopForNow(msg) {
     abortFlow(); if (!sit.pause()) return; clockOff(); restMsg = msg; save(); render();
   }
+  contBtn.addEventListener('click', function () { resume(); });
+  pauseBtn.addEventListener('click', function () { stopForNow('Resting. Your heart stays with Him.'); });
   function resume() { if (sit.resume()) { if (run.over) resetRun(); else clockOn(); save(); render(); scheduleDrop(900); } }
 
   function scheduleDrop(ms) { later(ms, nextDrop); }
@@ -681,6 +682,10 @@
       });
       m.body.append(row);
     }
+    var ver = el('span', { class: 'quiet', text: 'Version …' });
+    m.body.append(el('div', { class: 'card', style: 'display:flex;align-items:center;gap:.7rem;flex-wrap:wrap' }, [
+      ver, el('button', { class: 'btn primary', text: 'Refresh', onclick: refreshApp }),
+      el('span', { class: 'quiet', style: 'flex-basis:100%', text: 'Refresh gets the newest version. Your lists and Noticed stay.' })]));
     seg('How slowly drops fall', 'pace', [['slow', 'Slow'], ['gentle', 'Gentle'], ['brisk', 'Brisk']]);
     m.body.append(el('p', { class: 'quiet', text: 'There is no hurry. A drop you don’t catch goes to the Holy Spirit, and nothing is lost.' }));
     seg('How long a sitting lasts', 'length', LENGTHS);
@@ -688,8 +693,6 @@
     seg('Look', 'theme', [['auto', 'Match my phone'], ['dark', 'Dark'], ['light', 'Light']]);
     m.body.append(el('div', { class: 'sec', text: 'About' }),
       el('p', { class: 'quiet', text: 'A quiet place to put your heart with Jesus, then catch what drops and speak it to the Father, the Son, or the Spirit. No scores, no streaks. Everything stays on this device.' }));
-    var ver = el('p', { class: 'quiet', text: 'Version …' });
-    m.body.append(ver);
     if (window.caches) caches.keys().then(function (ks) {
       var vs = ks.map(function (k) { var x = /^treasure-v(\d+)$/.exec(k); return x ? +x[1] : 0; }); var mx = Math.max.apply(null, vs.concat([0]));
       ver.textContent = mx ? 'Version v' + mx : 'Version (not installed)';
@@ -700,6 +703,13 @@
       try { localStorage.removeItem(KEY); } catch (e) {} location.reload();
     });
     m.body.append(el('div', { style: 'margin-top:1.4rem' }, [wipe]));
+  }
+  // Clears this app's cached files and its service worker, then reloads. Saved lists and history are untouched.
+  function refreshApp() {
+    var jobs = [];
+    if (window.caches) jobs.push(caches.keys().then(function (ks) { return Promise.all(ks.filter(function (k) { return /^treasure-/.test(k); }).map(function (k) { return caches.delete(k); })); }));
+    if (navigator.serviceWorker) jobs.push(navigator.serviceWorker.getRegistrations().then(function (rs) { return Promise.all(rs.filter(function (r) { return r.scope.indexOf('/Treasure/') >= 0; }).map(function (r) { return r.unregister(); })); }));
+    Promise.all(jobs).catch(function () {}).then(function () { location.reload(); });
   }
   // Opening a page pauses whatever is falling; the heart stays with Him.
   function quiet() {

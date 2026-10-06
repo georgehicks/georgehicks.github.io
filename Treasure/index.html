@@ -43,8 +43,9 @@
   :focus-visible { outline:2px solid var(--gold); outline-offset:3px; }
   [hidden] { display:none !important; }
 
-  .page { position:fixed; inset:0; display:flex; flex-direction:column;
-    padding:calc(0.7rem + env(safe-area-inset-top,0px)) 0.8rem calc(0.6rem + env(safe-area-inset-bottom,0px)); }
+  .page { position:fixed; top:0; left:0; right:0; height:100vh; display:flex; flex-direction:column;
+    padding:calc(0.7rem + env(safe-area-inset-top,0px)) 0.8rem calc(0.25rem + env(safe-area-inset-bottom,0px)); }
+  @supports (height:100dvh) { .page { height:100dvh; } }
   .topbar { display:flex; align-items:center; justify-content:space-between; flex-shrink:0; height:2.4rem; }
   .wordmark { font-family:var(--font-display); font-size:1.1rem; letter-spacing:.03em; color:var(--ink-muted); }
   .topbar-actions { display:flex; gap:.5rem; }
@@ -119,7 +120,7 @@
   .restnote.on { opacity:1; }
 
   /* the dock: little buckets, always visible. Drag a caught drop onto one (or tap one while holding). */
-  .dock { left:0; right:0; top:auto; bottom:.5rem; display:flex; justify-content:center; gap:.32rem; padding:0 .4rem; z-index:4; }
+  .dock { left:0; right:0; top:auto; bottom:.4rem; display:flex; justify-content:center; gap:.32rem; padding:0 .4rem; z-index:4; }
   .bk { position:relative; flex:1 1 0; max-width:3.4rem; min-width:0; padding:.4rem .1rem .3rem; display:flex; flex-direction:column; align-items:center; gap:.12rem;
     background:var(--surface); border:1px solid var(--border); border-radius:14px; color:var(--ink-muted);
     transition:transform .2s ease, border-color .2s ease, background .2s ease, opacity .6s ease; opacity:.55; }
@@ -142,7 +143,7 @@
   .bar { flex-shrink:0; display:flex; justify-content:center; align-items:center; gap:.8rem; min-height:2.6rem; padding-top:.35rem; }
   .linkbtn { background:none; border:none; padding:.5rem .9rem; font-size:.88rem; color:var(--ink-muted); border-radius:999px; }
   .linkbtn:hover { color:var(--ink); background:var(--surface); }
-  .resume { background:var(--surface-2); border:1px solid var(--gold); color:var(--ink); padding:.55rem 1.4rem; border-radius:999px; font-size:.95rem; }
+  .resume { z-index:5; background:var(--surface-2); border:1px solid var(--gold); color:var(--ink); padding:.55rem 1.4rem; border-radius:999px; font-size:.95rem; }
 
   /* ---------- offer lines ---------- */
   .sheet-title { font-family:var(--font-display); font-style:italic; text-align:center; color:var(--gold); font-size:1.12rem; margin:.1rem 0 .7rem; }
@@ -240,9 +241,10 @@
   <header class="topbar">
     <div class="wordmark">Treasuring</div>
     <div class="topbar-actions">
+      <button class="icon-btn" id="btn-pause" aria-label="Pause" hidden><svg viewBox="0 0 24 24"><path d="M9 5v14M15 5v14"/></svg></button>
       <button class="icon-btn" id="btn-lists" aria-label="Lists"><svg viewBox="0 0 24 24"><path d="M8 6h12M8 12h12M8 18h12M4 6h.01M4 12h.01M4 18h.01"/></svg></button>
       <button class="icon-btn" id="btn-noticed" aria-label="Noticed"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"/></svg></button>
-      <button class="icon-btn" id="btn-settings" aria-label="Settings"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M4.9 19.1L7 17M17 7l2.1-2.1"/></svg></button>
+      <button class="icon-btn" id="btn-settings" aria-label="Settings"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3.2"/><path d="M10.3 2.8h3.4l.5 2.4 1.9.8 2.1-1.4 2.4 2.4-1.4 2.1.8 1.9 2.4.5v3.4l-2.4.5-.8 1.9 1.4 2.1-2.4 2.4-2.1-1.4-1.9.8-.5 2.4h-3.4l-.5-2.4-1.9-.8-2.1 1.4-2.4-2.4 1.4-2.1-.8-1.9-2.4-.5v-3.4l2.4-.5.8-1.9-1.4-2.1 2.4-2.4 2.1 1.4 1.9-.8z"/></svg></button>
     </div>
   </header>
 
@@ -271,6 +273,7 @@
     <div class="spoken" id="spoken" aria-live="polite"><div class="s1"></div><div class="s2"></div></div>
     <div class="restnote" id="restnote"></div>
 
+    <button class="resume" id="btn-continue" hidden>Continue</button>
     <div class="holdnote" id="holdnote"></div>
     <div class="partpick" id="partpick" hidden></div>
     <div class="dock" id="dock">
@@ -284,7 +287,6 @@
     </div>
   </main>
 
-  <footer class="bar" id="bar"></footer>
 </div>
 
 <div id="overlays"></div>
