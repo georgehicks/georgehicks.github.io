@@ -516,7 +516,7 @@
       m.body.append(el('div', { class: 'prayhead' }, [el('div', { class: 'pname', text: person.text }), el('button', { class: 'mini', text: 'Change person', onclick: function () { sel = null; recent = []; draw(); } })]));
       var words = S.lists.claims.filter(function (w) { return !w.paused; }).map(function (w) { return w.text; });
       var field = el('div', { class: 'cloudfield' });
-      var bar = el('div', { class: 'praybar' }, [el('div', { class: 's1', text: 'Touch a word, and say it for ' + spokenName(person.text) + '.' }), el('div', { class: 's2' })]);
+      var bar = el('div', { class: 'praybar' }, [el('div', { class: 's1', text: 'Touch a word, and say it for ' + spokenName(person.text) + '.' })]);
       m.body.append(field, bar);
       var pobj = { key: 'person:' + person.id, kind: 'person', text: person.text };
       claimed[sel] = claimed[sel] || {};
@@ -526,9 +526,8 @@
         if (sel !== startedFor) return;
         cloudStop = startCloud(field, words, function (w) {
           var line = sit.claim(pobj, w, spokenName(person.text)); if (!line) return false;
-          save(); if (recent.indexOf(w) < 0) recent.push(w);
+          save();
           bar.querySelector('.s1').textContent = line;
-          bar.querySelector('.s2').textContent = recent.length > 1 ? recent.join(' · ') : '';
           return true;
         }, claimed[sel]);
       }
@@ -559,16 +558,25 @@
       for (var k = 0; k < pool.length; k++) { var w = pool.shift(); pool.push(w); if (!claimedSet[w] && !shown(w)) return w; }
       return null;
     }
+    var SIZES = [{ fs: 1, row: 34 }, { fs: .85, row: 28 }, { fs: .72, row: 24 }, { fs: .62, row: 21 }];
     function relayout() {
-      var x = 10, y = H - 8, rows = 1;
+      var pick = SIZES[SIZES.length - 1], rows = 1;
+      for (var s = 0; s < SIZES.length; s++) { // the first size that leaves at least 40% of the cloud for drifting
+        settled.forEach(function (b) { b.style.fontSize = SIZES[s].fs + 'rem'; });
+        var x0 = 10, r0 = 1;
+        settled.forEach(function (b) { var w = b.offsetWidth; if (x0 + w > W - 10 && x0 > 10) { x0 = 10; r0++; } x0 += w + 6; });
+        rows = r0; pick = SIZES[s];
+        if (H - (r0 * SIZES[s].row + 12) >= H * 0.4) break;
+      }
+      var x = 10, y = H - 8;
       settled.forEach(function (b) {
-        var w = b.offsetWidth; if (x + w > W - 10 && x > 10) { x = 10; y -= ROW; rows++; }
-        b.style.transform = 'translate(' + x + 'px,' + (y - ROW) + 'px)'; x += w + 6;
+        var w = b.offsetWidth; if (x + w > W - 10 && x > 10) { x = 10; y -= pick.row; }
+        b.style.transform = 'translate(' + x + 'px,' + (y - pick.row) + 'px)'; x += w + 6;
       });
-      floor = settled.length ? H - (rows * ROW + 12) : H;
+      floor = settled.length ? H - (rows * pick.row + 12) : H;
     }
     function settle(btn, word, instant) {
-      btn.classList.add('settled', 'claimed', 'in'); btn.style.fontSize = '1rem';
+      btn.classList.add('settled', 'claimed', 'in');
       btn.style.transition = instant ? 'none' : 'transform 1.4s cubic-bezier(.2,.7,.3,1), color .5s ease, text-shadow .5s ease';
       settled.push(btn); relayout();
       if (instant) requestAnimationFrame(function () { btn.style.transition = ''; });
