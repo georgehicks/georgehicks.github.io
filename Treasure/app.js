@@ -445,13 +445,14 @@
       m.body.append(field, bar);
       var pobj = { key: 'person:' + person.id, kind: 'person', text: person.text };
       requestAnimationFrame(function () {
-        cloudStop = startCloud(field, words, function (w, wEl) {
-          var line = sit.claim(pobj, w); if (!line) return;
-          save(); wEl.classList.add('claimed'); (claimed[sel] = claimed[sel] || {})[w] = true;
-          if (recent.indexOf(w) < 0) recent.push(w);
+        claimed[sel] = claimed[sel] || {};
+        cloudStop = startCloud(field, words, function (w) {
+          var line = sit.claim(pobj, w); if (!line) return false;
+          save(); if (recent.indexOf(w) < 0) recent.push(w);
           bar.querySelector('.s1').textContent = line;
           bar.querySelector('.s2').textContent = recent.length > 1 ? recent.join(' · ') : '';
-        }, function (w) { return !!(claimed[sel] && claimed[sel][w]); });
+          return true;
+        }, claimed[sel]);
       });
     }
     draw();
@@ -467,30 +468,65 @@
     if (sit.openPray()) { save(); render(); openPray(); }
   }
 
-  // Words drift slowly; each one stays a while, fades, and another takes its place.
-  function startCloud(field, words, onTap, isClaimed) {
+  // Words drift slowly; each stays a while, fades, and another takes its place.
+  // A word you pray settles to the bottom and stops drifting.
+  function startCloud(field, words, onTap, claimedSet) {
     var W = field.clientWidth, H = field.clientHeight, running = true, last = performance.now();
-    var n = Math.min(words.length, W < 400 ? 9 : 14), pool = words.slice().sort(function () { return Math.random() - .5; }), items = [];
-    function nextWord() { var w = pool.shift(); pool.push(w); return w; }
+    var ROW = 34, floor = H, settled = [], items = [];
+    var pool = words.slice().sort(function () { return Math.random() - .5; });
     function rnd(a, b) { return a + Math.random() * (b - a); }
+    function shown(w) { return items.some(function (it) { return it.word === w; }); }
+    function nextWord() {
+      for (var k = 0; k < pool.length; k++) { var w = pool.shift(); pool.push(w); if (!claimedSet[w] && !shown(w)) return w; }
+      return null;
+    }
+    function relayout() {
+      var x = 10, y = H - 8, rows = 1;
+      settled.forEach(function (b) {
+        var w = b.offsetWidth; if (x + w > W - 10 && x > 10) { x = 10; y -= ROW; rows++; }
+        b.style.transform = 'translate(' + x + 'px,' + (y - ROW) + 'px)'; x += w + 6;
+      });
+      floor = settled.length ? H - (rows * ROW + 12) : H;
+    }
+    function settle(btn, word, instant) {
+      btn.classList.add('settled', 'claimed', 'in'); btn.style.fontSize = '1rem';
+      btn.style.transition = instant ? 'none' : 'transform 1.4s cubic-bezier(.2,.7,.3,1), color .5s ease, text-shadow .5s ease';
+      settled.push(btn); relayout();
+      if (instant) requestAnimationFrame(function () { btn.style.transition = ''; });
+    }
     function reset(it, first) {
-      it.word = nextWord(); it.btn.querySelector('.w').textContent = it.word; it.btn.classList.toggle('claimed', !!(isClaimed && isClaimed(it.word)));
+      var w = nextWord(); if (w) it.word = w; else if (!it.word) return false;
+      it.btn.querySelector('.w').textContent = it.word;
       it.btn.style.fontSize = rnd(1.05, 1.65).toFixed(2) + 'rem';
       var bw = it.btn.offsetWidth || 90, bh = it.btn.offsetHeight || 34;
-      it.x = rnd(0, Math.max(1, W - bw)); it.y = rnd(0, Math.max(1, H - bh));
+      it.x = rnd(0, Math.max(1, W - bw)); it.y = rnd(0, Math.max(1, floor - bh));
       var sp = rnd(5, 12), a = rnd(0, Math.PI * 2); it.vx = Math.cos(a) * sp; it.vy = Math.sin(a) * sp;
       it.born = performance.now() + (first ? rnd(0, 6000) : 0); it.life = rnd(22000, 38000);
-      it.btn.classList.add('in');
+      it.btn.classList.add('in'); return true;
     }
-    for (var i = 0; i < n; i++) {
-      (function () {
-        var btn = el('button', { class: 'cword', 'aria-label': '' }, [el('span', { class: 'w' })]);
-        field.append(btn);
-        var it = { btn: btn };
-        btn.addEventListener('click', function () { btn.setAttribute('aria-label', 'Pray ' + it.word); onTap(it.word, btn); });
-        reset(it, true); items.push(it);
-      })();
+    function spawn(first) {
+      var btn = el('button', { class: 'cword' }, [el('span', { class: 'w' })]);
+      field.append(btn);
+      var it = { btn: btn, word: null };
+      if (!reset(it, first)) { btn.remove(); return; }
+      btn.addEventListener('click', function () {
+        if (items.indexOf(it) < 0) { onTap(it.word); return; } // a settled word, tapped again, is said again
+        if (!onTap(it.word)) return;
+        claimedSet[it.word] = true; items.splice(items.indexOf(it), 1);
+        settle(btn, it.word, false);
+        spawn(false);
+      });
+      items.push(it);
     }
+    // words already prayed for this person settle straight away
+    words.forEach(function (w) {
+      if (!claimedSet[w]) return;
+      var btn = el('button', { class: 'cword' }, [el('span', { class: 'w', text: w })]);
+      btn.addEventListener('click', function () { onTap(w); });
+      field.append(btn); settle(btn, w, true);
+    });
+    var n = Math.min(words.filter(function (w) { return !claimedSet[w]; }).length, W < 400 ? 9 : 14);
+    for (var i = 0; i < n; i++) spawn(true);
     function frame(now) {
       if (!running) return;
       var dt = Math.min(.1, (now - last) / 1000); last = now;
@@ -498,11 +534,11 @@
         var bw = it.btn.offsetWidth, bh = it.btn.offsetHeight;
         it.x += it.vx * dt; it.y += it.vy * dt;
         if (it.x < 0) { it.x = 0; it.vx = Math.abs(it.vx); } else if (it.x > W - bw) { it.x = W - bw; it.vx = -Math.abs(it.vx); }
-        if (it.y < 0) { it.y = 0; it.vy = Math.abs(it.vy); } else if (it.y > H - bh) { it.y = H - bh; it.vy = -Math.abs(it.vy); }
+        if (it.y < 0) { it.y = 0; it.vy = Math.abs(it.vy); } else if (it.y > floor - bh) { it.y = Math.max(0, floor - bh); it.vy = -Math.abs(it.vy); }
         it.btn.style.transform = 'translate(' + it.x.toFixed(1) + 'px,' + it.y.toFixed(1) + 'px)';
         if (!it.fading && now > it.born + it.life) {
           it.fading = true; it.btn.classList.remove('in');
-          setTimeout(function () { if (running) { reset(it, false); it.fading = false; } }, 1800);
+          setTimeout(function () { if (running && items.indexOf(it) >= 0) { reset(it, false); it.fading = false; } }, 1800);
         }
       });
       requestAnimationFrame(frame);
