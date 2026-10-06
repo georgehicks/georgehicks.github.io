@@ -299,6 +299,16 @@
     if (!p) return;
     if (!part || /^none\b/i.test(part)) delete p.part; else p.part = part;
   }
+  // After "Father, thank you." lands, name what it was for — only where that reads true: a thanks, or a person.
+  var LEAD = /^(a|an|the|someone|something|that|my|our|his|her|this)\b/i;
+  function thanksLine(item, line) {
+    if (!item) return line;
+    var t = (item.text || '').trim(); if (!t) return line;
+    if (item.kind === 'thanks') t = t.charAt(0).toLowerCase() + t.slice(1);
+    else if (item.kind === 'person' && LEAD.test(t)) t = t.charAt(0).toLowerCase() + t.slice(1);
+    else if (item.kind !== 'person') return line;
+    return line.replace(/\.$/, '') + ' for ' + t + '.';
+  }
   function doOffer(item, id, part, bucket) {
     var r = sit.offer(id, { part: part }); if (!r.ok) { lieOrBounce('Not that one.'); return; }
     if (id === 'my-part') rememberPart(item, part);
@@ -309,7 +319,7 @@
       render(); later(800, function () { hideDrop(); openUnderstanding(); }); return;
     }
     var sub = id === 'my-part' && part && !/^none\b/i.test(part) ? 'Today’s part: ' + part : (r.verdict || '');
-    leave(r.line, sub, id === 'pray-now' ? function () { openPray(item.listId); } : null, t, r.verdict ? 4200 : 0);
+    leave(id === 'thank-you' ? thanksLine(item, r.line) : r.line, sub, id === 'pray-now' ? function () { openPray(item.listId); } : null, t, r.verdict ? 4200 : 0);
   }
   // The short prayer flashes as the item lands in its bucket, then the item is gone.
   function leave(line, sub, after, t, extra) {
@@ -405,7 +415,7 @@
     var body = undBody(); body.innerHTML = '';
     var sub = id === 'my-part' && part && !/^none\b/i.test(part) ? 'Today’s part: ' + part : '';
     body.append(el('div', { class: 'card', style: 'text-align:center' }, [
-      el('div', { class: 'big', style: 'font-style:italic;color:var(--gold)', text: r.line }),
+      el('div', { class: 'big', style: 'font-style:italic;color:var(--gold)', text: id === 'thank-you' ? thanksLine(it, r.line) : r.line }),
       sub ? el('p', { class: 'quiet', text: sub }) : null,
       r.explain ? el('p', { class: 'note', style: 'text-align:left', text: r.explain }) : null]));
     function next() { sit.nextUnderstanding(); renderUnd(body); }
