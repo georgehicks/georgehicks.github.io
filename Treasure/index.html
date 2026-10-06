@@ -222,7 +222,11 @@
   .cword.claimed .w { transform:scale(1.18); }
   .cword.settled { opacity:1; font-size:1rem; }
   .cword.settled .w { transform:none; }
-  .praybar { flex-shrink:0; height:4.6rem; overflow:hidden; text-align:center; padding:.6rem .4rem 0; }
+  .praybar { flex-shrink:0; text-align:center; padding:.5rem .1rem calc(.4rem + env(safe-area-inset-bottom,0px)); }
+  .praybar .s1 { height:3.1rem; overflow:hidden; line-height:1.35; }
+  .amen { display:block; width:100%; margin-top:.35rem; padding:.7rem .9rem; border-radius:16px; background:color-mix(in srgb, var(--gold) 16%, var(--surface-2)); border:1px solid var(--gold);
+    color:var(--ink); font-family:var(--font-display); font-size:.98rem; line-height:1.35; }
+  .amen:hover, .amen:active { background:color-mix(in srgb, var(--gold) 28%, var(--surface-2)); }
   .praybar .s1 { font-family:var(--font-display); font-style:italic; color:var(--gold); font-size:1.12rem; }
   .praybar .s2 { font-size:.8rem; color:var(--ink-faint); margin-top:.3rem; }
   .emptynote { text-align:center; color:var(--ink-muted); padding:2.5rem 1.2rem; }

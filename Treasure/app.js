@@ -516,7 +516,9 @@
       m.body.append(el('div', { class: 'prayhead' }, [el('div', { class: 'pname', text: person.text }), el('button', { class: 'mini', text: 'Change person', onclick: function () { sel = null; recent = []; draw(); } })]));
       var words = S.lists.claims.filter(function (w) { return !w.paused; }).map(function (w) { return w.text; });
       var field = el('div', { class: 'cloudfield' });
-      var bar = el('div', { class: 'praybar' }, [el('div', { class: 's1', text: 'Touch a word, and say it for ' + spokenName(person.text) + '.' })]);
+      var amen = el('button', { class: 'amen', hidden: '', text: L['pray-all'].text, onclick: function () { finishPrayer(person, claimed[person.id]); } });
+      var bar = el('div', { class: 'praybar' }, [el('div', { class: 's1', text: 'Touch a word, and say it for ' + spokenName(person.text) + '.' }), amen]);
+      amen.hidden = !Object.keys(claimed[sel] || {}).length;
       m.body.append(field, bar);
       var pobj = { key: 'person:' + person.id, kind: 'person', text: person.text };
       claimed[sel] = claimed[sel] || {};
@@ -528,12 +530,26 @@
           var line = sit.claim(pobj, w, spokenName(person.text)); if (!line) return false;
           save();
           bar.querySelector('.s1').textContent = line;
+          amen.hidden = false;
           return true;
         }, claimed[sel]);
       }
       requestAnimationFrame(start);
     }
     draw();
+  }
+  // The closing prayer over everything claimed for this person, then the screen closes.
+  function finishPrayer(person, claimedWords) {
+    var words = Object.keys(claimedWords || {});
+    var line = sit.prayAll({ key: 'person:' + person.id, kind: 'person', text: person.text }, words); if (!line) return;
+    save(); if (cloudStop) { cloudStop(); cloudStop = null; }
+    var m = $('ov-pray').querySelector('.ov-body'); m.classList.remove('flex'); m.innerHTML = '';
+    m.append(el('div', { class: 'card', style: 'text-align:center;margin-top:20%' }, [
+      el('div', { class: 'tag', text: spokenName(person.text) }),
+      el('div', { class: 'big', style: 'font-style:italic;color:var(--gold)', text: line }),
+      el('p', { class: 'quiet', text: words.join(' · ') })]),
+      el('div', { style: 'text-align:center' }, [el('button', { class: 'btn primary', text: 'Amen', onclick: closePray })]));
+    later(7000, function () { if ($('ov-pray')) closePray(); });
   }
   function closePray() {
     if (cloudStop) { cloudStop(); cloudStop = null; }
@@ -674,7 +690,7 @@
 
   // ---------- noticed ----------
   // Every spoken line is shown as it was said, naming who it was spoken to.
-  var SHORT = { 'pray-now': 'Father, I pray for them', claim: 'prayed' };
+  var SHORT = { 'pray-now': 'Father, I pray for them', claim: 'prayed', 'pray-all': 'Father, I pray all of this' };
   function lineName(l) { return SHORT[l] || (L[l] ? L[l].text.replace(/\.$/, '') : l); }
   function seqLabel(o) {
     if (o.line === 'claim') return 'claimed ' + o.word;

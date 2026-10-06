@@ -12,6 +12,8 @@
     'hold':        { to: 'Jesus',       text: 'Jesus, I hold this to you.',         label: 'stay with it a moment' },
     // Addition beyond spec section 3: the bin for a lie. It is spoken to Jesus, like the hold line.
     'lie':         { to: 'Jesus',       text: 'Jesus, I put this lie down.',        label: 'put it down' },
+    // Addition beyond section 3: the closing line of intercession, once words have been claimed for a person.
+    'pray-all':    { to: 'Father',      text: 'Father, I pray all of this, Your good, pleasing, perfect will for them now.', label: '' },
     // Additions beyond section 3, for the Insight screen. "Lord" is the author's wording for Jesus.
     'not-him':     { to: 'Jesus',       text: 'Jesus, this isn\u2019t from you.',    label: 'it is not His' },
     'know':        { to: 'Lord',        text: 'Lord, what do you want me to know about this?', label: 'ask, then listen' },

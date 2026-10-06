@@ -144,6 +144,14 @@ t('insight options: not from Him, ask what to know, ask what to do', () => {
   const th = placed(); th.beginDrop({ key: 'thought:t01', kind: 'thought', text: 'x', truth: true, note: 'n' }); th.catchDrop(); th.offer('understand');
   assert(/true/.test(th.offer('not-him').explain));   // a mismatch is explained, never penalized
 });
+t('closing intercession: only after claims, names the Father, recorded', () => {
+  const s = placed(); s.beginDrop(itemOf('person')); s.catchDrop(); s.offer('pray-now'); s.finishOffer(); s.openPray();
+  const p = { key: 'person:a', kind: 'person', text: 'Sam' };
+  assert.strictEqual(s.prayAll(p, []), null);
+  assert.strictEqual(s.prayAll(p, ['peace', 'healing']), 'Father, I pray all of this, Your good, pleasing, perfect will for them now.');
+  assert.deepStrictEqual(s.data.offers.pop().words, ['peace', 'healing']);
+  s.closePray(); assert.strictEqual(s.prayAll(p, ['peace']), null);
+});
 t('pool: only checked (active) list items drop; unchecked ones rest', () => {
   const p = E.buildPool(lists({ people: [{ id: 'a', text: 'Sam', paused: true }, { id: 'b', text: 'Ann' }] }));
   assert(!p['person:a'] && p['person:b']);

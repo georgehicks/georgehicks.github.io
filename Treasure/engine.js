@@ -270,6 +270,12 @@
     this._record(person, 'claim', { word: word });
     return line;
   };
+  // The closing line over everything just claimed for this person.
+  P.prayAll = function (person, words) {
+    if (this.state !== 'praying' || !person || !words || !words.length) return null;
+    this._record(person, 'pray-all', { words: words.slice() });
+    return C.LINES['pray-all'].text;
+  };
   P.closePray = function () { if (this.state !== 'praying') return false; this.state = 'with'; return true; };
 
   // Player stopped. Heart may remain with him; queue, lists and the paused drop persist. No penalty.
