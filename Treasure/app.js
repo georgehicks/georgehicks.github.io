@@ -516,9 +516,10 @@
       m.body.append(el('div', { class: 'prayhead' }, [el('div', { class: 'pname', text: person.text }), el('button', { class: 'mini', text: 'Change person', onclick: function () { sel = null; recent = []; draw(); } })]));
       var words = S.lists.claims.filter(function (w) { return !w.paused; }).map(function (w) { return w.text; });
       var field = el('div', { class: 'cloudfield' });
-      var amen = el('button', { class: 'amen', hidden: '', text: L['pray-all'].text, onclick: function () { finishPrayer(person, claimed[person.id]); } });
+      var amen = el('button', { class: 'amen off', 'aria-hidden': 'true', tabindex: '-1', text: L['pray-all'].text, onclick: function () { finishPrayer(person, claimed[person.id]); } });
       var bar = el('div', { class: 'praybar' }, [el('div', { class: 's1', text: 'Touch a word, and say it for ' + spokenName(person.text) + '.' }), amen]);
-      amen.hidden = !Object.keys(claimed[sel] || {}).length;
+      function showAmen(on) { amen.classList.toggle('off', !on); amen.setAttribute('aria-hidden', on ? 'false' : 'true'); amen.tabIndex = on ? 0 : -1; }
+      showAmen(Object.keys(claimed[sel] || {}).length > 0);
       m.body.append(field, bar);
       var pobj = { key: 'person:' + person.id, kind: 'person', text: person.text };
       claimed[sel] = claimed[sel] || {};
@@ -530,7 +531,7 @@
           var line = sit.claim(pobj, w, spokenName(person.text)); if (!line) return false;
           save();
           bar.querySelector('.s1').textContent = line;
-          amen.hidden = false;
+          showAmen(true);
           return true;
         }, claimed[sel]);
       }
@@ -597,6 +598,12 @@
       settled.push(btn); relayout();
       if (instant) requestAnimationFrame(function () { btn.style.transition = ''; });
     }
+    // If the cloud's size ever changes (rotation, a taller line below), re-measure and re-seat the settled words.
+    var ro = window.ResizeObserver ? new ResizeObserver(function () {
+      var nw = field.clientWidth, nh = field.clientHeight;
+      if (running && nw && nh && (nw !== W || nh !== H)) { W = nw; H = nh; relayout(); }
+    }) : null;
+    if (ro) ro.observe(field);
     function reset(it, first) {
       var w = nextWord(); if (w) it.word = w; else if (!it.word) return false;
       it.btn.querySelector('.w').textContent = it.word;
@@ -647,7 +654,7 @@
       requestAnimationFrame(frame);
     }
     requestAnimationFrame(frame);
-    return function () { running = false; };
+    return function () { running = false; if (ro) ro.disconnect(); };
   }
 
   // ---------- lists ----------
