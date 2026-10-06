@@ -110,12 +110,12 @@
   .drop.held { cursor:default; box-shadow:0 0 0 2px var(--gold-glow), 0 12px 34px rgba(0,0,0,.35); }
   .drop.held .txt { font-size:1.32rem; }
 
-  .spoken { left:0; right:0; text-align:center; padding:0 1.3rem; pointer-events:none; opacity:0; transition:opacity .7s ease; z-index:4; }
+  .spoken { left:0; right:0; max-width:23rem; margin-inline:auto; text-align:center; padding:0 1rem; pointer-events:none; opacity:0; transition:opacity .7s ease; z-index:4; }
   .spoken.on { opacity:1; }
   .spoken .s1 { font-family:var(--font-display); font-style:italic; font-size:1.25rem; color:var(--gold); text-shadow:0 0 24px var(--gold-glow); }
   .spoken .s2 { font-size:.9rem; color:var(--ink-muted); margin-top:.3rem; text-shadow:0 0 10px var(--bg), 0 0 4px var(--bg); }
 
-  .restnote { left:0; right:0; text-align:center; padding:0 1.6rem; color:var(--ink-muted); font-size:.95rem; pointer-events:none; opacity:0; transition:opacity .6s ease; }
+  .restnote { left:0; right:0; max-width:19rem; margin-inline:auto; text-align:center; padding:0 1rem; line-height:1.5; color:var(--ink-muted); font-size:.95rem; pointer-events:none; opacity:0; transition:opacity .6s ease; }
   .restnote.on { opacity:1; }
 
   /* the dock: little buckets, always visible. Drag a caught drop onto one (or tap one while holding). */
@@ -134,7 +134,7 @@
     background:var(--gold); color:#1a1608; font-size:.68rem; font-weight:700; display:flex; align-items:center; justify-content:center; }
   .bk.pulse { animation:pulse .9s ease; }
   @keyframes pulse { 40% { transform:scale(1.18); box-shadow:0 0 22px var(--gold-glow); } }
-  .holdnote { left:0; right:0; text-align:center; font-size:.8rem; color:var(--ink-muted); padding:0 1.5rem; pointer-events:none; opacity:0; transition:opacity .4s ease; }
+  .holdnote { left:0; right:0; max-width:19rem; margin-inline:auto; text-align:center; font-size:.8rem; color:var(--ink-muted); padding:0 1.5rem; pointer-events:none; opacity:0; transition:opacity .4s ease; }
   .holdnote.on { opacity:1; }
   .partpick { left:5%; right:5%; z-index:6; background:var(--surface); border:1px solid var(--border); border-radius:20px; padding:.8rem .8rem .5rem; box-shadow:0 14px 40px rgba(0,0,0,.4); }
   .drop.dragging { transition:none !important; z-index:7; cursor:grabbing; touch-action:none; }

@@ -18,7 +18,7 @@
   function seed(arr, p) { return arr.map(function (t, i) { return { id: p + i, text: t, paused: false }; }); }
   function defaults() {
     return { v: 1, offers: [], queue: [], pending: null, deckState: { deck: [], drawn: [] }, lastKey: null,
-      settings: { pace: 'gentle', theme: 'auto' },
+      settings: { pace: 'gentle', theme: 'auto', length: 'd30' },
       lists: { people: seed(C.SEEDS.people, 'p'), concerns: seed(C.SEEDS.concerns, 'c'), thanks: seed(C.SEEDS.thanks, 'g'), feelings: seed(C.SEEDS.feelings, 'f'), claims: seed(C.SEEDS.claims, 'w') } };
   }
   function load() {
@@ -27,7 +27,7 @@
       var raw = localStorage.getItem(KEY);
       if (raw) { var s = JSON.parse(raw); for (var k in s) d[k] = s[k]; }
     } catch (e) {}
-    d.settings = Object.assign({ pace: 'gentle', theme: 'auto' }, d.settings);
+    d.settings = Object.assign({ pace: 'gentle', theme: 'auto', length: 'd30' }, d.settings);
     if (!d.peopleSeeded) { // the generic starters become ordinary, editable list items (once)
       if (!d.lists.people.some(function (p) { return /^p\d+$/.test(p.id); })) d.lists.people = d.lists.people.concat(seed(C.SEEDS.people, 'p'));
       d.peopleSeeded = true;
@@ -95,7 +95,7 @@
     heartline.style.opacity = apart ? 1 : 0;
     restEl.textContent = restMsg; restEl.classList.toggle('on', st === 'paused');
     barEl.innerHTML = '';
-    if (st === 'paused') barEl.append(el('button', { class: 'resume', text: 'Continue', onclick: resume }));
+    if (st === 'paused') barEl.append(el('button', { class: 'resume', text: run.over ? 'Keep going' : 'Continue', onclick: resume }));
     else if (st === 'with' || st === 'dropping') barEl.append(el('button', { class: 'linkbtn', text: 'Pause', onclick: function () { stopForNow('Resting. Your heart stays with Him.'); } }));
     updateSpirit();
   }
@@ -121,10 +121,22 @@
   function hideDrop() { cancelAnimationFrame(raf); fall = null; dropEl.classList.remove('glide', 'held', 'dragging'); dropEl.style.opacity = 0; dropEl.style.pointerEvents = 'none'; }
   function closeSheet() { holdnote.classList.remove('on'); partpick.hidden = true; }
   function abortFlow() { clearTimers(); hideDrop(); closeSheet(); unspeak(); }
-  function stopForNow(msg) {
-    abortFlow(); if (!sit.pause()) return; restMsg = msg; save(); render();
+  // How long a sitting lasts: a number of drops or minutes of time with Him. Reaching it only rests the drops.
+  var run = { drops: 0, ms: 0, since: 0, over: false };
+  var LENGTHS = [['d15', '15 drops'], ['d30', '30 drops'], ['d50', '50 drops'], ['m5', '5 minutes'], ['m10', '10 minutes'], ['m20', '20 minutes'], ['none', 'No end']];
+  function clockOn() { if (!run.since) run.since = Date.now(); }
+  function clockOff() { if (run.since) { run.ms += Date.now() - run.since; run.since = 0; } }
+  function resetRun() { run = { drops: 0, ms: 0, since: Date.now(), over: false }; }
+  function limitReached() {
+    var l = S.settings.length || 'd30'; if (l === 'none') return false;
+    var n = +l.slice(1);
+    if (l[0] === 'd') return run.drops >= n;
+    return run.ms + (run.since ? Date.now() - run.since : 0) >= n * 60000;
   }
-  function resume() { if (sit.resume()) { save(); render(); scheduleDrop(900); } }
+  function stopForNow(msg) {
+    abortFlow(); if (!sit.pause()) return; clockOff(); restMsg = msg; save(); render();
+  }
+  function resume() { if (sit.resume()) { if (run.over) resetRun(); else clockOn(); save(); render(); scheduleDrop(900); } }
 
   function scheduleDrop(ms) { later(ms, nextDrop); }
   function draw() {
@@ -133,8 +145,11 @@
   }
   function nextDrop() {
     if (sit.state !== 'with') return;
+    if (limitReached()) { run.over = true; stopForNow('That is a full sitting. Your heart is still with Him, and you can stay as long as you like.'); return; }
+    var wasPending = !!S.pending;
     var item = S.pending || draw(); if (!item) return;
     if (!sit.beginDrop(item)) return;
+    if (!wasPending) run.drops++;
     save(); startFall(item);
   }
   function startFall(item) {
@@ -587,6 +602,8 @@
     }
     seg('How slowly drops fall', 'pace', [['slow', 'Slow'], ['gentle', 'Gentle'], ['brisk', 'Brisk']]);
     m.body.append(el('p', { class: 'quiet', text: 'There is no hurry. A drop you don’t catch goes to the Holy Spirit, and nothing is lost.' }));
+    seg('How long a sitting lasts', 'length', LENGTHS);
+    m.body.append(el('p', { class: 'quiet', text: 'When it’s reached, the drops rest and your heart stays with Him. “Keep going” starts another stretch.' }));
     seg('Look', 'theme', [['auto', 'Match my phone'], ['dark', 'Dark'], ['light', 'Light']]);
     m.body.append(el('div', { class: 'sec', text: 'About' }),
       el('p', { class: 'quiet', text: 'A quiet place to put your heart with Jesus, then catch what drops and speak it to the Father, the Son, or the Spirit. No scores, no streaks. Everything stays on this device.' }));
@@ -638,7 +655,7 @@
       if (on) placed(); else { heartPos = G.apart; put(heartEl, heartPos.x, heartPos.y); }
     } else if (on) { heartPos = G.christ; put(heartEl, heartPos.x, heartPos.y); }
     else { // taken back out of Christ: the current drop pauses, it is not deleted
-      abortFlow(); closeSheet(); sit.takeBack(); save(); heartPos = G.apart; put(heartEl, heartPos.x, heartPos.y); render();
+      abortFlow(); closeSheet(); sit.takeBack(); clockOff(); save(); heartPos = G.apart; put(heartEl, heartPos.x, heartPos.y); render();
     }
   }
   heartEl.addEventListener('pointerup', function () { endDrag(false); });
@@ -647,11 +664,11 @@
     if (e.key !== 'Enter' && e.key !== ' ') return; e.preventDefault();
     heartEl.classList.add('glide');
     if (sit.state === 'apart') { sit.placeHeart(); placed(); }
-    else if (sit.state === 'with' || sit.state === 'dropping' || sit.state === 'paused') { abortFlow(); sit.takeBack(); save(); heartPos = G.apart; put(heartEl, heartPos.x, heartPos.y); render(); }
+    else if (sit.state === 'with' || sit.state === 'dropping' || sit.state === 'paused') { abortFlow(); sit.takeBack(); clockOff(); save(); heartPos = G.apart; put(heartEl, heartPos.x, heartPos.y); render(); }
   });
   function placed() {
     heartPos = G.christ; heartEl.classList.add('glide'); put(heartEl, heartPos.x, heartPos.y);
-    save(); render();
+    resetRun(); save(); render();
     speak(L['place-heart'].text);
     later(3200, unspeak); scheduleDrop(4200);
   }
