@@ -1,4 +1,4 @@
-const CACHE = 'treasure-v15';
+const CACHE = 'treasure-v16';
 const ASSETS = ['./', './index.html', './app.js', './engine.js', './content.js', './manifest.json', './icon.svg'];
 
 self.addEventListener('install', e => {

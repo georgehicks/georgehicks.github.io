@@ -77,8 +77,8 @@
     heartPos = apart ? G.apart : G.christ;
     heartEl.classList.remove('glide'); put(heartEl, heartPos.x, heartPos.y);
     heartline.style.top = (G.apart.y + 48) + 'px';
-    spokenEl.style.top = (H * 0.345) + 'px'; restEl.style.top = (H * 0.44) + 'px';
-    put(contBtn, W / 2, H * 0.58); holdnote.style.top = (G.hold.y + 62) + 'px'; partpick.style.top = (H * 0.36) + 'px';
+    spokenEl.style.top = (H * 0.345) + 'px'; restEl.style.top = (H * 0.33) + 'px';
+    put(contBtn, W / 2, H * 0.455); holdnote.style.top = (G.hold.y + 62) + 'px'; partpick.style.top = (H * 0.36) + 'px';
     // the buckets follow a bowl-shaped curve along the bottom: lowest in the middle, rising and tilting toward the ends
     var bks = dock.querySelectorAll('.bk'), n = bks.length, side = 27, lift = Math.min(46, H * 0.065), dh = Math.round(lift + 64);
     dock.style.height = dh + 'px'; dock.classList.add('nolayout');
@@ -836,7 +836,27 @@
   document.addEventListener('visibilitychange', function () {
     if (document.hidden && ['dropping', 'holding', 'offered'].indexOf(sit.state) >= 0) stopForNow('Resting. Your heart stays with Him.');
   });
-  window.addEventListener('resize', function () { layout(); });
+  // Rotation: iOS reports the new size late, so measure again a few times; a phone held sideways rests the drops.
+  var land = window.matchMedia ? matchMedia('(orientation: landscape) and (max-height: 600px)') : null;
+  function relayoutAll() {
+    layout();
+    if (sit.state === 'holding' && !dragItem) { dropEl.classList.remove('glide'); put(dropEl, G.hold.x, G.hold.y, 1.06); }
+  }
+  function relayoutSoon() { relayoutAll(); [120, 400, 900].forEach(function (ms) { setTimeout(relayoutAll, ms); }); }
+  function onOrientation() {
+    if (land && land.matches && ['with', 'dropping', 'holding', 'offered'].indexOf(sit.state) >= 0) stopForNow('Resting. Your heart stays with Him.');
+    relayoutSoon();
+  }
+  window.addEventListener('resize', relayoutSoon);
+  window.addEventListener('orientationchange', onOrientation);
+  if (land) { if (land.addEventListener) land.addEventListener('change', onOrientation); else if (land.addListener) land.addListener(onOrientation); }
+  if (window.visualViewport) visualViewport.addEventListener('resize', relayoutSoon);
+  if (window.ResizeObserver) new ResizeObserver(function () { relayoutAll(); }).observe(stage);
+  // Ask for a portrait lock where the browser allows it (Android, installed). iOS ignores this; the upright screen covers it.
+  document.addEventListener('pointerdown', function lockOnce() {
+    document.removeEventListener('pointerdown', lockOnce);
+    try { if (screen.orientation && screen.orientation.lock) screen.orientation.lock('portrait').catch(function () {}); } catch (e) {}
+  });
   applyTheme();
   requestAnimationFrame(function () { requestAnimationFrame(function () { layout(); render(); }); });
 

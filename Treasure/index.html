@@ -238,6 +238,13 @@
   .topcard label { display:block; font-size:.8rem; color:var(--ink-muted); margin-bottom:.4rem; }
   .scrim { position:fixed; inset:0; z-index:39; background:rgba(0,0,0,.45); }
 
+  /* Landscape on a phone: the app is portrait only. */
+  .rotate { display:none; position:fixed; inset:0; z-index:200; background:var(--bg); color:var(--ink); flex-direction:column; align-items:center; justify-content:center; gap:.9rem; text-align:center; padding:1.5rem; }
+  .rotate svg { width:3.2rem; height:3.2rem; fill:none; stroke:var(--gold); stroke-width:1.5; stroke-linecap:round; stroke-linejoin:round; }
+  .rotate p { margin:0; font-family:var(--font-display); font-size:1.15rem; max-width:20rem; }
+  .rotate small { color:var(--ink-muted); font-size:.85rem; }
+  @media (orientation: landscape) and (max-height: 600px) { .rotate { display:flex; } }
+
   @media (prefers-reduced-motion: reduce) {
     .heart.apart, .st-with .christ .halo, .st-with .heart svg { animation:none; }
     .cloud, .cloud .puff { transition:none; }
@@ -299,6 +306,7 @@
 
 <div id="overlays"></div>
 <div id="topcard-host"></div>
+<div class="rotate" id="rotate" role="alert"><svg viewBox="0 0 24 24"><rect x="7" y="3" width="10" height="18" rx="2"/><path d="M11 18h2"/></svg><p>Please turn your phone upright.</p><small>Treasuring is made to be held this way. Your heart stays with Him.</small></div>
 
 <script src="content.js"></script>
 <script src="engine.js"></script>
