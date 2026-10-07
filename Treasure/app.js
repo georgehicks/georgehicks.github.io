@@ -837,7 +837,7 @@
     if (document.hidden && ['dropping', 'holding', 'offered'].indexOf(sit.state) >= 0) stopForNow('Resting. Your heart stays with Him.');
   });
   // Rotation: iOS reports the new size late, so measure again a few times; a phone held sideways rests the drops.
-  var land = window.matchMedia ? matchMedia('(orientation: landscape) and (max-height: 600px)') : null;
+  var land = window.matchMedia ? matchMedia('(orientation: landscape) and (max-height: 600px) and (pointer: coarse)') : null;
   function relayoutAll() {
     layout();
     if (sit.state === 'holding' && !dragItem) { dropEl.classList.remove('glide'); put(dropEl, G.hold.x, G.hold.y, 1.06); }
