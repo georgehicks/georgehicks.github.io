@@ -260,6 +260,10 @@
   .scrim { position:fixed; inset:0; z-index:39; background:rgba(0,0,0,.45); }
 
   /* Landscape on a phone: the app is portrait only. */
+  .updatebar { position:fixed; left:.6rem; right:.6rem; top:calc(.5rem + env(safe-area-inset-top,0px)); z-index:150; max-width:34rem; margin:0 auto;
+    display:flex; align-items:center; justify-content:space-between; gap:.6rem; padding:.55rem .7rem .55rem .9rem; border-radius:14px;
+    background:var(--surface-2); border:1px solid var(--gold); box-shadow:0 10px 30px rgba(0,0,0,.35); font-size:.92rem; }
+  .ub-actions { display:flex; align-items:center; gap:.4rem; flex-shrink:0; }
   .rotate { display:none; position:fixed; inset:0; z-index:200; background:var(--bg); color:var(--ink); flex-direction:column; align-items:center; justify-content:center; gap:.9rem; text-align:center; padding:1.5rem; }
   .rotate svg { width:3.2rem; height:3.2rem; fill:none; stroke:var(--gold); stroke-width:1.5; stroke-linecap:round; stroke-linejoin:round; }
   .rotate p { margin:0; font-family:var(--font-display); font-size:1.15rem; max-width:20rem; }
@@ -328,6 +332,7 @@
 </div>
 
 <div id="overlays"></div>
+<div class="updatebar" id="updatebar" hidden role="status"><span>A new version is ready.</span><span class="ub-actions"><button class="btn primary" id="ub-go">Refresh</button><button class="mini" id="ub-later">Later</button></span></div>
 <div id="topcard-host"></div>
 <div class="rotate" id="rotate" role="alert"><svg viewBox="0 0 24 24"><rect x="7" y="3" width="10" height="18" rx="2"/><path d="M11 18h2"/></svg><p>Please turn your phone upright.</p><small>Treasuring is made to be held this way. Your heart stays with Him.</small></div>
 

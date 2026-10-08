@@ -955,8 +955,30 @@
   applyTheme();
   requestAnimationFrame(function () { requestAnimationFrame(function () { layout(); render(); if (!S.seenHelp) openHelp(true); }); });
 
+  // A new version arrives in the background; an open app keeps running the old one until reloaded, so say so.
   if ('serviceWorker' in navigator && location.protocol.indexOf('http') === 0) {
-    window.addEventListener('load', function () { navigator.serviceWorker.register('./sw.js').catch(function () {}); });
+    var hadController = !!navigator.serviceWorker.controller;
+    var updateBar = $('updatebar');
+    function showUpdate() { updateBar.hidden = false; }
+    $('ub-go').addEventListener('click', function () { save(); location.reload(); });
+    $('ub-later').addEventListener('click', function () { updateBar.hidden = true; });
+    navigator.serviceWorker.addEventListener('controllerchange', function () { if (hadController) showUpdate(); });
+    window.addEventListener('load', function () {
+      navigator.serviceWorker.register('./sw.js').then(function (reg) {
+        reg.addEventListener('updatefound', function () {
+          var w = reg.installing; if (!w) return;
+          w.addEventListener('statechange', function () { if (w.state === 'installed' && navigator.serviceWorker.controller) showUpdate(); });
+        });
+        // look for a new version when you come back to the app, at most once a day
+        document.addEventListener('visibilitychange', function () {
+          if (document.hidden) return;
+          var last = S.settings.updateChecked || 0;
+          if (Date.now() - last < 24 * 3600 * 1000) return;
+          S.settings.updateChecked = Date.now(); save();
+          reg.update().catch(function () {});
+        });
+      }).catch(function () {});
+    });
   }
   window.__treasure = { sit: sit, S: S }; // for tests in the browser pane
 })();
