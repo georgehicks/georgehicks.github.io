@@ -437,6 +437,14 @@
     body.append(el('div', { style: 'display:flex;gap:.5rem;margin-top:.6rem;flex-wrap:wrap' }, [
       S.queue.length > 1 ? el('button', { class: 'btn', text: 'Leave it for now', onclick: function () { sit.skipUnderstanding(); renderUnd(body); } }) : null,
       el('button', { class: 'btn', text: 'Done for now', onclick: finishUnderstanding })]));
+    if (S.queue.length > 1) {
+      var clr = el('button', { class: 'mini', text: 'Clear all ' + S.queue.length }), armed = false;
+      clr.addEventListener('click', function () {
+        if (!armed) { armed = true; clr.textContent = 'Sure? Clears all ' + S.queue.length; clr.classList.add('warn'); setTimeout(function () { armed = false; clr.textContent = 'Clear all ' + S.queue.length; clr.classList.remove('warn'); }, 3500); return; }
+        sit.clearQueue(); save(); updateSpirit(); renderUnd(body);
+      });
+      body.append(el('div', { style: 'margin-top:1.2rem' }, [clr]));
+    }
   }
   function undOffer(it, id, part) {
     var r = sit.offer(id, { part: part }); if (!r.ok) return;

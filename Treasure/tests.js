@@ -182,6 +182,14 @@ t('dispatching an item from the main screen also clears its waiting copy in Insi
   s.finishOffer(); send(s, 'feeling:w');                         // sending it to Insight again still works
   assert.strictEqual(s.data.queue.length, 1);
 });
+t('clear all empties Insight without recording a dispatch', () => {
+  const s = placed(); send(s, 'feeling:1'); send(s, 'feeling:2'); send(s, 'feeling:3');
+  assert.strictEqual(s.clearQueue(), 0);                         // only from the Insight screen
+  s.openQueue(); const before = s.data.last['feeling:1'].line;
+  assert.strictEqual(s.clearQueue(), 3); assert.strictEqual(s.data.queue.length, 0); assert.strictEqual(s.understanding, null);
+  assert.strictEqual(s.state, 'understanding'); assert.strictEqual(s.data.last['feeling:1'].line, before); // not a dispatch
+  assert(s.leaveUnderstanding());
+});
 t('pool: only checked (active) list items drop; unchecked ones rest', () => {
   const p = E.buildPool(lists({ people: [{ id: 'a', text: 'Sam', paused: true }, { id: 'b', text: 'Ann' }] }));
   assert(!p['person:a'] && p['person:b']);

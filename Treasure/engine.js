@@ -236,6 +236,11 @@
     this.understanding = this.data.queue[0] || null;
     return this.understanding;
   };
+  // Empties Insight in one go (nothing is recorded as dispatched).
+  P.clearQueue = function () {
+    if (this.state !== 'understanding') return 0;
+    var n = this.data.queue.length; this.data.queue = []; this.understanding = null; return n;
+  };
   P.leaveUnderstanding = function () {
     if (this.state !== 'understanding') return false;
     this.understanding = null; this.state = 'with'; return true;
