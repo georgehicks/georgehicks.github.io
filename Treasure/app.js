@@ -55,7 +55,7 @@
   }
   var stage = $('stage'), cloudEl = $('cloud'), christEl = $('christ'), heartEl = $('heart'), heartline = $('heartline'),
     dropEl = $('drop'), spokenEl = $('spoken'), restEl = $('restnote'), bPray = $('b-pray'), bSpirit = $('b-spirit'),
-    dock = $('dock'), holdnote = $('holdnote'), partpick = $('partpick'), contBtn = $('btn-continue'), pauseBtn = $('btn-pause'), overlays = $('overlays');
+    dock = $('dock'), cue = $('cue'), holdnote = $('holdnote'), partpick = $('partpick'), contBtn = $('btn-continue'), pauseBtn = $('btn-pause'), overlays = $('overlays');
 
   function put(e, x, y, s) { e.style.transform = 'translate(' + x + 'px,' + y + 'px) translate(-50%,-50%) scale(' + (s || 1) + ')'; }
 
@@ -78,7 +78,7 @@
     heartEl.classList.remove('glide'); put(heartEl, heartPos.x, heartPos.y);
     heartline.style.top = (G.apart.y + 48) + 'px';
     spokenEl.style.top = (H * 0.345) + 'px'; restEl.style.top = (H * 0.33) + 'px';
-    put(contBtn, W / 2, H * 0.455); holdnote.style.top = (G.hold.y + 62) + 'px'; partpick.style.top = (H * 0.36) + 'px';
+    put(contBtn, W / 2, H * 0.455); put(cue, W / 2, H * 0.77); holdnote.style.top = (G.hold.y + 62) + 'px'; partpick.style.top = (H * 0.36) + 'px';
     // the buckets follow a bowl-shaped curve along the bottom: lowest in the middle, rising and tilting toward the ends
     var bks = dock.querySelectorAll('.bk'), n = bks.length, side = 27, lift = Math.min(46, H * 0.065), dh = Math.round(lift + 64);
     dock.style.height = dh + 'px'; dock.classList.add('nolayout');
@@ -125,7 +125,7 @@
   function flash(l1, l2) { speak(l1, l2); clearTimeout(spokenTimer); spokenTimer = setTimeout(unspeak, readMs(l1, l2)); }
 
   // ---------- flow control ----------
-  function hideDrop() { cancelAnimationFrame(raf); fall = null; dropEl.classList.remove('glide', 'held', 'dragging'); dropEl.style.opacity = 0; dropEl.style.pointerEvents = 'none'; }
+  function hideDrop() { cue.classList.remove('on'); cancelAnimationFrame(raf); fall = null; dropEl.classList.remove('glide', 'held', 'dragging'); dropEl.style.opacity = 0; dropEl.style.pointerEvents = 'none'; }
   function closeSheet() { holdnote.classList.remove('on'); partpick.hidden = true; }
   function abortFlow() { clearTimers(); hideDrop(); closeSheet(); unspeak(); }
   // How long a sitting lasts: a number of drops or minutes of time with Him. Reaching it only rests the drops.
@@ -168,6 +168,7 @@
     dropEl.style.pointerEvents = 'auto'; dropEl.style.opacity = 0;
     put(dropEl, G.W / 2, G.y0, .8);
     fall = { item: item, t0: performance.now(), dur: PACE[S.settings.pace] || PACE.gentle };
+    if (!S.settings.caught) { cue.textContent = 'Tap the drop to catch it.'; cue.classList.add('on'); }
     raf = requestAnimationFrame(tick);
   }
   function tick(now) {
@@ -182,7 +183,7 @@
   }
   // Uncaught: it does not strike the heart. It goes to the Holy Spirit's bucket.
   function arrive() {
-    fall = null; dropEl.style.pointerEvents = 'none';
+    fall = null; cue.classList.remove('on'); dropEl.style.pointerEvents = 'none';
     // it passes by: a little further down, and gone. It is not sent to any bucket.
     var tf = dropEl.style.transform.match(/translate\(([-\d.]+)px,\s*([-\d.]+)px\)/);
     dropEl.classList.add('glide'); put(dropEl, tf ? +tf[1] : G.W / 2, (tf ? +tf[2] : G.yEnd) + 46, .9); dropEl.style.opacity = 0;
@@ -216,7 +217,7 @@
   function catchNow() {
     if (sit.state !== 'dropping' || !fall) return false;
     cancelAnimationFrame(raf); var item = fall.item; fall = null;
-    sit.catchDrop(); save(); render();
+    sit.catchDrop(); cue.classList.remove('on'); S.settings.caught = true; save(); render();
     baseNote = '';
     if (item.kind === 'person' && item.part) baseNote = 'Your part last time: ' + item.part;
     else if ((S.settings.hint || 0) < 4) { baseNote = 'Drag it to a bucket below, or tap one.'; S.settings.hint = (S.settings.hint || 0) + 1; save(); }
@@ -754,6 +755,7 @@
     m.body.append(el('div', { class: 'card', style: 'display:flex;align-items:center;gap:.7rem;flex-wrap:wrap' }, [
       ver, el('button', { class: 'btn primary', text: 'Refresh', onclick: refreshApp }),
       el('span', { class: 'quiet', style: 'flex-basis:100%', text: 'Refresh gets the newest version. Your lists and Noticed stay.' })]));
+    m.body.append(el('div', { style: 'margin:.2rem 0 .6rem' }, [el('button', { class: 'btn', text: 'How it works', onclick: function () { openHelp(false); } })]));
     seg('How slowly drops fall', 'pace', [['slow', 'Slow'], ['gentle', 'Gentle'], ['brisk', 'Brisk']]);
     m.body.append(el('p', { class: 'quiet', text: 'There is no hurry. A drop you don’t catch goes to the Holy Spirit, and nothing is lost.' }));
     seg('How long a sitting lasts', 'length', LENGTHS);
@@ -772,6 +774,41 @@
     });
     m.body.append(el('div', { style: 'margin-top:1.4rem' }, [wipe]));
   }
+  // ---------- how it works ----------
+  function openHelp(first) {
+    if (!first) quiet();
+    var step = 0, steps = C.HELP;
+    var m = mountOverlay('ov-help', 'How it works', done);
+    function done() { S.seenHelp = true; save(); closeOverlay('ov-help'); }
+    var ART = [
+      '<svg viewBox="0 0 200 100"><g transform="translate(46,52) scale(.9)"><path d="M0 -4C-16 8-19 16-19 22a9 9 0 0 0 19 3 9 9 0 0 0 19-3c0-6-3-14-19-26z" fill="none" stroke="var(--heart)" stroke-width="2.4" stroke-dasharray="5 5" transform="translate(0,-10)"/></g><path d="M78 50h46M114 42l10 8-10 8" fill="none" stroke="var(--ink-faint)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/><circle cx="154" cy="50" r="28" fill="var(--gold)" opacity=".92"/><path d="M154 34v32M142 45h24" stroke="var(--bg)" stroke-width="4" stroke-linecap="round" opacity=".55"/></svg>',
+      '<svg viewBox="0 0 200 100"><g fill="var(--cloud-open)"><circle cx="84" cy="22" r="14"/><circle cx="102" cy="16" r="17"/><circle cx="122" cy="23" r="13"/><rect x="74" y="22" width="58" height="12" rx="6"/></g><rect x="62" y="52" width="76" height="30" rx="14" fill="var(--surface-2)" stroke="var(--border)"/><text x="100" y="72" text-anchor="middle" font-size="13" fill="var(--ink)" font-family="Georgia,serif">a thought</text><path d="M100 40v8" stroke="var(--ink-faint)" stroke-width="2" stroke-linecap="round" stroke-dasharray="1 5"/></svg>',
+      '',
+      '<svg viewBox="0 0 200 100"><circle cx="100" cy="50" r="34" fill="var(--gold)" opacity=".9"/><g transform="translate(100,52) scale(.95)"><path d="M0 -4C-16 8-19 16-19 22a9 9 0 0 0 19 3 9 9 0 0 0 19-3c0-6-3-14-19-26z" fill="var(--heart)" transform="translate(0,-9)"/></g></svg>'
+    ];
+    function draw() {
+      var st = steps[step]; m.body.innerHTML = '';
+      var art = el('div', { class: 'helpart' }); art.innerHTML = ART[step] || '';
+      var box = el('div', { class: 'helpstep' }, [art, el('h3', { text: st.title }), el('p', { text: st.text })]);
+      if (st.legend) {
+        var lg = el('div', { class: 'legend' });
+        C.LEGEND.forEach(function (x) {
+          var src = bucketEl(x.b), svg = src && src.querySelector('svg');
+          lg.append(el('div', { style: 'color:' + (src ? getComputedStyle(src).color : 'inherit') }, [svg ? svg.cloneNode(true) : null,
+            el('div', { style: 'color:var(--ink)' }, [el('b', { text: x.name }), el('span', { text: x.means })])]));
+        });
+        box.append(lg);
+      }
+      var dots = el('div', { class: 'dots' }); steps.forEach(function (_, i) { dots.append(el('i', { class: i === step ? 'on' : '' })); });
+      var nav = el('div', { class: 'helpnav' }, [
+        step > 0 ? el('button', { class: 'btn', text: 'Back', onclick: function () { step--; draw(); } }) : el('button', { class: 'btn', text: 'Skip', onclick: done }),
+        step < steps.length - 1 ? el('button', { class: 'btn primary', text: 'Next', onclick: function () { step++; draw(); } }) : el('button', { class: 'btn primary', text: 'Begin', onclick: done })]);
+      m.body.append(box, dots, nav); m.body.scrollTop = 0;
+    }
+    draw();
+  }
+  $('btn-help').addEventListener('click', function () { openHelp(false); });
+
   // Clears this app's cached files and its service worker, then reloads. Saved lists and history are untouched.
   function refreshApp() {
     var jobs = [];
@@ -858,7 +895,7 @@
     try { if (screen.orientation && screen.orientation.lock) screen.orientation.lock('portrait').catch(function () {}); } catch (e) {}
   });
   applyTheme();
-  requestAnimationFrame(function () { requestAnimationFrame(function () { layout(); render(); }); });
+  requestAnimationFrame(function () { requestAnimationFrame(function () { layout(); render(); if (!S.seenHelp) openHelp(true); }); });
 
   if ('serviceWorker' in navigator && location.protocol.indexOf('http') === 0) {
     window.addEventListener('load', function () { navigator.serviceWorker.register('./sw.js').catch(function () {}); });

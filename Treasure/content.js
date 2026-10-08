@@ -106,9 +106,26 @@
   // One-tap answers for "what is my part today?" so the keyboard is not needed. "None" is always valid.
   var PARTS = ['Make the call', 'Say sorry', 'Ask for help', 'Take one small step', 'Wait', 'Rest', 'Write it down', 'Tell someone', 'Pray for them', 'Do the next thing'];
 
+  // The first-run walkthrough and its key to the buckets. Plain words, nothing to read twice.
+  var HELP = [
+    { title: 'Place your heart with Jesus', text: 'Everything begins here. Drag the heart onto Him. Nothing drops until you do.' },
+    { title: 'Catch what drops', text: 'Thoughts, feelings, and the people you care about fall slowly from the cloud. Tap one to catch it.' },
+    { title: 'Give it to Him', text: 'Drag what you caught to a bucket at the bottom, or tap a bucket. Each one is a short prayer, and you will see its words as it lands.', legend: true },
+    { title: 'No pressure', text: 'There is nothing to win. A drop you do not catch simply passes by. Stop any time; your heart stays with Him.' }
+  ];
+  var LEGEND = [
+    { b: 'hands', name: 'Release', means: 'Into the Father’s hands.' },
+    { b: 'part', name: 'My part', means: 'What is mine to do today?' },
+    { b: 'thanks', name: 'Thanks', means: 'Thank the Father.' },
+    { b: 'spirit', name: 'Insight', means: 'Ask the Holy Spirit to help you understand.' },
+    { b: 'hold', name: 'Hold', means: 'Hold it to Jesus a moment.' },
+    { b: 'pray', name: 'Intercede', means: 'Pray for a person.' },
+    { b: 'lie', name: 'Lies', means: 'Put down a lie.' }
+  ];
+
   var content = {
     LINES: LINES, PRAY_NOW: PRAY_NOW, CLAIM: CLAIM, QUESTIONS: QUESTIONS,
-    THOUGHTS: THOUGHTS, SEEDS: SEEDS, PARTS: PARTS, SENSED: SENSED, TEST_IT: TEST_IT
+    THOUGHTS: THOUGHTS, SEEDS: SEEDS, PARTS: PARTS, SENSED: SENSED, TEST_IT: TEST_IT, HELP: HELP, LEGEND: LEGEND
     
   };
   if (typeof module !== 'undefined' && module.exports) module.exports = content;

@@ -35,3 +35,7 @@ Beyond the Father lines, three lines spoken to the Lord/Jesus (additions to sect
 ## Uncaught drops
 An uncaught drop passes by and fades. It is NOT sent to Insight (author's direction, overriding spec section 7/8).
 It is recorded in Noticed as "passed by". Insight holds only what the person sends there on purpose.
+
+## First run
+A four-step "How it works" opens once on first launch (and from the ? button and Settings): place your heart, catch what drops,
+give it to a bucket (with a one-line key to all seven), no pressure. Until the first catch, a cue under the stage says "Tap the drop to catch it."
