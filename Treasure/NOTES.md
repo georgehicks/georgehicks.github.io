@@ -43,3 +43,8 @@ give it to a bucket (with a one-line key to all seven), no pressure. Until the f
 ## Home Screen help
 Settings has "Add to Home Screen" (iPhone and Android steps, detected by platform; hidden once running installed).
 After the first full sitting a one-line dismissible reminder appears once (`installDone` in settings).
+
+## Memory, not history
+The Noticed screen is now "Recently" (Settings → Recently). The app keeps only the last dispatch per item (`last`: line + date) and the words last
+prayed per person (`prayed`: replaced each Intercede visit), shown as "Last prayed: peace, healing · 3 days ago" in Intercede. `offers` is a 20-entry scratch,
+not a log. Older logs migrate into `last`/`prayed` on first load and are trimmed. No tallies, streaks or ranks.

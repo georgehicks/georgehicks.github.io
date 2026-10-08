@@ -28,6 +28,21 @@
       if (raw) { var s = JSON.parse(raw); for (var k in s) d[k] = s[k]; }
     } catch (e) {}
     d.settings = Object.assign({ pace: 'gentle', theme: 'auto', length: 'd30' }, d.settings);
+    if (!d.last) { // earlier versions kept a growing log; keep only the last dispatch per item and the last words prayed per person
+      d.last = {}; d.prayed = {}; var lastClaimAt = {};
+      (d.offers || []).forEach(function (o) {
+        if (o.kind === 'sitting' || /^(hold|know|claim|sensed|place-heart)$/.test(o.line)) { if (o.line === 'claim') lastClaimAt[o.key] = o.at; return; }
+        var keep = { at: o.at, key: o.key, kind: o.kind, text: o.text, line: o.line }; if (o.part) keep.part = o.part; if (o.uncaught) keep.uncaught = true; if (o.words) keep.words = o.words;
+        d.last[o.key] = keep;
+      });
+      (d.offers || []).forEach(function (o) {
+        if (o.line === 'claim' && lastClaimAt[o.key] && o.at >= lastClaimAt[o.key] - 3 * 3600 * 1000) {
+          var p = d.prayed[o.key] = d.prayed[o.key] || { text: o.text, words: [], at: lastClaimAt[o.key] };
+          if (p.words.indexOf(o.word) < 0) p.words.push(o.word);
+        }
+      });
+      d.offers = (d.offers || []).slice(-20);
+    }
     if (!d.peopleSeeded) { // the generic starters become ordinary, editable list items (once)
       if (!d.lists.people.some(function (p) { return /^p\d+$/.test(p.id); })) d.lists.people = d.lists.people.concat(seed(C.SEEDS.people, 'p'));
       d.peopleSeeded = true;
@@ -511,13 +526,14 @@
         m.body.append(el('div', { class: 'sec', style: 'margin-top:.2rem', text: 'Who is on your heart?' }));
         m.body.append(el('button', { class: 'linebtn soft', onclick: addName }, [el('span', { class: 'line', text: '+ Add a name' })]));
         people.forEach(function (p) {
-          m.body.append(el('button', { class: 'linebtn', onclick: function () { sel = p.id; recent = []; draw(); } }, [el('span', { class: 'line', text: p.text })]));
+          var lp = lastPrayedText('person:' + p.id);
+          m.body.append(el('button', { class: 'linebtn', onclick: function () { sel = p.id; recent = []; draw(); } }, [el('span', { class: 'line', text: p.text }), lp ? el('span', { class: 'sub', text: lp }) : null]));
         });
         if (!people.length) m.body.append(el('div', { class: 'emptynote', text: 'No one is checked in your People list. Add a name here.' }));
         return;
       }
       // step 2: the words, for this person
-      m.body.append(el('div', { class: 'prayhead' }, [el('div', { class: 'pname', text: person.text }), el('button', { class: 'mini', text: 'Change person', onclick: function () { sel = null; recent = []; draw(); } })]));
+      m.body.append(el('div', { class: 'prayhead' }, [el('div', {}, [el('div', { class: 'pname', text: person.text }), lastPrayedText('person:' + person.id) ? el('div', { class: 'plast', text: lastPrayedText('person:' + person.id) }) : null]), el('button', { class: 'mini', text: 'Change person', onclick: function () { sel = null; recent = []; draw(); } })]));
       var words = S.lists.claims.filter(function (w) { return !w.paused; }).map(function (w) { return w.text; });
       var field = el('div', { class: 'cloudfield' });
       var amen = el('button', { class: 'amen off', 'aria-hidden': 'true', tabindex: '-1', text: L['pray-all'].text, onclick: function () { finishPrayer(person, claimed[person.id]); } });
@@ -699,39 +715,46 @@
     draw();
   }
 
-  // ---------- noticed ----------
-  // Every spoken line is shown as it was said, naming who it was spoken to.
-  var SHORT = { 'pray-now': 'Father, I pray for them', claim: 'prayed', passed: 'passed by', 'pray-all': 'Father, I pray all of this' };
+  // ---------- recently: just the last thing said over each one, and when ----------
+  var SHORT = { 'pray-now': 'Father, I pray for them', 'pray-all': 'Father, I pray all of this', passed: 'passed by', do: 'Lord, what do you want me to do' };
   function lineName(l) { return SHORT[l] || (L[l] ? L[l].text.replace(/\.$/, '') : l); }
   function seqLabel(o) {
-    if (o.line === 'claim') return 'claimed ' + o.word;
     if (o.line === 'passed' || (o.line === 'understand' && o.uncaught)) return 'passed by';
     if (o.line === 'my-part' && o.part) return 'Father, my part: ' + o.part;
+    if (o.line === 'do' && o.part) return 'Lord, my part: ' + o.part;
     return lineName(o.line);
+  }
+  // "today", "yesterday", "3 days ago", then a plain date
+  function when(at) {
+    var d = new Date(at), n = new Date(), day = function (x) { return new Date(x.getFullYear(), x.getMonth(), x.getDate()).getTime(); };
+    var diff = Math.round((day(n) - day(d)) / 86400000);
+    if (diff <= 0) return 'today'; if (diff === 1) return 'yesterday'; if (diff < 7) return diff + ' days ago';
+    return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+  }
+  function lastPrayedText(key) {
+    var p = S.prayed && S.prayed[key]; if (!p || !p.words || !p.words.length) return '';
+    return 'Last prayed: ' + p.words.join(', ') + ' · ' + when(p.at);
   }
   function openNoticed() {
     quiet();
-    var m = mountOverlay('ov-noticed', 'Noticed', function () { closeOverlay('ov-noticed'); });
-    var byKey = {}, order = [];
-    S.offers.forEach(function (o) { if (o.kind === 'sitting' || o.line === 'place-heart') return; if (!byKey[o.key]) { byKey[o.key] = []; } byKey[o.key].push(o); });
-    order = Object.keys(byKey).sort(function (a, b) { return byKey[b][byKey[b].length - 1].at - byKey[a][byKey[a].length - 1].at; });
-    m.body.append(el('p', { class: 'quiet', text: 'What has been spoken over each one. This is for noticing, not for counting.' }));
-    if (!order.length) { m.body.append(el('div', { class: 'emptynote', text: 'Nothing yet. Place your heart with Him, and catch what drops.' })); return; }
-    ['person', 'concern', 'feeling', 'thanks', 'thought'].forEach(function (kind) {
-      var keys = order.filter(function (k) { return byKey[k][0].kind === kind; }); if (!keys.length) return;
-      m.body.append(el('div', { class: 'sec', text: { person: 'People', concern: 'Concerns', feeling: 'Feelings', thanks: 'Thanks', thought: 'Thoughts' }[kind] }));
-      keys.forEach(function (k) {
-        var recs = byKey[k], counts = {}, chips = el('div', { class: 'nchips' });
-        recs.forEach(function (o) { counts[o.line] = (counts[o.line] || 0) + 1; });
-        Object.keys(counts).forEach(function (l) { chips.append(el('span', { class: 'nchip', text: lineName(l) + (counts[l] > 1 ? ' ×' + counts[l] : '') })); });
-        m.body.append(el('div', { class: 'nrow' }, [el('div', { class: 'nt', text: recs[recs.length - 1].text }), chips,
-          recs.length > 1 ? el('div', { class: 'nseq', text: recs.slice(-6).map(seqLabel).join(' → ') }) : null]));
-      });
+    var m = mountOverlay('ov-noticed', 'Recently', function () { closeOverlay('ov-noticed'); });
+    var last = S.last || {}, prayed = S.prayed || {}, keys = {};
+    Object.keys(last).forEach(function (k) { keys[k] = last[k].at; });
+    Object.keys(prayed).forEach(function (k) { keys[k] = Math.max(keys[k] || 0, prayed[k].at); });
+    var order = Object.keys(keys).sort(function (a, b) { return keys[b] - keys[a]; }).slice(0, 60);
+    m.body.append(el('p', { class: 'quiet', text: 'Only the last thing said over each one, and when. Nothing is added up.' }));
+    if (!order.length) { m.body.append(el('div', { class: 'emptynote', text: 'Nothing yet. Place your heart with Him, and give what drops.' })); return; }
+    order.forEach(function (k) {
+      var rec = last[k], pr = prayed[k];
+      var lines = [];
+      if (rec) lines.push(seqLabel(rec) + ' · ' + when(rec.at));
+      if (pr && pr.words && pr.words.length) lines.push(lastPrayedText(k));
+      m.body.append(el('div', { class: 'nrow' }, [el('div', { class: 'nt', text: (rec || pr).text })].concat(lines.map(function (t) { return el('div', { class: 'when', text: t }); }))));
     });
-    var clr = el('button', { class: 'mini', text: 'Clear Noticed' }), armed = false;
+    var clr = el('button', { class: 'mini', text: 'Clear this' }), armed = false;
     clr.addEventListener('click', function () {
-      if (!armed) { armed = true; clr.textContent = 'Sure? This clears all of it.'; clr.classList.add('warn'); return; }
-      S.offers = []; sit.data.offers = S.offers; save(); openNoticed();
+      if (!armed) { armed = true; clr.textContent = 'Sure?'; clr.classList.add('warn'); return; }
+      S.last = {}; S.prayed = {}; S.offers = []; sit.data.offers = S.offers; save(); openNoticed();
     });
     m.body.append(el('div', { style: 'margin-top:1.4rem' }, [clr]));
   }
@@ -756,7 +779,7 @@
     m.body.append(el('div', { class: 'card', style: 'display:flex;align-items:center;gap:.7rem;flex-wrap:wrap' }, [
       ver, el('button', { class: 'btn primary', text: 'Refresh', onclick: refreshApp }),
       el('span', { class: 'quiet', style: 'flex-basis:100%', text: 'Refresh gets the newest version. Your lists and Noticed stay.' })]));
-    m.body.append(el('div', { style: 'margin:.2rem 0 .6rem' }, [el('button', { class: 'btn', text: 'How it works', onclick: function () { openHelp(false); } })]));
+    m.body.append(el('div', { style: 'margin:.2rem 0 .6rem' }, [el('button', { class: 'btn', text: 'How it works', onclick: function () { openHelp(false); } }), document.createTextNode(' '), el('button', { class: 'btn', text: 'Recently', onclick: openNoticed })]));
     if (!isInstalled()) m.body.append(el('div', { style: 'margin:0 0 .6rem' }, [el('button', { class: 'btn', text: 'Add to Home Screen', onclick: openInstall })]));
     seg('How slowly drops fall', 'pace', [['slow', 'Slow'], ['gentle', 'Gentle'], ['brisk', 'Brisk']]);
     m.body.append(el('p', { class: 'quiet', text: 'There is no hurry. A drop you don’t catch goes to the Holy Spirit, and nothing is lost.' }));
@@ -853,7 +876,6 @@
     stopForNow('Resting. Your heart stays with Him.');
   }
   $('btn-lists').addEventListener('click', openLists);
-  $('btn-noticed').addEventListener('click', openNoticed);
   $('btn-settings').addEventListener('click', openSettings);
 
   // ---------- the heart ----------

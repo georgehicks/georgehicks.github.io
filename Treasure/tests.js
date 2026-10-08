@@ -158,6 +158,21 @@ t('closing intercession: only after claims, names the Father, recorded', () => {
   assert.deepStrictEqual(s.data.offers.pop().words, ['peace', 'healing']);
   s.closePray(); assert.strictEqual(s.prayAll(p, ['peace']), null);
 });
+t('memory is small: last dispatch per item, last prayed per person, no running history', () => {
+  const s = placed(), it = { key: 'concern:m', kind: 'concern', text: 'Money' };
+  for (let i = 0; i < 40; i++) { s.beginDrop(it); s.catchDrop(); s.offer(i % 2 ? 'into-hands' : 'thank-you'); s.finishOffer(); }
+  assert(s.data.offers.length <= 20);                                   // not a growing log
+  assert.strictEqual(Object.keys(s.data.last).length, 1);               // one entry for the item
+  assert.strictEqual(s.data.last['concern:m'].line, 'into-hands');      // the latest dispatch, with a date
+  assert(s.data.last['concern:m'].at > 0);
+  s.beginDrop(it); s.catchDrop(); s.hold(); assert.strictEqual(s.data.last['concern:m'].line, 'into-hands'); // hold is not a dispatch
+  s.offer('thank-you'); s.finishOffer();
+  const p = { key: 'person:a', kind: 'person', text: 'Sam' };
+  s.openPray(); s.claim(p, 'peace'); s.claim(p, 'healing'); s.claim(p, 'peace');
+  assert.deepStrictEqual(s.data.prayed['person:a'].words, ['peace', 'healing']);
+  s.closePray(); s.openPray(); s.claim(p, 'rest');                     // a new visit replaces, not appends
+  assert.deepStrictEqual(s.data.prayed['person:a'].words, ['rest']);
+});
 t('pool: only checked (active) list items drop; unchecked ones rest', () => {
   const p = E.buildPool(lists({ people: [{ id: 'a', text: 'Sam', paused: true }, { id: 'b', text: 'Ann' }] }));
   assert(!p['person:a'] && p['person:b']);

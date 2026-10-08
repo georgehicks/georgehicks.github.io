@@ -94,14 +94,28 @@
     this.understanding = null; // the queue item being looked at
     this.held = { hold: false };
     this.uncaughtRun = 0;
+    this.prayWords = {};   // words prayed in this visit to Intercede
   }
   var P = Sitting.prototype;
 
+  // Only enough memory to be meaningful: the last dispatch per item, and the words last prayed for a person.
+  // `offers` is a short scratch of the most recent lines, not a history.
+  var NOT_DISPATCH = { hold: 1, know: 1, claim: 1, sensed: 1, 'place-heart': 1 };
   P._record = function (item, line, extra) {
     var rec = { at: Date.now(), key: item.key, kind: item.kind, text: item.text, line: line };
     if (extra) for (var k in extra) rec[k] = extra[k];
     this.data.offers.push(rec);
-    if (this.data.offers.length > 2000) this.data.offers.splice(0, this.data.offers.length - 2000);
+    if (this.data.offers.length > 20) this.data.offers.splice(0, this.data.offers.length - 20);
+    if (!NOT_DISPATCH[line] && item.kind !== 'sitting') {
+      var last = this.data.last = this.data.last || {};
+      var keep = { at: rec.at, key: rec.key, kind: rec.kind, text: rec.text, line: line };
+      if (rec.part) keep.part = rec.part;
+      if (rec.uncaught) keep.uncaught = true;
+      if (rec.words) keep.words = rec.words;
+      last[rec.key] = keep;
+      var keys = Object.keys(last);
+      if (keys.length > 150) keys.sort(function (a, b) { return last[a].at - last[b].at; }).slice(0, keys.length - 150).forEach(function (kk) { delete last[kk]; });
+    }
     return rec;
   };
   P._enqueue = function (item, source) {
@@ -261,12 +275,16 @@
   P.openPray = function () {
     if (this.state === 'dropping') { this.data.pending = this.drop; this.drop = null; this.state = 'with'; }
     if (this.state !== 'with' && this.state !== 'offered') return false;
-    this.state = 'praying'; return true;
+    this.prayWords = {}; this.state = 'praying'; return true;
   };
   P.claim = function (person, word, spoken) {
     if (this.state !== 'praying' || !person || !word) return null;
     var line = fill(C.CLAIM, { word: word, name: spoken || person.text });
     this._record(person, 'claim', { word: word });
+    var w = (this.prayWords[person.key] = this.prayWords[person.key] || []);
+    if (w.indexOf(word) < 0) w.push(word);
+    var pr = this.data.prayed = this.data.prayed || {};
+    pr[person.key] = { text: person.text, words: w.slice(), at: Date.now() };
     return line;
   };
   // The closing line over everything just claimed for this person.

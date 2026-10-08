@@ -220,6 +220,7 @@
   .seg { display:flex; gap:.4rem; flex-wrap:wrap; }
 
   /* noticed */
+  .nrow .when { font-size:.78rem; color:var(--ink-faint); margin-top:.15rem; }
   .nrow { padding:.7rem 0; border-bottom:1px solid var(--border); }
   .nrow .nt { font-family:var(--font-display); font-size:1.02rem; }
   .nchips { display:flex; flex-wrap:wrap; gap:.3rem; margin-top:.35rem; }
@@ -228,6 +229,7 @@
 
   /* pray */
   .prayhead { display:flex; align-items:center; justify-content:space-between; gap:.6rem; padding:.2rem .2rem .6rem; flex-shrink:0; }
+  .plast { font-size:.8rem; color:var(--ink-muted); margin-top:.1rem; }
   .pname { font-family:var(--font-display); font-size:1.3rem; min-width:0; overflow-wrap:anywhere; }
   .people { display:flex; flex-wrap:wrap; gap:.4rem; padding:.2rem 0 .5rem; flex-shrink:0; }
   .cloudfield { position:relative; flex:1; min-height:0; overflow:hidden; border-radius:20px; touch-action:manipulation;
@@ -278,7 +280,6 @@
       <button class="icon-btn" id="btn-pause" aria-label="Pause" hidden><svg viewBox="0 0 24 24"><path d="M9 5v14M15 5v14"/></svg></button>
       <button class="icon-btn" id="btn-help" aria-label="How it works"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M9.6 9.3a2.5 2.5 0 1 1 3.6 2.2c-.8.5-1.2 1-1.2 1.9M12 17h.01"/></svg></button>
       <button class="icon-btn" id="btn-lists" aria-label="Lists"><svg viewBox="0 0 24 24"><path d="M8 6h12M8 12h12M8 18h12M4 6h.01M4 12h.01M4 18h.01"/></svg></button>
-      <button class="icon-btn" id="btn-noticed" aria-label="Noticed"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"/></svg></button>
       <button class="icon-btn" id="btn-settings" aria-label="Settings"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3.2"/><path d="M10.3 2.8h3.4l.5 2.4 1.9.8 2.1-1.4 2.4 2.4-1.4 2.1.8 1.9 2.4.5v3.4l-2.4.5-.8 1.9 1.4 2.1-2.4 2.4-2.1-1.4-1.9.8-.5 2.4h-3.4l-.5-2.4-1.9-.8-2.1 1.4-2.4-2.4 1.4-2.1-.8-1.9-2.4-.5v-3.4l2.4-.5.8-1.9-1.4-2.1 2.4-2.4 2.1 1.4 1.9-.8z"/></svg></button>
     </div>
   </header>
