@@ -811,10 +811,10 @@
     var m = mountOverlay('ov-help', 'How it works', done);
     function done() { S.seenHelp = true; save(); closeOverlay('ov-help'); }
     var ART = [
-      '<svg viewBox="0 0 200 100"><g transform="translate(46,52) scale(.9)"><path d="M0 -4C-16 8-19 16-19 22a9 9 0 0 0 19 3 9 9 0 0 0 19-3c0-6-3-14-19-26z" fill="none" stroke="var(--heart)" stroke-width="2.4" stroke-dasharray="5 5" transform="translate(0,-10)"/></g><path d="M78 50h46M114 42l10 8-10 8" fill="none" stroke="var(--ink-faint)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/><circle cx="154" cy="50" r="28" fill="var(--gold)" opacity=".92"/><path d="M154 34v32M142 45h24" stroke="var(--bg)" stroke-width="4" stroke-linecap="round" opacity=".55"/></svg>',
+      '<svg viewBox="0 0 200 100"><path d="M32 56C10 40 6 28 6 20a13 13 0 0 1 26-3 13 13 0 0 1 26 3c0 8-4 20-26 36z" transform="translate(20.4,24.8) scale(.8)" fill="none" stroke="var(--heart)" stroke-width="3" stroke-dasharray="6 6"/><path d="M78 50h46M114 42l10 8-10 8" fill="none" stroke="var(--ink-faint)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/><circle cx="154" cy="50" r="28" fill="var(--gold)" opacity=".92"/><path d="M154 34v32M142 45h24" stroke="var(--bg)" stroke-width="4" stroke-linecap="round" opacity=".55"/></svg>',
       '<svg viewBox="0 0 200 100"><g fill="var(--cloud-open)"><circle cx="84" cy="22" r="14"/><circle cx="102" cy="16" r="17"/><circle cx="122" cy="23" r="13"/><rect x="74" y="22" width="58" height="12" rx="6"/></g><rect x="62" y="52" width="76" height="30" rx="14" fill="var(--surface-2)" stroke="var(--border)"/><text x="100" y="72" text-anchor="middle" font-size="13" fill="var(--ink)" font-family="Georgia,serif">a thought</text><path d="M100 40v8" stroke="var(--ink-faint)" stroke-width="2" stroke-linecap="round" stroke-dasharray="1 5"/></svg>',
       '',
-      '<svg viewBox="0 0 200 100"><circle cx="100" cy="50" r="34" fill="var(--gold)" opacity=".9"/><g transform="translate(100,52) scale(.95)"><path d="M0 -4C-16 8-19 16-19 22a9 9 0 0 0 19 3 9 9 0 0 0 19-3c0-6-3-14-19-26z" fill="var(--heart)" transform="translate(0,-9)"/></g></svg>'
+      '<svg viewBox="0 0 200 100"><circle cx="100" cy="50" r="34" fill="var(--gold)" opacity=".9"/><path d="M32 56C10 40 6 28 6 20a13 13 0 0 1 26-3 13 13 0 0 1 26 3c0 8-4 20-26 36z" transform="translate(76,26.4) scale(.75)" fill="var(--heart)"/></svg>'
     ];
     function draw() {
       var st = steps[step]; m.body.innerHTML = '';
