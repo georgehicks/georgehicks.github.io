@@ -852,6 +852,11 @@
         });
         box.append(lg);
       }
+      if (step === steps.length - 1 && !isInstalled()) {
+        box.append(el('div', { style: 'margin-top:1.3rem' }, [
+          el('button', { class: 'btn', text: 'Add to Home Screen', onclick: openInstall }),
+          el('div', { class: 'quiet', style: 'margin-top:.4rem', text: 'Opens full screen, like an app.' })]));
+      }
       var dots = el('div', { class: 'dots' }); steps.forEach(function (_, i) { dots.append(el('i', { class: i === step ? 'on' : '' })); });
       var nav = el('div', { class: 'helpnav' }, [
         step > 0 ? el('button', { class: 'btn', text: 'Back', onclick: function () { step--; draw(); } }) : el('button', { class: 'btn', text: 'Skip', onclick: done }),
