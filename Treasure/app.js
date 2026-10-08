@@ -18,7 +18,7 @@
   function seed(arr, p) { return arr.map(function (t, i) { return { id: p + i, text: t, paused: false }; }); }
   function defaults() {
     return { v: 1, offers: [], queue: [], pending: null, deckState: { deck: [], drawn: [] }, lastKey: null,
-      settings: { pace: 'gentle', theme: 'auto', length: 'd30' },
+      settings: { pace: 'gentle', theme: 'auto', length: 'd15' },
       lists: { people: seed(C.SEEDS.people, 'p'), concerns: seed(C.SEEDS.concerns, 'c'), thanks: seed(C.SEEDS.thanks, 'g'), feelings: seed(C.SEEDS.feelings, 'f'), claims: seed(C.SEEDS.claims, 'w') } };
   }
   function load() {
@@ -27,7 +27,8 @@
       var raw = localStorage.getItem(KEY);
       if (raw) { var s = JSON.parse(raw); for (var k in s) d[k] = s[k]; }
     } catch (e) {}
-    d.settings = Object.assign({ pace: 'gentle', theme: 'auto', length: 'd30' }, d.settings);
+    d.settings = Object.assign({ pace: 'gentle', theme: 'auto', length: 'd15' }, d.settings);
+    if (d.settings.length === 'd30' && !d.settings.lengthChosen) d.settings.length = 'd15'; // the old default, never chosen
     if (!d.last) { // earlier versions kept a growing log; keep only the last dispatch per item and the last words prayed per person
       d.last = {}; d.prayed = {}; var lastClaimAt = {};
       (d.offers || []).forEach(function (o) {
@@ -151,7 +152,7 @@
   function clockOff() { if (run.since) { run.ms += Date.now() - run.since; run.since = 0; } }
   function resetRun() { run = { drops: 0, ms: 0, since: Date.now(), over: false }; }
   function limitReached() {
-    var l = S.settings.length || 'd30'; if (l === 'none') return false;
+    var l = S.settings.length || 'd15'; if (l === 'none') return false;
     var n = +l.slice(1);
     if (l[0] === 'd') return run.drops >= n;
     return run.ms + (run.since ? Date.now() - run.since : 0) >= n * 60000;
@@ -771,7 +772,7 @@
       m.body.append(el('div', { class: 'sec', text: label }));
       var row = el('div', { class: 'seg' });
       opts.forEach(function (o) {
-        row.append(el('button', { class: 'chip' + (S.settings[key] === o[0] ? ' on' : ''), text: o[1], onclick: function () { S.settings[key] = o[0]; save(); applyTheme(); openSettings(); } }));
+        row.append(el('button', { class: 'chip' + (S.settings[key] === o[0] ? ' on' : ''), text: o[1], onclick: function () { S.settings[key] = o[0]; if (key === 'length') S.settings.lengthChosen = true; save(); applyTheme(); openSettings(); } }));
       });
       m.body.append(row);
     }
