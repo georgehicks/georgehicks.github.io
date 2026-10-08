@@ -123,9 +123,17 @@
     { b: 'lie', name: 'Lies', means: 'Put down a lie.' }
   ];
 
+  // Putting Treasuring on the Home Screen. Steps for each phone, in the words the phone itself uses.
+  var INSTALL = {
+    why: 'So Treasuring opens full screen like an app, keeps the screen upright, and works without a connection.',
+    ios: ['Open this page in Safari. (If you are inside another app, use its menu and choose \u201COpen in Safari.\u201D)', 'Tap the Share button {share} at the bottom of the screen.', 'Scroll down and tap \u201CAdd to Home Screen.\u201D', 'Tap \u201CAdd.\u201D Treasuring is now on your Home Screen.'],
+    android: ['Open this page in Chrome.', 'Tap the menu \u22EE at the top right.', 'Tap \u201CInstall app\u201D or \u201CAdd to Home screen.\u201D', 'Tap \u201CInstall\u201D or \u201CAdd.\u201D Treasuring is now on your Home Screen.'],
+    after: 'From then on, open it from its icon on your Home Screen.'
+  };
+
   var content = {
     LINES: LINES, PRAY_NOW: PRAY_NOW, CLAIM: CLAIM, QUESTIONS: QUESTIONS,
-    THOUGHTS: THOUGHTS, SEEDS: SEEDS, PARTS: PARTS, SENSED: SENSED, TEST_IT: TEST_IT, HELP: HELP, LEGEND: LEGEND
+    THOUGHTS: THOUGHTS, SEEDS: SEEDS, PARTS: PARTS, SENSED: SENSED, TEST_IT: TEST_IT, HELP: HELP, LEGEND: LEGEND, INSTALL: INSTALL
     
   };
   if (typeof module !== 'undefined' && module.exports) module.exports = content;

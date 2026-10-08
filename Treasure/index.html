@@ -136,6 +136,12 @@
     background:var(--gold); color:#1a1608; font-size:.68rem; font-weight:700; display:flex; align-items:center; justify-content:center; }
   .bk.pulse { animation:pulse .9s ease; }
   @keyframes pulse { 40% { transform:var(--pos) scale(1.2); box-shadow:0 0 22px var(--gold-glow); } }
+  .installbar { left:0; right:0; width:92%; margin-inline:auto; display:flex; align-items:center; justify-content:space-between; gap:.5rem; background:var(--surface); border:1px solid var(--border); border-radius:14px; padding:.45rem .6rem .45rem .8rem; z-index:5; font-size:.8rem; color:var(--ink-muted); }
+  .ib-actions { display:flex; gap:.35rem; flex-shrink:0; }
+  .steps { padding-left:0; list-style:none; counter-reset:s; max-width:26rem; margin:1rem auto 0; }
+  .steps li { counter-increment:s; display:flex; gap:.7rem; align-items:flex-start; margin:.7rem 0; font-size:1rem; }
+  .steps li::before { content:counter(s); flex-shrink:0; width:1.6rem; height:1.6rem; border-radius:50%; background:var(--surface-2); border:1px solid var(--gold); display:flex; align-items:center; justify-content:center; font-size:.85rem; }
+  .steps svg { width:1.15rem; height:1.15rem; vertical-align:-.2rem; fill:none; stroke:currentColor; stroke-width:1.8; stroke-linecap:round; stroke-linejoin:round; }
   .cue { left:0; right:0; max-width:19rem; margin-inline:auto; text-align:center; font-family:var(--font-display); font-style:italic; color:var(--gold); font-size:.95rem; pointer-events:none; opacity:0; transition:opacity .5s ease; z-index:3; }
   .cue.on { opacity:1; }
   .helpstep { text-align:center; padding-top:4vh; }
@@ -303,6 +309,7 @@
     <div class="restnote" id="restnote"></div>
 
     <button class="resume" id="btn-continue" hidden>Continue</button>
+    <div class="installbar" id="installbar" hidden><span>Keep Treasuring on your Home Screen.</span><span class="ib-actions"><button class="mini" id="ib-show">Show me</button><button class="mini" id="ib-no" aria-label="Not now">✕</button></span></div>
     <div class="cue" id="cue"></div>
     <div class="holdnote" id="holdnote"></div>
     <div class="partpick" id="partpick" hidden></div>

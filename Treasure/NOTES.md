@@ -39,3 +39,7 @@ It is recorded in Noticed as "passed by". Insight holds only what the person sen
 ## First run
 A four-step "How it works" opens once on first launch (and from the ? button and Settings): place your heart, catch what drops,
 give it to a bucket (with a one-line key to all seven), no pressure. Until the first catch, a cue under the stage says "Tap the drop to catch it."
+
+## Home Screen help
+Settings has "Add to Home Screen" (iPhone and Android steps, detected by platform; hidden once running installed).
+After the first full sitting a one-line dismissible reminder appears once (`installDone` in settings).

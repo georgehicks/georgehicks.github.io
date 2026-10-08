@@ -55,7 +55,7 @@
   }
   var stage = $('stage'), cloudEl = $('cloud'), christEl = $('christ'), heartEl = $('heart'), heartline = $('heartline'),
     dropEl = $('drop'), spokenEl = $('spoken'), restEl = $('restnote'), bPray = $('b-pray'), bSpirit = $('b-spirit'),
-    dock = $('dock'), cue = $('cue'), holdnote = $('holdnote'), partpick = $('partpick'), contBtn = $('btn-continue'), pauseBtn = $('btn-pause'), overlays = $('overlays');
+    dock = $('dock'), cue = $('cue'), holdnote = $('holdnote'), partpick = $('partpick'), contBtn = $('btn-continue'), installBar = $('installbar'), pauseBtn = $('btn-pause'), overlays = $('overlays');
 
   function put(e, x, y, s) { e.style.transform = 'translate(' + x + 'px,' + y + 'px) translate(-50%,-50%) scale(' + (s || 1) + ')'; }
 
@@ -78,7 +78,7 @@
     heartEl.classList.remove('glide'); put(heartEl, heartPos.x, heartPos.y);
     heartline.style.top = (G.apart.y + 48) + 'px';
     spokenEl.style.top = (H * 0.345) + 'px'; restEl.style.top = (H * 0.33) + 'px';
-    put(contBtn, W / 2, H * 0.455); put(cue, W / 2, H * 0.77); holdnote.style.top = (G.hold.y + 62) + 'px'; partpick.style.top = (H * 0.36) + 'px';
+    put(contBtn, W / 2, H * 0.455); put(cue, W / 2, H * 0.77); installBar.style.top = (H * 0.775) + 'px'; holdnote.style.top = (G.hold.y + 62) + 'px'; partpick.style.top = (H * 0.36) + 'px';
     // the buckets follow a bowl-shaped curve along the bottom: lowest in the middle, rising and tilting toward the ends
     var bks = dock.querySelectorAll('.bk'), n = bks.length, side = 27, lift = Math.min(46, H * 0.065), dh = Math.round(lift + 64);
     dock.style.height = dh + 'px'; dock.classList.add('nolayout');
@@ -104,6 +104,7 @@
     restEl.textContent = restMsg; restEl.classList.toggle('on', st === 'paused');
     pauseBtn.hidden = !(st === 'with' || st === 'dropping');
     contBtn.hidden = st !== 'paused'; contBtn.textContent = run.over ? 'Keep going' : 'Continue';
+    installBar.hidden = !(st === 'paused' && run.over && !isInstalled() && !S.settings.installDone);
     updateSpirit();
   }
   function updateSpirit() {
@@ -756,6 +757,7 @@
       ver, el('button', { class: 'btn primary', text: 'Refresh', onclick: refreshApp }),
       el('span', { class: 'quiet', style: 'flex-basis:100%', text: 'Refresh gets the newest version. Your lists and Noticed stay.' })]));
     m.body.append(el('div', { style: 'margin:.2rem 0 .6rem' }, [el('button', { class: 'btn', text: 'How it works', onclick: function () { openHelp(false); } })]));
+    if (!isInstalled()) m.body.append(el('div', { style: 'margin:0 0 .6rem' }, [el('button', { class: 'btn', text: 'Add to Home Screen', onclick: openInstall })]));
     seg('How slowly drops fall', 'pace', [['slow', 'Slow'], ['gentle', 'Gentle'], ['brisk', 'Brisk']]);
     m.body.append(el('p', { class: 'quiet', text: 'There is no hurry. A drop you don’t catch goes to the Holy Spirit, and nothing is lost.' }));
     seg('How long a sitting lasts', 'length', LENGTHS);
@@ -774,6 +776,34 @@
     });
     m.body.append(el('div', { style: 'margin-top:1.4rem' }, [wipe]));
   }
+  // ---------- add to the Home Screen ----------
+  function isInstalled() { return (window.matchMedia && matchMedia('(display-mode: standalone)').matches) || navigator.standalone === true; }
+  function platform() { return /Android/i.test(navigator.userAgent || '') ? 'android' : 'ios'; }
+  function openInstall() {
+    quiet(); S.settings.installDone = true; save(); installBar.hidden = true;
+    var m = mountOverlay('ov-install', 'Add to Home Screen', function () { closeOverlay('ov-install'); }), which = platform();
+    function draw() {
+      m.body.innerHTML = '';
+      m.body.append(el('p', { class: 'quiet', text: C.INSTALL.why }));
+      var seg = el('div', { class: 'seg' });
+      [['ios', 'iPhone'], ['android', 'Android']].forEach(function (p) { seg.append(el('button', { class: 'chip' + (which === p[0] ? ' on' : ''), text: p[1], onclick: function () { which = p[0]; draw(); } })); });
+      m.body.append(seg);
+      var ol = el('ol', { class: 'steps' });
+      C.INSTALL[which].forEach(function (t) {
+        var li = el('li'), parts = t.split('{share}'), span = el('span', { text: parts[0] });
+        if (parts.length > 1) {
+          var ic = el('span'); ic.innerHTML = '<svg viewBox="0 0 24 24"><path d="M12 15V3M8 7l4-4 4 4M6 11H5a1 1 0 0 0-1 1v8a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-8a1 1 0 0 0-1-1h-1"/></svg>';
+          span.append(ic, document.createTextNode(parts[1]));
+        }
+        li.append(span); ol.append(li);
+      });
+      m.body.append(ol, el('p', { class: 'quiet', text: C.INSTALL.after }));
+    }
+    draw();
+  }
+  $('ib-show').addEventListener('click', openInstall);
+  $('ib-no').addEventListener('click', function () { S.settings.installDone = true; save(); installBar.hidden = true; });
+
   // ---------- how it works ----------
   function openHelp(first) {
     if (!first) quiet();
