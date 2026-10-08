@@ -173,6 +173,15 @@ t('memory is small: last dispatch per item, last prayed per person, no running h
   s.closePray(); s.openPray(); s.claim(p, 'rest');                     // a new visit replaces, not appends
   assert.deepStrictEqual(s.data.prayed['person:a'].words, ['rest']);
 });
+t('dispatching an item from the main screen also clears its waiting copy in Insight', () => {
+  const s = placed(); send(s, 'feeling:w');
+  assert.strictEqual(s.data.queue.length, 1);
+  s.beginDrop({ key: 'feeling:w', kind: 'feeling', text: 'feeling:w' }); s.catchDrop();
+  s.hold(); assert.strictEqual(s.data.queue.length, 1);          // holding is not dispatching
+  s.offer('thank-you'); assert.strictEqual(s.data.queue.length, 0);
+  s.finishOffer(); send(s, 'feeling:w');                         // sending it to Insight again still works
+  assert.strictEqual(s.data.queue.length, 1);
+});
 t('pool: only checked (active) list items drop; unchecked ones rest', () => {
   const p = E.buildPool(lists({ people: [{ id: 'a', text: 'Sam', paused: true }, { id: 'b', text: 'Ann' }] }));
   assert(!p['person:a'] && p['person:b']);

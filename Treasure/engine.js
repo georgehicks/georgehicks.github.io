@@ -199,6 +199,7 @@
       } else {
         this._record(item, lineId);
       }
+      this._dequeue(item.key);   // giving it away settles it: a copy waiting in Insight is cleared too
       this.drop = null; this.state = 'offered';
       return { ok: true, next: lineId === 'pray-now' ? 'praying' : 'offered', line: lineText(lineId, item.text), item: item,
         verdict: lineId === 'lie' ? lieVerdict(item) : null };
