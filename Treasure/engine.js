@@ -187,7 +187,7 @@
       if (HOLD_OFFERS.indexOf(lineId) < 0) return { ok: false };
       var item = this.drop;
       if (lineId === 'pray-now' && item.kind !== 'person') return { ok: false };
-      if (lineId === 'lie' && (item.kind === 'person' || item.kind === 'thanks')) return { ok: false };
+      if (lineId === 'lie' && (item.kind === 'person' || item.kind === 'thanks' || item.kind === 'cando')) return { ok: false };
       if (lineId === 'understand') {
         this._enqueue(item, 'asked');
         this._record(item, 'understand');

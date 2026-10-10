@@ -4,7 +4,7 @@
   var C = TreasureContent, E = TreasureEngine, L = C.LINES;
   var KEY = 'treasure:v1';
   var PACE = { slow: 26000, gentle: 18000, brisk: 11000 };
-  var KIND_LABEL = { thought: 'a thought', fear: 'a fear', feeling: 'a feeling', person: 'a person', concern: 'a concern', thanks: 'a thanks' };
+  var KIND_LABEL = { thought: 'a thought', fear: 'a fear', cando: 'today I can', feeling: 'a feeling', person: 'a person', concern: 'a concern', thanks: 'a thanks' };
   var LIST_NAMES = [
     { id: 'people', label: 'People', kind: 'person', add: 'Add a name', empty: 'No one here. Add a name and they will drop.' },
     { id: 'concerns', label: 'Concerns', kind: 'concern', add: 'Add a concern', empty: 'Nothing here.' },
@@ -18,11 +18,12 @@
   // ---------- storage ----------
   function uid() { return 'u' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6); }
   function seed(arr, p) { return arr.map(function (t, i) { return { id: p + i, text: t, paused: false }; }); }
+  function seedCando() { return seed(C.SEEDS.cando, 'k').map(function (x) { if (C.CANDO_FOR[x.text]) x.for = C.CANDO_FOR[x.text]; return x; }); }
   function seedFears() { return C.FEARS.map(function (f, i) { return { id: 'r' + i, text: f.text, paused: false, lie: f.lie }; }); }
   function defaults() {
     return { v: 1, offers: [], queue: [], pending: null, deckState: { deck: [], drawn: [] }, lastKey: null,
-      settings: { pace: 'gentle', theme: 'auto', length: 'd15' },
-      lists: { fears: seedFears(), cando: seed(C.SEEDS.cando, 'k'), people: seed(C.SEEDS.people, 'p'), concerns: seed(C.SEEDS.concerns, 'c'), thanks: seed(C.SEEDS.thanks, 'g'), feelings: seed(C.SEEDS.feelings, 'f'), claims: seed(C.SEEDS.claims, 'w') } };
+      settings: { pace: 'gentle', theme: 'auto', length: 'd15', canDo: false },
+      lists: { fears: seedFears(), cando: seedCando(), people: seed(C.SEEDS.people, 'p'), concerns: seed(C.SEEDS.concerns, 'c'), thanks: seed(C.SEEDS.thanks, 'g'), feelings: seed(C.SEEDS.feelings, 'f'), claims: seed(C.SEEDS.claims, 'w') } };
   }
   function load() {
     var d = defaults();
@@ -30,9 +31,10 @@
       var raw = localStorage.getItem(KEY);
       if (raw) { var s = JSON.parse(raw); for (var k in s) d[k] = s[k]; }
     } catch (e) {}
-    d.settings = Object.assign({ pace: 'gentle', theme: 'auto', length: 'd15' }, d.settings);
+    d.settings = Object.assign({ pace: 'gentle', theme: 'auto', length: 'd15', canDo: false }, d.settings);
     if (!d.lists.fears) d.lists.fears = seedFears();
-    if (!d.lists.cando) d.lists.cando = seed(C.SEEDS.cando, 'k');
+    if (!d.lists.cando) d.lists.cando = seedCando();
+    if (!d.canDoTagged) { d.lists.cando.forEach(function (x) { if (!x.for && C.CANDO_FOR[x.text]) x.for = C.CANDO_FOR[x.text]; }); d.canDoTagged = true; }
     if (d.settings.length === 'd30' && !d.settings.lengthChosen) d.settings.length = 'd15'; // the old default, never chosen
     if (!d.last) { // earlier versions kept a growing log; keep only the last dispatch per item and the last words prayed per person
       d.last = {}; d.prayed = {}; var lastClaimAt = {};
@@ -174,11 +176,32 @@
     var item = E.drawNext(S.deckState, E.buildPool(S.lists), Math.random, S.lastKey);
     if (item) S.lastKey = item.key; return item;
   }
+  // After a caught fear, the can-do that drops answers that fear: your own item tagged to its lie, else the small thing
+  // written for that lie, else (no lie named) one of yours at random.
+  var afterFear = null;
+  function pickCanDo(lieId) {
+    var list = (S.lists.cando || []).filter(function (x) { return !x.paused; });
+    var mine = lieId ? list.filter(function (x) { return x.for === lieId; }) : [];
+    var x;
+    if (mine.length) x = mine[Math.floor(Math.random() * mine.length)];
+    else if (lieId && C.lieById(lieId)) { var l = C.lieById(lieId); return { key: 'cando:lie-' + l.id, kind: 'cando', text: l.can, authored: true }; }
+    else {
+      if (!list.length) return null;
+      var pool = list.filter(function (y) { return 'cando:' + y.id !== S.lastCanDo; }); if (!pool.length) pool = list;
+      x = pool[Math.floor(Math.random() * pool.length)];
+    }
+    S.lastCanDo = 'cando:' + x.id;
+    return { key: 'cando:' + x.id, kind: 'cando', text: x.text, listId: x.id };
+  }
   function nextDrop() {
     if (sit.state !== 'with') return;
     if (limitReached()) { run.over = true; stopForNow('That is a full sitting. Your heart is still with Him, and you can stay as long as you like.'); return; }
     var wasPending = !!S.pending;
-    var item = S.pending || draw(); if (!item) return;
+    var item = S.pending;
+    // a reminder of something I can do comes only straight after a caught fear, and only when switched on
+    if (!item && S.settings.canDo && afterFear) { item = pickCanDo(afterFear.lie); afterFear = null; }
+    if (!item) item = draw();
+    if (!item) return;
     if (!sit.beginDrop(item)) return;
     if (!wasPending) run.drops++;
     save(); startFall(item);
@@ -239,7 +262,7 @@
   function catchNow() {
     if (sit.state !== 'dropping' || !fall) return false;
     cancelAnimationFrame(raf); var item = fall.item; fall = null;
-    sit.catchDrop(); cue.classList.remove('on'); S.settings.caught = true; save(); render();
+    sit.catchDrop(); cue.classList.remove('on'); S.settings.caught = true; if (item.kind === 'fear') afterFear = { lie: item.lie || null }; save(); render();
     baseNote = '';
     if (item.kind === 'person' && item.part) baseNote = 'Your part last time: ' + item.part;
     else if ((S.settings.hint || 0) < 4) { baseNote = 'Drag it to a bucket below, or tap one.'; S.settings.hint = (S.settings.hint || 0) + 1; save(); }
@@ -302,6 +325,8 @@
     if (name === 'lie' && item.kind === 'person') { lieOrBounce('A person is never a lie. Give them to the Father.'); return; }
     if (name === 'lie' && item.kind === 'thanks') { lieOrBounce('Thanks is not a lie.'); return; }
     if (name === 'hold') { sit.hold(); save(); returnToHold(); flash(L.hold.text, ''); pulse(bucketEl('hold')); return; }
+    if (name === 'lie' && item.kind === 'cando') { lieOrBounce('A reminder is not a lie.'); return; }
+    if (name === 'part' && item.kind === 'cando') { doOffer(item, 'my-part', item.text, 'part'); return; } // "I will do this"
     if (name === 'part') { showPartPick(item); return; }
     doOffer(item, BK[name], null, name);
   }
@@ -405,9 +430,9 @@
   }
 
   // Which lie may be underneath a fear? Picked once; the fear teaches from then on. Skipping is fine.
-  function chooseLie(onPick, current) {
-    var m = mountOverlay('ov-lie', 'Which lie may be underneath?', function () { closeOverlay('ov-lie'); });
-    m.body.append(el('p', { class: 'quiet', text: 'Often a fear has a lie at its root. If one of these sounds like it, choose it. You can skip this.' }));
+  function chooseLie(onPick, current, forCando) {
+    var m = mountOverlay('ov-lie', forCando ? 'Which fear does this answer?' : 'Which lie may be underneath?', function () { closeOverlay('ov-lie'); });
+    m.body.append(el('p', { class: 'quiet', text: forCando ? 'Choose the lie this small action answers. After a fear with that lie, this is what drops. You can skip this.' : 'Often a fear has a lie at its root. If one of these sounds like it, choose it. You can skip this.' }));
     C.LIES.forEach(function (l) {
       var b = el('button', { class: 'linebtn' + (l.id === current ? ' said' : ''), onclick: function () { closeOverlay('ov-lie'); onPick(l.id); } }, [el('span', { class: 'line', text: l.lie })]);
       m.body.append(b);
@@ -745,7 +770,7 @@
       }
       input.addEventListener('keydown', function (e) { if (e.key === 'Enter') { e.preventDefault(); add(); } });
       m.body.append(el('div', { class: 'addrow' }, [input, el('button', { class: 'btn primary', text: 'Add', onclick: add })]));
-      var hints = { fears: 'Fears that drop, with the lie that may be underneath. Tap Lie to name or change it.', cando: 'Simple things you can do today. They are the choices under \u201CMy part.\u201D', people: 'Only the checked-in names drop: Pause rests someone, Remove takes them out. Tap a name to fix it.', claims: 'These drift when you intercede: “…I claim ___ for them.” Tap one to fix it.' };
+      var hints = { fears: 'Fears that drop, with the lie that may be underneath. Tap Lie to name or change it.', cando: 'Simple things you can do today. They are the choices under \u201CMy part,\u201D and with reminders on, one drops after a fear. Tap For to tie one to a lie.', people: 'Only the checked-in names drop: Pause rests someone, Remove takes them out. Tap a name to fix it.', claims: 'These drift when you intercede: “…I claim ___ for them.” Tap one to fix it.' };
       m.body.append(el('p', { class: 'quiet', text: hints[tab] || 'Pause rests one, Remove takes it out. Tap one to fix the wording.' }));
       if (!items.length) m.body.append(el('div', { class: 'emptynote', text: info.empty }));
       items.forEach(function (it) {
@@ -759,7 +784,9 @@
         } }, [el('span', { text: it.text })]);
         if (tab === 'people' && it.part) t.append(el('span', { class: 'part', text: 'Your part: ' + it.part }));
         if (tab === 'fears') t.append(el('span', { class: 'part', text: C.lieById(it.lie) ? 'Underneath: ' + C.lieById(it.lie).lie : 'No lie named yet' }));
+        if (tab === 'cando') t.append(el('span', { class: 'part', text: C.lieById(it.for) ? 'Answers: ' + C.lieById(it.for).lie : 'Not tied to a fear' }));
         m.body.append(el('div', { class: 'row' + (it.paused ? ' paused' : '') }, [t,
+          tab === 'cando' ? el('button', { class: 'mini', text: 'For', onclick: function () { chooseLie(function (id) { it.for = id; save(); draw(); }, it.for, true); } }) : null,
           tab === 'fears' ? el('button', { class: 'mini', text: 'Lie', onclick: function () { chooseLie(function (id) { it.lie = id; save(); draw(); }, it.lie); } }) : null,
           el('button', { class: 'mini', text: it.paused ? 'Resume' : 'Pause', onclick: function () { it.paused = !it.paused; save(); draw(); } }), rm]));
       });
@@ -837,6 +864,8 @@
     m.body.append(el('p', { class: 'quiet', text: 'There is no hurry. A drop you don’t catch goes to the Holy Spirit, and nothing is lost.' }));
     seg('How long a sitting lasts', 'length', LENGTHS);
     m.body.append(el('p', { class: 'quiet', text: 'When it’s reached, the drops rest and your heart stays with Him. “Keep going” starts another stretch.' }));
+    seg('Reminders of things I can do', 'canDo', [[false, 'Off'], [true, 'After a fear']]);
+    m.body.append(el('p', { class: 'quiet', text: 'When on, right after you catch a fear, the next drop is one simple thing you can do today, from your Can do list. Never any other time.' }));
     seg('Look', 'theme', [['auto', 'Match my phone'], ['dark', 'Dark'], ['light', 'Light']]);
     m.body.append(el('div', { class: 'sec', text: 'About' }),
       el('p', { class: 'quiet', text: 'A quiet place to put your heart with Jesus, then catch what drops and speak it to the Father, the Son, or the Spirit. No scores, no streaks. Everything stays on this device.' }));

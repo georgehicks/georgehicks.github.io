@@ -57,3 +57,9 @@ not a log. Older logs migrate into `last`/`prayed` on first load and are trimmed
 - **Can do** is a list of simple things for today. It replaces the fixed choices under "My part" (falls back to the built-in set if emptied).
   It does not drop on screen.
 - Both are managed in Settings > Lists (tabs: Fears, Can do). Existing installs get the starter lists on first load.
+
+## Can-do reminders drop only after a caught fear
+Setting: Settings > Reminders of things I can do (Off by default; "After a fear"). Never in the random pool, never any other time.
+The can-do that follows is shaped as that fear's antidote: your own Can do item tagged to the fear's lie ("For" button in Lists),
+else the small thing written for that lie (LIES[].can), else (no lie named) one of yours at random.
+Dropped on My part it sets today's part directly. Release and Thanks work; Lies refuses ("A reminder is not a lie.").

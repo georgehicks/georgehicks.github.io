@@ -200,6 +200,14 @@ t('fears: each lie is complete, seeds point at real lies, a fear can be put down
   const r = s.offer('lie'); assert(r.ok && /provide/.test(r.verdict) && /Philippians/.test(r.verdict));
   const q = placed(); q.beginDrop({ key: 'fear:z', kind: 'fear', text: 'x', lie: null }); q.catchDrop(); assert.strictEqual(q.offer('lie').verdict, null); // no lie named yet: nothing invented
 });
+t('a can-do reminder is never in the random pool, and is not a lie', () => {
+  const p = E.buildPool(lists({ cando: [{ id: 'k1', text: 'Take a short walk' }] }));
+  assert(Object.keys(p).every(k => k.indexOf('cando:') !== 0));
+  const s = placed(); s.beginDrop({ key: 'cando:k1', kind: 'cando', text: 'Take a short walk' }); s.catchDrop();
+  assert.strictEqual(s.offer('lie').ok, false); assert.strictEqual(s.state, 'holding');
+  assert(s.offer('my-part', { part: 'Take a short walk' }).ok);
+  assert.strictEqual(s.data.last['cando:k1'].part, 'Take a short walk');
+});
 t('pool: only checked (active) list items drop; unchecked ones rest', () => {
   const p = E.buildPool(lists({ people: [{ id: 'a', text: 'Sam', paused: true }, { id: 'b', text: 'Ann' }] }));
   assert(!p['person:a'] && p['person:b']);

@@ -107,6 +107,8 @@
     { id: 'loss',      lie: 'I will lose the ones I love.', truth: 'They are in His hands, and He cares for them more than I can.', ref: 'Matthew 10:29\u201331', can: 'Pray for them now.' }
   ];
   function lieById(id) { for (var i = 0; i < LIES.length; i++) if (LIES[i].id === id) return LIES[i]; return null; }
+  // Which lie each starter can-do answers, so a fear is met with a fitting small action.
+  var CANDO_FOR = { 'Thank Him for one thing': 'forgotten', 'Do the next thing': 'future', 'Pray for them': 'loss', 'Tell someone': 'exposed', 'Ask for help': 'alone', 'Take one small step': 'enough', 'Write it down': 'control' };
   var FEARS = [
     { text: 'Running out of money', lie: 'provision' }, { text: 'Something happening to someone I love', lie: 'loss' },
     { text: 'Being alone', lie: 'alone' }, { text: 'Being found out', lie: 'exposed' },
@@ -153,7 +155,7 @@
 
   var content = {
     LINES: LINES, PRAY_NOW: PRAY_NOW, CLAIM: CLAIM, QUESTIONS: QUESTIONS,
-    THOUGHTS: THOUGHTS, SEEDS: SEEDS, PARTS: PARTS, SENSED: SENSED, TEST_IT: TEST_IT, HELP: HELP, LEGEND: LEGEND, INSTALL: INSTALL, LIES: LIES, FEARS: FEARS, lieById: lieById
+    THOUGHTS: THOUGHTS, SEEDS: SEEDS, PARTS: PARTS, SENSED: SENSED, TEST_IT: TEST_IT, HELP: HELP, LEGEND: LEGEND, INSTALL: INSTALL, LIES: LIES, FEARS: FEARS, lieById: lieById, CANDO_FOR: CANDO_FOR
     
   };
   if (typeof module !== 'undefined' && module.exports) module.exports = content;
