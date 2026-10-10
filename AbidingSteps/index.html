@@ -1039,11 +1039,12 @@
     done: ['Done. Well done', 'Finished — with Him', 'One more thing complete'],
     milestone: ['Milestone reached', 'A mark passed'],
     abide: ['You paused with Him', 'Abided', 'Rested in Him'],
+    added: ['Step added — a clear next move', 'Named it. That helps', 'One more step on the path'],
     review: ['Day laid out', 'Morning review done']
   };
   // can't-lose counters: lifetime totals that only ever go up — no streaks, no resets.
   // They start counting from when celebrations are turned on.
-  const TALLY_LABELS = { start: 'steps begun', chunk: 'chunks finished', done: 'things finished', milestone: 'milestones reached', abide: 'abide pauses', review: 'mornings laid out' };
+  const TALLY_LABELS = { start: 'steps begun', chunk: 'chunks finished', done: 'things finished', milestone: 'milestones reached', abide: 'abide pauses', review: 'mornings laid out', added: 'steps added' };
   function bumpTally(kind) {
     const t = Object.assign({}, store.get('tallies', null) || {});
     t[kind] = (t[kind] || 0) + 1;
@@ -3323,7 +3324,7 @@ For God alone my soul waits in silence. — Psalm 62:1`;
         onSave: (s) => {
           const cur = findOutcome(o.id); if (!cur) return;
           const target = stepScope(cur);
-          if (!target.subs.includes(s)) target.subs.push(s);
+          if (!target.subs.includes(s)) { target.subs.push(s); celebrate('added'); }
           saveOutcomes();
           selectedSubOutcome = s;
           renderSubOutcomeRow(cur); finishOutcomeSelection(cur); renderAheadList();
@@ -3529,7 +3530,7 @@ For God alone my soul waits in silence. — Psalm 62:1`;
   function handleTreeClick(o, el, changed) {
     const act = el.dataset.tree, ms = el.dataset.ms ? (o.milestones || []).find(m => m.id === el.dataset.ms) : null;
     const scope = ms || o;
-    if (act === 'add-step') openTextModal({ title: 'New step for ' + scope.t, onSave: (t) => { if (!scope.subs.includes(t)) scope.subs.push(t); changed(); } });
+    if (act === 'add-step') openTextModal({ title: 'New step for ' + scope.t, onSave: (t) => { if (!scope.subs.includes(t)) { scope.subs.push(t); celebrate('added'); } changed(); } });
     else if (act === 'del-step') { scope.subs.splice(+el.dataset.i, 1); changed(); }
     else if (act === 'add-ms') openTextModal({ title: 'New milestone for ' + o.t, onSave: (t) => { o.milestones.push(makeMilestone(t)); changed(); } });
     else if (act === 'ms-done' && ms) { ms.completed = !ms.completed; if (ms.completed) celebrate('milestone'); changed(); }
