@@ -4,10 +4,12 @@
   var C = TreasureContent, E = TreasureEngine, L = C.LINES;
   var KEY = 'treasure:v1';
   var PACE = { slow: 26000, gentle: 18000, brisk: 11000 };
-  var KIND_LABEL = { thought: 'a thought', feeling: 'a feeling', person: 'a person', concern: 'a concern', thanks: 'a thanks' };
+  var KIND_LABEL = { thought: 'a thought', fear: 'a fear', feeling: 'a feeling', person: 'a person', concern: 'a concern', thanks: 'a thanks' };
   var LIST_NAMES = [
     { id: 'people', label: 'People', kind: 'person', add: 'Add a name', empty: 'No one here. Add a name and they will drop.' },
     { id: 'concerns', label: 'Concerns', kind: 'concern', add: 'Add a concern', empty: 'Nothing here.' },
+    { id: 'fears', label: 'Fears', kind: 'fear', add: 'Add a fear', empty: 'Nothing here.' },
+    { id: 'cando', label: 'Can do', kind: 'cando', add: 'Add something I can do', empty: 'Nothing here.' },
     { id: 'thanks', label: 'Thanks', kind: 'thanks', add: 'Add a thanks', empty: 'Nothing here.' },
     { id: 'feelings', label: 'Feelings', kind: 'feeling', add: 'Add a feeling', empty: 'Nothing here.' },
     { id: 'claims', label: 'Prayer words', kind: 'claim', add: 'Add a word to pray', empty: 'Nothing here.' }
@@ -16,10 +18,11 @@
   // ---------- storage ----------
   function uid() { return 'u' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6); }
   function seed(arr, p) { return arr.map(function (t, i) { return { id: p + i, text: t, paused: false }; }); }
+  function seedFears() { return C.FEARS.map(function (f, i) { return { id: 'r' + i, text: f.text, paused: false, lie: f.lie }; }); }
   function defaults() {
     return { v: 1, offers: [], queue: [], pending: null, deckState: { deck: [], drawn: [] }, lastKey: null,
       settings: { pace: 'gentle', theme: 'auto', length: 'd15' },
-      lists: { people: seed(C.SEEDS.people, 'p'), concerns: seed(C.SEEDS.concerns, 'c'), thanks: seed(C.SEEDS.thanks, 'g'), feelings: seed(C.SEEDS.feelings, 'f'), claims: seed(C.SEEDS.claims, 'w') } };
+      lists: { fears: seedFears(), cando: seed(C.SEEDS.cando, 'k'), people: seed(C.SEEDS.people, 'p'), concerns: seed(C.SEEDS.concerns, 'c'), thanks: seed(C.SEEDS.thanks, 'g'), feelings: seed(C.SEEDS.feelings, 'f'), claims: seed(C.SEEDS.claims, 'w') } };
   }
   function load() {
     var d = defaults();
@@ -28,6 +31,8 @@
       if (raw) { var s = JSON.parse(raw); for (var k in s) d[k] = s[k]; }
     } catch (e) {}
     d.settings = Object.assign({ pace: 'gentle', theme: 'auto', length: 'd15' }, d.settings);
+    if (!d.lists.fears) d.lists.fears = seedFears();
+    if (!d.lists.cando) d.lists.cando = seed(C.SEEDS.cando, 'k');
     if (d.settings.length === 'd30' && !d.settings.lengthChosen) d.settings.length = 'd15'; // the old default, never chosen
     if (!d.last) { // earlier versions kept a growing log; keep only the last dispatch per item and the last words prayed per person
       d.last = {}; d.prayed = {}; var lastClaimAt = {};
@@ -314,7 +319,8 @@
     container.append(el('div', { class: 'sheet-title', text: title || L['my-part'].text }));
     var chips = el('div', { class: 'chips' });
     chips.append(el('button', { class: 'chip', text: noneText || 'None today', onclick: function () { onPick('none'); } }));
-    C.PARTS.forEach(function (p) { chips.append(el('button', { class: 'chip', text: p, onclick: function () { onPick(p); } })); });
+    var mine = (S.lists.cando || []).filter(function (x) { return !x.paused; }).map(function (x) { return x.text; });
+    (mine.length ? mine : C.PARTS).forEach(function (p) { chips.append(el('button', { class: 'chip', text: p, onclick: function () { onPick(p); } })); });
     chips.append(el('button', { class: 'chip quiet', text: 'Write my own…', onclick: function () {
       askText({ label: 'Today’s part', placeholder: 'One thing', ok: function (v) { onPick(v); }, cancel: onCancel });
     } }));
@@ -398,6 +404,38 @@
     setTimeout(function () { input.focus(); input.select(); }, 60);
   }
 
+  // Which lie may be underneath a fear? Picked once; the fear teaches from then on. Skipping is fine.
+  function chooseLie(onPick, current) {
+    var m = mountOverlay('ov-lie', 'Which lie may be underneath?', function () { closeOverlay('ov-lie'); });
+    m.body.append(el('p', { class: 'quiet', text: 'Often a fear has a lie at its root. If one of these sounds like it, choose it. You can skip this.' }));
+    C.LIES.forEach(function (l) {
+      var b = el('button', { class: 'linebtn' + (l.id === current ? ' said' : ''), onclick: function () { closeOverlay('ov-lie'); onPick(l.id); } }, [el('span', { class: 'line', text: l.lie })]);
+      m.body.append(b);
+    });
+    m.body.append(el('button', { class: 'linebtn soft', onclick: function () { closeOverlay('ov-lie'); onPick(null); } }, [el('span', { class: 'line', text: 'Not sure yet' })]));
+  }
+  function fearTeaching(it, body) {
+    var l = C.lieById(it.lie), box = el('div');
+    if (l) {
+      box.append(el('div', { class: 'sec', style: 'margin-top:.2rem', text: 'What may be underneath' }),
+        el('div', { class: 'big', style: 'font-size:1.15rem', text: '\u201C' + l.lie + '\u201D' }),
+        el('span', { class: 'verdict lie', text: 'May be a lie' }),
+        el('div', { class: 'sec', text: 'The truth' }),
+        el('div', { class: 'note', text: l.truth + ' (' + l.ref + ')' }),
+        el('div', { class: 'sec', text: 'A small thing I can do' }),
+        el('div', { class: 'note', text: l.can }));
+    } else {
+      box.append(el('div', { class: 'qs' }, C.QUESTIONS.map(function (q) { return el('p', { text: q }); })));
+    }
+    box.append(el('div', { style: 'margin-top:.7rem' }, [el('button', { class: 'mini', text: l ? 'Change the lie' : 'Name the lie underneath', onclick: function () {
+      chooseLie(function (id) {
+        it.lie = id; var rec = it.listId && S.lists.fears.filter(function (x) { return x.id === it.listId; })[0]; if (rec) rec.lie = id;
+        save(); renderUnd(body);
+      }, it.lie);
+    } })]));
+    return box;
+  }
+
   // ---------- understanding (the Holy Spirit's bucket) ----------
   function openUnderstanding() {
     var m = mountOverlay('ov-und', L.understand.text, finishUnderstanding);
@@ -420,6 +458,8 @@
       el('div', { class: 'big', text: it.text })]);
     if (it.kind === 'thought') {
       card.append(el('span', { class: 'verdict ' + (it.truth ? 'truth' : 'lie'), text: it.truth ? 'This one is true' : 'This one is a lie' }), el('div', { class: 'note', text: it.note }));
+    } else if (it.kind === 'fear') {
+      card.append(fearTeaching(it, body));
     } else {
       card.append(el('div', { class: 'qs' }, C.QUESTIONS.map(function (q) { return el('p', { text: q }); })));
     }
@@ -700,11 +740,12 @@
       var input = el('input', { class: 'field', type: 'text', placeholder: info.add, maxlength: '80', 'aria-label': info.add, autocomplete: 'off' });
       function add() {
         var v = input.value.trim(); if (!v) return;
-        items.push({ id: uid(), text: v, paused: false }); save(); draw();
+        var made = { id: uid(), text: v, paused: false }; items.push(made); save(); draw();
+        if (tab === 'fears') chooseLie(function (id) { made.lie = id; save(); draw(); });
       }
       input.addEventListener('keydown', function (e) { if (e.key === 'Enter') { e.preventDefault(); add(); } });
       m.body.append(el('div', { class: 'addrow' }, [input, el('button', { class: 'btn primary', text: 'Add', onclick: add })]));
-      var hints = { people: 'Only the checked-in names drop: Pause rests someone, Remove takes them out. Tap a name to fix it.', claims: 'These drift when you intercede: “…I claim ___ for them.” Tap one to fix it.' };
+      var hints = { fears: 'Fears that drop, with the lie that may be underneath. Tap Lie to name or change it.', cando: 'Simple things you can do today. They are the choices under \u201CMy part.\u201D', people: 'Only the checked-in names drop: Pause rests someone, Remove takes them out. Tap a name to fix it.', claims: 'These drift when you intercede: “…I claim ___ for them.” Tap one to fix it.' };
       m.body.append(el('p', { class: 'quiet', text: hints[tab] || 'Pause rests one, Remove takes it out. Tap one to fix the wording.' }));
       if (!items.length) m.body.append(el('div', { class: 'emptynote', text: info.empty }));
       items.forEach(function (it) {
@@ -717,7 +758,9 @@
           askText({ label: 'Fix the wording', value: it.text, placeholder: info.add, ok: function (v) { it.text = v; save(); draw(); } });
         } }, [el('span', { text: it.text })]);
         if (tab === 'people' && it.part) t.append(el('span', { class: 'part', text: 'Your part: ' + it.part }));
+        if (tab === 'fears') t.append(el('span', { class: 'part', text: C.lieById(it.lie) ? 'Underneath: ' + C.lieById(it.lie).lie : 'No lie named yet' }));
         m.body.append(el('div', { class: 'row' + (it.paused ? ' paused' : '') }, [t,
+          tab === 'fears' ? el('button', { class: 'mini', text: 'Lie', onclick: function () { chooseLie(function (id) { it.lie = id; save(); draw(); }, it.lie); } }) : null,
           el('button', { class: 'mini', text: it.paused ? 'Resume' : 'Pause', onclick: function () { it.paused = !it.paused; save(); draw(); } }), rm]));
       });
     }

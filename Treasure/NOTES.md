@@ -48,3 +48,12 @@ After the first full sitting a one-line dismissible reminder appears once (`inst
 The Noticed screen is now "Recently" (Settings → Recently). The app keeps only the last dispatch per item (`last`: line + date) and the words last
 prayed per person (`prayed`: replaced each Intercede visit), shown as "Last prayed: peace, healing · 3 days ago" in Intercede. `offers` is a 20-entry scratch,
 not a log. Older logs migrate into `last`/`prayed` on first load and are trimmed. No tallies, streaks or ranks.
+
+## Fears and Can do
+- **Fears** are their own kind of drop ("a fear"). Each can carry a *lie that may be underneath* (picked once from `LIES` in content.js; seeded fears come with one).
+  Sent to Insight, a fear shows: the lie ("may be a lie"), the truth with its Scripture reference (cited, not quoted), and one small thing to do.
+  Dropped on the Lies bin, the same teaching flashes. A fear with no lie named shows "Name the lie underneath"; nothing is invented.
+  Wording is "may be underneath", never a diagnosis: some fears are real and point to a part to do.
+- **Can do** is a list of simple things for today. It replaces the fixed choices under "My part" (falls back to the built-in set if emptied).
+  It does not drop on screen.
+- Both are managed in Settings > Lists (tabs: Fears, Can do). Existing installs get the starter lists on first load.

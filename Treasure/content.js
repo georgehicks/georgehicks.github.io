@@ -95,7 +95,27 @@
     { id: 't28', truth: true, text: 'I can ask for wisdom.', note: 'It can feel false when you think you should already know. He gives generously to all who ask (James 1:5).' }
   ];
 
+  // The lie that may sit under a fear, the truth that answers it (Scripture cited, never quoted), and one small thing to do.
+  var LIES = [
+    { id: 'control',   lie: 'It all depends on me.', truth: 'The outcome is His. I do my part, and He carries the rest.', ref: 'Proverbs 16:9; 1 Peter 5:7', can: 'Name my one part today.' },
+    { id: 'provision', lie: 'God will not provide for me.', truth: 'My Father knows what I need, and He gives it.', ref: 'Matthew 6:31\u201333; Philippians 4:19', can: 'Thank Him for today\u2019s bread.' },
+    { id: 'alone',     lie: 'I am alone in this.', truth: 'He is with me always, and He will not leave me.', ref: 'Matthew 28:20; Hebrews 13:5', can: 'Message one friend.' },
+    { id: 'exposed',   lie: 'If they really knew me, they would turn away.', truth: 'I am fully known and fully loved. In Christ there is no condemnation.', ref: 'Psalm 139:1; Romans 8:1', can: 'Tell one safe person the truth.' },
+    { id: 'enough',    lie: 'I am not enough.', truth: 'His power is made perfect in weakness. He is enough.', ref: '2 Corinthians 12:9', can: 'Do one small thing, and stop.' },
+    { id: 'forgotten', lie: 'God has forgotten me.', truth: 'He cares for me, and He does not forget His own.', ref: 'Isaiah 49:15; 1 Peter 5:7', can: 'Thank Him for one thing.' },
+    { id: 'future',    lie: 'The worst is coming, and I cannot face it.', truth: 'He goes before me. Tomorrow has its own worries, and He is already there.', ref: 'Matthew 6:34; Deuteronomy 31:8', can: 'Do just the next thing.' },
+    { id: 'loss',      lie: 'I will lose the ones I love.', truth: 'They are in His hands, and He cares for them more than I can.', ref: 'Matthew 10:29\u201331', can: 'Pray for them now.' }
+  ];
+  function lieById(id) { for (var i = 0; i < LIES.length; i++) if (LIES[i].id === id) return LIES[i]; return null; }
+  var FEARS = [
+    { text: 'Running out of money', lie: 'provision' }, { text: 'Something happening to someone I love', lie: 'loss' },
+    { text: 'Being alone', lie: 'alone' }, { text: 'Being found out', lie: 'exposed' },
+    { text: 'Failing at what is in front of me', lie: 'enough' }, { text: 'What might happen tomorrow', lie: 'future' },
+    { text: 'Letting everyone down', lie: 'control' }, { text: 'Being forgotten', lie: 'forgotten' }
+  ];
+
   var SEEDS = {
+    cando: ['Make the call', 'Say sorry', 'Ask for help', 'Take one small step', 'Rest ten minutes', 'Write it down', 'Tell someone', 'Pray for them', 'Do the next thing', 'Thank Him for one thing', 'Drink some water', 'Take a short walk'],
     people: ['A family member', 'A friend', 'An acquaintance', 'A neighbor', 'Someone at work', 'Someone who is sick', 'Someone hard to love', 'A leader over me'],
     concerns: ['Money', 'My health', 'Something I have to decide', 'A conversation I’m dreading', 'What I said earlier', 'The work waiting for me', 'The future', 'What someone thinks of me', 'A deadline', 'Being behind', 'Something I forgot', 'The news', 'A habit I can’t shake', 'Whether I’m doing enough'],
     thanks: ['A meal', 'Breath in my lungs', 'Someone who was kind', 'The quiet right now', 'A bed to sleep in', 'Something that went right today', 'Light through a window', 'A friend', 'That He is near', 'Forgiveness', 'A task finished', 'Something I almost missed'],
@@ -133,7 +153,7 @@
 
   var content = {
     LINES: LINES, PRAY_NOW: PRAY_NOW, CLAIM: CLAIM, QUESTIONS: QUESTIONS,
-    THOUGHTS: THOUGHTS, SEEDS: SEEDS, PARTS: PARTS, SENSED: SENSED, TEST_IT: TEST_IT, HELP: HELP, LEGEND: LEGEND, INSTALL: INSTALL
+    THOUGHTS: THOUGHTS, SEEDS: SEEDS, PARTS: PARTS, SENSED: SENSED, TEST_IT: TEST_IT, HELP: HELP, LEGEND: LEGEND, INSTALL: INSTALL, LIES: LIES, FEARS: FEARS, lieById: lieById
     
   };
   if (typeof module !== 'undefined' && module.exports) module.exports = content;

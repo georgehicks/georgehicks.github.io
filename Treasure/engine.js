@@ -4,8 +4,8 @@
   'use strict';
   var C = (typeof require !== 'undefined' && typeof module !== 'undefined') ? require('./content.js') : root.TreasureContent;
 
-  var KIND_WEIGHT = { thought: 1, person: 12, concern: 2, thanks: 2, feeling: 2 };
-  var LIST_KIND = { people: 'person', concerns: 'concern', thanks: 'thanks', feelings: 'feeling' };
+  var KIND_WEIGHT = { thought: 1, fear: 3, person: 12, concern: 2, thanks: 2, feeling: 2 };
+  var LIST_KIND = { people: 'person', concerns: 'concern', fears: 'fear', thanks: 'thanks', feelings: 'feeling' };
   var HOLD_OFFERS = ['into-hands', 'my-part', 'thank-you', 'understand', 'pray-now', 'lie'];
   var UNDERSTAND_OFFERS = ['into-hands', 'my-part', 'thank-you', 'not-him'];
 
@@ -25,7 +25,7 @@
       (lists[name] || []).forEach(function (i) {
         if (i.paused) return;
         var kind = LIST_KIND[name];
-        pool[kind + ':' + i.id] = { key: kind + ':' + i.id, kind: kind, text: i.text, listId: i.id, part: i.part || null };
+        pool[kind + ':' + i.id] = { key: kind + ':' + i.id, kind: kind, text: i.text, listId: i.id, part: i.part || null, lie: i.lie || null };
       });
     });
     return pool;
@@ -79,6 +79,10 @@
 
   // Putting a thought down as a lie: for an authored thought, say what it was. Never a penalty.
   function lieVerdict(item) {
+    if (item.kind === 'fear') {
+      var l = C.lieById(item.lie); if (!l) return null;
+      return 'The lie that may be underneath: \u201C' + l.lie + '\u201D The truth: ' + l.truth + ' (' + l.ref + ')';
+    }
     if (item.kind !== 'thought') return null;
     return item.truth ? 'That one was true. ' + item.note : 'Yes, a lie. ' + item.note;
   }

@@ -190,6 +190,16 @@ t('clear all empties Insight without recording a dispatch', () => {
   assert.strictEqual(s.state, 'understanding'); assert.strictEqual(s.data.last['feeling:1'].line, before); // not a dispatch
   assert(s.leaveUnderstanding());
 });
+t('fears: each lie is complete, seeds point at real lies, a fear can be put down with its teaching', () => {
+  assert(C.LIES.length >= 8);
+  C.LIES.forEach(l => assert(l.lie && l.truth && l.ref && l.can && C.lieById(l.id) === l, l.id));
+  C.FEARS.forEach(f => assert(C.lieById(f.lie), f.text));
+  const p = E.buildPool(lists({ fears: [{ id: 'r0', text: 'Running out of money', lie: 'provision' }, { id: 'r9', text: 'Mystery', paused: true }] }));
+  assert(p['fear:r0'] && p['fear:r0'].lie === 'provision' && !p['fear:r9']);
+  const s = placed(); s.beginDrop(p['fear:r0']); s.catchDrop();
+  const r = s.offer('lie'); assert(r.ok && /provide/.test(r.verdict) && /Philippians/.test(r.verdict));
+  const q = placed(); q.beginDrop({ key: 'fear:z', kind: 'fear', text: 'x', lie: null }); q.catchDrop(); assert.strictEqual(q.offer('lie').verdict, null); // no lie named yet: nothing invented
+});
 t('pool: only checked (active) list items drop; unchecked ones rest', () => {
   const p = E.buildPool(lists({ people: [{ id: 'a', text: 'Sam', paused: true }, { id: 'b', text: 'Ann' }] }));
   assert(!p['person:a'] && p['person:b']);
