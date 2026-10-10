@@ -352,6 +352,19 @@
   }
   @media (max-width: 480px) { .fab { right: 20px; } }
 
+  /* ===== Micro celebrations (opt-in, Settings) ===== */
+  .cele { position: fixed; left: 50%; bottom: calc(88px + env(safe-area-inset-bottom)); transform: translateX(-50%); z-index: 60; pointer-events: none;
+    padding: 8px 16px; border-radius: 999px; font-size: 0.86rem; color: var(--text); background: var(--bg-raised);
+    border: 1px solid var(--accent); box-shadow: 0 0 18px color-mix(in srgb, var(--accent) 45%, transparent);
+    animation: cele-pop 1.9s ease-out forwards; white-space: nowrap; }
+  .cele i { position: absolute; left: 50%; top: 50%; width: 5px; height: 5px; border-radius: 50%; background: var(--accent); opacity: 0;
+    animation: cele-spark 0.9s ease-out forwards; animation-delay: var(--d, 0s); }
+  @keyframes cele-pop { 0% { opacity: 0; transform: translate(-50%, 10px) scale(0.92); } 12% { opacity: 1; transform: translate(-50%, 0) scale(1.04); }
+    22% { transform: translate(-50%, 0) scale(1); } 80% { opacity: 1; } 100% { opacity: 0; transform: translate(-50%, -8px); } }
+  @keyframes cele-spark { 0% { opacity: 1; transform: translate(0, 0); } 100% { opacity: 0; transform: translate(var(--x), var(--y)); } }
+  @media (prefers-reduced-motion: reduce) { .cele i { display: none; } .cele { animation: cele-fade 1.9s ease-out forwards; }
+    @keyframes cele-fade { 0%, 80% { opacity: 1; } 100% { opacity: 0; } } }
+
   /* ===== Settings ===== */
   .settings-section { margin-bottom: 22px; }
   .settings-section h3 { font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-dim); margin: 0 0 10px; }
@@ -734,6 +747,12 @@
       </div>
 
       <div class="settings-section">
+        <h3>Celebrations</h3>
+        <div class="settings-row"><span>Micro celebrations (a small glow when you start, finish, or abide)</span><input type="checkbox" id="celebrateToggle"></div>
+        <div class="settings-row" style="display:block;"><span id="tallyLine" style="color:var(--text-dim);font-size:0.82rem;"></span></div>
+      </div>
+
+      <div class="settings-section">
         <h3>Notes</h3>
         <div class="settings-row"><span>Voice notes (push to record)</span><input type="checkbox" id="voiceNotesToggle" checked></div>
       </div>
@@ -992,6 +1011,7 @@
     breathDurationMin: 0, breathTone: false, breathVoice: false,
     musicVolume: 40, // percent of device volume — background music should sit under your thinking, not over it
     icsUrls: '', icsProxy: '',
+    celebrate: false, // opt-in layer of tiny moments; never changes behavior
   };
   function loadSettings() {
     const saved = store.get('settings', null) || {};
@@ -1010,6 +1030,62 @@
   }
   let settings = loadSettings();
   function saveSettings() { store.set('settings', settings); }
+
+  // ===== micro celebrations: tiny, quiet, opt-in. They only observe — nothing here
+  // changes what any button does, and nothing is counted or stored. =====
+  const CELEBRATE_LINES = {
+    start: ['Started — that was the hard part', 'You began', 'Step taken'],
+    chunk: ['Chunk finished', 'That chunk is behind you', 'Well kept'],
+    done: ['Done. Well done', 'Finished — with Him', 'One more thing complete'],
+    milestone: ['Milestone reached', 'A mark passed'],
+    abide: ['You paused with Him', 'Abided', 'Rested in Him'],
+    review: ['Day laid out', 'Morning review done']
+  };
+  // can't-lose counters: lifetime totals that only ever go up — no streaks, no resets.
+  // They start counting from when celebrations are turned on.
+  const TALLY_LABELS = { start: 'steps begun', chunk: 'chunks finished', done: 'things finished', milestone: 'milestones reached', abide: 'abide pauses', review: 'mornings laid out' };
+  function bumpTally(kind) {
+    const t = Object.assign({}, store.get('tallies', null) || {});
+    t[kind] = (t[kind] || 0) + 1;
+    store.set('tallies', t);
+    return t[kind];
+  }
+  function renderTallies() {
+    const el = document.getElementById('tallyLine'); if (!el) return;
+    const t = store.get('tallies', null) || {};
+    const parts = Object.keys(TALLY_LABELS).filter(k => t[k]).map(k => t[k] + ' ' + TALLY_LABELS[k]);
+    el.textContent = parts.length ? 'So far: ' + parts.join(' · ') : 'Nothing counted yet — it only ever goes up.';
+  }
+  let lastCeleAt = 0;
+  function celebrate(kind) {
+    if (!settings.celebrate) return;
+    const now = Date.now();
+    if (now - lastCeleAt < 1500) return; // never stack
+    lastCeleAt = now;
+    const n = bumpTally(kind);
+    document.querySelectorAll('.cele').forEach(n => n.remove());
+    const lines = CELEBRATE_LINES[kind] || CELEBRATE_LINES.done;
+    const el = document.createElement('div');
+    el.className = 'cele'; el.setAttribute('role', 'status');
+    el.textContent = lines[Math.floor(Math.random() * lines.length)];
+    if (n > 1 && (n % 5 === 0 || n === 10 || kind === 'done')) { const c = document.createElement('small'); c.style.cssText = 'color:var(--text-dim);margin-left:8px;'; c.textContent = '#' + n; el.appendChild(c); }
+    const bigger = kind === 'done' || kind === 'milestone' ? 10 : 5;
+    for (let i = 0; i < bigger; i++) {
+      const a = (i / bigger) * Math.PI * 2, r = 34 + Math.random() * 26, sp = document.createElement('i');
+      sp.style.setProperty('--x', Math.round(Math.cos(a) * r * 1.6) + 'px');
+      sp.style.setProperty('--y', Math.round(Math.sin(a) * r) + 'px');
+      sp.style.setProperty('--d', (i * 0.02) + 's');
+      el.appendChild(sp);
+    }
+    document.body.appendChild(el);
+    renderTallies();
+    setTimeout(() => el.remove(), 2000);
+    if (navigator.vibrate && (kind === 'done' || kind === 'milestone')) { try { navigator.vibrate(30); } catch (e) {} }
+  }
+  document.getElementById('celebrateToggle').addEventListener('change', (e) => {
+    settings.celebrate = e.target.checked; saveSettings();
+    if (settings.celebrate) celebrate('start');
+  });
 
   // ===== tab / mode switching =====
   function switchTab(tab) {
@@ -1131,6 +1207,7 @@ For God alone my soul waits in silence. — Psalm 62:1`;
       breathProgressFill.style.width = pct + '%';
       if (pct >= 100) {
         breathProgressFill.classList.add('done');
+        celebrate('abide');
         clearInterval(breathSessionInterval);
         breathSessionInterval = null;
       }
@@ -2693,6 +2770,7 @@ For God alone my soul waits in silence. — Psalm 62:1`;
   renderWeeklyReviewRange();
 
   function startChunk(minutes) {
+    celebrate('start');
     startWork();
     clearOverrunTimers();
     chunkTotalMs = minutes * 60000;
@@ -2735,6 +2813,7 @@ For God alone my soul waits in silence. — Psalm 62:1`;
   }
 
   function enterOverrun() {
+    celebrate('chunk');
     if (autoOverrunEnabled) {
       // no alarm at all — just keep going, silently, by the configured bump length
       acknowledgeOverrun(bumpMinutes, true);
@@ -3081,7 +3160,7 @@ For God alone my soul waits in silence. — Psalm 62:1`;
       + '<span class="chip" data-act="drop">Drop</span></div></div>').join('');
   }
   function finishMorningReviewIfDone() {
-    if (!leftoverTodayOutcomes().length) store.set('reviewedDay', todayKeyLocal());
+    if (!leftoverTodayOutcomes().length) { store.set('reviewedDay', todayKeyLocal()); celebrate('review'); }
   }
   document.getElementById('morningReviewList').addEventListener('click', (e) => {
     const chip = e.target.closest('[data-act]');
@@ -3097,7 +3176,7 @@ For God alone my soul waits in silence. — Psalm 62:1`;
   });
   document.getElementById('morningReviewKeepAll').addEventListener('click', () => {
     leftoverTodayOutcomes().forEach(starToday);
-    saveOutcomes(); store.set('reviewedDay', todayKeyLocal());
+    saveOutcomes(); store.set('reviewedDay', todayKeyLocal()); celebrate('review');
     renderOutcomePicker(); renderAheadList();
   });
   // the backlog ("Other") stays behind a "more…" tap — Recent + Today are the working
@@ -3204,6 +3283,7 @@ For God alone my soul waits in silence. — Psalm 62:1`;
     const o = selectedOutcome();
     if (!o) return;
     o.completed = true;
+    celebrate('done');
     saveOutcomes();
     renderAheadList(); renderOutcomePicker();
     clearSelection('✓ Marked done', { abideNudge: true });
@@ -3452,7 +3532,7 @@ For God alone my soul waits in silence. — Psalm 62:1`;
     if (act === 'add-step') openTextModal({ title: 'New step for ' + scope.t, onSave: (t) => { if (!scope.subs.includes(t)) scope.subs.push(t); changed(); } });
     else if (act === 'del-step') { scope.subs.splice(+el.dataset.i, 1); changed(); }
     else if (act === 'add-ms') openTextModal({ title: 'New milestone for ' + o.t, onSave: (t) => { o.milestones.push(makeMilestone(t)); changed(); } });
-    else if (act === 'ms-done' && ms) { ms.completed = !ms.completed; changed(); }
+    else if (act === 'ms-done' && ms) { ms.completed = !ms.completed; if (ms.completed) celebrate('milestone'); changed(); }
     else if (act === 'del-ms' && ms) openConfirmModal({
       title: 'Remove milestone?', message: '"' + ms.t + '"' + (ms.subs.length ? ' and its ' + ms.subs.length + ' step' + (ms.subs.length === 1 ? '' : 's') : '') + ' — this can\'t be undone.',
       onOk: () => {
@@ -3546,7 +3626,7 @@ For God alone my soul waits in silence. — Psalm 62:1`;
       row.querySelector('.today-star').addEventListener('click', () => { if (o.today) o.today = false; else starToday(o); changed(); });
       row.querySelector('.maybe-toggle').addEventListener('click', () => { o.maybe = !o.maybe; changed(); });
       const completeBtn = row.querySelector('.complete-btn');
-      if (completeBtn) completeBtn.addEventListener('click', () => { o.completed = !o.completed; changed(); });
+      if (completeBtn) completeBtn.addEventListener('click', () => { o.completed = !o.completed; if (o.completed) celebrate('done'); changed(); });
       row.querySelector('.edit-btn').addEventListener('click', () => {
         openOutcomeModal({
           title: 'Edit outcome', name: o.t, type: o.type, tag: o.tag, budget: o.budget, notes: notesByKey[o.id],
@@ -3630,6 +3710,7 @@ For God alone my soul waits in silence. — Psalm 62:1`;
     autoOverrunEnabled = !!settings.autoOverrun; setChk('autoOverrunToggle', autoOverrunEnabled);
     bumpMinutes = settings.bumpMinutes; setVal('bumpLengthInput', bumpMinutes); updateContinueLabel();
     setVal('weekResetSelect', settings.weekReset);
+    setChk('celebrateToggle', !!settings.celebrate); renderTallies();
     voiceNotesEnabled = settings.voiceNotes !== false; setChk('voiceNotesToggle', voiceNotesEnabled); updateMicBtnVisibility();
     setVal('icsUrls', settings.icsUrls); setVal('icsProxy', settings.icsProxy);
     ['step', 'ahead', 'abide'].forEach(m => {
