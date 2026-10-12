@@ -1050,7 +1050,7 @@
     <div><kbd>m</kbd> new milestone on an outcome · <kbd>e</kbd> / <kbd>F2</kbd> rename · <kbd>Esc</kbd> stop typing</div>
     <h4>Rearrange</h4>
     <div><kbd>1</kbd> Inbox · <kbd>2</kbd> Today · <kbd>3</kbd> Week · <kbd>4</kbd> Later · <kbd>5</kbd> Open · <kbd>6</kbd> Maybe · <kbd>7</kbd> Done — moves the selected outcome</div>
-    <div><kbd>⌥←</kbd><kbd>⌥→</kbd> outcome to previous / next bucket · on a line: outdent / indent (a child of the line above)</div>
+    <div><kbd>Ctrl</kbd>/<kbd>⌘</kbd><kbd>↑</kbd><kbd>↓</kbd> or <kbd>⌥←</kbd><kbd>⌥→</kbd> outcome to the bucket above / below · on a line: outdent / indent (a child of the line above)</div>
     <div><kbd>⌥↑</kbd><kbd>⌥↓</kbd> reorder among siblings</div>
     <div><kbd>x</kbd> cut, then select a target and <kbd>p</kbd> paste (line → outcome, milestone or another line, milestone → outcome, outcome → bucket)</div>
     <h4>Details panel</h4>
@@ -4382,7 +4382,17 @@ For God alone my soul waits in silence. — Psalm 62:1`;
         else if (e.key === 'Tab') e.preventDefault();
         return;
       }
-      if (e.metaKey || e.ctrlKey) { if (e.key.toLowerCase() === 'z') { e.preventDefault(); doUndo(); } return; }
+      if (e.metaKey || e.ctrlKey) {
+        if (e.key.toLowerCase() === 'z') { e.preventDefault(); doUndo(); }
+        else if (e.key === 'ArrowUp' || e.key === 'ArrowDown') { // the buckets are stacked, so up/down = the bucket above/below
+          e.preventDefault();
+          const cn = model.nodes[sel];
+          if (!cn || cn.kind !== 'outcome') { toast('Select an outcome to move it between buckets'); return; }
+          const b = BUCKETS[BUCKETS.indexOf(bucketOf(cn.o)) + (e.key === 'ArrowUp' ? -1 : 1)];
+          if (b) toBucket(cn, b);
+        }
+        return;
+      }
       const k = e.key, n = model.nodes[sel];
       if (!n) return;
       const handled = () => e.preventDefault();
