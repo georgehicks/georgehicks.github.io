@@ -858,6 +858,10 @@
         <h3>Cloud Sync</h3>
         <p style="font-size:0.72rem; color:var(--text-faint); margin:0 0 8px;">Everything saves on this device automatically, signed in or not. Sign in to also sync across your devices.</p>
         <div id="syncStatus" style="font-size:0.76rem; color:var(--text-dim); margin-bottom:8px;">Saved on this device</div>
+        <div class="settings-row"><span>Auto-sync after idle</span>
+          <select id="syncIdleSelect"><option value="0">Manual only</option><option value="1">1 min</option><option value="2">2 min</option><option value="5">5 min</option></select></div>
+        <p style="font-size:0.72rem; color:var(--text-faint); margin:0 0 8px;">Changes are batched into one write after you stop for this long (and when you leave the app), which keeps Firebase's free tier safe. Sync now sends them immediately.</p>
+        <button class="btn" id="syncNowBtn" style="width:100%; margin-bottom:8px;">Sync now</button>
         <button class="btn" id="syncSignInBtn" style="width:100%;" disabled>Sign in with Google</button>
         <button class="btn" id="syncSignOutBtn" style="width:100%; display:none;">Sign out</button>
       </div>
@@ -1090,6 +1094,7 @@
     breathDurationMin: 0, breathTone: false, breathVoice: false,
     musicVolume: 40, // percent of device volume — background music should sit under your thinking, not over it
     icsUrls: '', icsProxy: '',
+    syncIdleMin: 2, // cloud push waits this many idle minutes after your last change (0 = only the Sync now button)
     celebrate: false, // opt-in layer of tiny moments; never changes behavior
   };
   function loadSettings() {
@@ -4356,7 +4361,7 @@ For God alone my soul waits in silence. — Psalm 62:1`;
     setVal('dayStartInput', settings.dayStart); setVal('dayEndInput', settings.dayEnd); applyDayHours();
     autoOverrunEnabled = !!settings.autoOverrun; setChk('autoOverrunToggle', autoOverrunEnabled);
     bumpMinutes = settings.bumpMinutes; setVal('bumpLengthInput', bumpMinutes); updateContinueLabel();
-    setVal('weekResetSelect', settings.weekReset);
+    setVal('weekResetSelect', settings.weekReset); setVal('syncIdleSelect', String(settings.syncIdleMin));
     setChk('celebrateToggle', !!settings.celebrate); renderTallies();
     voiceNotesEnabled = settings.voiceNotes !== false; setChk('voiceNotesToggle', voiceNotesEnabled); updateMicBtnVisibility();
     setVal('icsUrls', settings.icsUrls); setVal('icsProxy', settings.icsProxy);
@@ -4454,13 +4459,22 @@ For God alone my soul waits in silence. — Psalm 62:1`;
     },
     dirtyAt() { return Number(store.get('__local_dirtyAt', 0)) || 0; },
     markDirty() { store.set('__local_dirtyAt', Date.now()); },
+    // every change lands in localStorage at once; the cloud write is batched — it waits
+    // for syncIdleMin of quiet (never longer than MAX_WAIT of continuous editing) so a
+    // long session is a handful of Firestore writes, not hundreds
     queuePush() {
       if (!this.docRef || this.paused) return;
-      clearTimeout(this.pushTimer);
-      this.pushTimer = setTimeout(() => this.pushNow(), 800);
+      const now = Date.now();
+      if (!this.pendingSince) this.pendingSince = now;
+      const idleMin = Number(settings.syncIdleMin) || 0;
+      clearTimeout(this.pushTimer); this.pushTimer = null;
+      if (!idleMin) { this.status('Changes waiting — tap Sync now to send them'); return; }
+      const wait = Math.min(idleMin * 60000, Math.max(0, this.pendingSince + 600000 - now));
+      this.pushTimer = setTimeout(() => this.pushNow(), wait);
+      this.status('Changes waiting — syncing after ' + idleMin + ' min idle');
     },
     pushNow() {
-      clearTimeout(this.pushTimer); this.pushTimer = null;
+      clearTimeout(this.pushTimer); this.pushTimer = null; this.pendingSince = 0;
       if (!this.docRef || this.paused) return;
       const stamp = Date.now();
       this.docRef.set({ data: this.allData(), updatedAt: stamp })
@@ -4620,6 +4634,14 @@ For God alone my soul waits in silence. — Psalm 62:1`;
     else switchNotesContext('_', null);
   })();
   store.onChange = () => { cloudSync.markDirty(); cloudSync.queuePush(); };
+  document.getElementById('syncNowBtn').addEventListener('click', () => {
+    if (!cloudSync.docRef || cloudSync.paused) { cloudSync.status('Sign in first — nothing to sync to yet'); return; }
+    cloudSync.status('Syncing…'); cloudSync.pushNow();
+  });
+  document.getElementById('syncIdleSelect').addEventListener('change', (e) => {
+    settings.syncIdleMin = parseInt(e.target.value, 10) || 0; saveSettings();
+    if (cloudSync.pushTimer || cloudSync.pendingSince) cloudSync.queuePush(); // re-time what's already waiting
+  });
   cloudSync.init();
   renderTally();
   // save Ahead/Abide time once a minute, and keep the tally live while Abide is open
