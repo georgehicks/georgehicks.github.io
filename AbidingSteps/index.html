@@ -779,6 +779,13 @@
       <div class="date-line">Settings</div>
 
       <div class="settings-section">
+        <h3>About</h3>
+        <div class="settings-row"><span>Installed version</span><span id="appVersionLabel" style="color:var(--text-dim);"></span></div>
+        <button class="btn" id="reloadAppBtn" style="width:100%; margin-top:8px;">Check for updates &amp; reload</button>
+        <div id="reloadStatus" style="font-size:0.72rem; color:var(--text-faint); margin-top:6px;"></div>
+      </div>
+
+      <div class="settings-section">
         <h3>Theme</h3>
         <div class="settings-row"><span>Step accent</span><input type="color" id="themeStep" value="#4fd1c5"></div>
         <div class="settings-row"><span>Ahead accent</span><input type="color" id="themeAhead" value="#9db4f8"></div>
@@ -900,13 +907,6 @@
         <p style="font-size:0.72rem; color:var(--text-faint); margin:0 0 8px;">A deliberate step you take on your own schedule, not something that happens automatically. Downloads a per-outcome summary covering everything since your last reset, then clears the accumulated tallies so the next stretch starts fresh.</p>
         <div id="weeklyReviewRange" style="font-size:0.76rem; color:var(--text-dim); margin-bottom:8px;"></div>
         <button class="btn" id="weeklyReviewBtn" style="width:100%;">Download summary &amp; reset</button>
-      </div>
-
-      <div class="settings-section">
-        <h3>About</h3>
-        <div class="settings-row"><span>Installed version</span><span id="appVersionLabel" style="color:var(--text-dim);"></span></div>
-        <button class="btn" id="reloadAppBtn" style="width:100%; margin-top:8px;">Check for updates &amp; reload</button>
-        <div id="reloadStatus" style="font-size:0.72rem; color:var(--text-faint); margin-top:6px;"></div>
       </div>
     </section>
 
