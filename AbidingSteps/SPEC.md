@@ -810,3 +810,14 @@ tokens. Step → "By context" lists open steps per `@context` plus a "Due" chip
 its day. Typed words (`>tomorrow`, `>wed`, `>wednesday`) are rewritten to the real
 date on entry (`absDates`) — a stored "tomorrow" would mean tomorrow forever.
 Weekdays resolve to the next such day after today.
+
+### Effective Next Date (2026-10-12)
+
+`effInfo(o)`: an outcome's own "Later" date holds it back unless a step is dated
+earlier (then the step's date wins, shown as "(step)"); with no date of its own it
+waits only if EVERY open step is dated. Drives Ahead's Week/Later filters, Map
+buckets, Step's quick-pick grouping and the Ahead badge. When a step-driven date
+arrives the outcome is starred back onto Today once per date (`autoStarKey`).
+`ownSnoozed(o)` is just the outcome's own date (what the snooze controls edit).
+Ahead shows each step's @contexts/dates and an @context badge per outcome. Step's
+picker: By outcome · By context · By date (agenda of all dated open steps).

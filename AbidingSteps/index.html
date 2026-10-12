@@ -621,8 +621,10 @@
   .ctx-item { background: var(--bg-elevated); border: 1px solid var(--border); border-radius: 8px; padding: 7px 10px; margin-bottom: 6px; cursor: pointer; font-size: 0.82rem; line-height: 1.4; overflow-wrap: anywhere; }
   .ctx-item:active, .ctx-item:hover { border-color: var(--accent); }
   .ctx-item .where { display: block; font-size: 0.68rem; color: var(--text-faint); margin-bottom: 1px; }
+  .ctx-due-head { color: var(--danger) !important; }
   .ctx-empty { font-size: 0.78rem; color: var(--text-faint); line-height: 1.6; padding: 4px 2px 10px; }
   .ctx { color: var(--step); }
+  .ctx-badge { color: var(--step); }
   .due { color: #e8c15a; } .due.over { color: var(--danger); }
   .map-mode-btn { background: var(--bg-raised); border: 1px solid var(--border); color: var(--text-dim); border-radius: 999px; padding: 2px 10px; font: inherit; cursor: pointer; }
   .map-mode-btn.playing { color: var(--accent); border-color: var(--accent); }
@@ -726,7 +728,7 @@
         </div>
         <div id="outcomeFull">
           <div class="picker-notice" id="pickerNotice" hidden></div>
-          <div class="pick-mode" id="pickMode"><span class="chip selected" data-pm="outcome">By outcome</span><span class="chip" data-pm="ctx">By context</span></div>
+          <div class="pick-mode" id="pickMode"><span class="chip selected" data-pm="outcome">By outcome</span><span class="chip" data-pm="ctx">By context</span><span class="chip" data-pm="date">By date</span></div>
           <div id="ctxPicker" hidden></div>
           <div class="section-label" id="outcomeLabel">Outcome — pick this first</div>
           <div class="outcome-group">
@@ -3123,6 +3125,14 @@ For God alone my soul waits in silence. — Psalm 62:1`;
     let changed = false;
     outcomes.forEach(o => {
       if (!o.today && o.nextActionDate && o.nextActionDate <= tk) { starToday(o); changed = true; }
+      // a dated step comes due → the outcome returns to Today that day (once per date, so
+      // un-starring it sticks). Notes aren't loaded yet on the very first startup call.
+      else if (!o.today && !o.completed && !o.maybe) {
+        try {
+          const e = effInfo(o);
+          if (e.step && e.date && e.date <= tk && o.autoStarKey !== e.date) { starToday(o); o.autoStarKey = e.date; changed = true; }
+        } catch (err) {}
+      }
     });
     if (changed) saveOutcomes();
     return changed;
@@ -3353,7 +3363,7 @@ For God alone my soul waits in silence. — Psalm 62:1`;
       if (o.completed) return;
       if (o.today) groups.outcomesToday.push(o);
       // set for Later → not a quick pick right now; still reachable under "more…"
-      else if (o.nextActionDate && o.nextActionDate > todayKeyLocal()) groups.outcomesOther.push(o);
+      else if (snoozedUntil(o)) groups.outcomesOther.push(o);
       else if (o.maybe) return; // maybe items stay out of the way (Recent and Other), same as Ahead
       else if (o.lastWorked && o.lastWorked > recentCutoff) groups.outcomesRecent.push(o);
       else groups.outcomesOther.push(o);
@@ -3603,36 +3613,59 @@ For God alone my soul waits in silence. — Psalm 62:1`;
       const k = dateIn('>' + v), tk = todayKeyLocal();
       return pre + '<span class="due' + (k < tk ? ' over' : k === tk ? ' now' : '') + '">' + gt + v + '</span>';
     });
-  function contextSteps() {
+  // every open step line of an outcome (and its live milestones), with the @contexts and
+  // >date it carries or inherits from the lines above it
+  function scanSteps(o) {
     const items = [];
-    outcomes.forEach(o => {
-      if (o.completed || o.maybe) return;
-      [null].concat(o.milestones.filter(m => !m.completed)).forEach(m => {
-        const stack = [];
-        noteLines(noteKeyFor(o, m)).forEach(raw => {
-          if (raw.trim() === '') return;
-          const ind = indentOf(raw);
-          while (stack.length && stack[stack.length - 1].ind >= ind) stack.pop();
-          const par = stack[stack.length - 1], r = STEP_RE.exec(raw), text = r ? r[2] : raw.trim();
-          const ctx = [...new Set([...(par ? par.ctx : []), ...ctxIn(text)])];
-          const date = dateIn(text) || (par ? par.date : null);
-          let top = par ? par.top : null, closed = par ? par.closed : false;
-          if (ind === 0) { top = (r && r[1] === '-') ? r[2] : null; closed = !!(r && r[1] === '+'); }
-          stack.push({ ind, ctx, top, closed, date });
-          // a future date keeps the step out of the picker until that day
-          if (r && r[1] === '-' && (ctx.length || date) && !closed && !(date && date > todayKeyLocal())) items.push({ o, m, text, ctx, sub: top, date, due: !!date });
-        });
+    [null].concat(o.milestones.filter(m => !m.completed)).forEach(m => {
+      const stack = [];
+      noteLines(noteKeyFor(o, m)).forEach(raw => {
+        if (raw.trim() === '') return;
+        const ind = indentOf(raw);
+        while (stack.length && stack[stack.length - 1].ind >= ind) stack.pop();
+        const par = stack[stack.length - 1], r = STEP_RE.exec(raw), text = r ? r[2] : raw.trim();
+        const ctx = [...new Set([...(par ? par.ctx : []), ...ctxIn(text)])];
+        const date = dateIn(text) || (par ? par.date : null);
+        let top = par ? par.top : null, closed = par ? par.closed : false;
+        if (ind === 0) { top = (r && r[1] === '-') ? r[2] : null; closed = !!(r && r[1] === '+'); }
+        stack.push({ ind, ctx, top, closed, date });
+        if (r && r[1] === '-' && !closed) items.push({ o, m, text, ctx, sub: top, date });
       });
     });
     return items;
   }
+  function contextSteps() {
+    const tk = todayKeyLocal(), items = [];
+    outcomes.forEach(o => {
+      if (o.completed || o.maybe) return;
+      // a future date keeps the step out of the picker until that day
+      scanSteps(o).forEach(it => { if ((it.ctx.length || it.date) && !(it.date && it.date > tk)) { it.due = !!it.date; items.push(it); } });
+    });
+    return items;
+  }
+  // The outcome's Effective Next Date — when something in it can next be acted on:
+  //  · its own "Later" date holds it back… unless a step is dated earlier, which brings it
+  //    back on that step's day
+  //  · with no date of its own, it waits only if EVERY open step is dated (one undated
+  //    step means there's something to do now)
+  // null = available now. step=true means a step's date is what's driving it.
+  function effInfo(o) {
+    const tk = todayKeyLocal(), own = (o.nextActionDate && o.nextActionDate > tk) ? o.nextActionDate : null;
+    const steps = scanSteps(o), dated = steps.filter(x => x.date).map(x => x.date).sort(), first = dated[0] || null;
+    if (own) return first && first < own ? { date: first, step: true } : { date: own, step: false };
+    if (first && !steps.some(x => !x.date)) return { date: first, step: true };
+    return { date: null, step: false };
+  }
+  function ctxUnion(o) { return [...new Set(scanSteps(o).flatMap(x => x.ctx))]; }
   let pickMode = store.get('__local_pickMode', 'outcome'), ctxSel = store.get('__local_ctxSel', null);
   function renderCtxPicker() {
     const full = document.getElementById('outcomeFull'), box = document.getElementById('ctxPicker'); if (!full || !box) return;
-    full.classList.toggle('by-ctx', pickMode === 'ctx');
+    const listMode = pickMode === 'ctx' || pickMode === 'date';
+    full.classList.toggle('by-ctx', listMode);
     document.querySelectorAll('#pickMode .chip').forEach(c => c.classList.toggle('selected', c.dataset.pm === pickMode));
-    box.hidden = pickMode !== 'ctx';
-    if (pickMode !== 'ctx') return;
+    box.hidden = !listMode;
+    if (!listMode) return;
+    if (pickMode === 'date') { renderDateAgenda(box); return; }
     const items = contextSteps(), counts = {};
     items.forEach(it => it.ctx.forEach(c => { counts[c] = (counts[c] || 0) + 1; }));
     const names = Object.keys(counts).sort((a, b) => counts[b] - counts[a] || a.localeCompare(b));
@@ -3651,6 +3684,27 @@ For God alone my soul waits in silence. — Psalm 62:1`;
     box.querySelectorAll('.ctx-item').forEach(el => el.addEventListener('click', () => {
       const it = shown[+el.dataset.i];
       selectOutcome(it.o.id, { ms: it.m && it.m.id, sub: it.sub });
+    }));
+  }
+  // By date: an agenda of every dated open step — overdue first, then each day in order.
+  // Unlike the other views it includes steps still waiting for their day, so you can see
+  // what's coming (or work one early).
+  function renderDateAgenda(box) {
+    const tk = todayKeyLocal(), items = [];
+    outcomes.forEach(o => { if (!o.completed && !o.maybe) scanSteps(o).forEach(it => { if (it.date) items.push(it); }); });
+    items.sort((a, b) => a.date.localeCompare(b.date) || (b.o.today ? 1 : 0) - (a.o.today ? 1 : 0));
+    if (!items.length) { box.innerHTML = '<div class="ctx-empty">No dated steps yet. Add a date to a step in its notes, like <b>- send invites &gt;10-20</b> (or <b>&gt;tomorrow</b>, <b>&gt;wed</b>).</div>'; return; }
+    const label = (d) => d < tk ? 'Overdue' : d === tk ? 'Today' : d === addDaysKey(1) ? 'Tomorrow' : shortDateLabel(d);
+    let html = '', last = null;
+    items.forEach((it, i) => {
+      const head = it.date < tk ? 'Overdue' : label(it.date);
+      if (head !== last) { html += '<div class="section-label' + (it.date <= tk ? ' ctx-due-head' : '') + '">' + escapeHtml(head) + '</div>'; last = head; }
+      html += '<div class="ctx-item" data-i="' + i + '"><span class="where">' + escapeHtml(it.o.t + (it.m ? ' › ' + it.m.t : '')) + (it.o.today ? ' · Today' : '')
+        + (it.date < tk ? ' · ' + escapeHtml(shortDateLabel(it.date)) : '') + '</span>' + ctxHtml(escapeHtml(it.text)) + '</div>';
+    });
+    box.innerHTML = html;
+    box.querySelectorAll('.ctx-item').forEach(el => el.addEventListener('click', () => {
+      const it = items[+el.dataset.i]; selectOutcome(it.o.id, { ms: it.m && it.m.id, sub: it.sub });
     }));
   }
   document.querySelectorAll('#pickMode .chip').forEach(c => c.addEventListener('click', () => {
@@ -3817,7 +3871,7 @@ For God alone my soul waits in silence. — Psalm 62:1`;
     if (o.maybe) return false; // maybe items stay out of the way — only the Maybe filter shows them
     if (role === 'Inbox') return !o.type;
     if (role === 'Today') return !!o.today;
-    const d = o.nextActionDate, tk = todayKeyLocal(), wk = addDaysKey(7);
+    const d = snoozedUntil(o), tk = todayKeyLocal(), wk = addDaysKey(7);
     if (role === 'Week') return !o.today && !!d && d > tk && d <= wk;
     if (role === 'Later') return !o.today && !!d && d > wk;
     return true; // All
@@ -3844,13 +3898,16 @@ For God alone my soul waits in silence. — Psalm 62:1`;
     if (!key || key <= todayKeyLocal()) { starToday(o); o.nextActionDate = null; }
     else { o.today = false; o.nextActionDate = key; }
   }
-  const snoozedUntil = (o) => (o.nextActionDate && o.nextActionDate > todayKeyLocal()) ? o.nextActionDate : null;
+  // effective (own date or a step's) — drives filters, buckets and badges; ownSnoozed is only
+  // the outcome's own "Later" date, which is what the snooze controls edit
+  function snoozedUntil(o) { const e = effInfo(o); return (e.date && e.date > todayKeyLocal()) ? e.date : null; }
+  function ownSnoozed(o) { return (o.nextActionDate && o.nextActionDate > todayKeyLocal()) ? o.nextActionDate : null; }
 
   // the outcome's shape, editable in place: its own steps, then each optional milestone
   // with that milestone's steps. Steps never need a milestone.
   function renderOutcomeTree(o) {
     // steps are the "- " / "+ " lines of the notes; tap one to flip it open/closed
-    const chip = (s, msId, done) => '<span class="chip tree-step' + (done ? ' done' : '') + '" data-tree="tog-step" data-ms="' + msId + '" data-t="' + escapeHtml(s) + '" data-d="' + (done ? 1 : '') + '" title="' + (done ? 'Reopen' : 'Mark done') + '">' + (done ? '+ ' : '') + escapeHtml(s)
+    const chip = (s, msId, done) => '<span class="chip tree-step' + (done ? ' done' : '') + '" data-tree="tog-step" data-ms="' + msId + '" data-t="' + escapeHtml(s) + '" data-d="' + (done ? 1 : '') + '" title="' + (done ? 'Reopen' : 'Mark done') + '">' + (done ? '+ ' : '') + ctxHtml(escapeHtml(s))
         + '<button type="button" class="tree-x" data-tree="del-step" data-ms="' + msId + '" data-t="' + escapeHtml(s) + '" data-d="' + (done ? 1 : '') + '" title="Remove step">×</button></span>';
     const steps = (scope, msId) => (scope.subs || []).map(s => chip(s, msId, false)).join('') + (scope.doneSubs || []).map(s => chip(s, msId, true)).join('')
       + '<span class="chip add-chip" data-tree="add-step" data-ms="' + msId + '">+ step</span>';
@@ -3918,7 +3975,8 @@ For God alone my soul waits in silence. — Psalm 62:1`;
         + '</div></div>'
         + '<div class="outcome-row-meta"><span class="badge">' + (o.type || 'Inbox') + (o.tag ? ' · ' + o.tag : '')
         + ((o.milestones || []).length ? ' · ' + o.milestones.length + ' milestone' + (o.milestones.length === 1 ? '' : 's') : '')
-        + (snoozedUntil(o) ? ' · later ' + escapeHtml(shortDateLabel(snoozedUntil(o))) : '') + '</span></div>';
+        + (snoozedUntil(o) ? ' · later ' + escapeHtml(shortDateLabel(snoozedUntil(o))) + (effInfo(o).step ? ' (step)' : '') : '') + '</span>'
+        + ctxUnion(o).map(c => ' <span class="badge ctx-badge">@' + escapeHtml(c) + '</span>').join('') + '</div>';
       if (o.budget) {
         const acc = budgetAcc(o), target = o.budget.target;
         const pct = Math.min(100, (acc / target) * 100);
@@ -3932,12 +3990,12 @@ For God alone my soul waits in silence. — Psalm 62:1`;
         + '<textarea class="outcome-row-notes-input" placeholder="Notes — pulled up when you work this…">' + escapeHtml(notesByKey[o.id] || '') + '</textarea>'
         + renderOutcomeTree(o)
         + (o.completed ? '' : '<div class="snooze-row" title="Later — off Today until then">'
-          + (o.today && !snoozedUntil(o) ? '' : '<span class="chip" data-snooze="today">Today</span>')
+          + (o.today && !ownSnoozed(o) ? '' : '<span class="chip" data-snooze="today">Today</span>')
           + snoozeOptions().map(([label, key]) => '<span class="chip' + (o.nextActionDate === key ? ' selected' : '') + '" data-snooze="' + key + '">' + label + '</span>').join('')
-          + '<span class="chip snooze-pick' + (snoozedUntil(o) && !snoozeOptions().some(([, k]) => k === o.nextActionDate) ? ' selected' : '') + '" title="Pick a date">'
+          + '<span class="chip snooze-pick' + (ownSnoozed(o) && !snoozeOptions().some(([, k]) => k === o.nextActionDate) ? ' selected' : '') + '" title="Pick a date">'
           + '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3.5" y="5" width="17" height="15.5" rx="2.5"/><path d="M3.5 10h17M8 3v4M16 3v4"/></svg>'
           + '<input type="date" aria-label="Pick a date" min="' + addDaysKey(1) + '"></span></div>'
-          + (snoozedUntil(o) ? '<div class="snooze-status">Later · ' + escapeHtml(shortDateLabel(snoozedUntil(o))) + ' — off Today till then'
+          + (ownSnoozed(o) ? '<div class="snooze-status">Later · ' + escapeHtml(shortDateLabel(ownSnoozed(o))) + ' — off Today till then'
             + '<button type="button" class="snooze-clear">clear</button></div>' : ''))
         + '</div>';
       row.innerHTML = html;
@@ -4048,8 +4106,8 @@ For God alone my soul waits in silence. — Psalm 62:1`;
       if (o.completed) return 'Done';
       if (o.maybe) return 'Maybe';
       if (o.today) return 'Today';
-      const d = o.nextActionDate;
-      if (d && d > todayKeyLocal()) return d <= addDaysKey(7) ? 'Week' : 'Later';
+      const d = snoozedUntil(o);
+      if (d) return d <= addDaysKey(7) ? 'Week' : 'Later';
       return o.type ? 'Open' : 'Inbox';
     }
     function moveToBucket(o, b) {
@@ -4183,7 +4241,8 @@ For God alone my soul waits in silence. — Psalm 62:1`;
           + f('bucket', 'Bucket', '<select data-f="bucket">' + BUCKETS.map(x => opt(x, x, bucketOf(o))).join('') + '</select>')
           + '<div class="row2">' + f('kind', 'Kind', '<select data-f="kind">' + opt('', 'Inbox (none)', o.type || '') + opt('Destination', 'Destination', o.type) + opt('Directive', 'Directive', o.type) + '</select>')
           + f('tag', 'Role', '<select data-f="tag">' + opt('', '—', o.tag || '') + ['Roots', 'Resources', 'Reach', 'Reality'].map(x => opt(x, x, o.tag)).join('') + '</select>') + '</div>'
-          + f('date', 'Later — off Today until', '<input type="date" data-f="date" min="' + addDaysKey(1) + '" value="' + (snoozedUntil(o) || '') + '">')
+          + f('date', 'Later — off Today until', '<input type="date" data-f="date" min="' + addDaysKey(1) + '" value="' + (ownSnoozed(o) || '') + '">')
+          + (effInfo(o).step && effInfo(o).date ? '<div class="fine" style="margin:-4px 0 10px">Next up ' + escapeHtml(shortDateLabel(effInfo(o).date)) + ' — a dated step sets it</div>' : '')
           + chk('maybe', 'Maybe — trying it on', o.maybe)
           + chk('done', 'Done', o.completed)
           + '<div style="height:10px"></div>'
@@ -4510,6 +4569,7 @@ For God alone my soul waits in silence. — Psalm 62:1`;
       if (bucketOf(n.o) === b) return;
       mutate(() => moveToBucket(n.o, b));
       reveal(n.key); render();
+      if (bucketOf(n.o) !== b) toast('Stays in ' + bucketOf(n.o) + ' — its dated steps decide that');
     }
     function swap(arr, i, j) { const t = arr[i]; arr[i] = arr[j]; arr[j] = t; }
     function altKey(e, n) {
