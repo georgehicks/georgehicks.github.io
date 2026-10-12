@@ -798,3 +798,5 @@ and Ahead keep working; every step edit rewrites the note lines. First run
 folds existing `subs` into the notes as `- ` lines (`reconcileAllSteps`,
 flagged per scope with `nl`). Map mode shows each note line as a child node and
 has no separate notes box. Step-level notes (`oid|step` keys) are unchanged.
+
+Indentation (2 spaces) nests lines: a deeper line is a child of the line above. The step cache (and so Step/Ahead) reads only unindented steps; deeper lines are Map-only.

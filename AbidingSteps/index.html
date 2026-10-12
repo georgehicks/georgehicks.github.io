@@ -1024,15 +1024,16 @@
     <div><kbd>↑</kbd><kbd>↓</kbd> next / previous at this level · <kbd>←</kbd> parent · <kbd>→</kbd> first child (opens it)</div>
     <div><kbd>Space</kbd> fold / unfold · <kbd>a</kbd> fold everything below outcomes / open all · <kbd>/</kbd> find (<kbd>Enter</kbd> next)</div>
     <h4>Type things in</h4>
-    <div>An outcome’s (or milestone’s) children are the lines of its notes. <b>- </b>lines are open steps, <b>+ </b>lines are done, anything else is a plain note — there’s no separate notes box here.</div>
+    <div>An outcome’s (or milestone’s) children are the lines of its notes; indent a line (two spaces) and it becomes a child of the line above. Step and Ahead show only the unindented steps — deeper ones live here.</div>
+    <div><b>- </b>lines are open steps, <b>+ </b>lines are done, anything else is a plain note — there’s no separate notes box here.</div>
     <div><kbd>Enter</kbd> new line below (starts with “- ” after a step; delete it for a plain note). Enter on an empty line stops</div>
-    <div><kbd>Tab</kbd> new child: outcome under a bucket, a line under an outcome or milestone</div>
+    <div><kbd>Tab</kbd> new child: outcome under a bucket, a line under an outcome, milestone or another line</div>
     <div><kbd>m</kbd> new milestone on an outcome · <kbd>e</kbd> / <kbd>F2</kbd> rename · <kbd>Esc</kbd> stop typing</div>
     <h4>Rearrange</h4>
     <div><kbd>1</kbd> Inbox · <kbd>2</kbd> Today · <kbd>3</kbd> Week · <kbd>4</kbd> Later · <kbd>5</kbd> Open · <kbd>6</kbd> Maybe · <kbd>7</kbd> Done — moves the selected outcome</div>
-    <div><kbd>⌥←</kbd><kbd>⌥→</kbd> outcome to previous / next bucket · step out of its milestone (<kbd>⌥←</kbd>)</div>
+    <div><kbd>⌥←</kbd><kbd>⌥→</kbd> outcome to previous / next bucket · on a line: outdent / indent (a child of the line above)</div>
     <div><kbd>⌥↑</kbd><kbd>⌥↓</kbd> reorder among siblings</div>
-    <div><kbd>x</kbd> cut, then select a target and <kbd>p</kbd> paste (line → outcome/milestone, milestone → outcome, outcome → bucket)</div>
+    <div><kbd>x</kbd> cut, then select a target and <kbd>p</kbd> paste (line → outcome, milestone or another line, milestone → outcome, outcome → bucket)</div>
     <h4>Other</h4>
     <div><kbd>d</kbd> flips a step between - and + · <kbd>y</kbd> cycle Inbox → Destination → Directive</div>
     <div><kbd>⌫</kbd> delete · <kbd>u</kbd> or <kbd>⌘Z</kbd> undo (no confirm boxes here — undo instead)</div>
@@ -3475,8 +3476,12 @@ For God alone my soul waits in silence. — Psalm 62:1`;
   const STEP_RE = /^\s*([-+])\s+(\S.*?)\s*$/;
   const noteKeyFor = (o, m) => o.id + (m ? '#' + m.id : '');
   function noteLines(key) { const t = notesByKey[key] || ''; return t === '' ? [] : t.split('\n'); }
+  // indentation = depth: Step and Ahead only see the top-level (unindented) steps,
+  // deeper lines are sub-nodes that live in Map mode
+  const indentOf = (ln) => ln.match(/^[ \t]*/)[0].replace(/\t/g, '  ').length;
+  const topStep = (ln) => { const r = STEP_RE.exec(ln); return r && indentOf(ln) === 0 ? r : null; };
   function parseSteps(text) {
-    return String(text || '').split('\n').map(ln => STEP_RE.exec(ln)).filter(Boolean).map(r => ({ t: r[2], done: r[1] === '+' }));
+    return String(text || '').split('\n').map(topStep).filter(Boolean).map(r => ({ t: r[2], done: r[1] === '+' }));
   }
   function syncScopeFromNotes(scope, key) {
     const st = parseSteps(notesByKey[key]);
@@ -3531,7 +3536,7 @@ For God alone my soul waits in silence. — Psalm 62:1`;
     return notesChanged || outChanged;
   }
   function stepLineIndex(lines, text, done) {
-    return lines.findIndex(ln => { const r = STEP_RE.exec(ln); return r && r[2] === text && (r[1] === '+') === !!done; });
+    return lines.findIndex(ln => { const r = topStep(ln); return r && r[2] === text && (r[1] === '+') === !!done; });
   }
   function addStepLine(o, m, text) {
     const lines = noteLines(noteKeyFor(o, m));
@@ -3917,12 +3922,28 @@ For God alone my soul waits in silence. — Psalm 62:1`;
 
     // every non-blank line of the notes is a child node; "- "/"+ " lines are steps
     function addLines(mk, parent, o, m) {
+      const stack = []; // enclosing lines, by indent
       noteLines(noteKeyFor(o, m)).forEach((raw, i) => {
         if (raw.trim() === '') return;
-        const r = STEP_RE.exec(raw);
-        mk(lineKey(o, m, i), 'line', parent, { o, m, line: i, raw, mark: r ? r[1] : null, text: r ? r[2] : raw.trim() });
+        const r = STEP_RE.exec(raw), ind = indentOf(raw);
+        while (stack.length && stack[stack.length - 1].ind >= ind) stack.pop();
+        const node = mk(lineKey(o, m, i), 'line', stack.length ? stack[stack.length - 1].node : parent, { o, m, line: i, raw, ind, mark: r ? r[1] : null, text: r ? r[2] : raw.trim() });
+        stack.push({ ind, node });
       });
     }
+    // a line plus everything indented under it: [line, end) — blank lines inside count,
+    // blank lines trailing don't
+    function blockEnd(lines, i) {
+      const ind = indentOf(lines[i]); let last = i;
+      for (let j = i + 1; j < lines.length; j++) {
+        if (lines[j].trim() === '') continue;
+        if (indentOf(lines[j]) > ind) last = j; else break;
+      }
+      return last + 1;
+    }
+    const pad = (n) => ' '.repeat(Math.max(0, n));
+    // shift a block's indent by delta columns (never below zero)
+    const reindent = (blk, delta) => blk.map(ln => ln.trim() === '' ? ln : pad(indentOf(ln) + delta) + ln.replace(/^[ \t]*/, ''));
     const lineKids = (n) => n.kids.filter(k => k.kind === 'line');
     // where to insert a new line so it lands visually after the given kid (or at the end)
     function endLine(o, m) { const l = noteLines(noteKeyFor(o, m)); let i = l.length; while (i > 0 && l[i - 1].trim() === '') i--; return i; }
@@ -4032,11 +4053,16 @@ For God alone my soul waits in silence. — Psalm 62:1`;
       if (n.kind === 'bucket') startPending('outcome', n, n.kids.length, outcomes.length);
       else if (n.kind === 'outcome') startPending('line', n, lineKids(n).length, endLine(n.o, null), '- ');
       else if (n.kind === 'ms') startPending('line', n, lineKids(n).length, endLine(n.o, n.m), '- ');
-      else if (n.kind === 'line') newSibling(n);
-      else toast('Pick a bucket first (→)');
+      else if (n.kind === 'line') {
+        const lines = noteLines(noteKeyFor(n.o, n.m));
+        startPending('line', n, n.kids.length, blockEnd(lines, n.line), pad(n.ind + 2) + '- ');
+      } else toast('Pick a bucket first (→)');
     }
     function newSibling(n) {
-      if (n.kind === 'line') startPending('line', n.parent, lineKids(n.parent).indexOf(n) + 1, n.line + 1, n.mark ? '- ' : '');
+      if (n.kind === 'line') {
+        const lines = noteLines(noteKeyFor(n.o, n.m));
+        startPending('line', n.parent, lineKids(n.parent).indexOf(n) + 1, blockEnd(lines, n.line), pad(n.ind) + (n.mark ? '- ' : ''));
+      }
       else if (n.kind === 'ms') { const idx = n.o.milestones.indexOf(n.m); startPending('ms', n.parent, lineKids(n.parent).length + idx + 1, idx + 1); }
       else if (n.kind === 'outcome') startPending('outcome', n.parent, n.parent.kids.indexOf(n) + 1, outcomes.indexOf(n.o) + 1);
       else newChild(n);
@@ -4073,7 +4099,7 @@ For God alone my soul waits in silence. — Psalm 62:1`;
       if (n && text && text !== editText(n)) {
         if (n.kind === 'line') mutate(() => {
           const lines = noteLines(noteKeyFor(n.o, n.m)); lines[n.line] = text; writeNoteLines(n.o, n.m, lines);
-          const r = STEP_RE.exec(text); if (n.mark && r && r[2] !== n.text) moveNote(noteKey(n.o, n.m, n.text), noteKey(n.o, n.m, r[2]));
+          const r = STEP_RE.exec(text); if (n.mark && n.ind === 0 && r && r[2] !== n.text && indentOf(text) === 0) moveNote(noteKey(n.o, n.m, n.text), noteKey(n.o, n.m, r[2]));
         });
         else mutate(() => { if (n.kind === 'outcome') n.o.t = text; else n.m.t = text; });
       }
@@ -4089,7 +4115,7 @@ For God alone my soul waits in silence. — Psalm 62:1`;
       mutate(() => {
         if (n.kind === 'outcome') outcomes = outcomes.filter(x => x !== n.o);
         else if (n.kind === 'ms') n.o.milestones = n.o.milestones.filter(x => x !== n.m);
-        else { const lines = noteLines(noteKeyFor(n.o, n.m)); lines.splice(n.line, 1); writeNoteLines(n.o, n.m, lines); }
+        else { const lines = noteLines(noteKeyFor(n.o, n.m)); lines.splice(n.line, blockEnd(lines, n.line) - n.line); writeNoteLines(n.o, n.m, lines); }
       });
       sel = nextSel; render(); toast('Deleted “' + label + '” — u to undo');
     }
@@ -4121,8 +4147,17 @@ For God alone my soul waits in silence. — Psalm 62:1`;
         const dir = k === 'ArrowUp' ? -1 : 1;
         if (n.kind === 'line') {
           const other = lineKids(n.parent)[lineKids(n.parent).indexOf(n) + dir]; if (!other) return;
-          mutate(() => { const lines = noteLines(noteKeyFor(n.o, n.m)); swap(lines, n.line, other.line); writeNoteLines(n.o, n.m, lines); });
-          sel = lineKey(n.o, n.m, other.line);
+          let newLine;
+          mutate(() => {
+            const lines = noteLines(noteKeyFor(n.o, n.m));
+            const a0 = n.line, a1 = blockEnd(lines, a0), b0 = other.line, b1 = blockEnd(lines, b0);
+            const first = dir > 0 ? [a0, a1] : [b0, b1], second = dir > 0 ? [b0, b1] : [a0, a1];
+            const A = lines.slice(first[0], first[1]), gap = lines.slice(first[1], second[0]), B = lines.slice(second[0], second[1]);
+            lines.splice(first[0], second[1] - first[0], ...B, ...gap, ...A);
+            newLine = dir > 0 ? first[0] + B.length + gap.length : first[0];
+            writeNoteLines(n.o, n.m, lines);
+          });
+          sel = lineKey(n.o, n.m, newLine);
         } else if (n.kind === 'ms') {
           const arr = n.o.milestones, i = arr.indexOf(n.m), j = i + dir; if (j < 0 || j >= arr.length) return;
           mutate(() => swap(arr, i, j));
@@ -4135,12 +4170,29 @@ For God alone my soul waits in silence. — Psalm 62:1`;
         const dir = k === 'ArrowLeft' ? -1 : 1;
         if (n.kind === 'outcome') {
           const b = BUCKETS[BUCKETS.indexOf(bucketOf(n.o)) + dir]; if (b) toBucket(n, b);
-        } else if (n.kind === 'line' && dir < 0 && n.m) {
+        } else if (n.kind === 'line' && dir > 0) { // indent: become the last child of the sibling above
+          const above = lineKids(n.parent)[lineKids(n.parent).indexOf(n) - 1];
+          if (!above) { toast('Nothing above to nest under'); return; }
+          mutate(() => {
+            const lines = noteLines(noteKeyFor(n.o, n.m)), e = blockEnd(lines, n.line);
+            lines.splice(n.line, e - n.line, ...reindent(lines.slice(n.line, e), 2)); writeNoteLines(n.o, n.m, lines);
+          });
+          folded.delete(above.key); render();
+        } else if (n.kind === 'line' && n.parent.kind === 'line') { // outdent: land just after the old parent
+          let newLine;
+          mutate(() => {
+            const lines = noteLines(noteKeyFor(n.o, n.m)), e = blockEnd(lines, n.line);
+            const blk = reindent(lines.splice(n.line, e - n.line), -2);
+            const at = blockEnd(lines, n.parent.line); lines.splice(at, 0, ...blk); newLine = at; writeNoteLines(n.o, n.m, lines);
+          });
+          sel = lineKey(n.o, n.m, newLine); render();
+        } else if (n.kind === 'line' && n.m) { // top-level line in a milestone: up to the outcome's own notes
           const at = endLine(n.o, null);
           mutate(() => {
+            const from = noteLines(noteKeyFor(n.o, n.m)), e = blockEnd(from, n.line), blk = from.splice(n.line, e - n.line);
             if (n.mark) moveNote(noteKey(n.o, n.m, n.text), noteKey(n.o, null, n.text));
-            const from = noteLines(noteKeyFor(n.o, n.m)); from.splice(n.line, 1); writeNoteLines(n.o, n.m, from);
-            const to = noteLines(noteKeyFor(n.o, null)); to.splice(at, 0, n.raw); writeNoteLines(n.o, null, to);
+            writeNoteLines(n.o, n.m, from);
+            const to = noteLines(noteKeyFor(n.o, null)); to.splice(at, 0, ...blk); writeNoteLines(n.o, null, to);
           });
           sel = lineKey(n.o, null, at); render();
         } else toast('x to cut, select a target, p to paste');
@@ -4151,20 +4203,22 @@ For God alone my soul waits in silence. — Psalm 62:1`;
       const src = cutKey && model.nodes[cutKey]; if (!src) { toast('Nothing cut — x first'); return; }
       let newSel = null;
       if (src.kind === 'line') {
-        let dm, at; // destination scope (milestone or null for the outcome) and line index
-        if (t.kind === 'outcome') { dm = null; at = endLine(t.o, null); }
-        else if (t.kind === 'ms') { dm = t.m; at = endLine(t.o, t.m); }
-        else if (t.kind === 'line') { dm = t.m; at = t.line + 1; }
-        else { toast('Lines go on an outcome or milestone'); return; }
+        let dm, at, ind; // destination scope (milestone or null) / insert line / indent of the pasted root
+        if (t.kind === 'outcome') { dm = null; at = endLine(t.o, null); ind = 0; }
+        else if (t.kind === 'ms') { dm = t.m; at = endLine(t.o, t.m); ind = 0; }
+        else if (t.kind === 'line') { dm = t.m; at = blockEnd(noteLines(noteKeyFor(t.o, t.m)), t.line); ind = t.ind + 2; }
+        else { toast('Lines go on an outcome, milestone or another line'); return; }
         const dO = t.o, sameScope = dO === src.o && dm === src.m;
-        if (sameScope && src.line < at) at--;
+        const sLines = noteLines(noteKeyFor(src.o, src.m)), sEnd = blockEnd(sLines, src.line);
+        if (sameScope && t.kind === 'line' && t.line >= src.line && t.line < sEnd) { toast('Can’t paste a line into itself'); return; }
+        if (sameScope && src.line < at) at -= (sEnd - src.line);
         mutate(() => {
-          if (src.mark && !sameScope) moveNote(noteKey(src.o, src.m, src.text), noteKey(dO, dm, src.text));
-          const from = noteLines(noteKeyFor(src.o, src.m)); from.splice(src.line, 1);
-          if (sameScope) { from.splice(at, 0, src.raw); writeNoteLines(dO, dm, from); }
-          else { writeNoteLines(src.o, src.m, from); const to = noteLines(noteKeyFor(dO, dm)); to.splice(Math.min(at, to.length), 0, src.raw); writeNoteLines(dO, dm, to); }
+          if (src.mark && src.ind === 0 && ind === 0 && !sameScope) moveNote(noteKey(src.o, src.m, src.text), noteKey(dO, dm, src.text));
+          const from = noteLines(noteKeyFor(src.o, src.m)), blk = reindent(from.splice(src.line, sEnd - src.line), ind - src.ind);
+          if (sameScope) { from.splice(at, 0, ...blk); writeNoteLines(dO, dm, from); }
+          else { writeNoteLines(src.o, src.m, from); const to = noteLines(noteKeyFor(dO, dm)); to.splice(Math.min(at, to.length), 0, ...blk); writeNoteLines(dO, dm, to); }
         });
-        newSel = lineKey(dO, dm, at);
+        newSel = lineKey(dO, dm, at); if (t.kind === 'line') folded.delete(t.key);
       } else if (src.kind === 'ms') {
         let dest, at;
         if (t.kind === 'outcome') { dest = t.o; at = t.o.milestones.length; }
