@@ -614,6 +614,16 @@
   .mt-box .fold { color: var(--ahead); font-size: 0.72rem; margin-left: 6px; }
   .mt-box.k-ms.k-ms { color: var(--text); }
   .mt-edit { background: var(--bg); color: var(--text); border: 1px solid var(--ahead); border-radius: 5px; font: inherit; padding: 2px 6px; min-width: 200px; outline: none; }
+  .pick-mode { display: flex; gap: 6px; margin: 2px 0 8px; }
+  #outcomeFull.by-ctx .outcome-group, #outcomeFull.by-ctx #outcomesMoreRow, #outcomeFull.by-ctx #outcomeLabel { display: none !important; }
+  #ctxPicker .ctx-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 8px; }
+  #ctxPicker .ctx-chips .chip b { font-weight: 600; margin-left: 4px; color: var(--text-faint); }
+  .ctx-item { background: var(--bg-elevated); border: 1px solid var(--border); border-radius: 8px; padding: 7px 10px; margin-bottom: 6px; cursor: pointer; font-size: 0.82rem; line-height: 1.4; overflow-wrap: anywhere; }
+  .ctx-item:active, .ctx-item:hover { border-color: var(--accent); }
+  .ctx-item .where { display: block; font-size: 0.68rem; color: var(--text-faint); margin-bottom: 1px; }
+  .ctx-empty { font-size: 0.78rem; color: var(--text-faint); line-height: 1.6; padding: 4px 2px 10px; }
+  .ctx { color: var(--step); }
+  .due { color: #e8c15a; } .due.over { color: var(--danger); }
   .map-mode-btn { background: var(--bg-raised); border: 1px solid var(--border); color: var(--text-dim); border-radius: 999px; padding: 2px 10px; font: inherit; cursor: pointer; }
   .map-mode-btn.playing { color: var(--accent); border-color: var(--accent); }
   .map-timer { color: var(--step); font-variant-numeric: tabular-nums; font-weight: 600; cursor: pointer; }
@@ -716,7 +726,9 @@
         </div>
         <div id="outcomeFull">
           <div class="picker-notice" id="pickerNotice" hidden></div>
-          <div class="section-label">Outcome — pick this first</div>
+          <div class="pick-mode" id="pickMode"><span class="chip selected" data-pm="outcome">By outcome</span><span class="chip" data-pm="ctx">By context</span></div>
+          <div id="ctxPicker" hidden></div>
+          <div class="section-label" id="outcomeLabel">Outcome — pick this first</div>
           <div class="outcome-group">
             <div class="outcome-group-title">Today<span class="today-load" id="todayLoadNote"></span></div>
             <div class="outcome-list wrap" id="outcomesToday"></div>
@@ -3388,6 +3400,7 @@ For God alone my soul waits in silence. — Psalm 62:1`;
     const load = todayLoadText();
     document.getElementById('todayLoadNote').textContent = load ? ' · ' + load : '';
     renderMorningReview();
+    renderCtxPicker();
     renderStepBudget();
   }
 
@@ -3558,6 +3571,91 @@ For God alone my soul waits in silence. — Psalm 62:1`;
   function writeNoteLines(o, m, lines) { writeNotes(noteKeyFor(o, m), lines.join('\n')); }
   // notes text changed (typed, edited elsewhere, or synced) → refresh the step cache and
   // whatever is showing it. Returns whether the steps actually changed.
+  // ===== contexts: an @word anywhere in a step line (- call venue @call) tags it, and
+  // nested lines inherit their parents' contexts. Read from the text each time — no
+  // stored field — so editing the notes is all it takes. =====
+  const CTX_TOKEN = /(^|\s)@([A-Za-z][\w-]*)/g;
+  const ctxIn = (t) => [...String(t).matchAll(CTX_TOKEN)].map(m => m[2].toLowerCase());
+  // dates: ">10-20" or ">2026-10-20" on a step = "not before then". Until that day the step stays
+  // out of the Step picker; on and after it, it counts as Due. Words like >tomorrow or >mon
+  // are rewritten to the real date when you type them, since a stored "tomorrow" would
+  // mean tomorrow forever.
+  const DATE_TOKEN = /(^|\s)>(\d{4}-\d{2}-\d{2}|\d{1,2}-\d{1,2})(?=\s|$)/;
+  function dateIn(t) {
+    const m = DATE_TOKEN.exec(String(t)); if (!m) return null;
+    const v = m[2]; if (v.length === 10) return v;
+    const [mo, d] = v.split('-').map(Number), now = new Date();
+    let y = now.getFullYear();
+    if (new Date(y, mo - 1, d) < new Date(now.getFullYear(), now.getMonth(), now.getDate() - 180)) y++; // "01-05" typed in December means next January
+    return y + '-' + String(mo).padStart(2, '0') + '-' + String(d).padStart(2, '0');
+  }
+  function absDates(text) {
+    const dows = { sun: 0, mon: 1, tue: 2, wed: 3, thu: 4, fri: 5, sat: 6 };
+    return String(text).replace(/(^|\s)>(today|tomorrow|(?:sun|mon|tue|wed|thu|fri|sat)[a-z]*)(?=\s|$)/gi, (m, pre, w) => {
+      w = w.toLowerCase();
+      if (w !== 'today' && w !== 'tomorrow' && !/^(sun(day)?|mon(day)?|tue(s|sday)?|wed(nesday)?|thu(r|rs|rsday)?|fri(day)?|sat(urday)?)$/.test(w)) return m;
+      return pre + '>' + (w === 'today' ? addDaysKey(0) : w === 'tomorrow' ? addDaysKey(1) : nextWeekdayKey(dows[w.slice(0, 3)]));
+    });
+  }
+  const ctxHtml = (escaped) => escaped
+    .replace(/(^|\s)(@[A-Za-z][\w-]*)/g, '$1<span class="ctx">$2</span>')
+    .replace(/(^|\s)(&gt;)(\d{4}-\d{2}-\d{2}|\d{1,2}-\d{1,2})(?=\s|$)/g, (m, pre, gt, v) => {
+      const k = dateIn('>' + v), tk = todayKeyLocal();
+      return pre + '<span class="due' + (k < tk ? ' over' : k === tk ? ' now' : '') + '">' + gt + v + '</span>';
+    });
+  function contextSteps() {
+    const items = [];
+    outcomes.forEach(o => {
+      if (o.completed || o.maybe) return;
+      [null].concat(o.milestones.filter(m => !m.completed)).forEach(m => {
+        const stack = [];
+        noteLines(noteKeyFor(o, m)).forEach(raw => {
+          if (raw.trim() === '') return;
+          const ind = indentOf(raw);
+          while (stack.length && stack[stack.length - 1].ind >= ind) stack.pop();
+          const par = stack[stack.length - 1], r = STEP_RE.exec(raw), text = r ? r[2] : raw.trim();
+          const ctx = [...new Set([...(par ? par.ctx : []), ...ctxIn(text)])];
+          const date = dateIn(text) || (par ? par.date : null);
+          let top = par ? par.top : null, closed = par ? par.closed : false;
+          if (ind === 0) { top = (r && r[1] === '-') ? r[2] : null; closed = !!(r && r[1] === '+'); }
+          stack.push({ ind, ctx, top, closed, date });
+          // a future date keeps the step out of the picker until that day
+          if (r && r[1] === '-' && (ctx.length || date) && !closed && !(date && date > todayKeyLocal())) items.push({ o, m, text, ctx, sub: top, date, due: !!date });
+        });
+      });
+    });
+    return items;
+  }
+  let pickMode = store.get('__local_pickMode', 'outcome'), ctxSel = store.get('__local_ctxSel', null);
+  function renderCtxPicker() {
+    const full = document.getElementById('outcomeFull'), box = document.getElementById('ctxPicker'); if (!full || !box) return;
+    full.classList.toggle('by-ctx', pickMode === 'ctx');
+    document.querySelectorAll('#pickMode .chip').forEach(c => c.classList.toggle('selected', c.dataset.pm === pickMode));
+    box.hidden = pickMode !== 'ctx';
+    if (pickMode !== 'ctx') return;
+    const items = contextSteps(), counts = {};
+    items.forEach(it => it.ctx.forEach(c => { counts[c] = (counts[c] || 0) + 1; }));
+    const names = Object.keys(counts).sort((a, b) => counts[b] - counts[a] || a.localeCompare(b));
+    const dueN = items.filter(it => it.due).length;
+    if (!names.length && !dueN) { box.innerHTML = '<div class="ctx-empty">No steps carry an @context or date yet. Tag a step in its notes, like <b>- call venue @call &gt;10-20</b> — nested lines inherit their parent’s. A dated step waits out of sight until that day.</div>'; return; }
+    if (!(ctxSel === '_due' ? dueN : counts[ctxSel])) ctxSel = dueN ? '_due' : names[0];
+    const shown = (ctxSel === '_due' ? items.filter(it => it.due) : items.filter(it => it.ctx.includes(ctxSel)))
+      .sort((a, b) => (a.due ? 0 : 1) - (b.due ? 0 : 1) || (a.date || '').localeCompare(b.date || '') || (b.o.today ? 1 : 0) - (a.o.today ? 1 : 0));
+    const tk = todayKeyLocal();
+    box.innerHTML = '<div class="ctx-chips">'
+      + (dueN ? '<span class="chip' + (ctxSel === '_due' ? ' selected' : '') + '" data-c="_due">Due<b>' + dueN + '</b></span>' : '')
+      + names.map(n => '<span class="chip' + (n === ctxSel ? ' selected' : '') + '" data-c="' + escapeHtml(n) + '">@' + escapeHtml(n) + '<b>' + counts[n] + '</b></span>').join('') + '</div>'
+      + shown.map((it, i) => '<div class="ctx-item" data-i="' + i + '"><span class="where">' + escapeHtml(it.o.t + (it.m ? ' › ' + it.m.t : '')) + (it.o.today ? ' · Today' : '')
+        + (it.date ? ' · ' + (it.date < tk ? 'overdue ' : it.date === tk ? 'due today ' : '') + escapeHtml(shortDateLabel(it.date)) : '') + '</span>' + ctxHtml(escapeHtml(it.text)) + '</div>').join('');
+    box.querySelectorAll('.ctx-chips .chip').forEach(c => c.addEventListener('click', () => { ctxSel = c.dataset.c; store.set('__local_ctxSel', ctxSel); renderCtxPicker(); }));
+    box.querySelectorAll('.ctx-item').forEach(el => el.addEventListener('click', () => {
+      const it = shown[+el.dataset.i];
+      selectOutcome(it.o.id, { ms: it.m && it.m.id, sub: it.sub });
+    }));
+  }
+  document.querySelectorAll('#pickMode .chip').forEach(c => c.addEventListener('click', () => {
+    pickMode = c.dataset.pm; store.set('__local_pickMode', pickMode); renderCtxPicker();
+  }));
   let mapRefresh = null; // Map mode registers here so notes typed anywhere else show up in it live
   function reflectNotes(key) {
     if (mapRefresh && !key.includes('|')) mapRefresh();
@@ -3565,8 +3663,8 @@ For God alone my soul waits in silence. — Psalm 62:1`;
     const [oid, mid] = key.split('#');
     const o = findOutcome(oid); if (!o) return false;
     const m = mid ? o.milestones.find(x => x.id === mid) : null; if (mid && !m) return false;
-    if (!syncScopeFromNotes(m || o, key)) return false;
-    saveOutcomes();
+    if (!syncScopeFromNotes(m || o, key)) { renderCtxPicker(); return false; }
+    saveOutcomes(); renderCtxPicker();
     if (o.id === selectedOutcomeId) {
       if (selectedMilestoneId === (m ? m.id : null) || !m) renderSubOutcomeRow(o);
     }
@@ -3600,7 +3698,7 @@ For God alone my soul waits in silence. — Psalm 62:1`;
   function addStepLine(o, m, text) {
     const lines = noteLines(noteKeyFor(o, m));
     while (lines.length && lines[lines.length - 1].trim() === '') lines.pop();
-    lines.push('- ' + text); writeNoteLines(o, m, lines);
+    lines.push('- ' + absDates(text)); writeNoteLines(o, m, lines);
   }
   function removeStepLine(o, m, text, done) {
     const lines = noteLines(noteKeyFor(o, m)), i = stepLineIndex(lines, text, done);
@@ -4034,7 +4132,7 @@ For God alone my soul waits in silence. — Psalm 62:1`;
       let inner;
       if (editing && editing.key === n.key) inner = '<input class="mt-edit" value="' + escapeHtml(editText(n)) + '">';
       else {
-        inner = escapeHtml(labelOf(n));
+        inner = n.kind === 'line' ? ctxHtml(escapeHtml(labelOf(n))) : escapeHtml(labelOf(n));
         if (n.kind === 'bucket') inner += '<span class="ct">' + n.kids.length + '</span>';
         // - open, + closed; plain note lines carry no marker
         if (n.kind === 'outcome') inner = '<span class="tag mk">' + (n.o.completed ? '+' : '-') + '</span>' + inner + '<span class="tag typ">' + (n.o.type === 'Destination' ? '◎' : n.o.type === 'Directive' ? '∞' : '') + '</span>';
@@ -4113,7 +4211,7 @@ For God alone my soul waits in silence. — Psalm 62:1`;
       const f = e.target.dataset.f, n = model.nodes[sel]; if (!f || !n) return;
       const v = e.target.type === 'checkbox' ? e.target.checked : e.target.value;
       if (f === 'name') {
-        const t = String(v).trim(); if (!t) { renderPanel(true); return; }
+        const t = absDates(String(v).trim()); if (!t) { renderPanel(true); return; }
         if (n.kind === 'outcome') mutate(() => { n.o.t = t; });
         else if (n.kind === 'ms') mutate(() => { n.m.t = t; });
         else if (n.kind === 'line') mutate(() => {
@@ -4237,7 +4335,7 @@ For God alone my soul waits in silence. — Psalm 62:1`;
     // a line captured while working lands in the notes right away — under the step you're
     // on (indented), or on the outcome/milestone — so it appears in the map as you type
     function captureNote(text) {
-      text = text.trim(); if (!text) return;
+      text = absDates(text.trim()); if (!text) return;
       const t = wk.t;
       mutate(() => {
         const lines = noteLines(noteKeyFor(t.o, t.m));
@@ -4341,7 +4439,7 @@ For God alone my soul waits in silence. — Psalm 62:1`;
       else newChild(n);
     }
     function commitPending(text, then) {
-      const p = pending; pending = null; text = text.replace(/\s+$/, '');
+      const p = pending; pending = null; text = absDates(text.replace(/\s+$/, ''));
       text = text.replace(/^(\s*[-+]\s+)[-+]\s+/, '$1'); // typed "- " over the prefilled one
       if (!text.trim() || /^\s*[-+]\s*$/.test(text)) { sel = model.nodes[p.prevSel] ? p.prevSel : p.parentKey; render(); return; }
       const parent = model.nodes[p.parentKey]; let newKey = null;
@@ -4368,7 +4466,7 @@ For God alone my soul waits in silence. — Psalm 62:1`;
       editing = { key: n.key }; render();
     }
     function commitEdit(text) {
-      const n = model.nodes[editing.key]; editing = null; text = text.trim();
+      const n = model.nodes[editing.key]; editing = null; text = absDates(text.trim());
       if (n && text && text !== editText(n)) {
         if (n.kind === 'line') mutate(() => {
           const lines = noteLines(noteKeyFor(n.o, n.m)); lines[n.line] = text; writeNoteLines(n.o, n.m, lines);

@@ -800,3 +800,13 @@ flagged per scope with `nl`). Map mode shows each note line as a child node and
 has no separate notes box. Step-level notes (`oid|step` keys) are unchanged.
 
 Indentation (2 spaces) nests lines: a deeper line is a child of the line above. The step cache (and so Step/Ahead) reads only unindented steps; deeper lines are Map-only.
+
+### Conventions in step lines (2026-10-12)
+
+Read from the text each time, nothing stored. `@call` tags a step with a context;
+`>10-20` / `>2026-10-20` = not before that day. Nested lines inherit their parents'
+tokens. Step → "By context" lists open steps per `@context` plus a "Due" chip
+(dated today or earlier); a step dated in the future stays out of the picker until
+its day. Typed words (`>tomorrow`, `>wed`, `>wednesday`) are rewritten to the real
+date on entry (`absDates`) — a stored "tomorrow" would mean tomorrow forever.
+Weekdays resolve to the next such day after today.
