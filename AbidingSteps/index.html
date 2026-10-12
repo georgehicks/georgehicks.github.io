@@ -577,7 +577,18 @@
   .map-bar kbd, .map-help kbd { background: var(--bg-raised); border: 1px solid var(--border); border-bottom-width: 2px; border-radius: 4px; padding: 0 5px; font: inherit; font-size: 0.72rem; color: var(--text); }
   .map-bar .spacer { flex: 1; }
   .map-find { background: var(--bg-raised); border: 1px solid var(--ahead); color: var(--text); border-radius: 6px; padding: 3px 8px; font: inherit; width: 220px; }
-  #mapScroll { flex: 1; overflow: auto; position: relative; }
+  .map-body { flex: 1; display: flex; min-height: 0; }
+  #mapPanel { width: 270px; flex: none; border-left: 1px solid var(--border); background: var(--bg-elevated); overflow: auto; padding: 12px 14px 24px; font-size: 0.8rem; display: none; }
+  #mapPanel.show { display: block; }
+  #mapPanel h4 { margin: 0 0 10px; font-size: 0.72rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--ahead); display: flex; justify-content: space-between; }
+  #mapPanel label { display: block; margin: 0 0 10px; color: var(--text-dim); }
+  #mapPanel label > span { display: block; font-size: 0.7rem; letter-spacing: 0.04em; margin-bottom: 3px; }
+  #mapPanel input[type=text], #mapPanel input[type=number], #mapPanel input[type=date], #mapPanel select { width: 100%; background: var(--bg-raised); color: var(--text); border: 1px solid var(--border); border-radius: 6px; padding: 5px 7px; font: inherit; }
+  #mapPanel input:focus, #mapPanel select:focus { outline: none; border-color: var(--ahead); box-shadow: 0 0 0 2px color-mix(in srgb, var(--ahead) 35%, transparent); }
+  #mapPanel .chk { display: flex; align-items: center; gap: 8px; color: var(--text); }
+  #mapPanel .row2 { display: flex; gap: 8px; } #mapPanel .row2 > * { flex: 1; }
+  #mapPanel .fine { color: var(--text-faint); font-size: 0.72rem; line-height: 1.5; margin-top: 8px; }
+  #mapScroll { flex: 1; min-width: 0; overflow: auto; position: relative; }
   #mapCanvas { position: relative; display: inline-block; min-width: 100%; min-height: 100%; padding: 40px 60px 120px 30px; }
   #mapSvg { position: absolute; left: 0; top: 0; pointer-events: none; overflow: visible; }
   #mapSvg path { fill: none; stroke: var(--border); stroke-width: 1.6; }
@@ -1019,11 +1030,14 @@
   <div class="map-bar">
     <b>MAP</b>
     <span><kbd>↑↓←→</kbd> move</span><span><kbd>Enter</kbd> next line</span><span><kbd>Tab</kbd> child</span>
-    <span><kbd>e</kbd> edit</span><span><kbd>1</kbd>–<kbd>7</kbd> bucket</span><span><kbd>?</kbd> all keys</span><span><kbd>Esc</kbd> close</span>
+    <span><kbd>e</kbd> edit</span><span><kbd>1</kbd>–<kbd>7</kbd> bucket</span><span><kbd>i</kbd> details</span><span><kbd>?</kbd> all keys</span><span><kbd>Esc</kbd> close</span>
     <input type="text" class="map-find" id="mapFind" placeholder="Find…" hidden>
     <span class="spacer"></span><span id="mapStatus"></span><span id="mapSync" title="Last cloud sync"></span>
   </div>
-  <div id="mapScroll"><div id="mapCanvas"><svg id="mapSvg"></svg><div id="mapTree"></div></div></div>
+  <div class="map-body">
+    <div id="mapScroll"><div id="mapCanvas"><svg id="mapSvg"></svg><div id="mapTree"></div></div></div>
+    <aside id="mapPanel" aria-label="Details"></aside>
+  </div>
   <div class="map-help" id="mapHelp">
     <h4>Move around</h4>
     <div><kbd>↑</kbd><kbd>↓</kbd> next / previous at this level · <kbd>←</kbd> parent · <kbd>→</kbd> first child (opens it)</div>
@@ -1039,6 +1053,8 @@
     <div><kbd>⌥←</kbd><kbd>⌥→</kbd> outcome to previous / next bucket · on a line: outdent / indent (a child of the line above)</div>
     <div><kbd>⌥↑</kbd><kbd>⌥↓</kbd> reorder among siblings</div>
     <div><kbd>x</kbd> cut, then select a target and <kbd>p</kbd> paste (line → outcome, milestone or another line, milestone → outcome, outcome → bucket)</div>
+    <h4>Details panel</h4>
+    <div><kbd>i</kbd> jump into the side panel (kind, role, bucket, date, maybe, done, budget) · <kbd>Tab</kbd> between fields · <kbd>Enter</kbd> or <kbd>Esc</kbd> back to the map · <kbd>I</kbd> hide it</div>
     <h4>Other</h4>
     <div><kbd>d</kbd> flips a step between - and + · <kbd>y</kbd> cycle Inbox → Destination → Directive</div>
     <div><kbd>⌫</kbd> delete · <kbd>u</kbd> or <kbd>⌘Z</kbd> undo (no confirm boxes here — undo instead)</div>
@@ -4017,12 +4033,83 @@ For God alone my soul waits in silence. — Psalm 62:1`;
       });
       svg.innerHTML = h;
     }
+    // ---- details panel: the fields a node has besides its text ----
+    const panel = $('mapPanel');
+    let panelOn = store.get('__local_mapPanel', true) !== false, panelKey = null;
+    const opt = (v, label, cur) => '<option value="' + v + '"' + (String(cur) === String(v) ? ' selected' : '') + '>' + label + '</option>';
+    function panelHtml(n) {
+      const f = (name, label, inner) => '<label><span>' + label + '</span>' + inner + '</label>';
+      const chk = (name, label, on) => '<label class="chk"><input type="checkbox" data-f="' + name + '"' + (on ? ' checked' : '') + '> ' + label + '</label>';
+      const head = '<h4>Details<span>' + (n.kind === 'line' ? (n.mark ? 'step' : 'note') : n.kind) + '</span></h4>';
+      if (n.kind === 'outcome') {
+        const o = n.o, b = o.budget;
+        return head
+          + f('name', 'Name', '<input type="text" data-f="name" value="' + escapeHtml(o.t) + '">')
+          + f('bucket', 'Bucket', '<select data-f="bucket">' + BUCKETS.map(x => opt(x, x, bucketOf(o))).join('') + '</select>')
+          + '<div class="row2">' + f('kind', 'Kind', '<select data-f="kind">' + opt('', 'Inbox (none)', o.type || '') + opt('Destination', 'Destination', o.type) + opt('Directive', 'Directive', o.type) + '</select>')
+          + f('tag', 'Role', '<select data-f="tag">' + opt('', '—', o.tag || '') + ['Roots', 'Resources', 'Reach', 'Reality'].map(x => opt(x, x, o.tag)).join('') + '</select>') + '</div>'
+          + f('date', 'Later — off Today until', '<input type="date" data-f="date" min="' + addDaysKey(1) + '" value="' + (snoozedUntil(o) || '') + '">')
+          + chk('maybe', 'Maybe — trying it on', o.maybe)
+          + chk('done', 'Done', o.completed)
+          + '<div style="height:10px"></div>'
+          + '<div class="row2">' + f('budgetT', 'Time budget (min)', '<input type="number" min="0" step="5" data-f="budgetT" value="' + (b ? b.target : '') + '">')
+          + f('budgetP', 'Per', '<select data-f="budgetP">' + opt('week', 'week', b ? b.period : 'week') + opt('total', 'total', b ? b.period : 'week') + '</select>') + '</div>'
+          + (b ? '<div class="fine">' + fmtMins(budgetAcc(o)) + ' of ' + fmtMins(b.target) + (b.period === 'total' ? ' total' : ' this week') + '</div>' : '')
+          + (o.lastWorked ? '<div class="fine">Last worked ' + new Date(o.lastWorked).toLocaleDateString() + '</div>' : '');
+      }
+      if (n.kind === 'ms') return head + f('name', 'Name', '<input type="text" data-f="name" value="' + escapeHtml(n.m.t) + '">') + chk('done', 'Done', n.m.completed);
+      if (n.kind === 'line') return head + f('name', n.mark ? 'Step' : 'Note', '<input type="text" data-f="name" value="' + escapeHtml(n.text) + '">')
+        + (n.mark ? chk('done', 'Done', n.mark === '+') : '<div class="fine">Start a line with - to make it a step.</div>');
+      if (n.kind === 'bucket') return head + '<div class="fine">' + n.bucket + ' · ' + n.kids.length + ' outcome' + (n.kids.length === 1 ? '' : 's') + '<br>Select an outcome to edit its fields.</div>';
+      return head + '<div class="fine">Select an outcome, milestone or line to edit its fields.</div>';
+    }
+    function renderPanel(force) {
+      panel.classList.toggle('show', panelOn);
+      if (!panelOn) return;
+      const n = model.nodes[sel];
+      if (!force && panel.contains(document.activeElement) && panelKey === sel) return; // don't rebuild under the cursor
+      const had = document.activeElement && panel.contains(document.activeElement) ? document.activeElement.dataset.f : null;
+      panelKey = sel; panel.innerHTML = n ? panelHtml(n) : '';
+      if (had) { const el = panel.querySelector('[data-f="' + had + '"]'); if (el) el.focus(); }
+    }
+    panel.addEventListener('change', (e) => {
+      const f = e.target.dataset.f, n = model.nodes[sel]; if (!f || !n) return;
+      const v = e.target.type === 'checkbox' ? e.target.checked : e.target.value;
+      if (f === 'name') {
+        const t = String(v).trim(); if (!t) { renderPanel(true); return; }
+        if (n.kind === 'outcome') mutate(() => { n.o.t = t; });
+        else if (n.kind === 'ms') mutate(() => { n.m.t = t; });
+        else if (n.kind === 'line') mutate(() => {
+          const lines = noteLines(noteKeyFor(n.o, n.m)); lines[n.line] = pad(n.ind) + (n.mark ? n.mark + ' ' : '') + t; writeNoteLines(n.o, n.m, lines);
+          if (n.mark && n.ind === 0 && t !== n.text) moveNote(noteKey(n.o, n.m, n.text), noteKey(n.o, n.m, t));
+        });
+      } else if (n.kind === 'outcome') {
+        const o = n.o;
+        if (f === 'bucket') mutate(() => moveToBucket(o, v));
+        else if (f === 'kind') mutate(() => { o.type = v || null; });
+        else if (f === 'tag') mutate(() => { o.tag = v || null; });
+        else if (f === 'date') mutate(() => { if (v) snoozeOutcome(o, v); else o.nextActionDate = null; });
+        else if (f === 'maybe') mutate(() => { o.maybe = v; });
+        else if (f === 'done') mutate(() => { o.completed = v; if (v) celebrate('done'); });
+        else if (f === 'budgetT' || f === 'budgetP') {
+          const target = parseInt(panel.querySelector('[data-f="budgetT"]').value, 10), period = panel.querySelector('[data-f="budgetP"]').value;
+          mutate(() => applyBudgetSpec(o, target > 0 ? { target, period } : null));
+        }
+      } else if (n.kind === 'ms' && f === 'done') mutate(() => { n.m.completed = v; if (v) celebrate('milestone'); });
+      else if (n.kind === 'line' && f === 'done') toggleDone(n);
+      render(); renderPanel(true);
+    });
+    function focusPanel() {
+      panelOn = true; store.set('__local_mapPanel', true); renderPanel(true);
+      const first = panel.querySelector('input, select'); if (first) first.focus(); else toast('Nothing to edit here');
+    }
     function render() {
       model = build();
       if (sel !== 'new' && !model.nodes[sel]) sel = 'root';
       tree.innerHTML = nodeHtml(model.root);
       const inp = tree.querySelector('.mt-edit');
       if (inp) { inp.focus(); if (pending && pending.prefill) inp.setSelectionRange(inp.value.length, inp.value.length); else inp.select(); }
+      renderPanel(false);
       drawLines();
       const box = tree.querySelector('.mt-box.sel');
       if (box) box.scrollIntoView({ block: 'nearest', inline: 'nearest' });
@@ -4283,6 +4370,10 @@ For God alone my soul waits in silence. — Psalm 62:1`;
         else if (e.key === 'Enter') { e.preventDefault(); if (hits.length) { hitI = (hitI + 1) % hits.length; sel = hits[hitI]; reveal(sel); findEl.blur(); render(); findEl.focus(); } }
         return;
       }
+      if (panel.contains(e.target)) { // typing in the side panel — Enter/Esc hand control back to the map
+        if (e.key === 'Escape' || (e.key === 'Enter' && e.target.tagName !== 'SELECT')) { e.preventDefault(); e.target.blur(); }
+        return;
+      }
       if (e.target.classList && e.target.classList.contains('mt-edit')) {
         const v = e.target.value;
         if (e.key === 'Escape') { e.preventDefault(); cancelTyping(); }
@@ -4315,6 +4406,8 @@ For God alone my soul waits in silence. — Psalm 62:1`;
       if (k === 'x') { handled(); cut(n); return; }
       if (k === 'p') { handled(); paste(n); return; }
       if (k === 'u') { handled(); doUndo(); return; }
+      if (k === 'i') { handled(); focusPanel(); return; }
+      if (k === 'I') { handled(); panelOn = !panelOn; store.set('__local_mapPanel', panelOn); renderPanel(true); drawLines(); return; }
       if (k === 'a') { handled(); if (folded.size) folded.clear(); else Object.values(model.nodes).forEach(x => { if (x.kind === 'outcome' && x.kids.length) folded.add(x.key); }); render(); return; }
       if (k === '/') { handled(); findEl.hidden = false; findEl.focus(); return; }
       if (k === '?') { handled(); $('mapHelp').classList.toggle('show'); return; }
@@ -4333,6 +4426,7 @@ For God alone my soul waits in silence. — Psalm 62:1`;
       startEdit(model.nodes[box.dataset.key]);
     });
     window.addEventListener('resize', () => { if (isOpen()) drawLines(); });
+    panel.addEventListener('click', (e) => e.stopPropagation());
 
     function open() {
       if (document.activeElement && document.activeElement.blur) document.activeElement.blur();
