@@ -590,11 +590,13 @@
   .mt-box.k-bucket .ct { color: var(--text-faint); font-weight: 400; margin-left: 6px; }
   .mt-box.k-outcome { border-color: color-mix(in srgb, var(--ahead) 45%, var(--border)); }
   .mt-box.k-ms { border-style: dashed; }
-  .mt-box.k-step { background: transparent; color: var(--text-dim); }
+  .mt-box.k-line { background: transparent; color: var(--text); }
+  .mt-box.k-line.note { color: var(--text-dim); font-style: italic; }
   .mt-box.done { text-decoration: line-through; opacity: 0.55; }
   .mt-box.cutting { opacity: 0.35; outline: 1px dashed var(--ahead); }
   .mt-box.hit { box-shadow: 0 0 0 2px color-mix(in srgb, #e8c15a 70%, transparent); }
   .mt-box.sel { background: color-mix(in srgb, var(--ahead) 30%, var(--bg-elevated)); border-color: var(--ahead); color: var(--text); box-shadow: 0 0 0 2px color-mix(in srgb, var(--ahead) 45%, transparent); }
+  .tree-step.done { text-decoration: line-through; opacity: 0.55; }
   .mt-box .tag { color: var(--text-faint); font-size: 0.7rem; margin-right: 5px; }
   .mt-box .tag.mk { font-family: ui-monospace, Menlo, monospace; font-size: 0.85rem; color: var(--ahead); }
   .mt-box .tag.typ { margin: 0 0 0 6px; }
@@ -1011,7 +1013,7 @@
 <div id="mapOverlay" role="dialog" aria-label="Map view">
   <div class="map-bar">
     <b>MAP</b>
-    <span><kbd>↑↓←→</kbd> move</span><span><kbd>Enter</kbd> sibling</span><span><kbd>Tab</kbd> child</span>
+    <span><kbd>↑↓←→</kbd> move</span><span><kbd>Enter</kbd> next line</span><span><kbd>Tab</kbd> child</span>
     <span><kbd>e</kbd> edit</span><span><kbd>1</kbd>–<kbd>7</kbd> bucket</span><span><kbd>?</kbd> all keys</span><span><kbd>Esc</kbd> close</span>
     <input type="text" class="map-find" id="mapFind" placeholder="Find…" hidden>
     <span class="spacer"></span><span id="mapStatus"></span>
@@ -1022,16 +1024,17 @@
     <div><kbd>↑</kbd><kbd>↓</kbd> next / previous at this level · <kbd>←</kbd> parent · <kbd>→</kbd> first child (opens it)</div>
     <div><kbd>Space</kbd> fold / unfold · <kbd>a</kbd> fold everything below outcomes / open all · <kbd>/</kbd> find (<kbd>Enter</kbd> next)</div>
     <h4>Type things in</h4>
-    <div><kbd>Enter</kbd> new sibling below (keeps going until you press it on an empty line)</div>
-    <div><kbd>Tab</kbd> new child: outcome under a bucket, step under an outcome or milestone</div>
+    <div>An outcome’s (or milestone’s) children are the lines of its notes. <b>- </b>lines are open steps, <b>+ </b>lines are done, anything else is a plain note — there’s no separate notes box here.</div>
+    <div><kbd>Enter</kbd> new line below (starts with “- ” after a step; delete it for a plain note). Enter on an empty line stops</div>
+    <div><kbd>Tab</kbd> new child: outcome under a bucket, a line under an outcome or milestone</div>
     <div><kbd>m</kbd> new milestone on an outcome · <kbd>e</kbd> / <kbd>F2</kbd> rename · <kbd>Esc</kbd> stop typing</div>
     <h4>Rearrange</h4>
     <div><kbd>1</kbd> Inbox · <kbd>2</kbd> Today · <kbd>3</kbd> Week · <kbd>4</kbd> Later · <kbd>5</kbd> Open · <kbd>6</kbd> Maybe · <kbd>7</kbd> Done — moves the selected outcome</div>
     <div><kbd>⌥←</kbd><kbd>⌥→</kbd> outcome to previous / next bucket · step out of its milestone (<kbd>⌥←</kbd>)</div>
     <div><kbd>⌥↑</kbd><kbd>⌥↓</kbd> reorder among siblings</div>
-    <div><kbd>x</kbd> cut, then select a target and <kbd>p</kbd> paste (step → outcome/milestone, milestone → outcome, outcome → bucket)</div>
+    <div><kbd>x</kbd> cut, then select a target and <kbd>p</kbd> paste (line → outcome/milestone, milestone → outcome, outcome → bucket)</div>
     <h4>Other</h4>
-    <div><kbd>d</kbd> done on/off · <kbd>y</kbd> cycle Inbox → Destination → Directive</div>
+    <div><kbd>d</kbd> flips a step between - and + · <kbd>y</kbd> cycle Inbox → Destination → Directive</div>
     <div><kbd>⌫</kbd> delete · <kbd>u</kbd> or <kbd>⌘Z</kbd> undo (no confirm boxes here — undo instead)</div>
   </div>
   <div class="map-toast" id="mapToast"></div>
@@ -3413,7 +3416,7 @@ For God alone my soul waits in silence. — Psalm 62:1`;
         onSave: (s) => {
           const cur = findOutcome(o.id); if (!cur) return;
           const target = stepScope(cur);
-          if (!target.subs.includes(s)) { target.subs.push(s); celebrate('added'); }
+          if (!target.subs.includes(s)) { addStepLine(cur, ms, s); celebrate('added'); }
           saveOutcomes();
           selectedSubOutcome = s;
           renderSubOutcomeRow(cur); finishOutcomeSelection(cur); renderAheadList();
@@ -3464,13 +3467,93 @@ For God alone my soul waits in silence. — Psalm 62:1`;
   // Keyed by outcome id (so a rename keeps its notes) and saved as you type. =====
   let notesByKey = store.get('notes', {}) || {};
   let notesSaveTimer = null;
+
+  // ===== steps live in the notes: a line starting "- " is an open step, "+ " a closed
+  // one, everything else is just notes. outcome.subs / milestone.subs (open) and
+  // doneSubs (closed) are only a cache derived from the text — Step's picker and
+  // Ahead still read them — so every edit goes through the note lines. =====
+  const STEP_RE = /^\s*([-+])\s+(\S.*?)\s*$/;
+  const noteKeyFor = (o, m) => o.id + (m ? '#' + m.id : '');
+  function noteLines(key) { const t = notesByKey[key] || ''; return t === '' ? [] : t.split('\n'); }
+  function parseSteps(text) {
+    return String(text || '').split('\n').map(ln => STEP_RE.exec(ln)).filter(Boolean).map(r => ({ t: r[2], done: r[1] === '+' }));
+  }
+  function syncScopeFromNotes(scope, key) {
+    const st = parseSteps(notesByKey[key]);
+    const open = [...new Set(st.filter(x => !x.done).map(x => x.t))];
+    const done = [...new Set(st.filter(x => x.done).map(x => x.t))];
+    const changed = !scope.nl || JSON.stringify(open) !== JSON.stringify(scope.subs) || JSON.stringify(done) !== JSON.stringify(scope.doneSubs || []);
+    scope.subs = open; scope.doneSubs = done; scope.nl = true;
+    return changed;
+  }
+  function writeNotes(key, text) {
+    if (text.trim() === '') delete notesByKey[key]; else notesByKey[key] = text;
+    store.set('notes', notesByKey);
+    const notesEl = document.getElementById('notesArea');
+    if (notesEl.dataset.key === key) notesEl.value = text;
+    reflectNotes(key);
+  }
+  function writeNoteLines(o, m, lines) { writeNotes(noteKeyFor(o, m), lines.join('\n')); }
+  // notes text changed (typed, edited elsewhere, or synced) → refresh the step cache and
+  // whatever is showing it. Returns whether the steps actually changed.
+  function reflectNotes(key) {
+    if (key.includes('|')) return false; // a step's own notes — not a step list
+    const [oid, mid] = key.split('#');
+    const o = findOutcome(oid); if (!o) return false;
+    const m = mid ? o.milestones.find(x => x.id === mid) : null; if (mid && !m) return false;
+    if (!syncScopeFromNotes(m || o, key)) return false;
+    saveOutcomes();
+    if (o.id === selectedOutcomeId) {
+      if (selectedMilestoneId === (m ? m.id : null) || !m) renderSubOutcomeRow(o);
+    }
+    const row = document.querySelector('#aheadList .outcome-row[data-oid="' + o.id + '"] .outcome-tree');
+    if (row) { const tmp = document.createElement('div'); tmp.innerHTML = renderOutcomeTree(o); row.innerHTML = tmp.firstChild.innerHTML; }
+    return true;
+  }
+  // first run after this change: fold each outcome's/milestone's existing steps into its
+  // notes as "- " lines (the text becomes the truth), then derive the cache from the text
+  function reconcileAllSteps() {
+    let notesChanged = false, outChanged = false;
+    outcomes.forEach(o => [o].concat(o.milestones).forEach(scope => {
+      const key = noteKeyFor(o, scope === o ? null : scope);
+      if (!scope.nl) {
+        const have = new Set(parseSteps(notesByKey[key]).map(x => x.t));
+        const add = (scope.subs || []).filter(x => !have.has(x));
+        if (add.length) {
+          let t = String(notesByKey[key] || '').replace(/\s+$/, '');
+          notesByKey[key] = (t ? t + '\n' : '') + add.map(x => '- ' + x).join('\n'); notesChanged = true;
+        }
+      }
+      if (syncScopeFromNotes(scope, key)) outChanged = true;
+    }));
+    if (notesChanged) store.set('notes', notesByKey, { quiet: true });
+    if (outChanged) store.set('outcomes', outcomes, { quiet: true });
+    return notesChanged || outChanged;
+  }
+  function stepLineIndex(lines, text, done) {
+    return lines.findIndex(ln => { const r = STEP_RE.exec(ln); return r && r[2] === text && (r[1] === '+') === !!done; });
+  }
+  function addStepLine(o, m, text) {
+    const lines = noteLines(noteKeyFor(o, m));
+    while (lines.length && lines[lines.length - 1].trim() === '') lines.pop();
+    lines.push('- ' + text); writeNoteLines(o, m, lines);
+  }
+  function removeStepLine(o, m, text, done) {
+    const lines = noteLines(noteKeyFor(o, m)), i = stepLineIndex(lines, text, done);
+    if (i >= 0) { lines.splice(i, 1); writeNoteLines(o, m, lines); }
+  }
+  function toggleStepLine(o, m, text, done) {
+    const lines = noteLines(noteKeyFor(o, m)), i = stepLineIndex(lines, text, done);
+    if (i >= 0) { lines[i] = lines[i].replace(/^(\s*)[-+]/, '$1' + (done ? '-' : '+')); writeNoteLines(o, m, lines); }
+  }
+  reconcileAllSteps();
   function captureNotes() {
     const notesEl = document.getElementById('notesArea');
     const key = notesEl.dataset.key;
     if (!key || (notesByKey[key] || '') === notesEl.value) return;
     notesByKey[key] = notesEl.value;
     clearTimeout(notesSaveTimer);
-    notesSaveTimer = setTimeout(() => { notesSaveTimer = null; store.set('notes', notesByKey); }, 400);
+    notesSaveTimer = setTimeout(() => { notesSaveTimer = null; store.set('notes', notesByKey); reflectNotes(key); }, 400);
   }
   // set from the Add/Edit outcome modal — keyed the same as the bare outcome (no
   // sub-outcome), so it's exactly what surfaces in Notes when that outcome is worked
@@ -3479,6 +3562,7 @@ For God alone my soul waits in silence. — Psalm 62:1`;
     if (!val && !(id in notesByKey)) return;
     if (val) notesByKey[id] = val; else delete notesByKey[id];
     store.set('notes', notesByKey);
+    reflectNotes(id);
     const notesEl = document.getElementById('notesArea');
     if (notesEl.dataset.key === id) notesEl.value = val;
   }
@@ -3489,7 +3573,7 @@ For God alone my soul waits in silence. — Psalm 62:1`;
   function captureRowNotes(id, value) {
     if (value) notesByKey[id] = value; else delete notesByKey[id];
     clearTimeout(rowNotesSaveTimer);
-    rowNotesSaveTimer = setTimeout(() => { rowNotesSaveTimer = null; store.set('notes', notesByKey); }, 400);
+    rowNotesSaveTimer = setTimeout(() => { rowNotesSaveTimer = null; store.set('notes', notesByKey); reflectNotes(id); }, 400);
     const notesEl = document.getElementById('notesArea');
     if (notesEl.dataset.key === id) notesEl.value = value;
   }
@@ -3603,24 +3687,27 @@ For God alone my soul waits in silence. — Psalm 62:1`;
   // the outcome's shape, editable in place: its own steps, then each optional milestone
   // with that milestone's steps. Steps never need a milestone.
   function renderOutcomeTree(o) {
-    const steps = (list, msId) => list.map((s, i) => '<span class="chip tree-step">' + escapeHtml(s)
-        + '<button type="button" class="tree-x" data-tree="del-step" data-ms="' + msId + '" data-i="' + i + '" title="Remove step">×</button></span>').join('')
+    // steps are the "- " / "+ " lines of the notes; tap one to flip it open/closed
+    const chip = (s, msId, done) => '<span class="chip tree-step' + (done ? ' done' : '') + '" data-tree="tog-step" data-ms="' + msId + '" data-t="' + escapeHtml(s) + '" data-d="' + (done ? 1 : '') + '" title="' + (done ? 'Reopen' : 'Mark done') + '">' + (done ? '+ ' : '') + escapeHtml(s)
+        + '<button type="button" class="tree-x" data-tree="del-step" data-ms="' + msId + '" data-t="' + escapeHtml(s) + '" data-d="' + (done ? 1 : '') + '" title="Remove step">×</button></span>';
+    const steps = (scope, msId) => (scope.subs || []).map(s => chip(s, msId, false)).join('') + (scope.doneSubs || []).map(s => chip(s, msId, true)).join('')
       + '<span class="chip add-chip" data-tree="add-step" data-ms="' + msId + '">+ step</span>';
     return '<div class="outcome-tree">'
-      + '<div class="tree-steps">' + steps(o.subs || [], '') + '</div>'
+      + '<div class="tree-steps">' + steps(o, '') + '</div>'
       + (o.milestones || []).map(m => '<div class="tree-ms' + (m.completed ? ' done' : '') + '">'
         + '<button type="button" class="tree-ms-done" data-tree="ms-done" data-ms="' + m.id + '" title="' + (m.completed ? 'Reopen' : 'Mark milestone done') + '">' + (m.completed ? '✓' : '◆') + '</button>'
         + '<span class="tree-ms-name">' + escapeHtml(m.t) + '</span>'
         + '<button type="button" class="tree-x" data-tree="del-ms" data-ms="' + m.id + '" title="Remove milestone">×</button></div>'
-        + '<div class="tree-steps indent">' + steps(m.subs || [], m.id) + '</div>').join('')
+        + '<div class="tree-steps indent">' + steps(m, m.id) + '</div>').join('')
       + '<span class="chip add-chip tree-add-ms" data-tree="add-ms">+ milestone</span>'
       + '</div>';
   }
   function handleTreeClick(o, el, changed) {
     const act = el.dataset.tree, ms = el.dataset.ms ? (o.milestones || []).find(m => m.id === el.dataset.ms) : null;
     const scope = ms || o;
-    if (act === 'add-step') openTextModal({ title: 'New step for ' + scope.t, onSave: (t) => { if (!scope.subs.includes(t)) { scope.subs.push(t); celebrate('added'); } changed(); } });
-    else if (act === 'del-step') { scope.subs.splice(+el.dataset.i, 1); changed(); }
+    if (act === 'add-step') openTextModal({ title: 'New step for ' + scope.t, onSave: (t) => { if (!scope.subs.includes(t)) { addStepLine(o, ms, t); celebrate('added'); } changed(); } });
+    else if (act === 'tog-step') { toggleStepLine(o, ms, el.dataset.t, !!el.dataset.d); changed(); }
+    else if (act === 'del-step') { removeStepLine(o, ms, el.dataset.t, !!el.dataset.d); changed(); }
     else if (act === 'add-ms') openTextModal({ title: 'New milestone for ' + o.t, onSave: (t) => { o.milestones.push(makeMilestone(t)); changed(); } });
     else if (act === 'ms-done' && ms) { ms.completed = !ms.completed; if (ms.completed) celebrate('milestone'); changed(); }
     else if (act === 'del-ms' && ms) openConfirmModal({
@@ -3656,7 +3743,7 @@ For God alone my soul waits in silence. — Psalm 62:1`;
     ordered.forEach(o => {
       const row = document.createElement('div');
       row.className = 'outcome-row' + (o.completed ? ' completed' : '') + (o.maybe ? ' maybe' : '');
-      row.dataset.tag = o.tag;
+      row.dataset.tag = o.tag; row.dataset.oid = o.id;
       const expanded = expandedNotesIds.has(o.id);
       let html = '<div class="outcome-row-top">'
         + '<div class="outcome-row-title"><button class="today-star' + (o.today ? ' active' : '') + '" title="' + (o.today ? 'On Today — tap to remove' : 'Add to Today') + '" aria-label="' + (o.today ? 'On Today' : 'Add to Today') + '">' + STAR_SVG + '</button>'
@@ -3782,7 +3869,7 @@ For God alone my soul waits in silence. — Psalm 62:1`;
 
   // ===== Map mode — opt-in, keyboard-first desktop view. Everything in Ahead as a
   // mind map: root → buckets (Inbox/Today/Week/Later/Open/Maybe/Done) → outcomes →
-  // steps + milestones → steps. Edits the same `outcomes` store, so Step/Ahead stay
+  // note lines (steps are the "- "/"+" ones) + milestones → their lines. Edits the same `outcomes` store, so Step/Ahead stay
   // in sync. Buckets are derived from existing fields (no new data): moving an
   // outcome between them just sets today / nextActionDate / maybe / completed / type.
   // No confirm boxes — every change is undoable instead. =====
@@ -3814,7 +3901,7 @@ For God alone my soul waits in silence. — Psalm 62:1`;
       else if (b === 'Done') { o.completed = true; celebrate('done'); }
       folded.delete('b:' + b);
     }
-    const stepKey = (o, m, i) => 's:' + o.id + ':' + (m ? m.id : '') + ':' + i;
+    const lineKey = (o, m, i) => 'l:' + o.id + ':' + (m ? m.id : '') + ':' + i;
     const noteKey = (o, m, text) => o.id + (m ? '#' + m.id : '') + '|' + text;
     function moveNote(from, to) {
       if (from === to || !(from in notesByKey)) return;
@@ -3828,6 +3915,17 @@ For God alone my soul waits in silence. — Psalm 62:1`;
       if (changed) store.set('notes', notesByKey);
     }
 
+    // every non-blank line of the notes is a child node; "- "/"+ " lines are steps
+    function addLines(mk, parent, o, m) {
+      noteLines(noteKeyFor(o, m)).forEach((raw, i) => {
+        if (raw.trim() === '') return;
+        const r = STEP_RE.exec(raw);
+        mk(lineKey(o, m, i), 'line', parent, { o, m, line: i, raw, mark: r ? r[1] : null, text: r ? r[2] : raw.trim() });
+      });
+    }
+    const lineKids = (n) => n.kids.filter(k => k.kind === 'line');
+    // where to insert a new line so it lands visually after the given kid (or at the end)
+    function endLine(o, m) { const l = noteLines(noteKeyFor(o, m)); let i = l.length; while (i > 0 && l[i - 1].trim() === '') i--; return i; }
     function build() {
       const nodes = {};
       const mk = (key, kind, parent, extra) => { const n = Object.assign({ key, kind, parent, kids: [] }, extra); nodes[key] = n; if (parent) parent.kids.push(n); return n; };
@@ -3835,15 +3933,13 @@ For God alone my soul waits in silence. — Psalm 62:1`;
       BUCKETS.forEach(b => mk('b:' + b, 'bucket', root, { bucket: b }));
       outcomes.forEach(o => {
         const on = mk('o:' + o.id, 'outcome', nodes['b:' + bucketOf(o)], { o });
-        o.subs.forEach((s, i) => mk(stepKey(o, null, i), 'step', on, { o, m: null, i, text: s }));
-        o.milestones.forEach(m => {
-          const mn = mk('m:' + o.id + ':' + m.id, 'ms', on, { o, m });
-          m.subs.forEach((s, i) => mk(stepKey(o, m, i), 'step', mn, { o, m, i, text: s }));
-        });
+        addLines(mk, on, o, null);
+        o.milestones.forEach(m => addLines(mk, mk('m:' + o.id + ':' + m.id, 'ms', on, { o, m }), o, m));
       });
       return { root, nodes };
     }
     function labelOf(n) { return n.kind === 'root' ? 'Ahead' : n.kind === 'bucket' ? n.bucket : n.kind === 'outcome' ? n.o.t : n.kind === 'ms' ? n.m.t : n.text; }
+    const editText = (n) => n.kind === 'line' ? n.raw.replace(/\s+$/, '') : labelOf(n);
     function visible() { // preorder list of what's on screen, with depth
       const out = [];
       (function walk(n, d) { out.push({ n, d }); if (!folded.has(n.key)) n.kids.forEach(k => walk(k, d + 1)); })(model.root, 0);
@@ -3853,21 +3949,22 @@ For God alone my soul waits in silence. — Psalm 62:1`;
 
     function boxHtml(n, isFolded) {
       const done = (n.kind === 'outcome' && n.o.completed) || (n.kind === 'ms' && n.m.completed);
-      let cls = 'mt-box k-' + n.kind + (sel === n.key ? ' sel' : '') + (done ? ' done' : '') + (cutKey === n.key ? ' cutting' : '') + (hits.includes(n.key) ? ' hit' : '');
+      const closed = n.kind === 'line' && n.mark === '+';
+      let cls = 'mt-box k-' + n.kind + (n.kind === 'line' && !n.mark ? ' note' : '') + (closed ? ' done' : '') + (sel === n.key ? ' sel' : '') + (done ? ' done' : '') + (cutKey === n.key ? ' cutting' : '') + (hits.includes(n.key) ? ' hit' : '');
       let inner;
-      if (editing && editing.key === n.key) inner = '<input class="mt-edit" value="' + escapeHtml(labelOf(n)) + '">';
+      if (editing && editing.key === n.key) inner = '<input class="mt-edit" value="' + escapeHtml(editText(n)) + '">';
       else {
         inner = escapeHtml(labelOf(n));
         if (n.kind === 'bucket') inner += '<span class="ct">' + n.kids.length + '</span>';
-        // - open, + closed (steps have no closed state, so they're always -)
+        // - open, + closed; plain note lines carry no marker
         if (n.kind === 'outcome') inner = '<span class="tag mk">' + (n.o.completed ? '+' : '-') + '</span>' + inner + '<span class="tag typ">' + (n.o.type === 'Destination' ? '◎' : n.o.type === 'Directive' ? '∞' : '') + '</span>';
         if (n.kind === 'ms') inner = '<span class="tag mk">' + (n.m.completed ? '+' : '-') + '</span>' + inner;
-        if (n.kind === 'step') inner = '<span class="tag mk">-</span>' + inner;
+        if (n.kind === 'line' && n.mark) inner = '<span class="tag mk">' + n.mark + '</span>' + inner;
         if (isFolded) inner += '<span class="fold">▸ ' + n.kids.length + '</span>';
       }
       return '<div class="' + cls + '" data-key="' + escapeHtml(n.key) + '">' + inner + '</div>';
     }
-    function ghostHtml() { return '<div class="mt-n"><div class="mt-box sel k-' + pending.kind + '" data-key="new"><input class="mt-edit" placeholder="' + ({ outcome: 'New outcome', ms: 'New milestone', step: 'New step' }[pending.kind]) + '"></div></div>'; }
+    function ghostHtml() { return '<div class="mt-n"><div class="mt-box sel k-' + pending.kind + '" data-key="new"><input class="mt-edit" placeholder="' + ({ outcome: 'New outcome', ms: 'New milestone', line: '- step, or a plain note' }[pending.kind]) + '" value="' + escapeHtml(pending.prefill || '') + '"></div></div>'; }
     function nodeHtml(n) {
       const isFolded = folded.has(n.key) && n.kids.length > 0;
       let inner = '';
@@ -3898,7 +3995,7 @@ For God alone my soul waits in silence. — Psalm 62:1`;
       if (sel !== 'new' && !model.nodes[sel]) sel = 'root';
       tree.innerHTML = nodeHtml(model.root);
       const inp = tree.querySelector('.mt-edit');
-      if (inp) { inp.focus(); inp.select(); }
+      if (inp) { inp.focus(); if (pending && pending.prefill) inp.setSelectionRange(inp.value.length, inp.value.length); else inp.select(); }
       drawLines();
       const box = tree.querySelector('.mt-box.sel');
       if (box) box.scrollIntoView({ block: 'nearest', inline: 'nearest' });
@@ -3908,7 +4005,7 @@ For God alone my soul waits in silence. — Psalm 62:1`;
 
     // ---- data changes: snapshot for undo, mutate, then mirror to Step + Ahead ----
     function mutate(fn) {
-      undo.push(JSON.stringify(outcomes)); if (undo.length > 60) undo.shift();
+      undo.push(JSON.stringify({ o: outcomes, n: notesByKey })); if (undo.length > 60) undo.shift();
       fn();
       saveOutcomes();
       const so = selectedOutcome();
@@ -3917,34 +4014,37 @@ For God alone my soul waits in silence. — Psalm 62:1`;
     }
     function doUndo() {
       const snap = undo.pop(); if (!snap) { toast('Nothing to undo'); return; }
-      outcomes = JSON.parse(snap); normalizeOutcomes(outcomes); saveOutcomes();
+      const st = JSON.parse(snap); outcomes = st.o; notesByKey = st.n; normalizeOutcomes(outcomes);
+      store.set('notes', notesByKey); const nEl = $('notesArea'); if (nEl.dataset.key) nEl.value = notesByKey[nEl.dataset.key] || '';
+      reconcileAllSteps(); saveOutcomes();
       const so = selectedOutcome();
       if (selectedOutcomeId && !so) clearSelection(); else if (so) { revalidateSelection(); updateSelectionLabels(); }
       renderAheadList(); renderOutcomePicker(); render(); toast('Undone');
     }
 
     // ---- typing things in ----
-    function startPending(kind, parent, kidIndex, dataIndex) {
+    function startPending(kind, parent, kidIndex, dataIndex, prefill) {
       folded.delete(parent.key);
-      pending = { kind, parentKey: parent.key, kidIndex, dataIndex, prevSel: sel };
+      pending = { kind, parentKey: parent.key, kidIndex, dataIndex, prefill: prefill || '', prevSel: sel };
       editing = null; sel = 'new'; render();
     }
     function newChild(n) {
       if (n.kind === 'bucket') startPending('outcome', n, n.kids.length, outcomes.length);
-      else if (n.kind === 'outcome') startPending('step', n, n.o.subs.length, n.o.subs.length);
-      else if (n.kind === 'ms') startPending('step', n, n.kids.length, n.m.subs.length);
-      else if (n.kind === 'step') newSibling(n);
+      else if (n.kind === 'outcome') startPending('line', n, lineKids(n).length, endLine(n.o, null), '- ');
+      else if (n.kind === 'ms') startPending('line', n, lineKids(n).length, endLine(n.o, n.m), '- ');
+      else if (n.kind === 'line') newSibling(n);
       else toast('Pick a bucket first (→)');
     }
     function newSibling(n) {
-      if (n.kind === 'step') startPending('step', n.parent, n.i + 1, n.i + 1);
-      else if (n.kind === 'ms') { const idx = n.o.milestones.indexOf(n.m); startPending('ms', n.parent, n.o.subs.length + idx + 1, idx + 1); }
+      if (n.kind === 'line') startPending('line', n.parent, lineKids(n.parent).indexOf(n) + 1, n.line + 1, n.mark ? '- ' : '');
+      else if (n.kind === 'ms') { const idx = n.o.milestones.indexOf(n.m); startPending('ms', n.parent, lineKids(n.parent).length + idx + 1, idx + 1); }
       else if (n.kind === 'outcome') startPending('outcome', n.parent, n.parent.kids.indexOf(n) + 1, outcomes.indexOf(n.o) + 1);
       else newChild(n);
     }
     function commitPending(text, then) {
-      const p = pending; pending = null; text = text.trim();
-      if (!text) { sel = model.nodes[p.prevSel] ? p.prevSel : p.parentKey; render(); return; }
+      const p = pending; pending = null; text = text.replace(/\s+$/, '');
+      text = text.replace(/^(\s*[-+]\s+)[-+]\s+/, '$1'); // typed "- " over the prefilled one
+      if (!text.trim() || /^\s*[-+]\s*$/.test(text)) { sel = model.nodes[p.prevSel] ? p.prevSel : p.parentKey; render(); return; }
       const parent = model.nodes[p.parentKey]; let newKey = null;
       mutate(() => {
         if (p.kind === 'outcome') {
@@ -3953,10 +4053,11 @@ For God alone my soul waits in silence. — Psalm 62:1`;
         } else if (p.kind === 'ms') {
           const m = makeMilestone(text); parent.o.milestones.splice(p.dataIndex, 0, m); newKey = 'm:' + parent.o.id + ':' + m.id;
         } else {
-          const o = parent.o, m = parent.m || null, scope = m || o;
-          let i = scope.subs.indexOf(text);
-          if (i < 0) { i = p.dataIndex; scope.subs.splice(i, 0, text); celebrate('added'); }
-          newKey = stepKey(o, m, i);
+          const o = parent.o, m = parent.m || null, lines = noteLines(noteKeyFor(o, m));
+          const at = Math.min(p.dataIndex, lines.length);
+          lines.splice(at, 0, text); writeNoteLines(o, m, lines);
+          if (/^\s*-\s/.test(text)) celebrate('added');
+          newKey = lineKey(o, m, at);
         }
       });
       sel = newKey; render();
@@ -3964,17 +4065,17 @@ For God alone my soul waits in silence. — Psalm 62:1`;
       else if (then === 'child') newChild(model.nodes[newKey]);
     }
     function startEdit(n) {
-      if (!['outcome', 'ms', 'step'].includes(n.kind)) { toast('Buckets can’t be renamed'); return; }
+      if (!['outcome', 'ms', 'line'].includes(n.kind)) { toast('Buckets can’t be renamed'); return; }
       editing = { key: n.key }; render();
     }
     function commitEdit(text) {
       const n = model.nodes[editing.key]; editing = null; text = text.trim();
-      if (n && text && text !== labelOf(n)) {
-        if (n.kind === 'step') {
-          const scope = n.m || n.o;
-          if (scope.subs.includes(text)) toast('That step already exists here');
-          else mutate(() => { moveNote(noteKey(n.o, n.m, n.text), noteKey(n.o, n.m, text)); scope.subs[n.i] = text; });
-        } else mutate(() => { if (n.kind === 'outcome') n.o.t = text; else n.m.t = text; });
+      if (n && text && text !== editText(n)) {
+        if (n.kind === 'line') mutate(() => {
+          const lines = noteLines(noteKeyFor(n.o, n.m)); lines[n.line] = text; writeNoteLines(n.o, n.m, lines);
+          const r = STEP_RE.exec(text); if (n.mark && r && r[2] !== n.text) moveNote(noteKey(n.o, n.m, n.text), noteKey(n.o, n.m, r[2]));
+        });
+        else mutate(() => { if (n.kind === 'outcome') n.o.t = text; else n.m.t = text; });
       }
       render();
     }
@@ -3982,20 +4083,24 @@ For God alone my soul waits in silence. — Psalm 62:1`;
 
     // ---- delete / done / kind / buckets ----
     function del(n) {
-      if (!['outcome', 'ms', 'step'].includes(n.kind)) return;
+      if (!['outcome', 'ms', 'line'].includes(n.kind)) return;
       const sibs = n.parent.kids, i = sibs.indexOf(n), nextSel = (sibs[i + 1] || sibs[i - 1] || n.parent).key;
       const label = labelOf(n);
       mutate(() => {
         if (n.kind === 'outcome') outcomes = outcomes.filter(x => x !== n.o);
         else if (n.kind === 'ms') n.o.milestones = n.o.milestones.filter(x => x !== n.m);
-        else (n.m || n.o).subs.splice(n.i, 1);
+        else { const lines = noteLines(noteKeyFor(n.o, n.m)); lines.splice(n.line, 1); writeNoteLines(n.o, n.m, lines); }
       });
       sel = nextSel; render(); toast('Deleted “' + label + '” — u to undo');
     }
     function toggleDone(n) {
       if (n.kind === 'outcome') mutate(() => { n.o.completed = !n.o.completed; if (n.o.completed) celebrate('done'); });
       else if (n.kind === 'ms') mutate(() => { n.m.completed = !n.m.completed; if (n.m.completed) celebrate('milestone'); });
-      else { toast('Steps have no done — ⌫ removes them'); return; }
+      else if (n.kind === 'line' && n.mark) mutate(() => {
+        const lines = noteLines(noteKeyFor(n.o, n.m)); lines[n.line] = lines[n.line].replace(/^(\s*)[-+]/, '$1' + (n.mark === '-' ? '+' : '-'));
+        writeNoteLines(n.o, n.m, lines); if (n.mark === '-') celebrate('milestone');
+      });
+      else { toast('Start the line with - to make it a step'); return; }
       if (n.kind === 'outcome') reveal(n.key); render();
     }
     function cycleType(n) {
@@ -4014,9 +4119,10 @@ For God alone my soul waits in silence. — Psalm 62:1`;
       const k = e.key;
       if (k === 'ArrowUp' || k === 'ArrowDown') {
         const dir = k === 'ArrowUp' ? -1 : 1;
-        if (n.kind === 'step') {
-          const scope = n.m || n.o, j = n.i + dir; if (j < 0 || j >= scope.subs.length) return;
-          mutate(() => swap(scope.subs, n.i, j)); sel = stepKey(n.o, n.m, j);
+        if (n.kind === 'line') {
+          const other = lineKids(n.parent)[lineKids(n.parent).indexOf(n) + dir]; if (!other) return;
+          mutate(() => { const lines = noteLines(noteKeyFor(n.o, n.m)); swap(lines, n.line, other.line); writeNoteLines(n.o, n.m, lines); });
+          sel = lineKey(n.o, n.m, other.line);
         } else if (n.kind === 'ms') {
           const arr = n.o.milestones, i = arr.indexOf(n.m), j = i + dir; if (j < 0 || j >= arr.length) return;
           mutate(() => swap(arr, i, j));
@@ -4029,31 +4135,36 @@ For God alone my soul waits in silence. — Psalm 62:1`;
         const dir = k === 'ArrowLeft' ? -1 : 1;
         if (n.kind === 'outcome') {
           const b = BUCKETS[BUCKETS.indexOf(bucketOf(n.o)) + dir]; if (b) toBucket(n, b);
-        } else if (n.kind === 'step' && dir < 0 && n.m) {
-          if (n.o.subs.includes(n.text)) { toast('Already a step on the outcome'); return; }
-          mutate(() => { moveNote(noteKey(n.o, n.m, n.text), noteKey(n.o, null, n.text)); n.m.subs.splice(n.i, 1); n.o.subs.push(n.text); });
-          sel = stepKey(n.o, null, n.o.subs.length - 1); render();
+        } else if (n.kind === 'line' && dir < 0 && n.m) {
+          const at = endLine(n.o, null);
+          mutate(() => {
+            if (n.mark) moveNote(noteKey(n.o, n.m, n.text), noteKey(n.o, null, n.text));
+            const from = noteLines(noteKeyFor(n.o, n.m)); from.splice(n.line, 1); writeNoteLines(n.o, n.m, from);
+            const to = noteLines(noteKeyFor(n.o, null)); to.splice(at, 0, n.raw); writeNoteLines(n.o, null, to);
+          });
+          sel = lineKey(n.o, null, at); render();
         } else toast('x to cut, select a target, p to paste');
       }
     }
-    function cut(n) { if (!['outcome', 'ms', 'step'].includes(n.kind)) return; cutKey = n.key; render(); }
+    function cut(n) { if (!['outcome', 'ms', 'line'].includes(n.kind)) return; cutKey = n.key; render(); }
     function paste(t) {
       const src = cutKey && model.nodes[cutKey]; if (!src) { toast('Nothing cut — x first'); return; }
       let newSel = null;
-      if (src.kind === 'step') {
-        let dest, at; // dest = scope object holding subs, at = insert index
-        if (t.kind === 'outcome') { dest = { o: t.o, m: null }; at = t.o.subs.length; }
-        else if (t.kind === 'ms') { dest = { o: t.o, m: t.m }; at = t.m.subs.length; }
-        else if (t.kind === 'step') { dest = { o: t.o, m: t.m }; at = t.i + 1; }
-        else { toast('Steps go on an outcome or milestone'); return; }
-        const from = src.m || src.o, to = dest.m || dest.o;
-        if (to !== from && to.subs.includes(src.text)) { toast('That step already exists there'); return; }
-        if (to === from && src.i < at) at--;
+      if (src.kind === 'line') {
+        let dm, at; // destination scope (milestone or null for the outcome) and line index
+        if (t.kind === 'outcome') { dm = null; at = endLine(t.o, null); }
+        else if (t.kind === 'ms') { dm = t.m; at = endLine(t.o, t.m); }
+        else if (t.kind === 'line') { dm = t.m; at = t.line + 1; }
+        else { toast('Lines go on an outcome or milestone'); return; }
+        const dO = t.o, sameScope = dO === src.o && dm === src.m;
+        if (sameScope && src.line < at) at--;
         mutate(() => {
-          moveNote(noteKey(src.o, src.m, src.text), noteKey(dest.o, dest.m, src.text));
-          from.subs.splice(src.i, 1); to.subs.splice(at, 0, src.text);
+          if (src.mark && !sameScope) moveNote(noteKey(src.o, src.m, src.text), noteKey(dO, dm, src.text));
+          const from = noteLines(noteKeyFor(src.o, src.m)); from.splice(src.line, 1);
+          if (sameScope) { from.splice(at, 0, src.raw); writeNoteLines(dO, dm, from); }
+          else { writeNoteLines(src.o, src.m, from); const to = noteLines(noteKeyFor(dO, dm)); to.splice(Math.min(at, to.length), 0, src.raw); writeNoteLines(dO, dm, to); }
         });
-        newSel = stepKey(dest.o, dest.m, at);
+        newSel = lineKey(dO, dm, at);
       } else if (src.kind === 'ms') {
         let dest, at;
         if (t.kind === 'outcome') { dest = t.o; at = t.o.milestones.length; }
@@ -4245,6 +4356,7 @@ For God alone my soul waits in silence. — Psalm 62:1`;
     notesByKey = store.get('notes', {}) || {};
     if (editingNotes && notesEl.dataset.key) notesByKey[notesEl.dataset.key] = typed; // don't clobber an in-progress note
     else if (notesEl.dataset.key) notesEl.value = notesByKey[notesEl.dataset.key] || '';
+    reconcileAllSteps();
     const sel = selectedOutcome();
     if (selectedOutcomeId && !sel) clearSelection();
     else if (sel) {

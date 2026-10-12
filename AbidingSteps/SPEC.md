@@ -788,3 +788,13 @@ localhost). Needs a real check once deployed to GitHub Pages.
 - Full calendar view (tapping the day bar itself, not an event block) —
   a whole screen that doesn't exist yet.
 - Onboarding / minimum first-run data — not yet decided.
+
+### Steps live in the notes (2026-10-12)
+
+A step is a line of an outcome's (or milestone's) notes that starts with `- `
+(open) or `+ ` (closed); every other line is plain notes. `subs` / `doneSubs`
+are only a cache derived from the text (`syncScopeFromNotes`), so Step's picker
+and Ahead keep working; every step edit rewrites the note lines. First run
+folds existing `subs` into the notes as `- ` lines (`reconcileAllSteps`,
+flagged per scope with `nl`). Map mode shows each note line as a child node and
+has no separate notes box. Step-level notes (`oid|step` keys) are unchanged.
