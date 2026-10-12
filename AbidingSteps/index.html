@@ -566,6 +566,44 @@
     font-size: 0.78rem; cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 3px;
   }
   .tab.active { color: var(--accent); }
+
+  /* ===== Map mode — desktop, keyboard-first mind map of everything in Ahead ===== */
+  .map-open-btn { float: right; margin-top: -2px; }
+  @media (pointer: coarse), (max-width: 700px) { .map-open-btn { display: none; } }
+  #mapOverlay { position: fixed; inset: 0; z-index: 60; background: var(--bg); display: none; flex-direction: column; color: var(--text); }
+  #mapOverlay.show { display: flex; }
+  .map-bar { display: flex; align-items: center; gap: 14px; padding: 8px 16px; border-bottom: 1px solid var(--border); font-size: 0.78rem; color: var(--text-dim); }
+  .map-bar b { color: var(--ahead); font-weight: 600; letter-spacing: 0.04em; }
+  .map-bar kbd, .map-help kbd { background: var(--bg-raised); border: 1px solid var(--border); border-bottom-width: 2px; border-radius: 4px; padding: 0 5px; font: inherit; font-size: 0.72rem; color: var(--text); }
+  .map-bar .spacer { flex: 1; }
+  .map-find { background: var(--bg-raised); border: 1px solid var(--ahead); color: var(--text); border-radius: 6px; padding: 3px 8px; font: inherit; width: 220px; }
+  #mapScroll { flex: 1; overflow: auto; position: relative; }
+  #mapCanvas { position: relative; display: inline-block; min-width: 100%; min-height: 100%; padding: 40px 60px 120px 30px; }
+  #mapSvg { position: absolute; left: 0; top: 0; pointer-events: none; overflow: visible; }
+  #mapSvg path { fill: none; stroke: var(--border); stroke-width: 1.6; }
+  #mapSvg path.hot { stroke: var(--ahead); stroke-opacity: 0.7; }
+  .mt-n { display: flex; align-items: center; }
+  .mt-kids { display: flex; flex-direction: column; justify-content: center; margin-left: 38px; gap: 6px; }
+  .mt-box { border: 1px solid var(--border); background: var(--bg-elevated); border-radius: 7px; padding: 3px 10px; font-size: 0.85rem; max-width: 340px; line-height: 1.35; cursor: pointer; white-space: normal; overflow-wrap: anywhere; position: relative; }
+  .mt-box.k-root { background: color-mix(in srgb, var(--ahead) 22%, var(--bg-elevated)); border-color: var(--ahead); font-weight: 600; padding: 6px 14px; font-size: 1rem; }
+  .mt-box.k-bucket { font-weight: 600; background: var(--bg-raised); }
+  .mt-box.k-bucket .ct { color: var(--text-faint); font-weight: 400; margin-left: 6px; }
+  .mt-box.k-outcome { border-color: color-mix(in srgb, var(--ahead) 45%, var(--border)); }
+  .mt-box.k-ms { border-style: dashed; }
+  .mt-box.k-step { background: transparent; color: var(--text-dim); }
+  .mt-box.done { text-decoration: line-through; opacity: 0.55; }
+  .mt-box.cutting { opacity: 0.35; outline: 1px dashed var(--ahead); }
+  .mt-box.hit { box-shadow: 0 0 0 2px color-mix(in srgb, #e8c15a 70%, transparent); }
+  .mt-box.sel { background: color-mix(in srgb, var(--ahead) 30%, var(--bg-elevated)); border-color: var(--ahead); color: var(--text); box-shadow: 0 0 0 2px color-mix(in srgb, var(--ahead) 45%, transparent); }
+  .mt-box .tag { color: var(--text-faint); font-size: 0.7rem; margin-right: 5px; }
+  .mt-box .fold { color: var(--ahead); font-size: 0.72rem; margin-left: 6px; }
+  .mt-box.k-ms.k-ms { color: var(--text); }
+  .mt-edit { background: var(--bg); color: var(--text); border: 1px solid var(--ahead); border-radius: 5px; font: inherit; padding: 2px 6px; min-width: 200px; outline: none; }
+  .map-toast { position: absolute; left: 50%; bottom: 22px; transform: translateX(-50%); background: var(--bg-raised); border: 1px solid var(--border); border-radius: 8px; padding: 6px 14px; font-size: 0.8rem; opacity: 0; transition: opacity .2s; pointer-events: none; }
+  .map-toast.show { opacity: 1; }
+  .map-help { position: absolute; right: 16px; bottom: 16px; width: 360px; max-height: 80%; overflow: auto; background: var(--bg-elevated); border: 1px solid var(--border); border-radius: 10px; padding: 12px 16px; font-size: 0.78rem; line-height: 1.9; display: none; }
+  .map-help.show { display: block; }
+  .map-help h4 { margin: 6px 0 0; font-size: 0.72rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--ahead); }
 </style>
 </head>
 <body>
@@ -700,7 +738,7 @@
 
     <!-- ========== AHEAD (Planning) ========== -->
     <section id="view-ahead" class="view">
-      <div class="date-line">Ahead</div>
+      <div class="date-line">Ahead <button type="button" class="link-btn map-open-btn" id="mapOpenBtn" title="Keyboard-driven mind map of everything (press M)">Map view · M</button></div>
       <div class="idle-nudge" id="aheadIdleNudge">
         <span>Still planning? It's been a while.</span>
         <button type="button" id="aheadIdleGoStep">→ Step</button>
@@ -966,6 +1004,35 @@
     <button class="tab" data-tab="ahead">Ahead</button>
     <button class="tab" data-tab="settings">Settings</button>
   </nav>
+</div>
+
+<div id="mapOverlay" role="dialog" aria-label="Map view">
+  <div class="map-bar">
+    <b>MAP</b>
+    <span><kbd>↑↓←→</kbd> move</span><span><kbd>Enter</kbd> sibling</span><span><kbd>Tab</kbd> child</span>
+    <span><kbd>e</kbd> edit</span><span><kbd>1</kbd>–<kbd>7</kbd> bucket</span><span><kbd>?</kbd> all keys</span><span><kbd>Esc</kbd> close</span>
+    <input type="text" class="map-find" id="mapFind" placeholder="Find…" hidden>
+    <span class="spacer"></span><span id="mapStatus"></span>
+  </div>
+  <div id="mapScroll"><div id="mapCanvas"><svg id="mapSvg"></svg><div id="mapTree"></div></div></div>
+  <div class="map-help" id="mapHelp">
+    <h4>Move around</h4>
+    <div><kbd>↑</kbd><kbd>↓</kbd> next / previous at this level · <kbd>←</kbd> parent · <kbd>→</kbd> first child (opens it)</div>
+    <div><kbd>Space</kbd> fold / unfold · <kbd>a</kbd> fold everything below outcomes / open all · <kbd>/</kbd> find (<kbd>Enter</kbd> next)</div>
+    <h4>Type things in</h4>
+    <div><kbd>Enter</kbd> new sibling below (keeps going until you press it on an empty line)</div>
+    <div><kbd>Tab</kbd> new child: outcome under a bucket, step under an outcome or milestone</div>
+    <div><kbd>m</kbd> new milestone on an outcome · <kbd>e</kbd> / <kbd>F2</kbd> rename · <kbd>Esc</kbd> stop typing</div>
+    <h4>Rearrange</h4>
+    <div><kbd>1</kbd> Inbox · <kbd>2</kbd> Today · <kbd>3</kbd> Week · <kbd>4</kbd> Later · <kbd>5</kbd> Open · <kbd>6</kbd> Maybe · <kbd>7</kbd> Done — moves the selected outcome</div>
+    <div><kbd>⌥←</kbd><kbd>⌥→</kbd> outcome to previous / next bucket · step out of its milestone (<kbd>⌥←</kbd>)</div>
+    <div><kbd>⌥↑</kbd><kbd>⌥↓</kbd> reorder among siblings</div>
+    <div><kbd>x</kbd> cut, then select a target and <kbd>p</kbd> paste (step → outcome/milestone, milestone → outcome, outcome → bucket)</div>
+    <h4>Other</h4>
+    <div><kbd>d</kbd> done on/off · <kbd>y</kbd> cycle Inbox → Destination → Directive</div>
+    <div><kbd>⌫</kbd> delete · <kbd>u</kbd> or <kbd>⌘Z</kbd> undo (no confirm boxes here — undo instead)</div>
+  </div>
+  <div class="map-toast" id="mapToast"></div>
 </div>
 
 <!-- ICS calendar parser -->
@@ -3710,6 +3777,396 @@ For God alone my soul waits in silence. — Psalm 62:1`;
       }
     });
   });
+
+  // ===== Map mode — opt-in, keyboard-first desktop view. Everything in Ahead as a
+  // mind map: root → buckets (Inbox/Today/Week/Later/Open/Maybe/Done) → outcomes →
+  // steps + milestones → steps. Edits the same `outcomes` store, so Step/Ahead stay
+  // in sync. Buckets are derived from existing fields (no new data): moving an
+  // outcome between them just sets today / nextActionDate / maybe / completed / type.
+  // No confirm boxes — every change is undoable instead. =====
+  const MAPV = (() => {
+    const BUCKETS = ['Inbox', 'Today', 'Week', 'Later', 'Open', 'Maybe', 'Done'];
+    const $ = (id) => document.getElementById(id);
+    const overlay = $('mapOverlay'), tree = $('mapTree'), svg = $('mapSvg'), canvas = $('mapCanvas'), scroller = $('mapScroll'), findEl = $('mapFind');
+    let sel = 'root', model = null, pending = null, editing = null, cutKey = null, undo = [], hits = [], hitI = 0, toastT = null;
+    const folded = new Set(['b:Done']);
+    const isOpen = () => overlay.classList.contains('show');
+    const toast = (msg) => { const t = $('mapToast'); t.textContent = msg; t.classList.add('show'); clearTimeout(toastT); toastT = setTimeout(() => t.classList.remove('show'), 2200); };
+
+    function bucketOf(o) {
+      if (o.completed) return 'Done';
+      if (o.maybe) return 'Maybe';
+      if (o.today) return 'Today';
+      const d = o.nextActionDate;
+      if (d && d > todayKeyLocal()) return d <= addDaysKey(7) ? 'Week' : 'Later';
+      return o.type ? 'Open' : 'Inbox';
+    }
+    function moveToBucket(o, b) {
+      o.completed = false; o.maybe = false; o.today = false;
+      if (b === 'Inbox') { o.nextActionDate = null; o.type = null; }
+      else if (b === 'Today') { starToday(o); o.nextActionDate = null; }
+      else if (b === 'Week') { if (bucketOf(o) !== 'Week') o.nextActionDate = addDaysKey(1); }
+      else if (b === 'Later') { if (bucketOf(o) !== 'Later') o.nextActionDate = addDaysKey(14); }
+      else if (b === 'Open') { o.nextActionDate = null; if (!o.type) o.type = 'Destination'; }
+      else if (b === 'Maybe') o.maybe = true;
+      else if (b === 'Done') { o.completed = true; celebrate('done'); }
+      folded.delete('b:' + b);
+    }
+    const stepKey = (o, m, i) => 's:' + o.id + ':' + (m ? m.id : '') + ':' + i;
+    const noteKey = (o, m, text) => o.id + (m ? '#' + m.id : '') + '|' + text;
+    function moveNote(from, to) {
+      if (from === to || !(from in notesByKey)) return;
+      notesByKey[to] = notesByKey[from]; delete notesByKey[from]; store.set('notes', notesByKey);
+    }
+    function movePrefixNotes(from, to) { // a whole milestone changing outcome: oid#mid and oid#mid|step…
+      let changed = false;
+      Object.keys(notesByKey).forEach(k => {
+        if (k === from || k.startsWith(from + '|')) { notesByKey[to + k.slice(from.length)] = notesByKey[k]; delete notesByKey[k]; changed = true; }
+      });
+      if (changed) store.set('notes', notesByKey);
+    }
+
+    function build() {
+      const nodes = {};
+      const mk = (key, kind, parent, extra) => { const n = Object.assign({ key, kind, parent, kids: [] }, extra); nodes[key] = n; if (parent) parent.kids.push(n); return n; };
+      const root = mk('root', 'root', null, {});
+      BUCKETS.forEach(b => mk('b:' + b, 'bucket', root, { bucket: b }));
+      outcomes.forEach(o => {
+        const on = mk('o:' + o.id, 'outcome', nodes['b:' + bucketOf(o)], { o });
+        o.subs.forEach((s, i) => mk(stepKey(o, null, i), 'step', on, { o, m: null, i, text: s }));
+        o.milestones.forEach(m => {
+          const mn = mk('m:' + o.id + ':' + m.id, 'ms', on, { o, m });
+          m.subs.forEach((s, i) => mk(stepKey(o, m, i), 'step', mn, { o, m, i, text: s }));
+        });
+      });
+      return { root, nodes };
+    }
+    function labelOf(n) { return n.kind === 'root' ? 'Ahead' : n.kind === 'bucket' ? n.bucket : n.kind === 'outcome' ? n.o.t : n.kind === 'ms' ? n.m.t : n.text; }
+    function visible() { // preorder list of what's on screen, with depth
+      const out = [];
+      (function walk(n, d) { out.push({ n, d }); if (!folded.has(n.key)) n.kids.forEach(k => walk(k, d + 1)); })(model.root, 0);
+      return out;
+    }
+    function reveal(key) { for (let n = model.nodes[key] && model.nodes[key].parent; n; n = n.parent) folded.delete(n.key); }
+
+    function boxHtml(n, isFolded) {
+      const done = (n.kind === 'outcome' && n.o.completed) || (n.kind === 'ms' && n.m.completed);
+      let cls = 'mt-box k-' + n.kind + (sel === n.key ? ' sel' : '') + (done ? ' done' : '') + (cutKey === n.key ? ' cutting' : '') + (hits.includes(n.key) ? ' hit' : '');
+      let inner;
+      if (editing && editing.key === n.key) inner = '<input class="mt-edit" value="' + escapeHtml(labelOf(n)) + '">';
+      else {
+        inner = escapeHtml(labelOf(n));
+        if (n.kind === 'bucket') inner += '<span class="ct">' + n.kids.length + '</span>';
+        if (n.kind === 'outcome') inner = '<span class="tag">' + (n.o.type === 'Destination' ? '◎' : n.o.type === 'Directive' ? '∞' : '·') + '</span>' + inner;
+        if (n.kind === 'ms') inner = '<span class="tag">' + (n.m.completed ? '✓' : '◆') + '</span>' + inner;
+        if (isFolded) inner += '<span class="fold">▸ ' + n.kids.length + '</span>';
+      }
+      return '<div class="' + cls + '" data-key="' + escapeHtml(n.key) + '">' + inner + '</div>';
+    }
+    function ghostHtml() { return '<div class="mt-n"><div class="mt-box sel k-' + pending.kind + '" data-key="new"><input class="mt-edit" placeholder="' + ({ outcome: 'New outcome', ms: 'New milestone', step: 'New step' }[pending.kind]) + '"></div></div>'; }
+    function nodeHtml(n) {
+      const isFolded = folded.has(n.key) && n.kids.length > 0;
+      let inner = '';
+      if (!isFolded) {
+        const parts = n.kids.map(nodeHtml);
+        if (pending && pending.parentKey === n.key) parts.splice(pending.kidIndex, 0, ghostHtml());
+        if (parts.length) inner = '<div class="mt-kids">' + parts.join('') + '</div>';
+      }
+      return '<div class="mt-n">' + boxHtml(n, isFolded) + inner + '</div>';
+    }
+    function drawLines() {
+      const cr = canvas.getBoundingClientRect();
+      svg.setAttribute('width', canvas.offsetWidth); svg.setAttribute('height', canvas.offsetHeight);
+      let h = '';
+      tree.querySelectorAll('.mt-n').forEach(el => {
+        const kids = el.querySelector(':scope > .mt-kids'); if (!kids) return;
+        const pr = el.querySelector(':scope > .mt-box').getBoundingClientRect();
+        const x1 = pr.right - cr.left, y1 = pr.top + pr.height / 2 - cr.top;
+        kids.querySelectorAll(':scope > .mt-n > .mt-box').forEach(kb => {
+          const kr = kb.getBoundingClientRect(), x2 = kr.left - cr.left, y2 = kr.top + kr.height / 2 - cr.top, mx = (x1 + x2) / 2;
+          h += '<path d="M' + x1 + ' ' + y1 + ' C' + mx + ' ' + y1 + ' ' + mx + ' ' + y2 + ' ' + x2 + ' ' + y2 + '"' + (kb.classList.contains('sel') ? ' class="hot"' : '') + '/>';
+        });
+      });
+      svg.innerHTML = h;
+    }
+    function render() {
+      model = build();
+      if (sel !== 'new' && !model.nodes[sel]) sel = 'root';
+      tree.innerHTML = nodeHtml(model.root);
+      const inp = tree.querySelector('.mt-edit');
+      if (inp) { inp.focus(); inp.select(); }
+      drawLines();
+      const box = tree.querySelector('.mt-box.sel');
+      if (box) box.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+      const n = model.nodes[sel];
+      $('mapStatus').textContent = cutKey && model.nodes[cutKey] ? 'Cut “' + labelOf(model.nodes[cutKey]) + '” — select a target, p to paste' : (n && n.kind === 'outcome' ? bucketOf(n.o) + ' · ' + (n.o.type || 'Inbox') : '');
+    }
+
+    // ---- data changes: snapshot for undo, mutate, then mirror to Step + Ahead ----
+    function mutate(fn) {
+      undo.push(JSON.stringify(outcomes)); if (undo.length > 60) undo.shift();
+      fn();
+      saveOutcomes();
+      const so = selectedOutcome();
+      if (selectedOutcomeId && !so) clearSelection(); else if (so) { revalidateSelection(); updateSelectionLabels(); }
+      renderAheadList(); renderOutcomePicker();
+    }
+    function doUndo() {
+      const snap = undo.pop(); if (!snap) { toast('Nothing to undo'); return; }
+      outcomes = JSON.parse(snap); normalizeOutcomes(outcomes); saveOutcomes();
+      const so = selectedOutcome();
+      if (selectedOutcomeId && !so) clearSelection(); else if (so) { revalidateSelection(); updateSelectionLabels(); }
+      renderAheadList(); renderOutcomePicker(); render(); toast('Undone');
+    }
+
+    // ---- typing things in ----
+    function startPending(kind, parent, kidIndex, dataIndex) {
+      folded.delete(parent.key);
+      pending = { kind, parentKey: parent.key, kidIndex, dataIndex, prevSel: sel };
+      editing = null; sel = 'new'; render();
+    }
+    function newChild(n) {
+      if (n.kind === 'bucket') startPending('outcome', n, n.kids.length, outcomes.length);
+      else if (n.kind === 'outcome') startPending('step', n, n.o.subs.length, n.o.subs.length);
+      else if (n.kind === 'ms') startPending('step', n, n.kids.length, n.m.subs.length);
+      else if (n.kind === 'step') newSibling(n);
+      else toast('Pick a bucket first (→)');
+    }
+    function newSibling(n) {
+      if (n.kind === 'step') startPending('step', n.parent, n.i + 1, n.i + 1);
+      else if (n.kind === 'ms') { const idx = n.o.milestones.indexOf(n.m); startPending('ms', n.parent, n.o.subs.length + idx + 1, idx + 1); }
+      else if (n.kind === 'outcome') startPending('outcome', n.parent, n.parent.kids.indexOf(n) + 1, outcomes.indexOf(n.o) + 1);
+      else newChild(n);
+    }
+    function commitPending(text, then) {
+      const p = pending; pending = null; text = text.trim();
+      if (!text) { sel = model.nodes[p.prevSel] ? p.prevSel : p.parentKey; render(); return; }
+      const parent = model.nodes[p.parentKey]; let newKey = null;
+      mutate(() => {
+        if (p.kind === 'outcome') {
+          const o = makeOutcome(text, null, null); moveToBucket(o, parent.bucket);
+          outcomes.splice(p.dataIndex, 0, o); newKey = 'o:' + o.id;
+        } else if (p.kind === 'ms') {
+          const m = makeMilestone(text); parent.o.milestones.splice(p.dataIndex, 0, m); newKey = 'm:' + parent.o.id + ':' + m.id;
+        } else {
+          const o = parent.o, m = parent.m || null, scope = m || o;
+          let i = scope.subs.indexOf(text);
+          if (i < 0) { i = p.dataIndex; scope.subs.splice(i, 0, text); celebrate('added'); }
+          newKey = stepKey(o, m, i);
+        }
+      });
+      sel = newKey; render();
+      if (then === 'sibling') newSibling(model.nodes[newKey]);
+      else if (then === 'child') newChild(model.nodes[newKey]);
+    }
+    function startEdit(n) {
+      if (!['outcome', 'ms', 'step'].includes(n.kind)) { toast('Buckets can’t be renamed'); return; }
+      editing = { key: n.key }; render();
+    }
+    function commitEdit(text) {
+      const n = model.nodes[editing.key]; editing = null; text = text.trim();
+      if (n && text && text !== labelOf(n)) {
+        if (n.kind === 'step') {
+          const scope = n.m || n.o;
+          if (scope.subs.includes(text)) toast('That step already exists here');
+          else mutate(() => { moveNote(noteKey(n.o, n.m, n.text), noteKey(n.o, n.m, text)); scope.subs[n.i] = text; });
+        } else mutate(() => { if (n.kind === 'outcome') n.o.t = text; else n.m.t = text; });
+      }
+      render();
+    }
+    function cancelTyping() { if (pending) { sel = model.nodes[pending.prevSel] ? pending.prevSel : pending.parentKey; pending = null; } editing = null; render(); }
+
+    // ---- delete / done / kind / buckets ----
+    function del(n) {
+      if (!['outcome', 'ms', 'step'].includes(n.kind)) return;
+      const sibs = n.parent.kids, i = sibs.indexOf(n), nextSel = (sibs[i + 1] || sibs[i - 1] || n.parent).key;
+      const label = labelOf(n);
+      mutate(() => {
+        if (n.kind === 'outcome') outcomes = outcomes.filter(x => x !== n.o);
+        else if (n.kind === 'ms') n.o.milestones = n.o.milestones.filter(x => x !== n.m);
+        else (n.m || n.o).subs.splice(n.i, 1);
+      });
+      sel = nextSel; render(); toast('Deleted “' + label + '” — u to undo');
+    }
+    function toggleDone(n) {
+      if (n.kind === 'outcome') mutate(() => { n.o.completed = !n.o.completed; if (n.o.completed) celebrate('done'); });
+      else if (n.kind === 'ms') mutate(() => { n.m.completed = !n.m.completed; if (n.m.completed) celebrate('milestone'); });
+      else { toast('Steps have no done — ⌫ removes them'); return; }
+      if (n.kind === 'outcome') reveal(n.key); render();
+    }
+    function cycleType(n) {
+      if (n.kind !== 'outcome') return;
+      mutate(() => { n.o.type = n.o.type === null ? 'Destination' : n.o.type === 'Destination' ? 'Directive' : null; });
+      render();
+    }
+    function toBucket(n, b) {
+      if (n.kind !== 'outcome') { toast('Select an outcome to move it'); return; }
+      if (bucketOf(n.o) === b) return;
+      mutate(() => moveToBucket(n.o, b));
+      reveal(n.key); render();
+    }
+    function swap(arr, i, j) { const t = arr[i]; arr[i] = arr[j]; arr[j] = t; }
+    function altKey(e, n) {
+      const k = e.key;
+      if (k === 'ArrowUp' || k === 'ArrowDown') {
+        const dir = k === 'ArrowUp' ? -1 : 1;
+        if (n.kind === 'step') {
+          const scope = n.m || n.o, j = n.i + dir; if (j < 0 || j >= scope.subs.length) return;
+          mutate(() => swap(scope.subs, n.i, j)); sel = stepKey(n.o, n.m, j);
+        } else if (n.kind === 'ms') {
+          const arr = n.o.milestones, i = arr.indexOf(n.m), j = i + dir; if (j < 0 || j >= arr.length) return;
+          mutate(() => swap(arr, i, j));
+        } else if (n.kind === 'outcome') {
+          const other = n.parent.kids[n.parent.kids.indexOf(n) + dir]; if (!other) return;
+          mutate(() => swap(outcomes, outcomes.indexOf(n.o), outcomes.indexOf(other.o)));
+        } else return;
+        render();
+      } else if (k === 'ArrowLeft' || k === 'ArrowRight') {
+        const dir = k === 'ArrowLeft' ? -1 : 1;
+        if (n.kind === 'outcome') {
+          const b = BUCKETS[BUCKETS.indexOf(bucketOf(n.o)) + dir]; if (b) toBucket(n, b);
+        } else if (n.kind === 'step' && dir < 0 && n.m) {
+          if (n.o.subs.includes(n.text)) { toast('Already a step on the outcome'); return; }
+          mutate(() => { moveNote(noteKey(n.o, n.m, n.text), noteKey(n.o, null, n.text)); n.m.subs.splice(n.i, 1); n.o.subs.push(n.text); });
+          sel = stepKey(n.o, null, n.o.subs.length - 1); render();
+        } else toast('x to cut, select a target, p to paste');
+      }
+    }
+    function cut(n) { if (!['outcome', 'ms', 'step'].includes(n.kind)) return; cutKey = n.key; render(); }
+    function paste(t) {
+      const src = cutKey && model.nodes[cutKey]; if (!src) { toast('Nothing cut — x first'); return; }
+      let newSel = null;
+      if (src.kind === 'step') {
+        let dest, at; // dest = scope object holding subs, at = insert index
+        if (t.kind === 'outcome') { dest = { o: t.o, m: null }; at = t.o.subs.length; }
+        else if (t.kind === 'ms') { dest = { o: t.o, m: t.m }; at = t.m.subs.length; }
+        else if (t.kind === 'step') { dest = { o: t.o, m: t.m }; at = t.i + 1; }
+        else { toast('Steps go on an outcome or milestone'); return; }
+        const from = src.m || src.o, to = dest.m || dest.o;
+        if (to !== from && to.subs.includes(src.text)) { toast('That step already exists there'); return; }
+        if (to === from && src.i < at) at--;
+        mutate(() => {
+          moveNote(noteKey(src.o, src.m, src.text), noteKey(dest.o, dest.m, src.text));
+          from.subs.splice(src.i, 1); to.subs.splice(at, 0, src.text);
+        });
+        newSel = stepKey(dest.o, dest.m, at);
+      } else if (src.kind === 'ms') {
+        let dest, at;
+        if (t.kind === 'outcome') { dest = t.o; at = t.o.milestones.length; }
+        else if (t.kind === 'ms') { dest = t.o; at = t.o.milestones.indexOf(t.m) + 1; }
+        else { toast('Milestones go on an outcome'); return; }
+        if (t.kind === 'ms' && t.m === src.m) { cutKey = null; render(); return; }
+        if (dest === src.o && src.o.milestones.indexOf(src.m) < at) at--;
+        mutate(() => {
+          if (dest !== src.o) movePrefixNotes(src.o.id + '#' + src.m.id, dest.id + '#' + src.m.id);
+          src.o.milestones = src.o.milestones.filter(x => x !== src.m); dest.milestones.splice(at, 0, src.m);
+        });
+        newSel = 'm:' + dest.id + ':' + src.m.id;
+      } else {
+        let b;
+        if (t.kind === 'bucket') b = t.bucket; else if (t.kind === 'outcome' && t.o !== src.o) b = bucketOf(t.o); else { toast('Outcomes go in a bucket'); return; }
+        mutate(() => {
+          moveToBucket(src.o, b);
+          if (t.kind === 'outcome') { outcomes = outcomes.filter(x => x !== src.o); outcomes.splice(outcomes.indexOf(t.o) + 1, 0, src.o); }
+        });
+        newSel = src.key; folded.delete('b:' + b);
+      }
+      cutKey = null; sel = newSel; reveal(sel); render();
+    }
+
+    // ---- find ----
+    function runFind() {
+      const q = findEl.value.trim().toLowerCase();
+      hits = q ? Object.values(model.nodes).filter(n => n.kind !== 'root' && n.kind !== 'bucket' && labelOf(n).toLowerCase().includes(q)).map(n => n.key) : [];
+      hitI = 0;
+      if (hits.length) { sel = hits[0]; reveal(sel); }
+      render();
+    }
+    function closeFind() { findEl.hidden = true; findEl.value = ''; hits = []; findEl.blur(); render(); }
+
+    // ---- keyboard ----
+    function go(n, key) {
+      const v = visible(), i = v.findIndex(x => x.n === n); if (i < 0) return;
+      if (key === 'ArrowLeft') { if (n.parent) sel = n.parent.key; return; }
+      if (key === 'ArrowRight') {
+        if (!n.kids.length) { toast('Tab adds a child'); return; }
+        folded.delete(n.key); sel = n.kids[0].key; return;
+      }
+      const dir = key === 'ArrowDown' ? 1 : -1, d = v[i].d;
+      for (let j = i + dir; j >= 0 && j < v.length; j += dir) if (v[j].d === d) { sel = v[j].n.key; return; }
+    }
+    function onKey(e) {
+      if (!isOpen()) {
+        const t = e.target, typing = t && (/^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName) || t.isContentEditable);
+        if (e.code === 'KeyM' && !e.metaKey && !e.ctrlKey && !typing && document.getElementById('view-ahead').classList.contains('active')
+            && !document.querySelector('.modal-overlay.show')) { e.preventDefault(); open(); }
+        return;
+      }
+      e.stopPropagation();
+      if (e.target === findEl) {
+        if (e.key === 'Escape') { e.preventDefault(); closeFind(); }
+        else if (e.key === 'Enter') { e.preventDefault(); if (hits.length) { hitI = (hitI + 1) % hits.length; sel = hits[hitI]; reveal(sel); findEl.blur(); render(); findEl.focus(); } }
+        return;
+      }
+      if (e.target.classList && e.target.classList.contains('mt-edit')) {
+        const v = e.target.value;
+        if (e.key === 'Escape') { e.preventDefault(); cancelTyping(); }
+        else if (e.key === 'Enter') { e.preventDefault(); if (pending) commitPending(v, v.trim() ? 'sibling' : null); else commitEdit(v); }
+        else if (e.key === 'Tab' && !e.shiftKey && pending) { e.preventDefault(); commitPending(v, v.trim() ? 'child' : null); }
+        else if (e.key === 'Tab') e.preventDefault();
+        return;
+      }
+      if (e.metaKey || e.ctrlKey) { if (e.key.toLowerCase() === 'z') { e.preventDefault(); doUndo(); } return; }
+      const k = e.key, n = model.nodes[sel];
+      if (!n) return;
+      const handled = () => e.preventDefault();
+      if (k === 'Escape') {
+        handled();
+        if ($('mapHelp').classList.contains('show')) $('mapHelp').classList.remove('show');
+        else if (cutKey) { cutKey = null; render(); }
+        else close();
+        return;
+      }
+      if (e.altKey) { handled(); altKey(e, n); return; }
+      if (k === 'ArrowUp' || k === 'ArrowDown' || k === 'ArrowLeft' || k === 'ArrowRight') { handled(); go(n, k); render(); return; }
+      if (k === ' ') { handled(); if (n.kids.length) { if (folded.has(n.key)) folded.delete(n.key); else folded.add(n.key); render(); } return; }
+      if (k === 'Enter') { handled(); newSibling(n); return; }
+      if (k === 'Tab') { handled(); if (!e.shiftKey) newChild(n); return; }
+      if (k === 'e' || k === 'F2') { handled(); startEdit(n); return; }
+      if (k === 'Backspace' || k === 'Delete') { handled(); del(n); return; }
+      if (k === 'd') { handled(); toggleDone(n); return; }
+      if (k === 'y') { handled(); cycleType(n); return; }
+      if (k === 'm') { handled(); if (n.kind === 'outcome') startPending('ms', n, n.kids.length, n.o.milestones.length); else toast('m adds a milestone to an outcome'); return; }
+      if (k === 'x') { handled(); cut(n); return; }
+      if (k === 'p') { handled(); paste(n); return; }
+      if (k === 'u') { handled(); doUndo(); return; }
+      if (k === 'a') { handled(); if (folded.size) folded.clear(); else Object.values(model.nodes).forEach(x => { if (x.kind === 'outcome' && x.kids.length) folded.add(x.key); }); render(); return; }
+      if (k === '/') { handled(); findEl.hidden = false; findEl.focus(); return; }
+      if (k === '?') { handled(); $('mapHelp').classList.toggle('show'); return; }
+      if (/^[1-7]$/.test(k)) { handled(); toBucket(n, BUCKETS[+k - 1]); return; }
+    }
+    document.addEventListener('keydown', onKey, true);
+    findEl.addEventListener('input', runFind);
+
+    tree.addEventListener('click', (e) => {
+      const box = e.target.closest('.mt-box'); if (!box || box.dataset.key === 'new' || e.target.classList.contains('mt-edit')) return;
+      if (pending || editing) { pending = null; editing = null; }
+      sel = box.dataset.key; render();
+    });
+    tree.addEventListener('dblclick', (e) => {
+      const box = e.target.closest('.mt-box'); if (!box || !model.nodes[box.dataset.key]) return;
+      startEdit(model.nodes[box.dataset.key]);
+    });
+    window.addEventListener('resize', () => { if (isOpen()) drawLines(); });
+
+    function open() {
+      if (document.activeElement && document.activeElement.blur) document.activeElement.blur();
+      overlay.classList.add('show'); render();
+    }
+    function close() { pending = null; editing = null; cutKey = null; overlay.classList.remove('show'); renderAheadList(); }
+    document.getElementById('mapOpenBtn').addEventListener('click', open);
+    return { open, close };
+  })();
 
   // click outside popover closes it
   document.addEventListener('click', () => document.getElementById('eventPopover').classList.remove('show'));
