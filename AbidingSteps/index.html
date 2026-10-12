@@ -614,6 +614,24 @@
   .mt-box .fold { color: var(--ahead); font-size: 0.72rem; margin-left: 6px; }
   .mt-box.k-ms.k-ms { color: var(--text); }
   .mt-edit { background: var(--bg); color: var(--text); border: 1px solid var(--ahead); border-radius: 5px; font: inherit; padding: 2px 6px; min-width: 200px; outline: none; }
+  .map-mode-btn { background: var(--bg-raised); border: 1px solid var(--border); color: var(--text-dim); border-radius: 999px; padding: 2px 10px; font: inherit; cursor: pointer; }
+  .map-mode-btn.playing { color: var(--accent); border-color: var(--accent); }
+  .map-timer { color: var(--step); font-variant-numeric: tabular-nums; font-weight: 600; cursor: pointer; }
+  .map-timer.over { color: var(--danger); }
+  #mapWork { position: absolute; left: 50%; top: 18%; transform: translateX(-50%); width: 400px; max-width: calc(100% - 32px); background: var(--bg-elevated); border: 1px solid var(--accent); border-radius: 14px; padding: 18px 22px 16px; box-shadow: 0 12px 50px rgba(0,0,0,.55); display: none; text-align: center; z-index: 5; }
+  #mapWork.show { display: block; }
+  #mapWork .wk-kicker { font-size: 0.7rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--accent); }
+  #mapWork .wk-label { font-size: 0.95rem; margin: 6px 0 12px; overflow-wrap: anywhere; }
+  #mapWork .wk-time { font-size: 3rem; font-weight: 300; font-variant-numeric: tabular-nums; }
+  #mapWork .wk-time.over { color: var(--danger); }
+  #mapWork .wk-bar { height: 5px; background: var(--bg-raised); border-radius: 3px; overflow: hidden; margin: 8px 0 12px; }
+  #mapWork .wk-bar > div { height: 100%; background: var(--accent); transition: width 1s linear; }
+  #mapWork .wk-chips { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; margin: 8px 0 12px; }
+  #mapWork .wk-chip { border: 1px solid var(--border); border-radius: 999px; padding: 4px 12px; cursor: pointer; background: var(--bg-raised); }
+  #mapWork .wk-chip.on { border-color: var(--accent); color: var(--accent); }
+  #mapWork .wk-chip kbd, #mapWork .wk-hint kbd { background: var(--bg); border: 1px solid var(--border); border-bottom-width: 2px; border-radius: 4px; padding: 0 5px; font: inherit; font-size: 0.7rem; color: var(--text); margin-right: 4px; }
+  #mapWork .wk-hint { font-size: 0.74rem; color: var(--text-faint); line-height: 1.9; }
+  #mapWork .wk-verse { font-style: italic; line-height: 1.6; margin: 10px 0; min-height: 3.2em; }
   .map-toast { position: absolute; left: 50%; bottom: 22px; transform: translateX(-50%); background: var(--bg-raised); border: 1px solid var(--border); border-radius: 8px; padding: 6px 14px; font-size: 0.8rem; opacity: 0; transition: opacity .2s; pointer-events: none; }
   .map-toast.show { opacity: 1; }
   .map-help { position: absolute; right: 16px; bottom: 16px; width: 360px; max-height: 80%; overflow: auto; background: var(--bg-elevated); border: 1px solid var(--border); border-radius: 10px; padding: 12px 16px; font-size: 0.78rem; line-height: 1.9; display: none; }
@@ -779,6 +797,12 @@
       <div class="date-line">Settings</div>
 
       <div class="settings-section">
+        <h3>Sync</h3>
+        <button class="btn" id="syncNowBtn" style="width:100%;">Sync now</button>
+        <div id="syncTopStatus" style="font-size:0.72rem; color:var(--text-faint); margin-top:6px;"></div>
+      </div>
+
+      <div class="settings-section">
         <h3>About</h3>
         <div class="settings-row"><span>Installed version</span><span id="appVersionLabel" style="color:var(--text-dim);"></span></div>
         <button class="btn" id="reloadAppBtn" style="width:100%; margin-top:8px;">Check for updates &amp; reload</button>
@@ -880,7 +904,6 @@
         <div class="settings-row"><span>Auto-sync after idle</span>
           <select id="syncIdleSelect"><option value="0">Manual only</option><option value="1">1 min</option><option value="2">2 min</option><option value="5">5 min</option></select></div>
         <p style="font-size:0.72rem; color:var(--text-faint); margin:0 0 8px;">Changes are batched into one write after you stop for this long (and when you leave the app), which keeps Firebase's free tier safe. Sync now sends them immediately.</p>
-        <button class="btn" id="syncNowBtn" style="width:100%; margin-bottom:8px;">Sync now</button>
         <button class="btn" id="syncSignInBtn" style="width:100%;" disabled>Sign in with Google</button>
         <button class="btn" id="syncSignOutBtn" style="width:100%; display:none;">Sign out</button>
       </div>
@@ -1030,9 +1053,11 @@
   <div class="map-bar">
     <b>MAP</b>
     <span><kbd>↑↓←→</kbd> move</span><span><kbd>Enter</kbd> next line</span><span><kbd>Tab</kbd> child</span>
-    <span><kbd>e</kbd> edit</span><span><kbd>1</kbd>–<kbd>7</kbd> bucket</span><span><kbd>i</kbd> details</span><span><kbd>?</kbd> all keys</span><span><kbd>Esc</kbd> close</span>
+    <span><kbd>e</kbd> edit</span><span><kbd>1</kbd>–<kbd>7</kbd> bucket</span><span><kbd>w</kbd> work</span><span><kbd>i</kbd> details</span><span><kbd>?</kbd> all keys</span><span><kbd>Esc</kbd> close</span>
     <input type="text" class="map-find" id="mapFind" placeholder="Find…" hidden>
     <span class="spacer"></span><span id="mapStatus"></span><span id="mapSync" title="Last cloud sync"></span>
+    <span class="map-timer" id="mapTimer" hidden title="Timer running — w to open"></span>
+    <button type="button" class="map-mode-btn" id="mapMusic" title="Music for this mode (.)">♪ <span id="mapModeLbl">Ahead</span></button>
   </div>
   <div class="map-body">
     <div id="mapScroll"><div id="mapCanvas"><svg id="mapSvg"></svg><div id="mapTree"></div></div></div>
@@ -1053,12 +1078,17 @@
     <div><kbd>Ctrl</kbd>/<kbd>⌘</kbd><kbd>↑</kbd><kbd>↓</kbd> or <kbd>⌥←</kbd><kbd>⌥→</kbd> outcome to the bucket above / below · on a line: outdent / indent (a child of the line above)</div>
     <div><kbd>⌥↑</kbd><kbd>⌥↓</kbd> reorder among siblings</div>
     <div><kbd>x</kbd> cut, then select a target and <kbd>p</kbd> paste (line → outcome, milestone or another line, milestone → outcome, outcome → bucket)</div>
+    <h4>Work &amp; music</h4>
+    <div><kbd>w</kbd> work on the selected outcome / milestone / step: pick a length (<kbd>1</kbd>–<kbd>9</kbd> or <kbd>←</kbd><kbd>→</kbd> + <kbd>Enter</kbd>). The timer is the Step timer, music switches to Step music, time counts as Step time</div>
+    <div>While it runs: <kbd>c</kbd> continue (+ more time) · <kbd>d</kbd> done · <kbd>s</kbd> stop · <kbd>Esc</kbd> tuck the popup away (the timer stays in the top bar; <kbd>w</kbd> brings it back)</div>
+    <div><kbd>b</kbd> Abide pause (verse + Abide music) · <kbd>.</kbd> music on/off · planning in the map plays Ahead music</div>
     <h4>Details panel</h4>
     <div><kbd>i</kbd> jump into the side panel (kind, role, bucket, date, maybe, done, budget) · <kbd>Tab</kbd> between fields · <kbd>Enter</kbd> or <kbd>Esc</kbd> back to the map · <kbd>I</kbd> hide it</div>
     <h4>Other</h4>
     <div><kbd>d</kbd> flips a step between - and + · <kbd>y</kbd> cycle Inbox → Destination → Directive</div>
     <div><kbd>⌫</kbd> delete · <kbd>u</kbd> or <kbd>⌘Z</kbd> undo (no confirm boxes here — undo instead)</div>
   </div>
+  <div id="mapWork" role="dialog" aria-label="Work on this"></div>
   <div class="map-toast" id="mapToast"></div>
 </div>
 
@@ -2750,8 +2780,10 @@ For God alone my soul waits in silence. — Psalm 62:1`;
     addTally(modeSeg.mode, (now - modeSeg.since) / 60000);
     modeSeg.since = now;
   }
+  let mapForcedMode = null; // Map mode's Abide pause counts as Abide time even though the Ahead view is showing
   function trackedMode() {
     if (workSeg || document.visibilityState === 'hidden') return null; // running chunk = Step time
+    if (mapForcedMode) return mapForcedMode;
     const view = (document.querySelector('.view.active') || {}).id;
     return view === 'view-ahead' ? 'ahead' : view === 'view-abide' ? 'abide' : null;
   }
@@ -4103,6 +4135,117 @@ For God alone my soul waits in silence. — Psalm 62:1`;
       panelOn = true; store.set('__local_mapPanel', true); renderPanel(true);
       const first = panel.querySelector('input, select'); if (first) first.focus(); else toast('Nothing to edit here');
     }
+    // ---- work + music: the Step timer and the three music modes, from inside the map ----
+    const workEl = $('mapWork'), timerChip = $('mapTimer');
+    let wk = null, wkTick = null, wkHidden = false, abideVerse = 0, abideSince = 0;
+    function setMapMode(m) {
+      document.documentElement.setAttribute('data-mode', m);
+      mapForcedMode = m === 'abide' ? 'abide' : null;
+      updateMusicBtn(); if (musicPlaying) musicPlayer.playForMode(m);
+      updateModeTracking(); syncMusicChip();
+    }
+    function syncMusicChip() {
+      $('mapModeLbl').textContent = currentModeLabel(); $('mapMusic').classList.toggle('playing', musicPlaying);
+    }
+    $('mapMusic').addEventListener('click', () => { musicBtn.click(); syncMusicChip(); });
+    timerChip.addEventListener('click', () => { if (wk) { wkHidden = false; renderWork(); } });
+    function workTarget(n) {
+      let kind, o = n.o, m = null, sub = null;
+      if (n.kind === 'outcome') kind = 'outcome';
+      else if (n.kind === 'ms') { kind = 'ms'; m = n.m; }
+      else if (n.kind === 'line') {
+        let a = n; while (a.parent && a.parent.kind === 'line') a = a.parent;
+        m = a.m; if (a.mark === '-' && a.ind === 0) { kind = 'step'; sub = a.text; } else kind = m ? 'ms' : 'outcome';
+      } else return null;
+      return { kind, o, m, sub, label: o.t + (m ? ' › ' + m.t : '') + (sub ? ' › ' + sub : '') };
+    }
+    function openWork(n) {
+      if (wk && wk.phase === 'run') { wkHidden = false; renderWork(); return; }
+      const t = workTarget(n); if (!t) { toast('Select an outcome, milestone or step to work on'); return; }
+      wk = { phase: 'choose', t, idx: Math.max(0, chunkSizes.indexOf(15)) }; wkHidden = false;
+      if (document.activeElement && document.activeElement.blur) document.activeElement.blur();
+      renderWork();
+    }
+    function startMapChunk(min) {
+      const t = wk.t;
+      selectOutcome(t.o.id, { ms: t.m && t.m.id, sub: t.sub });
+      startChunk(min); setMapMode('step');
+      wk.phase = 'run'; clearInterval(wkTick); wkTick = setInterval(tickWork, 500);
+      render(); renderWork();
+    }
+    function endWork(label) {
+      if (workSeg) returnToIdle(label || 'Pick a length to continue');
+      clearInterval(wkTick); wkTick = null; wk = null; wkHidden = false;
+      if (isOpen()) setMapMode('ahead'); renderWork(); render();
+    }
+    function tickWork() {
+      if (!wk || wk.phase !== 'run') return;
+      if (!workSeg) { endWork(); return; } // stopped elsewhere (e.g. control moved to another device)
+      const remain = endsAt - Date.now(), over = remain <= 0;
+      const txt = over ? '+' + fmt(-remain) : fmt(remain);
+      timerChip.hidden = false; timerChip.textContent = '⏱ ' + txt; timerChip.classList.toggle('over', over);
+      const big = workEl.querySelector('.wk-time'); if (big) { big.textContent = txt; big.classList.toggle('over', over); }
+      const bar = workEl.querySelector('.wk-bar > div'); if (bar) bar.style.width = (over ? 100 : Math.max(0, Math.min(100, remain / chunkTotalMs * 100))) + '%';
+      const st = workEl.querySelector('.wk-state'); if (st) st.textContent = over ? 'Time’s up — still going?' : '';
+    }
+    function renderWork() {
+      timerChip.hidden = !(wk && wk.phase === 'run');
+      if (!wk || wkHidden) { workEl.classList.remove('show'); return; }
+      workEl.classList.add('show');
+      if (wk.phase === 'choose') {
+        workEl.innerHTML = '<div class="wk-kicker">Work on</div><div class="wk-label">' + escapeHtml(wk.t.label) + '</div>'
+          + '<div class="wk-chips">' + chunkSizes.slice(0, 9).map((mn, i) => '<span class="wk-chip' + (i === wk.idx ? ' on' : '') + '" data-i="' + i + '"><kbd>' + (i + 1) + '</kbd>' + mn + 'm</span>').join('') + '</div>'
+          + '<div class="wk-hint"><kbd>1</kbd>–<kbd>' + Math.min(9, chunkSizes.length) + '</kbd> start now · <kbd>←</kbd><kbd>→</kbd> <kbd>Enter</kbd> · <kbd>Esc</kbd> cancel</div>';
+      } else if (wk.phase === 'run') {
+        workEl.innerHTML = '<div class="wk-kicker">Step</div><div class="wk-label">' + escapeHtml(wk.t.label) + '</div>'
+          + '<div class="wk-time">--:--</div><div class="wk-bar"><div></div></div><div class="wk-state wk-hint"></div>'
+          + '<div class="wk-hint"><kbd>c</kbd>continue · <kbd>d</kbd>done · <kbd>s</kbd>stop · <kbd>Esc</kbd>tuck away</div>';
+        tickWork();
+      } else if (wk.phase === 'abide') {
+        workEl.innerHTML = '<div class="wk-kicker">Abide</div><div class="wk-verse">' + escapeHtml(breathVerses[abideVerse % breathVerses.length]) + '</div>'
+          + '<div class="wk-time" style="font-size:1.6rem">' + Math.floor((Date.now() - abideSince) / 60000) + ' min</div>'
+          + '<div class="wk-hint"><kbd>Esc</kbd> or <kbd>b</kbd> back to the map</div>';
+      }
+    }
+    workEl.addEventListener('click', (e) => {
+      const c = e.target.closest('.wk-chip'); if (c && wk && wk.phase === 'choose') startMapChunk(chunkSizes[+c.dataset.i]);
+    });
+    function startAbide() {
+      if (wk && wk.phase === 'run') { toast('Stop the timer first (s)'); return; }
+      wk = { phase: 'abide' }; abideVerse = 0; abideSince = Date.now(); wkHidden = false; setMapMode('abide');
+      clearInterval(wkTick); wkTick = setInterval(() => { abideVerse++; if (wk && wk.phase === 'abide') renderWork(); }, 20000);
+      renderWork();
+    }
+    function workKey(e) { // popup open: it owns the keyboard
+      const k = e.key;
+      e.preventDefault();
+      if (wk.phase === 'choose') {
+        if (k === 'Escape') { wk = null; renderWork(); }
+        else if (k === 'ArrowLeft') { wk.idx = Math.max(0, wk.idx - 1); renderWork(); }
+        else if (k === 'ArrowRight') { wk.idx = Math.min(Math.min(9, chunkSizes.length) - 1, wk.idx + 1); renderWork(); }
+        else if (k === 'Enter') startMapChunk(chunkSizes[wk.idx]);
+        else if (/^[1-9]$/.test(k) && chunkSizes[+k - 1]) startMapChunk(chunkSizes[+k - 1]);
+      } else if (wk.phase === 'run') {
+        if (k === 'Escape' || k === 'w') { wkHidden = true; renderWork(); }
+        else if (k === 'c' || k === '+') {
+          if (overrunState !== 'none') acknowledgeOverrun(bumpMinutes);
+          else { endsAt += bumpMinutes * 60000; chunkTotalMs += bumpMinutes * 60000; }
+          tickWork();
+        } else if (k === 's') endWork('Stopped — pick a length to resume');
+        else if (k === 'd') {
+          const t = wk.t;
+          mutate(() => {
+            if (t.kind === 'step') toggleStepLine(t.o, t.m, t.sub, false);
+            else if (t.kind === 'ms') t.m.completed = true;
+            else if (t.o.type === 'Destination') t.o.completed = true;
+          });
+          celebrate(t.kind === 'step' || t.kind === 'ms' ? 'milestone' : 'done');
+          endWork('✓ Done — pick a length to continue');
+        }
+      } else if (wk.phase === 'abide') {
+        if (k === 'Escape' || k === 'b') { clearInterval(wkTick); wkTick = null; wk = null; setMapMode('ahead'); renderWork(); }
+      }
+    }
     function render() {
       model = build();
       if (sel !== 'new' && !model.nodes[sel]) sel = 'root';
@@ -4365,6 +4508,7 @@ For God alone my soul waits in silence. — Psalm 62:1`;
         return;
       }
       e.stopPropagation();
+      if (wk && !wkHidden && !e.metaKey && !e.ctrlKey) { workKey(e); return; }
       if (e.target === findEl) {
         if (e.key === 'Escape') { e.preventDefault(); closeFind(); }
         else if (e.key === 'Enter') { e.preventDefault(); if (hits.length) { hitI = (hitI + 1) % hits.length; sel = hits[hitI]; reveal(sel); findEl.blur(); render(); findEl.focus(); } }
@@ -4417,6 +4561,9 @@ For God alone my soul waits in silence. — Psalm 62:1`;
       if (k === 'p') { handled(); paste(n); return; }
       if (k === 'u') { handled(); doUndo(); return; }
       if (k === 'i') { handled(); focusPanel(); return; }
+      if (k === 'w') { handled(); openWork(n); return; }
+      if (k === 'b') { handled(); startAbide(); return; }
+      if (k === '.') { handled(); musicBtn.click(); syncMusicChip(); return; }
       if (k === 'I') { handled(); panelOn = !panelOn; store.set('__local_mapPanel', panelOn); renderPanel(true); drawLines(); return; }
       if (k === 'a') { handled(); if (folded.size) folded.clear(); else Object.values(model.nodes).forEach(x => { if (x.kind === 'outcome' && x.kids.length) folded.add(x.key); }); render(); return; }
       if (k === '/') { handled(); findEl.hidden = false; findEl.focus(); return; }
@@ -4440,9 +4587,17 @@ For God alone my soul waits in silence. — Psalm 62:1`;
 
     function open() {
       if (document.activeElement && document.activeElement.blur) document.activeElement.blur();
-      overlay.classList.add('show'); render();
+      overlay.classList.add('show'); setMapMode(workSeg ? 'step' : 'ahead'); render();
+      if (workSeg && !wk) { wk = { phase: 'run', t: runningTarget() }; wkHidden = true; clearInterval(wkTick); wkTick = setInterval(tickWork, 500); renderWork(); }
     }
-    function close() { pending = null; editing = null; cutKey = null; overlay.classList.remove('show'); renderAheadList(); }
+    function runningTarget() { const o = selectedOutcome(); return { kind: selectedSubOutcome ? 'step' : selectedMilestoneId ? 'ms' : 'outcome', o, m: o ? selMilestone(o) : null, sub: selectedSubOutcome, label: o ? selectionLabel(o) : '' }; }
+    function close() {
+      pending = null; editing = null; cutKey = null; overlay.classList.remove('show');
+      if (wk && wk.phase === 'abide') { clearInterval(wkTick); wkTick = null; wk = null; }
+      clearInterval(wkTick); wkTick = null; wk = null; wkHidden = false; workEl.classList.remove('show'); timerChip.hidden = true;
+      if (workSeg) switchTab('step'); else setMapMode('ahead');
+      renderAheadList();
+    }
     document.getElementById('mapOpenBtn').addEventListener('click', open);
     return { open, close };
   })();
@@ -4547,7 +4702,8 @@ For God alone my soul waits in silence. — Psalm 62:1`;
   const FIREBASE_SDK = 'https://www.gstatic.com/firebasejs/10.12.0/';
   const cloudSync = {
     docRef: null, pushTimer: null, paused: false, unsubscribe: null,
-    status(msg) { document.getElementById('syncStatus').textContent = msg; },
+    status(msg) { document.getElementById('syncStatus').textContent = msg; this.topStatus(); },
+    topStatus() { const t = document.getElementById('syncTopStatus'); if (t) t.textContent = [document.getElementById('syncStatus').textContent, document.getElementById('syncLast').textContent].filter(Boolean).join(' · '); },
     // last time this device pushed to or pulled from the cloud — kept apart from the
     // status line, which gets overwritten by "changes waiting" and errors
     markSynced() { store.set('__local_lastSynced', Date.now()); this.showLast(); },
@@ -4558,7 +4714,7 @@ For God alone my soul waits in silence. — Psalm 62:1`;
         const mins = Math.floor((Date.now() - t) / 60000);
         txt = 'Last synced ' + new Date(t).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }) + ' · ' + (mins < 1 ? 'just now' : mins < 60 ? mins + ' min ago' : Math.floor(mins / 60) + ' h ago');
       }
-      document.getElementById('syncLast').textContent = txt;
+      document.getElementById('syncLast').textContent = txt; this.topStatus();
       const mb = document.getElementById('mapSync'); if (mb) mb.textContent = t ? 'synced ' + (txt.split('· ')[1] || '') : '';
     },
     errorText(e) {
