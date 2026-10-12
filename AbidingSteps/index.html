@@ -857,7 +857,8 @@
       <div class="settings-section">
         <h3>Cloud Sync</h3>
         <p style="font-size:0.72rem; color:var(--text-faint); margin:0 0 8px;">Everything saves on this device automatically, signed in or not. Sign in to also sync across your devices.</p>
-        <div id="syncStatus" style="font-size:0.76rem; color:var(--text-dim); margin-bottom:8px;">Saved on this device</div>
+        <div id="syncStatus" style="font-size:0.76rem; color:var(--text-dim); margin-bottom:4px;">Saved on this device</div>
+        <div id="syncLast" style="font-size:0.76rem; color:var(--text-faint); margin-bottom:8px;"></div>
         <div class="settings-row"><span>Auto-sync after idle</span>
           <select id="syncIdleSelect"><option value="0">Manual only</option><option value="1">1 min</option><option value="2">2 min</option><option value="5">5 min</option></select></div>
         <p style="font-size:0.72rem; color:var(--text-faint); margin:0 0 8px;">Changes are batched into one write after you stop for this long (and when you leave the app), which keeps Firebase's free tier safe. Sync now sends them immediately.</p>
@@ -1020,7 +1021,7 @@
     <span><kbd>↑↓←→</kbd> move</span><span><kbd>Enter</kbd> next line</span><span><kbd>Tab</kbd> child</span>
     <span><kbd>e</kbd> edit</span><span><kbd>1</kbd>–<kbd>7</kbd> bucket</span><span><kbd>?</kbd> all keys</span><span><kbd>Esc</kbd> close</span>
     <input type="text" class="map-find" id="mapFind" placeholder="Find…" hidden>
-    <span class="spacer"></span><span id="mapStatus"></span>
+    <span class="spacer"></span><span id="mapStatus"></span><span id="mapSync" title="Last cloud sync"></span>
   </div>
   <div id="mapScroll"><div id="mapCanvas"><svg id="mapSvg"></svg><div id="mapTree"></div></div></div>
   <div class="map-help" id="mapHelp">
@@ -4443,6 +4444,19 @@ For God alone my soul waits in silence. — Psalm 62:1`;
   const cloudSync = {
     docRef: null, pushTimer: null, paused: false, unsubscribe: null,
     status(msg) { document.getElementById('syncStatus').textContent = msg; },
+    // last time this device pushed to or pulled from the cloud — kept apart from the
+    // status line, which gets overwritten by "changes waiting" and errors
+    markSynced() { store.set('__local_lastSynced', Date.now()); this.showLast(); },
+    showLast() {
+      const t = Number(store.get('__local_lastSynced', 0)) || 0;
+      let txt = '';
+      if (t) {
+        const mins = Math.floor((Date.now() - t) / 60000);
+        txt = 'Last synced ' + new Date(t).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }) + ' · ' + (mins < 1 ? 'just now' : mins < 60 ? mins + ' min ago' : Math.floor(mins / 60) + ' h ago');
+      }
+      document.getElementById('syncLast').textContent = txt;
+      const mb = document.getElementById('mapSync'); if (mb) mb.textContent = t ? 'synced ' + (txt.split('· ')[1] || '') : '';
+    },
     errorText(e) {
       if (e && e.code === 'permission-denied') return 'Cloud sync blocked by Firestore rules (see AbidingSteps/SYNC-SETUP.md) — still saving on this device.';
       return 'Sync error: ' + ((e && e.message) || e) + ' — still saving on this device.';
@@ -4480,7 +4494,8 @@ For God alone my soul waits in silence. — Psalm 62:1`;
       this.docRef.set({ data: this.allData(), updatedAt: stamp })
         .then(() => {
           if (this.dirtyAt() <= stamp) store.set('__local_dirtyAt', 0);
-          this.status('Synced ✓ ' + new Date().toLocaleTimeString());
+          this.markSynced();
+          this.status('Synced ✓');
         })
         .catch(e => this.status(this.errorText(e)));
     },
@@ -4493,7 +4508,8 @@ For God alone my soul waits in silence. — Psalm 62:1`;
         } catch (e) {}
       });
       if (changed) refreshFromStore();
-      this.status('Synced ✓ ' + new Date().toLocaleTimeString());
+      this.markSynced();
+      this.status('Synced ✓');
     },
     // first snapshot after sign-in: decide whether this device or the cloud wins
     reconcile(remote, uid) {
@@ -4634,6 +4650,7 @@ For God alone my soul waits in silence. — Psalm 62:1`;
     else switchNotesContext('_', null);
   })();
   store.onChange = () => { cloudSync.markDirty(); cloudSync.queuePush(); };
+  cloudSync.showLast(); setInterval(() => cloudSync.showLast(), 30000);
   document.getElementById('syncNowBtn').addEventListener('click', () => {
     if (!cloudSync.docRef || cloudSync.paused) { cloudSync.status('Sign in first — nothing to sync to yet'); return; }
     cloudSync.status('Syncing…'); cloudSync.pushNow();
