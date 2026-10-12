@@ -596,6 +596,8 @@
   .mt-box.hit { box-shadow: 0 0 0 2px color-mix(in srgb, #e8c15a 70%, transparent); }
   .mt-box.sel { background: color-mix(in srgb, var(--ahead) 30%, var(--bg-elevated)); border-color: var(--ahead); color: var(--text); box-shadow: 0 0 0 2px color-mix(in srgb, var(--ahead) 45%, transparent); }
   .mt-box .tag { color: var(--text-faint); font-size: 0.7rem; margin-right: 5px; }
+  .mt-box .tag.mk { font-family: ui-monospace, Menlo, monospace; font-size: 0.85rem; color: var(--ahead); }
+  .mt-box .tag.typ { margin: 0 0 0 6px; }
   .mt-box .fold { color: var(--ahead); font-size: 0.72rem; margin-left: 6px; }
   .mt-box.k-ms.k-ms { color: var(--text); }
   .mt-edit { background: var(--bg); color: var(--text); border: 1px solid var(--ahead); border-radius: 5px; font: inherit; padding: 2px 6px; min-width: 200px; outline: none; }
@@ -3857,8 +3859,10 @@ For God alone my soul waits in silence. — Psalm 62:1`;
       else {
         inner = escapeHtml(labelOf(n));
         if (n.kind === 'bucket') inner += '<span class="ct">' + n.kids.length + '</span>';
-        if (n.kind === 'outcome') inner = '<span class="tag">' + (n.o.type === 'Destination' ? '◎' : n.o.type === 'Directive' ? '∞' : '·') + '</span>' + inner;
-        if (n.kind === 'ms') inner = '<span class="tag">' + (n.m.completed ? '✓' : '◆') + '</span>' + inner;
+        // - open, + closed (steps have no closed state, so they're always -)
+        if (n.kind === 'outcome') inner = '<span class="tag mk">' + (n.o.completed ? '+' : '-') + '</span>' + inner + '<span class="tag typ">' + (n.o.type === 'Destination' ? '◎' : n.o.type === 'Directive' ? '∞' : '') + '</span>';
+        if (n.kind === 'ms') inner = '<span class="tag mk">' + (n.m.completed ? '+' : '-') + '</span>' + inner;
+        if (n.kind === 'step') inner = '<span class="tag mk">-</span>' + inner;
         if (isFolded) inner += '<span class="fold">▸ ' + n.kids.length + '</span>';
       }
       return '<div class="' + cls + '" data-key="' + escapeHtml(n.key) + '">' + inner + '</div>';
