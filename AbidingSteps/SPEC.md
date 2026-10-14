@@ -838,8 +838,11 @@ gets the pill only.
 ### Quiet Abide moment + the little heart (2026-10-14)
 
 `microAbide`: Treasuring's first move — drag your heart to Jesus ("Jesus, I place
-my heart with you."), then a few still breaths (bloom + John 15:4), Amen. Offered
-on open / on returning to the app after `settings.microAbideDays` away (default 2;
-0 = never; at most once a day; device-local `__local_lastSeen`), in place of the
-welcome. A softly glowing heart in the top bar opens it any time. Keyboard: Enter
-on the heart places it; Esc = Not now.
+my heart with you."), then a few still breaths (bloom + John 15:4), Amen. Purpose:
+daily presence and productivity — the deepest renewal made the easiest first move.
+Offered (a) on the first open of each day, (b) after `settings.microAbideMins` of no
+taps/keys while the app is open (default 15; 0 = never) or after that long away,
+never during a timer, Abide, a dialog or typing; after an offer it waits that long
+again. Halfway to the offer the red heart in the top bar glows louder (`beckon`);
+tapping it opens the moment any time. Device-local keys: `__local_lastSeen`,
+`__local_microAt`, `__local_microDay`. Enter on the heart places it; Esc = Not now.

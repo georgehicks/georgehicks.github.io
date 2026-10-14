@@ -71,15 +71,17 @@
     cursor: pointer; font-size: 0.9rem;
   }
   /* a little heart that glows softly — a quiet way to place your heart with Jesus any time */
-  .heart-btn { position: relative; color: #e8788a; border-color: color-mix(in srgb, #e8788a 40%, var(--border)); animation: hb-glow 3.4s ease-in-out infinite; }
-  @keyframes hb-glow { 0%, 100% { box-shadow: 0 0 5px 0 rgba(232,120,138,.35), 0 0 12px 1px rgba(232,193,90,.12); } 50% { box-shadow: 0 0 10px 2px rgba(232,120,138,.6), 0 0 22px 4px rgba(232,193,90,.28); } }
-  .heart-btn svg { position: relative; z-index: 1; filter: drop-shadow(0 0 3px rgba(232,120,138,.8)); animation: hb-beat 3.4s ease-in-out infinite; }
+  .heart-btn { position: relative; color: #e5383b; border-color: color-mix(in srgb, #e5383b 40%, var(--border)); animation: hb-glow 3.4s ease-in-out infinite; }
+  @keyframes hb-glow { 0%, 100% { box-shadow: 0 0 5px 0 rgba(229,56,59,.35), 0 0 12px 1px rgba(232,193,90,.12); } 50% { box-shadow: 0 0 10px 2px rgba(229,56,59,.6), 0 0 22px 4px rgba(232,193,90,.28); } }
+  .heart-btn svg { position: relative; z-index: 1; filter: drop-shadow(0 0 3px rgba(229,56,59,.8)); animation: hb-beat 3.4s ease-in-out infinite; }
   @keyframes hb-beat { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.12); } }
+  .heart-btn.beckon { animation-duration: 1.5s; border-color: #e5383b; }
+  .heart-btn.beckon svg { animation-duration: 1.5s; }
   .hb-spark { position: absolute; left: 50%; top: 50%; width: 6px; height: 6px; margin: -3px; pointer-events: none; opacity: 0; background: #fff6d6;
     clip-path: polygon(50% 0, 62% 38%, 100% 50%, 62% 62%, 50% 100%, 38% 62%, 0 50%, 38% 38%); filter: drop-shadow(0 0 3px #ffd86b);
     animation: hb-twinkle 2.8s ease-in-out infinite; animation-delay: var(--d, 0s); }
   @keyframes hb-twinkle { 0%, 55%, 100% { opacity: 0; transform: translate(var(--x), var(--y)) scale(.2); } 75% { opacity: 1; transform: translate(var(--x), calc(var(--y) - 4px)) scale(1) rotate(45deg); } }
-  @media (prefers-reduced-motion: reduce) { .heart-btn, .heart-btn svg, .hb-spark { animation: none; } .hb-spark { display: none; } .heart-btn { box-shadow: 0 0 8px 1px rgba(232,120,138,.45); } }
+  @media (prefers-reduced-motion: reduce) { .heart-btn, .heart-btn svg, .hb-spark { animation: none; } .hb-spark { display: none; } .heart-btn { box-shadow: 0 0 8px 1px rgba(229,56,59,.45); } }
   .music-btn.playing { color: var(--accent); border-color: var(--accent); }
 
   main { flex: 1; min-height: 0; padding: 4px 16px calc(90px + env(safe-area-inset-bottom)); display: flex; flex-direction: column; }
@@ -421,7 +423,7 @@
   .ma-christ::before { left: 50%; top: 20%; bottom: 20%; width: 5px; margin-left: -2.5px; }
   .ma-christ::after { top: 38%; left: 30%; right: 30%; height: 5px; margin-top: -2.5px; }
   @keyframes ma-halo { 0%,100% { box-shadow: 0 0 36px 4px rgba(232,193,90,.3); } 50% { box-shadow: 0 0 56px 12px rgba(232,193,90,.5); } }
-  .ma-heart { position: absolute; left: 0; top: 0; width: 64px; height: 64px; margin: -32px 0 0 -32px; padding: 0; border: none; background: none; cursor: grab; touch-action: none; filter: drop-shadow(0 0 10px rgba(232,120,138,.55)); }
+  .ma-heart { position: absolute; left: 0; top: 0; width: 64px; height: 64px; margin: -32px 0 0 -32px; padding: 0; border: none; background: none; cursor: grab; touch-action: none; filter: drop-shadow(0 0 10px rgba(229,56,59,.55)); }
   .ma-heart.glide { transition: left .7s cubic-bezier(.3,.9,.3,1), top .7s cubic-bezier(.3,.9,.3,1), transform .7s ease; }
   .ma-heart.dragging { cursor: grabbing; transform: scale(1.12); } .ma-heart.placed { transform: scale(.5); filter: drop-shadow(0 0 8px rgba(255,255,255,.6)); }
   .ma-heart svg { width: 100%; height: 100%; display: block; } .ma-heart:focus-visible { outline: 2px solid var(--ahead); border-radius: 50%; }
@@ -930,8 +932,8 @@
         <h3>Celebrations</h3>
         <div class="settings-row"><span>Micro celebrations (sparks and a glow when you start, finish, or abide — plus a little welcome when you open the app)</span><input type="checkbox" id="celebrateToggle"></div>
         <div class="settings-row"><span>Glow on your next step</span><input type="checkbox" id="glowToggle"></div>
-        <div class="settings-row"><span>Offer a quiet Abide moment after time away</span>
-          <select id="microAbideSelect"><option value="0">Never</option><option value="1">After 1 day</option><option value="2">After 2 days</option><option value="3">After 3 days</option><option value="7">After a week</option></select></div>
+        <div class="settings-row"><span>Offer a quiet Abide moment (a heart placed with Jesus) after being idle</span>
+          <select id="microAbideSelect"><option value="0">Never</option><option value="5">5 min</option><option value="10">10 min</option><option value="15">15 min</option><option value="30">30 min</option><option value="60">1 hour</option><option value="120">2 hours</option></select></div>
         <button class="btn" id="microAbidePreview" style="width:100%; margin-top:4px;">Preview it now</button>
         <div class="settings-row" style="display:block;"><span id="tallyLine" style="color:var(--text-dim);font-size:0.82rem;"></span></div>
       </div>
@@ -1240,7 +1242,7 @@
     musicVolume: 40, // percent of device volume — background music should sit under your thinking, not over it
     icsUrls: '', icsProxy: '',
     syncIdleMin: 2, // cloud push waits this many idle minutes after your last change (0 = only the Sync now button)
-    microAbideDays: 2, // after this many days away, offer a quiet Abide moment on open (0 = never)
+    microAbideMins: 15, // offer a quiet Abide moment after this many idle minutes (or this long away from the app); 0 = never
     glow: true, // a magical glow on the next step (only while celebrations are on)
     celebrate: false, // opt-in layer of tiny moments; never changes behavior
   };
@@ -1420,7 +1422,7 @@
   // No score, nothing counted beyond the usual abide tally. =====
   const microAbide = (() => {
     let root = null, open = false;
-    const HEART = '<svg viewBox="0 0 64 60" aria-hidden="true"><path d="M32 56C10 40 6 28 6 20a13 13 0 0 1 26-3 13 13 0 0 1 26 3c0 8-4 20-26 36z" fill="#e8788a"/></svg>';
+    const HEART = '<svg viewBox="0 0 64 60" aria-hidden="true"><path d="M32 56C10 40 6 28 6 20a13 13 0 0 1 26-3 13 13 0 0 1 26 3c0 8-4 20-26 36z" fill="#e5383b"/></svg>';
     function build() {
       root = document.createElement('div'); root.id = 'microAbide'; root.setAttribute('role', 'dialog'); root.setAttribute('aria-modal', 'true'); root.setAttribute('aria-label', 'A quiet moment with Jesus');
       root.innerHTML = '<div class="ma-card"><div class="ma-line" id="maLine"></div>'
@@ -1486,20 +1488,39 @@
     }
     return { show, close, isOpen: () => open };
   })();
-  // "away" = the last time this device was in the app. Checked on open and on coming back to
-  // the app; at most once a day.
-  function maybeInviteAbide() {
-    const days = Number(settings.microAbideDays) || 0, now = Date.now(), last = Number(store.get('__local_lastSeen', 0)) || 0;
+  // When to offer it: after `microAbideMins` of no taps or keys while the app is open, or when
+  // you open / come back to the app after that long away. Never while a timer is running, in
+  // Abide, in a dialog or typing; after an offer it waits that long again before the next.
+  let lastActive = Date.now();
+  ['pointerdown', 'keydown', 'wheel', 'touchstart'].forEach(ev => document.addEventListener(ev, () => { lastActive = Date.now(); }, { passive: true, capture: true }));
+  function abideBlocked() {
+    const a = document.activeElement;
+    return !!(workSeg || microAbide.isOpen() || document.querySelector('.modal-overlay.show') || document.getElementById('view-abide').classList.contains('active')
+      || (a && (a.tagName === 'TEXTAREA' || (a.tagName === 'INPUT' && a.type === 'text') || a.isContentEditable)));
+  }
+  function offerAbide() { const now = Date.now(); store.set('__local_microAt', now); store.set('__local_microDay', todayKeyLocal()); lastActive = now; microAbide.show(true); return true; }
+  function maybeInviteAbide() { // on open / coming back
+    const mins = Number(settings.microAbideMins) || 0, now = Date.now(), last = Number(store.get('__local_lastSeen', 0)) || 0;
     store.set('__local_lastSeen', now);
-    if (!days || !last || now - last < days * 864e5 || workSeg || microAbide.isOpen()) return false;
-    if (store.get('__local_microDay', '') === todayKeyLocal()) return false;
-    store.set('__local_microDay', todayKeyLocal()); microAbide.show(true); return true;
+    if (!mins || abideBlocked()) return false;
+    // daily presence: the first time you open the app each day, the heart is offered first
+    if (store.get('__local_microDay', '') !== todayKeyLocal()) return offerAbide();
+    if (!last || now - last < mins * 60000) return false;
+    if (now - (Number(store.get('__local_microAt', 0)) || 0) < mins * 60000) return false;
+    return offerAbide();
   }
   document.addEventListener('visibilitychange', () => {
     if (document.visibilityState === 'hidden') store.set('__local_lastSeen', Date.now());
-    else maybeInviteAbide();
+    else { lastActive = Date.now(); maybeInviteAbide(); }
   });
-  setInterval(() => { if (document.visibilityState === 'visible' && !microAbide.isOpen()) store.set('__local_lastSeen', Date.now()); }, 60000);
+  setInterval(() => {
+    if (document.visibilityState !== 'visible') return;
+    const now = Date.now(), mins = Number(settings.microAbideMins) || 0, idle = now - lastActive, heart = document.getElementById('heartBtn');
+    store.set('__local_lastSeen', now);
+    // halfway to the offer the little heart starts to call a bit louder
+    heart.classList.toggle('beckon', !!mins && idle >= mins * 30000 && !abideBlocked());
+    if (mins && idle >= mins * 60000 && !abideBlocked() && now - (Number(store.get('__local_microAt', 0)) || 0) >= mins * 60000) offerAbide();
+  }, 15000);
 
   // ===== glow on the next step: found by looking, not by being told — so it stays right
   // whatever changed it (a tap, a sync, a finished timer) =====
@@ -1533,7 +1554,7 @@
     if (settings.celebrate) celebrate('start');
     updateMagic();
   });
-  document.getElementById('microAbideSelect').addEventListener('change', (e) => { settings.microAbideDays = parseInt(e.target.value, 10) || 0; saveSettings(); });
+  document.getElementById('microAbideSelect').addEventListener('change', (e) => { settings.microAbideMins = parseInt(e.target.value, 10) || 0; saveSettings(); });
   document.getElementById('microAbidePreview').addEventListener('click', () => microAbide.show(true));
   document.getElementById('heartBtn').addEventListener('click', () => microAbide.show());
   document.getElementById('glowToggle').addEventListener('change', (e) => { settings.glow = e.target.checked; saveSettings(); updateMagic(); });
@@ -5310,7 +5331,7 @@ For God alone my soul waits in silence. — Psalm 62:1`;
     autoOverrunEnabled = !!settings.autoOverrun; setChk('autoOverrunToggle', autoOverrunEnabled);
     bumpMinutes = settings.bumpMinutes; setVal('bumpLengthInput', bumpMinutes); updateContinueLabel();
     setVal('weekResetSelect', settings.weekReset); setVal('syncIdleSelect', String(settings.syncIdleMin));
-    setChk('celebrateToggle', !!settings.celebrate); setChk('glowToggle', settings.glow !== false); setVal('microAbideSelect', String(settings.microAbideDays)); renderTallies(); updateMagic();
+    setChk('celebrateToggle', !!settings.celebrate); setChk('glowToggle', settings.glow !== false); setVal('microAbideSelect', String(settings.microAbideMins)); renderTallies(); updateMagic();
     voiceNotesEnabled = settings.voiceNotes !== false; setChk('voiceNotesToggle', voiceNotesEnabled); updateMicBtnVisibility();
     setVal('icsUrls', settings.icsUrls); setVal('icsProxy', settings.icsProxy);
     ['step', 'ahead', 'abide'].forEach(m => {
