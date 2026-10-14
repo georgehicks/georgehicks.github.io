@@ -560,14 +560,15 @@
   @keyframes bp-beat { 0%, 42% { transform: scale(1); } 52% { transform: scale(1.38); } 68% { transform: scale(1.08); } 78%, 100% { transform: scale(1); } }
   .bp-ring { position: absolute; top: 100px; left: 50%; width: 120px; height: 120px; margin: -60px 0 0 -60px; border-radius: 50%; pointer-events: none; z-index: 3; opacity: 0;
     background: radial-gradient(circle, rgba(255,236,170,0) 0, rgba(255,236,170,0) 16%, rgba(255,226,140,.55) 30%, rgba(255,200,90,.2) 52%, rgba(255,200,90,0) 70%);
-    will-change: transform, opacity; animation: bp-ring 8s cubic-bezier(.25,.55,.3,1) infinite; }
-  @keyframes bp-ring { 0%, 45% { opacity: 0; transform: scale(.4); } 52% { opacity: .95; } 80% { opacity: .4; transform: scale(2.2); } 95%, 100% { opacity: 0; transform: scale(3.1); } }
+    will-change: transform, opacity; animation: bp-ring-move 8s cubic-bezier(.25,.5,.4,1) infinite, bp-ring-fade 8s linear infinite; }
+  @keyframes bp-ring-move { 0%, 45% { transform: scale(.4); } 95%, 100% { transform: scale(3.1); } }
+  @keyframes bp-ring-fade { 0%, 45% { opacity: 0; } 52% { opacity: .95; } 78% { opacity: .4; } 95%, 100% { opacity: 0; } }
   /* embers that radiate: soft points leave the cross in irregular directions, each its own distance,
      size and moment, curving slightly as they go and fading slowly — slowing down as they travel,
      so it reads as drifting embers rather than an even burst */
   .bp-spark { position: absolute; z-index: 3; top: 100px; left: 50%; width: var(--s, 7px); height: var(--s, 7px); margin: calc(var(--s, 7px) / -2); pointer-events: none; opacity: 0; border-radius: 50%;
     background: radial-gradient(circle, rgba(255,252,236,1) 0, rgba(255,226,140,.75) 32%, rgba(255,200,90,0) 70%);
-    will-change: transform, opacity; animation: bp-ember 8s cubic-bezier(.2,.6,.3,1) infinite; animation-delay: var(--d, 0s); }
+    will-change: transform, opacity; animation: bp-ember-move 8s cubic-bezier(.25,.5,.4,1) infinite, bp-ember-fade 8s linear infinite; animation-delay: var(--d, 0s); }
   .bp-spark:nth-of-type(1) { --mx: 69px; --my: 27px; --ex: 112px; --ey: 40px; --s: 7px; --d: 0s; }
   .bp-spark:nth-of-type(2) { --mx: 47px; --my: 38px; --ex: 74px; --ey: 63px; --s: 5px; --d: 0.45s; }
   .bp-spark:nth-of-type(3) { --mx: -21px; --my: 79px; --ex: -29px; --ey: 128px; --s: 9px; --d: 0.2s; }
@@ -577,11 +578,11 @@
   .bp-spark:nth-of-type(7) { --mx: -23px; --my: -82px; --ex: -40px; --ey: -131px; --s: 9px; --d: 0.3s; }
   .bp-spark:nth-of-type(8) { --mx: 10px; --my: -67px; --ex: 19px; --ey: -107px; --s: 6px; --d: 0.8s; }
   .bp-spark:nth-of-type(9) { --mx: 70px; --my: -28px; --ex: 111px; --ey: -49px; --s: 7px; --d: 0.4s; }
-  @keyframes bp-ember {
-    0%, 47% { opacity: 0;   transform: translate3d(0, 0, 0) scale(.4); }
-    55%     { opacity: .95; }
-    74%     { opacity: .75; transform: translate3d(var(--mx), var(--my), 0) scale(1); }
-    100%    { opacity: 0;   transform: translate3d(var(--ex), var(--ey), 0) scale(.3); } }
+  /* one unbroken outward motion: the travel and the fade are separate animations, and the travel has
+     just a start and an end keyframe, so its easing runs once across the whole distance (an eased
+     keyframe in the middle makes things stop and restart) */
+  @keyframes bp-ember-move { 0%, 47% { transform: translate3d(0, 0, 0) scale(.5); } 100% { transform: translate3d(var(--ex), var(--ey), 0) scale(.9); } }
+  @keyframes bp-ember-fade { 0%, 47% { opacity: 0; } 56% { opacity: .95; } 100% { opacity: 0; } }
   .ma-rest .breath-cross, .ma-rest .bp-ring, .ma-rest .bp-spark { top: 75px; }
   .ma-rest .breath-cross { margin-top: -16px; }
   @keyframes cross-reveal {
