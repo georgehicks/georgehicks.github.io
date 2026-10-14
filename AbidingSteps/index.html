@@ -71,17 +71,23 @@
     cursor: pointer; font-size: 0.9rem;
   }
   /* a little heart that glows softly — a quiet way to place your heart with Jesus any time */
-  .heart-btn { position: relative; color: #e5383b; border-color: color-mix(in srgb, #e5383b 40%, var(--border)); animation: hb-glow 3.4s ease-in-out infinite; }
+  /* resting: dim, like a disabled button. It only lights up (`.lit`) while you haven't placed your
+     heart today, and glows louder (`.beckon`) as idle time runs toward the offer */
+  .heart-btn { position: relative; color: var(--text-faint); opacity: .5; transition: opacity .6s ease, color .6s ease, border-color .6s ease; }
+  .heart-btn:hover, .heart-btn:focus-visible { opacity: .85; }
+  .heart-btn.lit { opacity: 1; color: #e5383b; border-color: color-mix(in srgb, #e5383b 40%, var(--border)); animation: hb-glow 3.4s ease-in-out infinite; }
   @keyframes hb-glow { 0%, 100% { box-shadow: 0 0 5px 0 rgba(229,56,59,.35), 0 0 12px 1px rgba(232,193,90,.12); } 50% { box-shadow: 0 0 10px 2px rgba(229,56,59,.6), 0 0 22px 4px rgba(232,193,90,.28); } }
-  .heart-btn svg { position: relative; z-index: 1; filter: drop-shadow(0 0 3px rgba(229,56,59,.8)); animation: hb-beat 3.4s ease-in-out infinite; }
+  .heart-btn svg { position: relative; z-index: 1; }
+  .heart-btn.lit svg { filter: drop-shadow(0 0 3px rgba(229,56,59,.8)); animation: hb-beat 3.4s ease-in-out infinite; }
+  .heart-btn:not(.lit) .hb-spark { display: none; }
   @keyframes hb-beat { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.12); } }
-  .heart-btn.beckon { animation-duration: 1.5s; border-color: #e5383b; }
-  .heart-btn.beckon svg { animation-duration: 1.5s; }
+  .heart-btn.lit.beckon { animation-duration: 1.5s; border-color: #e5383b; }
+  .heart-btn.lit.beckon svg { animation-duration: 1.5s; }
   .hb-spark { position: absolute; left: 50%; top: 50%; width: 6px; height: 6px; margin: -3px; pointer-events: none; opacity: 0; background: #fff6d6;
     clip-path: polygon(50% 0, 62% 38%, 100% 50%, 62% 62%, 50% 100%, 38% 62%, 0 50%, 38% 38%); filter: drop-shadow(0 0 3px #ffd86b);
     animation: hb-twinkle 2.8s ease-in-out infinite; animation-delay: var(--d, 0s); }
   @keyframes hb-twinkle { 0%, 55%, 100% { opacity: 0; transform: translate(var(--x), var(--y)) scale(.2); } 75% { opacity: 1; transform: translate(var(--x), calc(var(--y) - 4px)) scale(1) rotate(45deg); } }
-  @media (prefers-reduced-motion: reduce) { .heart-btn, .heart-btn svg, .hb-spark { animation: none; } .hb-spark { display: none; } .heart-btn { box-shadow: 0 0 8px 1px rgba(229,56,59,.45); } }
+  @media (prefers-reduced-motion: reduce) { .heart-btn, .heart-btn svg, .hb-spark { animation: none !important; } .hb-spark { display: none; } .heart-btn.lit { box-shadow: 0 0 8px 1px rgba(229,56,59,.45); } }
   .music-btn.playing { color: var(--accent); border-color: var(--accent); }
 
   main { flex: 1; min-height: 0; padding: 4px 16px calc(90px + env(safe-area-inset-bottom)); display: flex; flex-direction: column; }
@@ -1516,7 +1522,7 @@
     }
     function say(text) { const l = root.querySelector('#maLine'); l.classList.add('fade'); setTimeout(() => { l.textContent = text; l.classList.remove('fade'); }, 450); }
     function place() {
-      placed = true; const heart = root.querySelector('#maHeart');
+      placed = true; store.set('__local_heartDay', todayKeyLocal()); updateHeartLit(); const heart = root.querySelector('#maHeart');
       hp = { ...christ }; put(heart, hp.x, hp.y); heart.classList.add('placed');
       root.querySelector('#maHint').textContent = ''; root.querySelector('#maSkip').hidden = true;
       say('Jesus, I place my heart with you.');
@@ -1553,6 +1559,9 @@
     return !!(workSeg || microAbide.isOpen() || document.querySelector('.modal-overlay.show') || document.getElementById('view-abide').classList.contains('active')
       || (a && (a.tagName === 'TEXTAREA' || (a.tagName === 'INPUT' && a.type === 'text') || a.isContentEditable)));
   }
+  // lit = not placed yet today; the heart rests dim for the rest of the day once you have
+  function updateHeartLit() { const h = document.getElementById('heartBtn'); if (h) h.classList.toggle('lit', store.get('__local_heartDay', '') !== todayKeyLocal()); }
+  updateHeartLit();
   function offerAbide() { const now = Date.now(); store.set('__local_microAt', now); store.set('__local_microDay', todayKeyLocal()); lastActive = now; microAbide.show(true); return true; }
   function maybeInviteAbide() { // on open / coming back
     const mins = Number(settings.microAbideMins) || 0, now = Date.now(), last = Number(store.get('__local_lastSeen', 0)) || 0;
@@ -1573,6 +1582,7 @@
     const now = Date.now(), mins = Number(settings.microAbideMins) || 0, idle = now - lastActive, heart = document.getElementById('heartBtn');
     store.set('__local_lastSeen', now);
     // halfway to the offer the little heart starts to call a bit louder
+    updateHeartLit();
     heart.classList.toggle('beckon', !!mins && idle >= mins * 30000 && !abideBlocked());
     if (mins && idle >= mins * 60000 && !abideBlocked() && now - (Number(store.get('__local_microAt', 0)) || 0) >= mins * 60000) offerAbide();
   }, 15000);
