@@ -528,6 +528,22 @@
   /* a Latin cross — longer arm below the bar, not a symmetric plus */
   .cross-v { top: 0; bottom: 0; left: 50%; width: 3px; margin-left: -1.5px; }
   .cross-h { left: 0; right: 0; top: 9px; height: 3px; margin-top: -1.5px; }
+  /* the cross carries a small red heart at its center — He holds the heart; the pair fades in with the
+     full bloom, and each breath's peak sends out a ring of light and a few sparks (same 8s cycle) */
+  .breath-cross::after { content: ''; position: absolute; left: 50%; top: 9px; width: 15px; height: 14px; margin: -6.5px 0 0 -7.5px;
+    background: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 60'><path d='M32 56C10 40 6 28 6 20a13 13 0 0 1 26-3 13 13 0 0 1 26 3c0 8-4 20-26 36z' fill='%23e5383b'/></svg>") center / contain no-repeat;
+    filter: drop-shadow(0 0 4px rgba(229,56,59,.9)); }
+  .bp-ring { position: absolute; top: 100px; left: 50%; width: 64px; height: 64px; margin: -32px 0 0 -32px; border-radius: 50%; pointer-events: none;
+    border: 2px solid #ffd86b; box-shadow: 0 0 16px 2px rgba(255,216,107,.55), inset 0 0 14px rgba(255,255,255,.35); opacity: 0; animation: bp-ring 8s ease-out infinite; }
+  @keyframes bp-ring { 0%, 46% { opacity: 0; transform: scale(.5); } 50% { opacity: .85; transform: scale(.7); } 78%, 100% { opacity: 0; transform: scale(2.1); } }
+  .bp-spark { position: absolute; top: 100px; left: 50%; width: 8px; height: 8px; margin: -4px; pointer-events: none; opacity: 0; background: #fff6d6;
+    clip-path: polygon(50% 0, 62% 38%, 100% 50%, 62% 62%, 50% 100%, 38% 62%, 0 50%, 38% 38%); filter: drop-shadow(0 0 3px #ffd86b);
+    transform: rotate(var(--a)) translateY(-20px); animation: bp-spark 8s ease-out infinite; }
+  @keyframes bp-spark { 0%, 47% { opacity: 0; transform: rotate(var(--a)) translateY(-18px) scale(.3); } 53% { opacity: 1; transform: rotate(var(--a)) translateY(-34px) scale(1); }
+    74%, 100% { opacity: 0; transform: rotate(var(--a)) translateY(-62px) scale(.2); } }
+  @media (prefers-reduced-motion: reduce) { .bp-ring, .bp-spark { display: none; } }
+  .ma-rest .breath-cross, .ma-rest .bp-ring, .ma-rest .bp-spark { top: 75px; }
+  .ma-rest .breath-cross { margin-top: -16px; }
   @keyframes cross-reveal {
     0%, 25%, 75%, 100% { opacity: 0; }
     50% { opacity: 0.9; }
@@ -1046,6 +1062,7 @@
             <div class="petal" style="--i:7"></div>
           </div>
           <div class="breath-cross"><span class="cross-v"></span><span class="cross-h"></span></div>
+          <div class="bp-ring"></div><i class="bp-spark" style="--a:20deg"></i><i class="bp-spark" style="--a:110deg"></i><i class="bp-spark" style="--a:200deg"></i><i class="bp-spark" style="--a:290deg"></i>
           <div class="breath-caption" id="breathCaption">&nbsp;</div>
           <div class="breath-progress-track" id="breathProgressTrack">
             <div class="breath-progress-fill" id="breathProgressFill"></div>
@@ -1420,6 +1437,7 @@
   // Jesus ("Jesus, I place my heart with you."), then a few still breaths with a verse.
   // Offered once on open (or on returning to the app) after time away; always skippable.
   // No score, nothing counted beyond the usual abide tally. =====
+  const BP_HTML = '<div class="bp-ring"></div>' + [20, 110, 200, 290].map(a => '<i class="bp-spark" style="--a:' + a + 'deg"></i>').join('');
   const microAbide = (() => {
     let root = null, open = false;
     const HEART = '<svg viewBox="0 0 64 60" aria-hidden="true"><path d="M32 56C10 40 6 28 6 20a13 13 0 0 1 26-3 13 13 0 0 1 26 3c0 8-4 20-26 36z" fill="#e5383b"/></svg>';
@@ -1429,7 +1447,7 @@
         + '<div class="ma-stage" id="maStage"><div class="ma-christ" id="maChrist"></div>'
         + '<button type="button" class="ma-heart" id="maHeart" aria-label="Your heart. Drag it to Jesus, or press Enter to place it with Him.">' + HEART + '</button>'
         + '<div class="ma-hint" id="maHint">Drag your heart to Him</div></div>'
-        + '<div class="ma-rest" id="maRest"><div class="breath-wrap"><div class="breath-bloom">' + [0, 1, 2, 3, 4, 5, 6, 7].map(i => '<div class="petal" style="--i:' + i + '"></div>').join('') + '</div></div>'
+        + '<div class="ma-rest" id="maRest"><div class="breath-wrap"><div class="breath-bloom">' + [0, 1, 2, 3, 4, 5, 6, 7].map(i => '<div class="petal" style="--i:' + i + '"></div>').join('') + '</div><div class="breath-cross"><span class="cross-v"></span><span class="cross-h"></span></div>' + BP_HTML + '</div>'
         + '<div class="ma-verse">Abide in me, and I in you.<br><small style="color:var(--text-faint)">John 15:4</small></div></div>'
         + '<div class="ma-actions"><button type="button" id="maSkip">Not now</button><button type="button" class="go" id="maAmen" hidden>Amen</button></div></div>';
       document.body.appendChild(root);
@@ -4735,7 +4753,7 @@ For God alone my soul waits in silence. — Psalm 62:1`;
           workEl.innerHTML = '<div class="wk-kicker">Abide</div>'
             + '<div class="breath-wrap" style="margin:14px 0 6px"><div class="breath-bloom">'
             + [0, 1, 2, 3, 4, 5, 6, 7].map(i => '<div class="petal" style="--i:' + i + '"></div>').join('')
-            + '</div><div class="breath-cross"><span class="cross-v"></span><span class="cross-h"></span></div>'
+            + '</div><div class="breath-cross"><span class="cross-v"></span><span class="cross-h"></span></div>' + BP_HTML
             + '<div class="breath-caption" id="mapBreathCaption">&nbsp;</div></div>'
             + '<div class="wk-hint"><span id="mapAbideMin"></span> · <kbd>Esc</kbd> or <kbd>b</kbd> back to the map</div>';
         }
