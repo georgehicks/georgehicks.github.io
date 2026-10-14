@@ -562,13 +562,22 @@
     background: radial-gradient(circle, rgba(255,236,170,0) 0, rgba(255,236,170,0) 16%, rgba(255,226,140,.55) 30%, rgba(255,200,90,.2) 52%, rgba(255,200,90,0) 70%);
     will-change: transform, opacity; animation: bp-ring 8s cubic-bezier(.25,.55,.3,1) infinite; }
   @keyframes bp-ring { 0%, 45% { opacity: 0; transform: scale(.4); } 52% { opacity: .95; } 80% { opacity: .4; transform: scale(2.2); } 95%, 100% { opacity: 0; transform: scale(3.1); } }
-  .bp-spark { position: absolute; z-index: 3; top: 100px; left: 50%; width: 12px; height: 12px; margin: -6px; pointer-events: none; opacity: 0; border-radius: 50%;
-    background: radial-gradient(circle, rgba(255,252,236,1) 0, rgba(255,226,140,.8) 30%, rgba(255,216,107,0) 68%);
-    will-change: transform, opacity; animation: bp-spark 8s cubic-bezier(.25,.55,.3,1) infinite; }
-  .bp-spark:nth-of-type(1) { --dx: 111px; --dy: 40px; }  .bp-spark:nth-of-type(2) { --dx: 20px; --dy: 116px; }  .bp-spark:nth-of-type(3) { --dx: -90px; --dy: 76px; }
-  .bp-spark:nth-of-type(4) { --dx: -111px; --dy: -40px; } .bp-spark:nth-of-type(5) { --dx: -20px; --dy: -116px; } .bp-spark:nth-of-type(6) { --dx: 90px; --dy: -76px; }
-  @keyframes bp-spark { 0%, 47% { opacity: 0; transform: translate3d(0, 0, 0) scale(.4); } 54% { opacity: .95; }
-    82% { opacity: .45; transform: translate3d(calc(var(--dx) * .8), calc(var(--dy) * .8), 0) scale(.9); } 95%, 100% { opacity: 0; transform: translate3d(var(--dx), var(--dy), 0) scale(.35); } }
+  /* embers: soft points that lift off the bloom as it opens, each at its own spot, size and moment,
+     swaying a little as they rise and fading slowly — not flying out evenly like a burst */
+  .bp-spark { position: absolute; z-index: 3; top: 100px; left: 50%; width: var(--s, 7px); height: var(--s, 7px); margin: calc(var(--s, 7px) / -2); pointer-events: none; opacity: 0; border-radius: 50%;
+    background: radial-gradient(circle, rgba(255,252,236,1) 0, rgba(255,226,140,.75) 32%, rgba(255,200,90,0) 70%);
+    will-change: transform, opacity; animation: bp-ember 8s cubic-bezier(.3,.5,.4,1) infinite; animation-delay: var(--d, 0s); }
+  .bp-spark:nth-of-type(1) { --x0: -62px; --y0: 12px;  --sx: 10px;  --s: 8px; --d: 0s; }
+  .bp-spark:nth-of-type(2) { --x0: -30px; --y0: -12px; --sx: -9px;  --s: 6px; --d: .5s; }
+  .bp-spark:nth-of-type(3) { --x0: 14px;  --y0: 26px;  --sx: 12px;  --s: 9px; --d: .15s; }
+  .bp-spark:nth-of-type(4) { --x0: 50px;  --y0: 0px;   --sx: -10px; --s: 6px; --d: .8s; }
+  .bp-spark:nth-of-type(5) { --x0: -8px;  --y0: -26px; --sx: 8px;   --s: 7px; --d: .35s; }
+  .bp-spark:nth-of-type(6) { --x0: 72px;  --y0: 18px;  --sx: -12px; --s: 8px; --d: .65s; }
+  @keyframes bp-ember {
+    0%, 48% { opacity: 0;   transform: translate3d(var(--x0), var(--y0), 0) scale(.5); }
+    56%     { opacity: .9; }
+    74%     { opacity: .7;  transform: translate3d(calc(var(--x0) + var(--sx)), calc(var(--y0) - 42px), 0) scale(1); }
+    100%    { opacity: 0;   transform: translate3d(calc(var(--x0) - var(--sx) * .6), calc(var(--y0) - 96px), 0) scale(.3); } }
   .ma-rest .breath-cross, .ma-rest .bp-ring, .ma-rest .bp-spark { top: 75px; }
   .ma-rest .breath-cross { margin-top: -16px; }
   @keyframes cross-reveal {
