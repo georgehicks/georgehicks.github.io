@@ -550,17 +550,20 @@
   .breath-cross::after { content: ''; position: absolute; left: 50%; top: 9px; width: 15px; height: 14px; margin: -6.5px 0 0 -7.5px;
     background: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 60'><path d='M32 56C10 40 6 28 6 20a13 13 0 0 1 26-3 13 13 0 0 1 26 3c0 8-4 20-26 36z' fill='%23e5383b'/></svg>") center / contain no-repeat;
     filter: drop-shadow(0 0 4px rgba(229,56,59,.9)); }
-  .bp-ring { position: absolute; top: 100px; left: 50%; width: 64px; height: 64px; margin: -32px 0 0 -32px; border-radius: 50%; pointer-events: none;
-    border: 2px solid #ffd86b; box-shadow: 0 0 16px 2px rgba(255,216,107,.55), inset 0 0 14px rgba(255,255,255,.35); opacity: 0; animation: bp-ring 8s ease-out infinite; }
-  @keyframes bp-ring { 0%, 46% { opacity: 0; transform: scale(.5); } 50% { opacity: .85; transform: scale(.7); } 78%, 100% { opacity: 0; transform: scale(2.1); } }
-  .bp-spark { position: absolute; top: 100px; left: 50%; width: 14px; height: 14px; margin: -7px; pointer-events: none; opacity: 0; border-radius: 50%;
+  .bp-ring { position: absolute; top: 100px; left: 50%; width: 48px; height: 48px; margin: -24px 0 0 -24px; border-radius: 50%; pointer-events: none;
+    border: 3px solid #ffe08a; box-shadow: 0 0 22px 4px rgba(255,216,107,.8), inset 0 0 18px rgba(255,236,170,.6); opacity: 0; animation: bp-ring 8s ease-out infinite; z-index: 3; }
+  /* starts the size of the bloom's open center, then travels out past the petals so it shows against the dark */
+  @keyframes bp-ring { 0%, 46% { opacity: 0; transform: scale(.7); } 50% { opacity: 1; transform: scale(1); } 70% { opacity: .75; transform: scale(4.2); } 92%, 100% { opacity: 0; transform: scale(7); } }
+  .breath-cross::after { animation: bp-beat 8s ease-in-out infinite; }
+  @keyframes bp-beat { 0%, 44% { transform: scale(1); } 50% { transform: scale(1.55); } 55% { transform: scale(1.2); } 60% { transform: scale(1.4); } 72%, 100% { transform: scale(1); } }
+  .bp-spark { position: absolute; z-index: 3; top: 100px; left: 50%; width: 16px; height: 16px; margin: -8px; pointer-events: none; opacity: 0; border-radius: 50%;
     background: radial-gradient(circle, rgba(255,251,230,1) 0 14%, rgba(255,216,107,.7) 30%, rgba(255,216,107,0) 66%);
     transform: rotate(var(--a)) translateY(-20px); animation: bp-spark 8s ease-out infinite; }
   .bp-spark::before, .bp-spark::after { content: ''; position: absolute; left: 50%; top: 50%; width: 24px; height: 1.5px; margin: -.75px 0 0 -12px;
     background: linear-gradient(90deg, transparent, #fff6d6, transparent); }
   .bp-spark::after { transform: rotate(90deg); }
-  @keyframes bp-spark { 0%, 47% { opacity: 0; transform: rotate(var(--a)) translateY(-18px) scale(.3); } 53% { opacity: 1; transform: rotate(var(--a)) translateY(-34px) scale(1); }
-    74%, 100% { opacity: 0; transform: rotate(var(--a)) translateY(-62px) scale(.2); } }
+  @keyframes bp-spark { 0%, 47% { opacity: 0; transform: rotate(var(--a)) translateY(-18px) scale(.3); } 54% { opacity: 1; transform: rotate(var(--a)) translateY(-46px) scale(1.1); }
+    82%, 100% { opacity: 0; transform: rotate(var(--a)) translateY(-135px) scale(.3); } }
   @media (prefers-reduced-motion: reduce) { .bp-ring, .bp-spark { display: none; } }
   .ma-rest .breath-cross, .ma-rest .bp-ring, .ma-rest .bp-spark { top: 75px; }
   .ma-rest .breath-cross { margin-top: -16px; }
