@@ -1595,7 +1595,8 @@
     if (!document.getElementById('view-step').classList.contains('active') || document.getElementById('mapOverlay').classList.contains('show') || workSeg) return null;
     const rev = document.getElementById('morningReview'); if (rev && !rev.hidden) return null;
     const vis = (el) => el && el.offsetParent !== null ? el : null;
-    if (selectedOutcomeId) return vis(document.getElementById('outcomeSummary'));
+    // a step is chosen and it's waiting for "Choose a length": the whole card glows — that's the next move
+    if (selectedOutcomeId) { const blk = vis(document.getElementById('actionBlock')); if (blk && !blk.classList.contains('running')) return blk; }
     if (pickMode === 'ctx' || pickMode === 'date') return vis(document.querySelector('#ctxPicker .ctx-item'));
     return vis(document.querySelector('#outcomesToday .outcome-chip:not(.add-chip)')) || vis(document.querySelector('#outcomesRecent .outcome-chip:not(.add-chip)'));
   }
