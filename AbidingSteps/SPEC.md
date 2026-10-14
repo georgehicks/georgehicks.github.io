@@ -834,3 +834,12 @@ polls once a second and puts a travelling-light glow + CSS twinkles on the next
 step (selected outcome's summary bar, else the first Today chip, else the first
 By-context/date row). Both opt-in via Settings → Celebrations; reduced-motion
 gets the pill only.
+
+### Quiet Abide moment + the little heart (2026-10-14)
+
+`microAbide`: Treasuring's first move — drag your heart to Jesus ("Jesus, I place
+my heart with you."), then a few still breaths (bloom + John 15:4), Amen. Offered
+on open / on returning to the app after `settings.microAbideDays` away (default 2;
+0 = never; at most once a day; device-local `__local_lastSeen`), in place of the
+welcome. A softly glowing heart in the top bar opens it any time. Keyboard: Enter
+on the heart places it; Esc = Not now.

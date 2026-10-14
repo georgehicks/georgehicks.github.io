@@ -70,6 +70,16 @@
     border-radius: 999px; width: 34px; height: 34px; display: flex; align-items: center; justify-content: center;
     cursor: pointer; font-size: 0.9rem;
   }
+  /* a little heart that glows softly — a quiet way to place your heart with Jesus any time */
+  .heart-btn { position: relative; color: #e8788a; border-color: color-mix(in srgb, #e8788a 40%, var(--border)); animation: hb-glow 3.4s ease-in-out infinite; }
+  @keyframes hb-glow { 0%, 100% { box-shadow: 0 0 5px 0 rgba(232,120,138,.35), 0 0 12px 1px rgba(232,193,90,.12); } 50% { box-shadow: 0 0 10px 2px rgba(232,120,138,.6), 0 0 22px 4px rgba(232,193,90,.28); } }
+  .heart-btn svg { position: relative; z-index: 1; filter: drop-shadow(0 0 3px rgba(232,120,138,.8)); animation: hb-beat 3.4s ease-in-out infinite; }
+  @keyframes hb-beat { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.12); } }
+  .hb-spark { position: absolute; left: 50%; top: 50%; width: 6px; height: 6px; margin: -3px; pointer-events: none; opacity: 0; background: #fff6d6;
+    clip-path: polygon(50% 0, 62% 38%, 100% 50%, 62% 62%, 50% 100%, 38% 62%, 0 50%, 38% 38%); filter: drop-shadow(0 0 3px #ffd86b);
+    animation: hb-twinkle 2.8s ease-in-out infinite; animation-delay: var(--d, 0s); }
+  @keyframes hb-twinkle { 0%, 55%, 100% { opacity: 0; transform: translate(var(--x), var(--y)) scale(.2); } 75% { opacity: 1; transform: translate(var(--x), calc(var(--y) - 4px)) scale(1) rotate(45deg); } }
+  @media (prefers-reduced-motion: reduce) { .heart-btn, .heart-btn svg, .hb-spark { animation: none; } .hb-spark { display: none; } .heart-btn { box-shadow: 0 0 8px 1px rgba(232,120,138,.45); } }
   .music-btn.playing { color: var(--accent); border-color: var(--accent); }
 
   main { flex: 1; min-height: 0; padding: 4px 16px calc(90px + env(safe-area-inset-bottom)); display: flex; flex-direction: column; }
@@ -395,6 +405,37 @@
   @media (prefers-reduced-motion: reduce) { .cele i, .cele-ring { display: none; } .cele-pill { animation: cele-fade 2.6s ease-out forwards; }
     @keyframes cele-fade { 0%, 80% { opacity: 1; } 100% { opacity: 0; } } }
 
+  /* ===== a quiet Abide moment after time away — the same first move as Treasuring ===== */
+  #microAbide { position: fixed; inset: 0; z-index: 250; display: none; align-items: center; justify-content: center; padding: 20px;
+    background: radial-gradient(ellipse at 50% 35%, color-mix(in srgb, #e8c15a 14%, #0a0c12) 0%, rgba(8,10,16,.94) 70%); opacity: 0; transition: opacity .6s ease; }
+  #microAbide.show { display: flex; } #microAbide.in { opacity: 1; }
+  .ma-card { width: 100%; max-width: 360px; text-align: center; color: var(--text); }
+  .ma-line { font-size: 1rem; line-height: 1.6; min-height: 3.6em; margin: 0 6px 6px; transition: opacity .5s ease; }
+  .ma-line.fade { opacity: 0; }
+  .ma-stage { position: relative; height: 270px; margin: 0 auto; width: 280px; transition: opacity .8s ease, transform .8s ease; }
+  .ma-stage.gone { opacity: 0; transform: scale(.9); pointer-events: none; position: absolute; }
+  .ma-christ { position: absolute; left: 50%; top: 62px; width: 92px; height: 92px; margin: -46px 0 0 -46px; border-radius: 50%;
+    background: radial-gradient(circle at 40% 35%, #f6dd8f, #e8c15a 60%, #c99a2e); box-shadow: 0 0 40px 6px rgba(232,193,90,.35); animation: ma-halo 4s ease-in-out infinite; }
+  .ma-christ.near { box-shadow: 0 0 70px 18px rgba(232,193,90,.65); }
+  .ma-christ::before, .ma-christ::after { content: ''; position: absolute; background: rgba(14,16,22,.55); border-radius: 2px; }
+  .ma-christ::before { left: 50%; top: 20%; bottom: 20%; width: 5px; margin-left: -2.5px; }
+  .ma-christ::after { top: 38%; left: 30%; right: 30%; height: 5px; margin-top: -2.5px; }
+  @keyframes ma-halo { 0%,100% { box-shadow: 0 0 36px 4px rgba(232,193,90,.3); } 50% { box-shadow: 0 0 56px 12px rgba(232,193,90,.5); } }
+  .ma-heart { position: absolute; left: 0; top: 0; width: 64px; height: 64px; margin: -32px 0 0 -32px; padding: 0; border: none; background: none; cursor: grab; touch-action: none; filter: drop-shadow(0 0 10px rgba(232,120,138,.55)); }
+  .ma-heart.glide { transition: left .7s cubic-bezier(.3,.9,.3,1), top .7s cubic-bezier(.3,.9,.3,1), transform .7s ease; }
+  .ma-heart.dragging { cursor: grabbing; transform: scale(1.12); } .ma-heart.placed { transform: scale(.5); filter: drop-shadow(0 0 8px rgba(255,255,255,.6)); }
+  .ma-heart svg { width: 100%; height: 100%; display: block; } .ma-heart:focus-visible { outline: 2px solid var(--ahead); border-radius: 50%; }
+  .ma-hint { position: absolute; left: 0; right: 0; bottom: 0; font-size: .74rem; color: var(--text-faint); letter-spacing: .04em; }
+  .ma-rest { display: none; flex-direction: column; align-items: center; } .ma-rest.show { display: flex; animation: ma-fade 1.2s ease both; }
+  @keyframes ma-fade { from { opacity: 0; } to { opacity: 1; } }
+  .ma-rest .breath-bloom { width: 150px; height: 150px; } .ma-rest .petal { width: 52px; height: 52px; margin: -26px 0 0 -26px; }
+  .ma-rest .breath-wrap { height: 150px; margin: 10px 0 14px; }
+  .ma-verse { font-style: italic; font-size: .9rem; line-height: 1.6; max-width: 300px; margin-bottom: 14px; }
+  .ma-actions { display: flex; gap: 12px; justify-content: center; margin-top: 10px; min-height: 40px; }
+  .ma-actions button { background: none; border: 1px solid var(--border); color: var(--text-dim); border-radius: 999px; padding: 8px 20px; font: inherit; cursor: pointer; }
+  .ma-actions button.go { border-color: #e8c15a; color: #f6dd8f; }
+  .ma-actions button[hidden] { display: none; }
+
   /* ===== Settings ===== */
   .settings-section { margin-bottom: 22px; }
   .settings-section h3 { font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-dim); margin: 0 0 10px; }
@@ -715,6 +756,7 @@
   <div class="topbar">
     <div class="brand">AbidingSteps</div>
     <div class="topbar-actions">
+      <button class="music-btn heart-btn" id="heartBtn" title="Place your heart with Jesus" aria-label="Place your heart with Jesus"><svg width="16" height="16" viewBox="0 0 64 60" aria-hidden="true"><path d="M32 56C10 40 6 28 6 20a13 13 0 0 1 26-3 13 13 0 0 1 26 3c0 8-4 20-26 36z" fill="currentColor"/></svg><i class="hb-spark" style="--x:-9px;--y:-8px;--d:0s"></i><i class="hb-spark" style="--x:10px;--y:-5px;--d:.9s"></i><i class="hb-spark" style="--x:2px;--y:-12px;--d:1.7s"></i></button>
       <button class="music-btn" id="downloadTallyBtn" title="Download today's focus summary" aria-label="Download today's focus summary"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v11"/><path d="M7 10l5 5 5-5"/><path d="M5 20h14"/></svg></button>
       <button class="music-btn" id="musicBtn" title="Play music" aria-label="Play music"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18V5l11-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="17" cy="16" r="3"/></svg></button>
       <button class="abide-btn" id="abideBtn"><svg width="24" height="24" style="margin:-3px 0" aria-hidden="true"><use href="#vine"/></svg>Abide</button>
@@ -888,6 +930,9 @@
         <h3>Celebrations</h3>
         <div class="settings-row"><span>Micro celebrations (sparks and a glow when you start, finish, or abide — plus a little welcome when you open the app)</span><input type="checkbox" id="celebrateToggle"></div>
         <div class="settings-row"><span>Glow on your next step</span><input type="checkbox" id="glowToggle"></div>
+        <div class="settings-row"><span>Offer a quiet Abide moment after time away</span>
+          <select id="microAbideSelect"><option value="0">Never</option><option value="1">After 1 day</option><option value="2">After 2 days</option><option value="3">After 3 days</option><option value="7">After a week</option></select></div>
+        <button class="btn" id="microAbidePreview" style="width:100%; margin-top:4px;">Preview it now</button>
         <div class="settings-row" style="display:block;"><span id="tallyLine" style="color:var(--text-dim);font-size:0.82rem;"></span></div>
       </div>
 
@@ -1195,6 +1240,7 @@
     musicVolume: 40, // percent of device volume — background music should sit under your thinking, not over it
     icsUrls: '', icsProxy: '',
     syncIdleMin: 2, // cloud push waits this many idle minutes after your last change (0 = only the Sync now button)
+    microAbideDays: 2, // after this many days away, offer a quiet Abide moment on open (0 = never)
     glow: true, // a magical glow on the next step (only while celebrations are on)
     celebrate: false, // opt-in layer of tiny moments; never changes behavior
   };
@@ -1368,6 +1414,93 @@
     return { play };
   })();
 
+  // ===== a quiet Abide moment: the same first move as Treasuring — drag your heart to
+  // Jesus ("Jesus, I place my heart with you."), then a few still breaths with a verse.
+  // Offered once on open (or on returning to the app) after time away; always skippable.
+  // No score, nothing counted beyond the usual abide tally. =====
+  const microAbide = (() => {
+    let root = null, open = false;
+    const HEART = '<svg viewBox="0 0 64 60" aria-hidden="true"><path d="M32 56C10 40 6 28 6 20a13 13 0 0 1 26-3 13 13 0 0 1 26 3c0 8-4 20-26 36z" fill="#e8788a"/></svg>';
+    function build() {
+      root = document.createElement('div'); root.id = 'microAbide'; root.setAttribute('role', 'dialog'); root.setAttribute('aria-modal', 'true'); root.setAttribute('aria-label', 'A quiet moment with Jesus');
+      root.innerHTML = '<div class="ma-card"><div class="ma-line" id="maLine"></div>'
+        + '<div class="ma-stage" id="maStage"><div class="ma-christ" id="maChrist"></div>'
+        + '<button type="button" class="ma-heart" id="maHeart" aria-label="Your heart. Drag it to Jesus, or press Enter to place it with Him.">' + HEART + '</button>'
+        + '<div class="ma-hint" id="maHint">Drag your heart to Him</div></div>'
+        + '<div class="ma-rest" id="maRest"><div class="breath-wrap"><div class="breath-bloom">' + [0, 1, 2, 3, 4, 5, 6, 7].map(i => '<div class="petal" style="--i:' + i + '"></div>').join('') + '</div></div>'
+        + '<div class="ma-verse">Abide in me, and I in you.<br><small style="color:var(--text-faint)">John 15:4</small></div></div>'
+        + '<div class="ma-actions"><button type="button" id="maSkip">Not now</button><button type="button" class="go" id="maAmen" hidden>Amen</button></div></div>';
+      document.body.appendChild(root);
+      root.querySelector('#maSkip').addEventListener('click', close);
+      root.querySelector('#maAmen').addEventListener('click', () => { close(true); });
+      document.addEventListener('keydown', (e) => { if (open && e.key === 'Escape') { e.stopPropagation(); close(); } }, true);
+      wireHeart();
+    }
+    let hp = { x: 0, y: 0 }, home = { x: 140, y: 200 }, christ = { x: 140, y: 62 }, placed = false, drag = null;
+    const put = (el, x, y) => { el.style.left = x + 'px'; el.style.top = y + 'px'; };
+    const near = (p) => Math.hypot(p.x - christ.x, p.y - christ.y) < 66;
+    function wireHeart() {
+      const heart = root.querySelector('#maHeart'), stage = root.querySelector('#maStage'), christEl = root.querySelector('#maChrist');
+      heart.addEventListener('pointerdown', (e) => {
+        if (placed) return; e.preventDefault(); try { heart.setPointerCapture(e.pointerId); } catch (x) {}
+        const r = stage.getBoundingClientRect(); drag = { r, ox: e.clientX - r.left - hp.x, oy: e.clientY - r.top - hp.y };
+        heart.classList.remove('glide'); heart.classList.add('dragging');
+      });
+      heart.addEventListener('pointermove', (e) => {
+        if (!drag) return;
+        hp = { x: Math.max(20, Math.min(260, e.clientX - drag.r.left - drag.ox)), y: Math.max(20, Math.min(250, e.clientY - drag.r.top - drag.oy)) };
+        put(heart, hp.x, hp.y); christEl.classList.toggle('near', near(hp));
+      });
+      const end = () => {
+        if (!drag) return; drag = null; heart.classList.remove('dragging'); heart.classList.add('glide'); christEl.classList.remove('near');
+        if (near(hp)) place(); else { hp = { ...home }; put(heart, hp.x, hp.y); }
+      };
+      heart.addEventListener('pointerup', end); heart.addEventListener('pointercancel', end);
+      heart.addEventListener('keydown', (e) => { if ((e.key === 'Enter' || e.key === ' ') && !placed) { e.preventDefault(); e.stopPropagation(); heart.classList.add('glide'); place(); } });
+    }
+    function say(text) { const l = root.querySelector('#maLine'); l.classList.add('fade'); setTimeout(() => { l.textContent = text; l.classList.remove('fade'); }, 450); }
+    function place() {
+      placed = true; const heart = root.querySelector('#maHeart');
+      hp = { ...christ }; put(heart, hp.x, hp.y); heart.classList.add('placed');
+      root.querySelector('#maHint').textContent = ''; root.querySelector('#maSkip').hidden = true;
+      say('Jesus, I place my heart with you.');
+      if (settings.celebrate) magic.play('abide', innerWidth / 2, innerHeight * 0.35);
+      setTimeout(() => { root.querySelector('#maStage').classList.add('gone'); root.querySelector('#maRest').classList.add('show'); say('Rest here a moment. Nothing to catch up on.'); }, 2600);
+      setTimeout(() => { root.querySelector('#maAmen').hidden = false; root.querySelector('#maAmen').focus(); }, 7000);
+    }
+    function show(away) {
+      if (open) return; if (!root) build();
+      placed = false; drag = null; hp = { ...home };
+      const heart = root.querySelector('#maHeart'); heart.classList.remove('placed', 'glide', 'dragging'); put(heart, hp.x, hp.y);
+      root.querySelector('#maStage').classList.remove('gone'); root.querySelector('#maRest').classList.remove('show');
+      root.querySelector('#maHint').textContent = 'Drag your heart to Him'; root.querySelector('#maSkip').hidden = false; root.querySelector('#maAmen').hidden = true;
+      root.querySelector('#maLine').textContent = away === true ? 'It’s been a little while. Come rest your heart with Jesus for a moment.' : 'Come. Rest your heart with Jesus for a moment.';
+      put(root.querySelector('#maChrist'), christ.x, christ.y);
+      root.classList.add('show'); open = true; requestAnimationFrame(() => requestAnimationFrame(() => root.classList.add('in')));
+      setTimeout(() => { try { heart.focus({ preventScroll: true }); } catch (e) {} }, 700);
+    }
+    function close(amen) {
+      if (!open) return; open = false; root.classList.remove('in');
+      if (amen === true) { store.set('__local_lastAbideAt', Date.now()); celebrate('abide', null, { x: innerWidth / 2, y: innerHeight * 0.5 }); }
+      setTimeout(() => root.classList.remove('show'), 650);
+    }
+    return { show, close, isOpen: () => open };
+  })();
+  // "away" = the last time this device was in the app. Checked on open and on coming back to
+  // the app; at most once a day.
+  function maybeInviteAbide() {
+    const days = Number(settings.microAbideDays) || 0, now = Date.now(), last = Number(store.get('__local_lastSeen', 0)) || 0;
+    store.set('__local_lastSeen', now);
+    if (!days || !last || now - last < days * 864e5 || workSeg || microAbide.isOpen()) return false;
+    if (store.get('__local_microDay', '') === todayKeyLocal()) return false;
+    store.set('__local_microDay', todayKeyLocal()); microAbide.show(true); return true;
+  }
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'hidden') store.set('__local_lastSeen', Date.now());
+    else maybeInviteAbide();
+  });
+  setInterval(() => { if (document.visibilityState === 'visible' && !microAbide.isOpen()) store.set('__local_lastSeen', Date.now()); }, 60000);
+
   // ===== glow on the next step: found by looking, not by being told — so it stays right
   // whatever changed it (a tap, a sync, a finished timer) =====
   let glowEl = null;
@@ -1400,6 +1533,9 @@
     if (settings.celebrate) celebrate('start');
     updateMagic();
   });
+  document.getElementById('microAbideSelect').addEventListener('change', (e) => { settings.microAbideDays = parseInt(e.target.value, 10) || 0; saveSettings(); });
+  document.getElementById('microAbidePreview').addEventListener('click', () => microAbide.show(true));
+  document.getElementById('heartBtn').addEventListener('click', () => microAbide.show());
   document.getElementById('glowToggle').addEventListener('change', (e) => { settings.glow = e.target.checked; saveSettings(); updateMagic(); });
 
   // ===== tab / mode switching =====
@@ -5174,7 +5310,7 @@ For God alone my soul waits in silence. — Psalm 62:1`;
     autoOverrunEnabled = !!settings.autoOverrun; setChk('autoOverrunToggle', autoOverrunEnabled);
     bumpMinutes = settings.bumpMinutes; setVal('bumpLengthInput', bumpMinutes); updateContinueLabel();
     setVal('weekResetSelect', settings.weekReset); setVal('syncIdleSelect', String(settings.syncIdleMin));
-    setChk('celebrateToggle', !!settings.celebrate); setChk('glowToggle', settings.glow !== false); renderTallies(); updateMagic();
+    setChk('celebrateToggle', !!settings.celebrate); setChk('glowToggle', settings.glow !== false); setVal('microAbideSelect', String(settings.microAbideDays)); renderTallies(); updateMagic();
     voiceNotesEnabled = settings.voiceNotes !== false; setChk('voiceNotesToggle', voiceNotesEnabled); updateMicBtnVisibility();
     setVal('icsUrls', settings.icsUrls); setVal('icsProxy', settings.icsProxy);
     ['step', 'ahead', 'abide'].forEach(m => {
@@ -5488,6 +5624,7 @@ For God alone my soul waits in silence. — Psalm 62:1`;
   });
   // a little welcome when the app opens (celebrations on, nothing already running)
   setTimeout(() => {
+    if (maybeInviteAbide()) return; // after time away, the quiet moment takes the place of the welcome
     if (settings.celebrate && !workSeg && document.getElementById('view-step').classList.contains('active')) {
       celebrate('welcome', null, { x: innerWidth / 2, y: innerHeight * 0.42 }); updateMagic();
     }
