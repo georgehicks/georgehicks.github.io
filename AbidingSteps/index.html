@@ -549,24 +549,26 @@
   .cross-v { top: 0; bottom: 0; left: 50%; width: 3px; margin-left: -1.5px; }
   .cross-h { left: 0; right: 0; top: 9px; height: 3px; margin-top: -1.5px; }
   /* the cross carries a small red heart at its center — He holds the heart; the pair fades in with the
-     full bloom, and each breath's peak sends out a ring of light and a few sparks (same 8s cycle) */
+     full bloom. Each breath's peak then lets one soft halo of light drift out past the petals and six
+     small lights float off. Everything here is a gradient that only moves (transform) and fades
+     (opacity) — no borders, filters or shadows being animated — so it stays smooth. */
+  .breath-cross::before { content: ''; position: absolute; left: 50%; top: 9px; width: 38px; height: 38px; margin: -19px 0 0 -19px; border-radius: 50%; pointer-events: none;
+    background: radial-gradient(circle, rgba(229,56,59,.5) 0, rgba(229,56,59,.18) 45%, rgba(229,56,59,0) 70%); will-change: transform; animation: bp-beat 8s ease-in-out infinite; }
   .breath-cross::after { content: ''; position: absolute; left: 50%; top: 9px; width: 15px; height: 14px; margin: -6.5px 0 0 -7.5px;
     background: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 60'><path d='M32 56C10 40 6 28 6 20a13 13 0 0 1 26-3 13 13 0 0 1 26 3c0 8-4 20-26 36z' fill='%23e5383b'/></svg>") center / contain no-repeat;
-    filter: drop-shadow(0 0 4px rgba(229,56,59,.9)); }
-  .bp-ring { position: absolute; top: 100px; left: 50%; width: 48px; height: 48px; margin: -24px 0 0 -24px; border-radius: 50%; pointer-events: none;
-    border: 3px solid #ffe08a; box-shadow: 0 0 22px 4px rgba(255,216,107,.8), inset 0 0 18px rgba(255,236,170,.6); opacity: 0; animation: bp-ring 8s ease-out infinite; z-index: 3; }
-  /* starts the size of the bloom's open center, then travels out past the petals so it shows against the dark */
-  @keyframes bp-ring { 0%, 46% { opacity: 0; transform: scale(.7); } 50% { opacity: 1; transform: scale(1); } 70% { opacity: .75; transform: scale(4.2); } 92%, 100% { opacity: 0; transform: scale(7); } }
-  .breath-cross::after { animation: bp-beat 8s ease-in-out infinite; }
-  @keyframes bp-beat { 0%, 44% { transform: scale(1); } 50% { transform: scale(1.55); } 55% { transform: scale(1.2); } 60% { transform: scale(1.4); } 72%, 100% { transform: scale(1); } }
-  .bp-spark { position: absolute; z-index: 3; top: 100px; left: 50%; width: 16px; height: 16px; margin: -8px; pointer-events: none; opacity: 0; border-radius: 50%;
-    background: radial-gradient(circle, rgba(255,251,230,1) 0 14%, rgba(255,216,107,.7) 30%, rgba(255,216,107,0) 66%);
-    transform: rotate(var(--a)) translateY(-20px); animation: bp-spark 8s ease-out infinite; }
-  .bp-spark::before, .bp-spark::after { content: ''; position: absolute; left: 50%; top: 50%; width: 24px; height: 1.5px; margin: -.75px 0 0 -12px;
-    background: linear-gradient(90deg, transparent, #fff6d6, transparent); }
-  .bp-spark::after { transform: rotate(90deg); }
-  @keyframes bp-spark { 0%, 47% { opacity: 0; transform: rotate(var(--a)) translateY(-18px) scale(.3); } 54% { opacity: 1; transform: rotate(var(--a)) translateY(-46px) scale(1.1); }
-    82%, 100% { opacity: 0; transform: rotate(var(--a)) translateY(-135px) scale(.3); } }
+    will-change: transform; animation: bp-beat 8s ease-in-out infinite; }
+  @keyframes bp-beat { 0%, 42% { transform: scale(1); } 52% { transform: scale(1.38); } 68% { transform: scale(1.08); } 78%, 100% { transform: scale(1); } }
+  .bp-ring { position: absolute; top: 100px; left: 50%; width: 120px; height: 120px; margin: -60px 0 0 -60px; border-radius: 50%; pointer-events: none; z-index: 3; opacity: 0;
+    background: radial-gradient(circle, rgba(255,236,170,0) 0, rgba(255,236,170,0) 16%, rgba(255,226,140,.55) 30%, rgba(255,200,90,.2) 52%, rgba(255,200,90,0) 70%);
+    will-change: transform, opacity; animation: bp-ring 8s cubic-bezier(.25,.55,.3,1) infinite; }
+  @keyframes bp-ring { 0%, 45% { opacity: 0; transform: scale(.4); } 52% { opacity: .95; } 80% { opacity: .4; transform: scale(2.2); } 95%, 100% { opacity: 0; transform: scale(3.1); } }
+  .bp-spark { position: absolute; z-index: 3; top: 100px; left: 50%; width: 12px; height: 12px; margin: -6px; pointer-events: none; opacity: 0; border-radius: 50%;
+    background: radial-gradient(circle, rgba(255,252,236,1) 0, rgba(255,226,140,.8) 30%, rgba(255,216,107,0) 68%);
+    will-change: transform, opacity; animation: bp-spark 8s cubic-bezier(.25,.55,.3,1) infinite; }
+  .bp-spark:nth-of-type(1) { --dx: 111px; --dy: 40px; }  .bp-spark:nth-of-type(2) { --dx: 20px; --dy: 116px; }  .bp-spark:nth-of-type(3) { --dx: -90px; --dy: 76px; }
+  .bp-spark:nth-of-type(4) { --dx: -111px; --dy: -40px; } .bp-spark:nth-of-type(5) { --dx: -20px; --dy: -116px; } .bp-spark:nth-of-type(6) { --dx: 90px; --dy: -76px; }
+  @keyframes bp-spark { 0%, 47% { opacity: 0; transform: translate3d(0, 0, 0) scale(.4); } 54% { opacity: .95; }
+    82% { opacity: .45; transform: translate3d(calc(var(--dx) * .8), calc(var(--dy) * .8), 0) scale(.9); } 95%, 100% { opacity: 0; transform: translate3d(var(--dx), var(--dy), 0) scale(.35); } }
   .ma-rest .breath-cross, .ma-rest .bp-ring, .ma-rest .bp-spark { top: 75px; }
   .ma-rest .breath-cross { margin-top: -16px; }
   @keyframes cross-reveal {
@@ -1088,7 +1090,7 @@
             <div class="petal" style="--i:7"></div>
           </div>
           <div class="breath-cross"><span class="cross-v"></span><span class="cross-h"></span></div>
-          <div class="bp-ring"></div><i class="bp-spark" style="--a:20deg"></i><i class="bp-spark" style="--a:110deg"></i><i class="bp-spark" style="--a:200deg"></i><i class="bp-spark" style="--a:290deg"></i>
+          <div class="bp-ring"></div><i class="bp-spark"></i><i class="bp-spark"></i><i class="bp-spark"></i><i class="bp-spark"></i><i class="bp-spark"></i><i class="bp-spark"></i>
           <div class="breath-caption" id="breathCaption">&nbsp;</div>
           <div class="breath-progress-track" id="breathProgressTrack">
             <div class="breath-progress-fill" id="breathProgressFill"></div>
@@ -1474,7 +1476,7 @@
   // Jesus ("Jesus, I place my heart with you."), then a few still breaths with a verse.
   // Offered once on open (or on returning to the app) after time away; always skippable.
   // No score, nothing counted beyond the usual abide tally. =====
-  const BP_HTML = '<div class="bp-ring"></div>' + [20, 110, 200, 290].map(a => '<i class="bp-spark" style="--a:' + a + 'deg"></i>').join('');
+  const BP_HTML = '<div class="bp-ring"></div>' + '<i class="bp-spark"></i>'.repeat(6);
   const microAbide = (() => {
     let root = null, open = false;
     const HEART = '<svg viewBox="0 0 64 60" aria-hidden="true"><path d="M32 56C10 40 6 28 6 20a13 13 0 0 1 26-3 13 13 0 0 1 26 3c0 8-4 20-26 36z" fill="#e5383b"/></svg>';
