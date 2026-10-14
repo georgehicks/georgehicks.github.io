@@ -332,7 +332,7 @@
   .tree-ms.done .tree-ms-name { text-decoration: line-through; color: var(--text-faint); }
   .tree-ms-done { background: none; border: none; color: var(--accent); font-size: 0.75rem; padding: 0; width: 14px; cursor: pointer; }
   .tree-add-ms { align-self: flex-start; padding: 3px 8px; font-size: 0.7rem; }
-  /* quick snooze: off Today now, auto-starred back when the date arrives (nextActionDate) */
+  /* quick snooze: off Today now, auto-starred back when the date arrives (planned) */
   .snooze-row { display: flex; flex-wrap: nowrap; align-items: center; gap: 5px; margin-top: 8px; overflow-x: auto; scrollbar-width: none; }
   .snooze-row::-webkit-scrollbar { display: none; }
   .snooze-row .chip { flex-shrink: 0; }
@@ -342,7 +342,8 @@
   .snooze-status { display: flex; align-items: center; gap: 6px; font-size: 0.68rem; color: var(--text-faint); margin-top: 6px; }
   .snooze-clear { background: none; border: none; color: var(--text-faint); font-size: 0.68rem; padding: 0 2px; cursor: pointer; text-decoration: underline; }
   .today-star { background: none; border: none; cursor: pointer; font-size: 1rem; color: var(--text-faint); padding: 0; line-height: 1; }
-  .today-star.active { color: var(--accent); }
+  .today-star.active { color: #ffd86b; }
+  .mt-box .star { color: #ffd86b; margin-right: 4px; font-size: .8rem; }
   .today-star svg { display: block; fill: none; }
   .today-star.active svg { fill: currentColor; }
   .maybe-toggle {
@@ -915,6 +916,7 @@
       </div>
       <div class="filter-row" id="roleFilterRow">
         <span class="chip" data-role="Inbox">Inbox</span>
+        <span class="chip" data-role="Starred">★ Starred</span>
         <span class="chip" data-role="Today">Today</span>
         <span class="chip" data-role="Week">Week</span>
         <span class="chip" data-role="Later">Later</span>
@@ -1142,7 +1144,7 @@
       <div class="modal-toggle-row">
         <button type="button" class="modal-toggle-btn" id="outcomeModalMaybe" title="Trying it on, not committed">Maybe</button>
       </div>
-      <div class="modal-field-label">Later <span class="optional">— optional, back on Today that morning</span></div>
+      <div class="modal-field-label">Planned for <span class="optional">— optional; today or earlier puts it on Today, a later day brings it back then</span></div>
       <input type="date" id="outcomeModalNextDate" class="modal-input">
       <div class="modal-field-label">Notes <span class="optional">— optional, pulled up when you work this</span></div>
       <textarea id="outcomeModalNotes" class="modal-input" style="min-height:56px; resize:vertical;" placeholder="Details to remember…"></textarea>
@@ -1217,7 +1219,7 @@
     <div><kbd>Tab</kbd> new child: outcome under a bucket, a line under an outcome, milestone or another line</div>
     <div><kbd>m</kbd> new milestone on an outcome · <kbd>e</kbd> / <kbd>F2</kbd> rename · <kbd>Esc</kbd> stop typing</div>
     <h4>Rearrange</h4>
-    <div><kbd>1</kbd> Inbox · <kbd>2</kbd> Today · <kbd>3</kbd> Week · <kbd>4</kbd> Later · <kbd>5</kbd> Open · <kbd>6</kbd> Maybe · <kbd>7</kbd> Done — moves the selected outcome</div>
+    <div><kbd>1</kbd> Inbox · <kbd>2</kbd> Today (planned today) · <kbd>3</kbd> Week · <kbd>4</kbd> Later · <kbd>5</kbd> Open · <kbd>6</kbd> Maybe · <kbd>7</kbd> Done — moves the selected outcome</div>
     <div><kbd>Ctrl</kbd>/<kbd>⌘</kbd><kbd>↑</kbd><kbd>↓</kbd> or <kbd>⌥↑</kbd><kbd>⌥↓</kbd> move an outcome within its bucket, and at the edge hop into the next bucket · <kbd>⌥←</kbd><kbd>⌥→</kbd> jump a whole bucket · on a line: outdent / indent (a child of the line above)</div>
     <div><kbd>⌥↑</kbd><kbd>⌥↓</kbd> reorder among siblings</div>
     <div><b>Transform:</b> <kbd>Ctrl</kbd>/<kbd>⌘</kbd><kbd>→</kbd> (or <kbd>&gt;</kbd>) demotes the node one level — outcome → milestone → step → substep — and <kbd>Ctrl</kbd>/<kbd>⌘</kbd><kbd>←</kbd> (or <kbd>&lt;</kbd>) promotes it back. Its children come along. <b>Drag</b> any node onto another to move it there.</div>
@@ -1231,7 +1233,7 @@
     <h4>Details panel</h4>
     <div><kbd>i</kbd> jump into the side panel (kind, role, bucket, date, maybe, done, budget) · <kbd>Tab</kbd> between fields · <kbd>Enter</kbd> or <kbd>Esc</kbd> back to the map · <kbd>I</kbd> hide it</div>
     <h4>Other</h4>
-    <div><kbd>d</kbd> flips a step between - and + · <kbd>y</kbd> cycle Inbox → Destination → Directive</div>
+    <div><kbd>d</kbd> flips a step between - and + · <kbd>y</kbd> cycle Inbox → Destination → Directive · <kbd>s</kbd> star it as important (a separate thing from the day you plan it for: buckets and dates say <i>when</i>, ★ says <i>how much it matters</i>)</div>
     <div><kbd>⌫</kbd> delete · <kbd>u</kbd> or <kbd>⌘Z</kbd> undo (no confirm boxes here — undo instead)</div>
   </div>
   <div id="mapWork" role="dialog" aria-label="Work on this"></div>
@@ -3474,8 +3476,7 @@ For God alone my soul waits in silence. — Psalm 62:1`;
   // nothing was saved anywhere, so a restart reset both.) =====
   function newId() { return 'o' + Date.now().toString(36) + Math.random().toString(36).slice(2, 7); }
   function makeOutcome(t, type, tag, extra) {
-    const o = Object.assign({ id: newId(), t, type: type || null, tag: tag || null, budget: null, today: false, completed: false, maybe: false, nextActionDate: null, subs: [], milestones: [], lastWorked: null }, extra);
-    if (o.today) o.starredOn = todayKeyLocal();
+    const o = Object.assign({ id: newId(), t, type: type || null, tag: tag || null, budget: null, starred: false, planned: null, completed: false, maybe: false, subs: [], milestones: [], lastWorked: null }, extra);
     return o;
   }
   // after the outcome's tree changed under a live selection: drop a removed milestone
@@ -3491,27 +3492,27 @@ For God alone my soul waits in silence. — Psalm 62:1`;
     updateSelectionLabels();
   }
   function makeMilestone(t) {
-    return { id: 'm' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6), t, completed: false, maybe: false, nextActionDate: null, lastWorked: null, subs: [] };
+    return { id: 'm' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6), t, completed: false, maybe: false, planned: null, lastWorked: null, subs: [] };
   }
-  // every path onto Today goes through here — starredOn is what lets the morning look
-  // tell "still here from an earlier day" apart from "put here today"
-  function starToday(o) { o.today = true; o.starredOn = todayKeyLocal(); }
-  // a real state change, not a computed check — once a scheduled next-action date
-  // arrives, the outcome gets actually starred (sticky, same as starring it by hand),
-  // so the star icon itself lights up and it behaves identically from then on
+  // Two separate things (they used to be one "star on Today"):
+  //   starred  = important — a flag, says nothing about when
+  //   planned  = the day you intend to work on it. Today = planned today (or a past day you
+  //              haven't finished — carried over, which the morning review asks about);
+  //              a future day = Week / Later; none = unplanned (Open / Inbox)
+  const isToday = (o) => !!o.planned && o.planned <= todayKeyLocal();
+  function planToday(o) { o.planned = todayKeyLocal(); }
+  // a dated step coming due pulls its outcome onto Today that day — once per date, so moving
+  // it off again sticks. (Name kept; it only ever plans, never stars.) Notes aren't loaded yet
+  // on the very first startup call, hence the guard.
   function autoStarDueOutcomes() {
     const tk = todayKeyLocal();
     let changed = false;
     outcomes.forEach(o => {
-      if (!o.today && o.nextActionDate && o.nextActionDate <= tk) { starToday(o); changed = true; }
-      // a dated step comes due → the outcome returns to Today that day (once per date, so
-      // un-starring it sticks). Notes aren't loaded yet on the very first startup call.
-      else if (!o.today && !o.completed && !o.maybe) {
-        try {
-          const e = effInfo(o);
-          if (e.step && e.date && e.date <= tk && o.autoStarKey !== e.date) { starToday(o); o.autoStarKey = e.date; changed = true; }
-        } catch (err) {}
-      }
+      if (o.completed || o.maybe || isToday(o)) return;
+      try {
+        const e = effInfo(o);
+        if (e.step && e.date && e.date <= tk && o.autoPlanKey !== e.date) { planToday(o); o.autoPlanKey = e.date; changed = true; }
+      } catch (err) {}
     });
     if (changed) saveOutcomes();
     return changed;
@@ -3520,8 +3521,8 @@ For God alone my soul waits in silence. — Psalm 62:1`;
   function seedOutcomes() {
     const yesterday = Date.now() - 864e5;
     return [
-      makeOutcome('AbidingSteps spec', 'Destination', 'Reach', { today: true, subs: ['Data model', 'Screen spec', 'Music settings'] }),
-      makeOutcome('Exercise', 'Directive', 'Reality', { today: true, budget: makeBudget(180, 'week') }),
+      makeOutcome('AbidingSteps spec', 'Destination', 'Reach', { planned: todayKeyLocal(), subs: ['Data model', 'Screen spec', 'Music settings'] }),
+      makeOutcome('Exercise', 'Directive', 'Reality', { planned: todayKeyLocal(), budget: makeBudget(180, 'week') }),
       makeOutcome('Reply to emails', 'Destination', 'Reality', { lastWorked: yesterday }),
       makeOutcome('Draft sermon notes', 'Destination', 'Reach', { lastWorked: yesterday }),
       makeOutcome('File taxes', 'Destination', 'Reality', { budget: makeBudget(120, 'total'), subs: ['Gather receipts', 'Fill forms', 'Submit'] }),
@@ -3552,9 +3553,18 @@ For God alone my soul waits in silence. — Psalm 62:1`;
       if (!Array.isArray(o.subs)) { o.subs = []; changed = true; }
       if (!Array.isArray(o.milestones)) { o.milestones = []; changed = true; }
       o.milestones.forEach(m => { if (!Array.isArray(m.subs)) { m.subs = []; changed = true; } });
-      // stars from before starredOn existed count as today's — so the first morning
-      // look comes tomorrow instead of re-asking about everything on the update day
-      if (o.today && !o.starredOn) { o.starredOn = todayKeyLocal(); changed = true; }
+      // "on Today" + "Later date" became one planned date, and the star became its own
+      // importance flag (everything starts unstarred). A row from an older build on another
+      // device is converted the same way whenever it shows up.
+      const tk = todayKeyLocal(), legacy = ('today' in o) || ('nextActionDate' in o) || ('starredOn' in o) || ('autoStarKey' in o);
+      if (!('planned' in o)) { o.planned = o.today ? (o.starredOn || tk) : (o.nextActionDate || null); changed = true; }
+      else if (legacy) {
+        if (o.today && (!o.planned || o.planned > tk)) o.planned = tk;
+        else if (!o.planned && o.nextActionDate) o.planned = o.nextActionDate;
+        changed = true;
+      }
+      if (legacy) { delete o.today; delete o.nextActionDate; delete o.starredOn; delete o.autoStarKey; }
+      if (typeof o.starred !== 'boolean') { o.starred = false; changed = true; }
     });
     return changed;
   }
@@ -3579,7 +3589,7 @@ For God alone my soul waits in silence. — Psalm 62:1`;
     setModalToggle('type', opts.type || null); // unset = Inbox — never auto-filed
     setModalToggle('tag', opts.tag || null);
     document.getElementById('outcomeModalMaybe').classList.toggle('selected', !!opts.maybe);
-    document.getElementById('outcomeModalNextDate').value = opts.nextActionDate || '';
+    document.getElementById('outcomeModalNextDate').value = opts.planned || '';
     document.getElementById('outcomeModalNotes').value = opts.notes || '';
     document.getElementById('outcomeModalBudget').value = opts.budget ? opts.budget.target : '';
     setModalToggle('period', opts.budget ? opts.budget.period : 'week');
@@ -3603,14 +3613,14 @@ For God alone my soul waits in silence. — Psalm 62:1`;
     const type = (document.querySelector('.modal-toggle-btn[data-type].selected') || {}).dataset?.type || null;
     const tag = (document.querySelector('.modal-toggle-btn[data-tag].selected') || {}).dataset?.tag || null;
     const maybe = document.getElementById('outcomeModalMaybe').classList.contains('selected');
-    const nextActionDate = document.getElementById('outcomeModalNextDate').value || null;
+    const planned = document.getElementById('outcomeModalNextDate').value || null;
     const target = parseInt(document.getElementById('outcomeModalBudget').value, 10);
     const period = (document.querySelector('.modal-toggle-btn[data-period].selected') || {}).dataset?.period || 'week';
     const budget = target > 0 ? { target, period } : null;
     const notes = document.getElementById('outcomeModalNotes').value;
     const cb = outcomeModalOnSave;
     closeOutcomeModal();
-    if (cb) cb(name, type, tag, budget, notes, maybe, nextActionDate);
+    if (cb) cb(name, type, tag, budget, notes, maybe, planned);
   });
   outcomeModalOverlay.addEventListener('click', (e) => { if (e.target === outcomeModalOverlay) closeOutcomeModal(); });
 
@@ -3671,7 +3681,7 @@ For God alone my soul waits in silence. — Psalm 62:1`;
     const chip = document.createElement('div');
     chip.className = 'outcome-chip ' + String(o.type || 'inbox').toLowerCase() + (o.id === selectedOutcomeId ? ' selected' : '');
     chip.innerHTML = '<span class="type-dot"></span>';
-    chip.appendChild(document.createTextNode(o.t));
+    chip.appendChild(document.createTextNode((o.starred ? '★ ' : '') + o.t));
     if (o.budget) {
       const acc = liveBudgetAcc(o);
       chip.classList.add('has-budget');
@@ -3685,7 +3695,7 @@ For God alone my soul waits in silence. — Psalm 62:1`;
   const RECENT_WINDOW_MS = 7 * 864e5;
   // #6 — passive expectation, not a limit: say what a Today list this size tends to mean
   function todayLoadText() {
-    const n = outcomes.filter(o => o.today && !o.completed).length;
+    const n = outcomes.filter(o => isToday(o) && !o.completed).length;
     if (n >= 7) return n + ' — more than a day usually holds; some will slide, and that\'s okay';
     if (n >= 4) return n + ' — looks like a full day';
     return '';
@@ -3695,7 +3705,7 @@ For God alone my soul waits in silence. — Psalm 62:1`;
   const isChunkRunning = () => document.getElementById('actionRunning').style.display !== 'none';
   function leftoverTodayOutcomes() {
     const tk = todayKeyLocal();
-    return outcomes.filter(o => o.today && !o.completed && (o.starredOn || '') < tk);
+    return outcomes.filter(o => isToday(o) && !o.completed && o.planned < tk);
   }
   function renderMorningReview() {
     const box = document.getElementById('morningReview');
@@ -3720,14 +3730,14 @@ For God alone my soul waits in silence. — Psalm 62:1`;
     const o = findOutcome(chip.closest('.mr-row').dataset.id);
     if (!o) return;
     const act = chip.dataset.act;
-    if (act === 'keep') starToday(o);
-    else if (act === 'drop') { o.today = false; o.nextActionDate = null; }
+    if (act === 'keep') planToday(o);
+    else if (act === 'drop') { o.planned = null; }
     else snoozeOutcome(o, act);
     saveOutcomes(); finishMorningReviewIfDone();
     renderOutcomePicker(); renderAheadList();
   });
   document.getElementById('morningReviewKeepAll').addEventListener('click', () => {
-    leftoverTodayOutcomes().forEach(starToday);
+    leftoverTodayOutcomes().forEach(planToday);
     saveOutcomes(); store.set('reviewedDay', todayKeyLocal()); celebrate('review');
     renderOutcomePicker(); renderAheadList();
   });
@@ -3740,7 +3750,7 @@ For God alone my soul waits in silence. — Psalm 62:1`;
     const recentCutoff = Date.now() - RECENT_WINDOW_MS;
     outcomes.forEach(o => {
       if (o.completed) return;
-      if (o.today) groups.outcomesToday.push(o);
+      if (isToday(o)) groups.outcomesToday.push(o);
       // set for Later → not a quick pick right now; still reachable under "more…"
       else if (snoozedUntil(o)) groups.outcomesOther.push(o);
       else if (o.maybe) return; // maybe items stay out of the way (Recent and Other), same as Ahead
@@ -3748,6 +3758,7 @@ For God alone my soul waits in silence. — Psalm 62:1`;
       else groups.outcomesOther.push(o);
     });
     groups.outcomesRecent.sort((a, b) => b.lastWorked - a.lastWorked);
+    groups.outcomesToday.sort((a, b) => (b.starred ? 1 : 0) - (a.starred ? 1 : 0)); // important first
     Object.keys(groups).forEach(id => {
       const el = document.getElementById(id);
       el.innerHTML = '';
@@ -3759,8 +3770,8 @@ For God alone my soul waits in silence. — Psalm 62:1`;
     addChip.addEventListener('click', () => {
       openOutcomeModal({
         title: 'New outcome',
-        onSave: (name, type, tag, budget, notes, maybe, nextActionDate) => {
-          const o = makeOutcome(name, type, tag, { maybe, nextActionDate });
+        onSave: (name, type, tag, budget, notes, maybe, planned) => {
+          const o = makeOutcome(name, type, tag, { maybe, planned });
           applyBudgetSpec(o, budget);
           setOutcomeNotes(o.id, notes);
           outcomes.push(o);
@@ -3801,7 +3812,7 @@ For God alone my soul waits in silence. — Psalm 62:1`;
     selectedSubOutcome = (opts && opts.sub && stepScope(o).subs.includes(opts.sub)) ? opts.sub : null;
     // choosing to work on it now IS choosing it for today — no separate promote step
     if (!(opts && opts.restore)) {
-      starToday(o); o.lastWorked = Date.now();
+      planToday(o); o.lastWorked = Date.now();
       saveOutcomes();
     }
     if (workSeg && workSeg.outcomeId !== id) startWork();
@@ -4029,7 +4040,7 @@ For God alone my soul waits in silence. — Psalm 62:1`;
   //    step means there's something to do now)
   // null = available now. step=true means a step's date is what's driving it.
   function effInfo(o) {
-    const tk = todayKeyLocal(), own = (o.nextActionDate && o.nextActionDate > tk) ? o.nextActionDate : null;
+    const tk = todayKeyLocal(), own = (o.planned && o.planned > tk) ? o.planned : null;
     const steps = scanSteps(o), dated = steps.filter(x => x.date).map(x => x.date).sort(), first = dated[0] || null;
     if (own) return first && first < own ? { date: first, step: true } : { date: own, step: false };
     if (first && !steps.some(x => !x.date)) return { date: first, step: true };
@@ -4052,12 +4063,12 @@ For God alone my soul waits in silence. — Psalm 62:1`;
     if (!names.length && !dueN) { box.innerHTML = '<div class="ctx-empty">No steps carry an @context or date yet. Tag a step in its notes, like <b>- call venue @call &gt;10-20</b> — nested lines inherit their parent’s. A dated step waits out of sight until that day.</div>'; return; }
     if (!(ctxSel === '_due' ? dueN : counts[ctxSel])) ctxSel = dueN ? '_due' : names[0];
     const shown = (ctxSel === '_due' ? items.filter(it => it.due) : items.filter(it => it.ctx.includes(ctxSel)))
-      .sort((a, b) => (a.due ? 0 : 1) - (b.due ? 0 : 1) || (a.date || '').localeCompare(b.date || '') || (b.o.today ? 1 : 0) - (a.o.today ? 1 : 0));
+      .sort((a, b) => (a.due ? 0 : 1) - (b.due ? 0 : 1) || (a.date || '').localeCompare(b.date || '') || (isToday(b.o) ? 1 : 0) - (isToday(a.o) ? 1 : 0));
     const tk = todayKeyLocal();
     box.innerHTML = '<div class="ctx-chips">'
       + (dueN ? '<span class="chip' + (ctxSel === '_due' ? ' selected' : '') + '" data-c="_due">Due<b>' + dueN + '</b></span>' : '')
       + names.map(n => '<span class="chip' + (n === ctxSel ? ' selected' : '') + '" data-c="' + escapeHtml(n) + '">@' + escapeHtml(n) + '<b>' + counts[n] + '</b></span>').join('') + '</div>'
-      + shown.map((it, i) => '<div class="ctx-item" data-i="' + i + '"><span class="where">' + escapeHtml(it.o.t + (it.m ? ' › ' + it.m.t : '')) + (it.o.today ? ' · Today' : '')
+      + shown.map((it, i) => '<div class="ctx-item" data-i="' + i + '"><span class="where">' + escapeHtml(it.o.t + (it.m ? ' › ' + it.m.t : '')) + (isToday(it.o) ? ' · Today' : '')
         + (it.date ? ' · ' + (it.date < tk ? 'overdue ' : it.date === tk ? 'due today ' : '') + escapeHtml(shortDateLabel(it.date)) : '') + '</span>' + ctxHtml(escapeHtml(it.text)) + '</div>').join('');
     box.querySelectorAll('.ctx-chips .chip').forEach(c => c.addEventListener('click', () => { ctxSel = c.dataset.c; store.set('__local_ctxSel', ctxSel); renderCtxPicker(); }));
     box.querySelectorAll('.ctx-item').forEach(el => el.addEventListener('click', () => {
@@ -4071,14 +4082,14 @@ For God alone my soul waits in silence. — Psalm 62:1`;
   function renderDateAgenda(box) {
     const tk = todayKeyLocal(), items = [];
     outcomes.forEach(o => { if (!o.completed && !o.maybe) scanSteps(o).forEach(it => { if (it.date) items.push(it); }); });
-    items.sort((a, b) => a.date.localeCompare(b.date) || (b.o.today ? 1 : 0) - (a.o.today ? 1 : 0));
+    items.sort((a, b) => a.date.localeCompare(b.date) || (isToday(b.o) ? 1 : 0) - (isToday(a.o) ? 1 : 0));
     if (!items.length) { box.innerHTML = '<div class="ctx-empty">No dated steps yet. Add a date to a step in its notes, like <b>- send invites &gt;10-20</b> (or <b>&gt;tomorrow</b>, <b>&gt;wed</b>).</div>'; return; }
     const label = (d) => d < tk ? 'Overdue' : d === tk ? 'Today' : d === addDaysKey(1) ? 'Tomorrow' : shortDateLabel(d);
     let html = '', last = null;
     items.forEach((it, i) => {
       const head = it.date < tk ? 'Overdue' : label(it.date);
       if (head !== last) { html += '<div class="section-label' + (it.date <= tk ? ' ctx-due-head' : '') + '">' + escapeHtml(head) + '</div>'; last = head; }
-      html += '<div class="ctx-item" data-i="' + i + '"><span class="where">' + escapeHtml(it.o.t + (it.m ? ' › ' + it.m.t : '')) + (it.o.today ? ' · Today' : '')
+      html += '<div class="ctx-item" data-i="' + i + '"><span class="where">' + escapeHtml(it.o.t + (it.m ? ' › ' + it.m.t : '')) + (isToday(it.o) ? ' · Today' : '')
         + (it.date < tk ? ' · ' + escapeHtml(shortDateLabel(it.date)) : '') + '</span>' + ctxHtml(escapeHtml(it.text)) + '</div>';
     });
     box.innerHTML = html;
@@ -4228,9 +4239,10 @@ For God alone my soul waits in silence. — Psalm 62:1`;
   // optional leftover label now, never the spine
   const ROLE_SUBTITLES = {
     'Inbox': 'Not sorted yet — give each a kind: Destination or Directive',
-    'Today': 'Drawn into today\'s Step picker',
-    'Week': 'Coming back to Today within the next 7 days',
-    'Later': 'Set for later — beyond this week',
+    'Starred': 'Marked important — whenever you plan them',
+    'Today': 'Planned for today (or earlier) — drawn into the Step picker',
+    'Week': 'Planned within the next 7 days',
+    'Later': 'Planned beyond this week',
     'Maybe': 'Trying these on — no guilt if they don\'t stick',
   };
   document.querySelectorAll('#roleFilterRow .chip').forEach(chip => {
@@ -4248,15 +4260,16 @@ For God alone my soul waits in silence. — Psalm 62:1`;
   function outcomeMatchesFilter(o, role) {
     if (role === 'Maybe') return !!o.maybe;
     if (o.maybe) return false; // maybe items stay out of the way — only the Maybe filter shows them
+    if (role === 'Starred') return !!o.starred;
     if (role === 'Inbox') return !o.type;
-    if (role === 'Today') return !!o.today;
+    if (role === 'Today') return isToday(o);
     const d = snoozedUntil(o), tk = todayKeyLocal(), wk = addDaysKey(7);
-    if (role === 'Week') return !o.today && !!d && d > tk && d <= wk;
-    if (role === 'Later') return !o.today && !!d && d > wk;
+    if (role === 'Week') return !isToday(o) && !!d && d > tk && d <= wk;
+    if (role === 'Later') return !isToday(o) && !!d && d > wk;
     return true; // All
   }
 
-  // ===== quick snooze ("punt forward") — sets nextActionDate and takes it off Today;
+  // ===== quick snooze ("punt forward") — sets planned and takes it off Today;
   // autoStarDueOutcomes() stars it again the morning that date arrives =====
   function addDaysKey(n) { const d = new Date(); d.setDate(d.getDate() + n); return dateKeyFor(d); }
   function nextWeekdayKey(dow) { // next occurrence strictly after today (0=Sun … 6=Sat)
@@ -4274,13 +4287,13 @@ For God alone my soul waits in silence. — Psalm 62:1`;
     return opts.filter(([, k]) => !seen.has(k) && seen.add(k));
   }
   function snoozeOutcome(o, key) {
-    if (!key || key <= todayKeyLocal()) { starToday(o); o.nextActionDate = null; }
-    else { o.today = false; o.nextActionDate = key; }
+    if (!key || key <= todayKeyLocal()) planToday(o);
+    else o.planned = key;
   }
   // effective (own date or a step's) — drives filters, buckets and badges; ownSnoozed is only
   // the outcome's own "Later" date, which is what the snooze controls edit
   function snoozedUntil(o) { const e = effInfo(o); return (e.date && e.date > todayKeyLocal()) ? e.date : null; }
-  function ownSnoozed(o) { return (o.nextActionDate && o.nextActionDate > todayKeyLocal()) ? o.nextActionDate : null; }
+  function ownSnoozed(o) { return (o.planned && o.planned > todayKeyLocal()) ? o.planned : null; }
 
   // the outcome's shape, editable in place: its own steps, then each optional milestone
   // with that milestone's steps. Steps never need a milestone.
@@ -4334,9 +4347,9 @@ For God alone my soul waits in silence. — Psalm 62:1`;
     const clearDoneBtn = document.getElementById('clearDoneBtn');
     clearDoneBtn.textContent = 'Clear ' + doneInFilter.length + ' done';
     clearDoneBtn.style.display = doneInFilter.length ? '' : 'none';
-    // starred (Today) float to the top of every filter, done items sink to the bottom;
-    // otherwise keep the saved order
-    const rank = o => o.completed ? 2 : (o.today ? 0 : 1);
+    // starred (important) float to the top of every filter, then today's plans; done items
+    // sink to the bottom; otherwise keep the saved order
+    const rank = o => o.completed ? 3 : (o.starred ? 0 : (isToday(o) ? 1 : 2));
     const ordered = outcomes.map((o, i) => [o, i]).sort((a, b) => (rank(a[0]) - rank(b[0])) || (a[1] - b[1])).map(p => p[0]);
     ordered.forEach(o => {
       const row = document.createElement('div');
@@ -4344,7 +4357,7 @@ For God alone my soul waits in silence. — Psalm 62:1`;
       row.dataset.tag = o.tag; row.dataset.oid = o.id;
       const expanded = expandedNotesIds.has(o.id);
       let html = '<div class="outcome-row-top">'
-        + '<div class="outcome-row-title"><button class="today-star' + (o.today ? ' active' : '') + '" title="' + (o.today ? 'On Today — tap to remove' : 'Add to Today') + '" aria-label="' + (o.today ? 'On Today' : 'Add to Today') + '">' + STAR_SVG + '</button>'
+        + '<div class="outcome-row-title"><button class="today-star' + (o.starred ? ' active' : '') + '" title="' + (o.starred ? 'Important — tap to unmark' : 'Mark important') + '" aria-label="' + (o.starred ? 'Important' : 'Mark important') + '">' + STAR_SVG + '</button>'
         + '<button class="maybe-toggle' + (o.maybe ? ' active' : '') + '" title="Maybe — trying it on, not committed">?</button>'
         + '<span class="outcome-name' + (o.completed ? ' completed' : '') + '">' + escapeHtml(o.t) + '</span></div>'
         + '<div class="outcome-row-actions">'
@@ -4354,7 +4367,7 @@ For God alone my soul waits in silence. — Psalm 62:1`;
         + '</div></div>'
         + '<div class="outcome-row-meta"><span class="badge">' + (o.type || 'Inbox') + (o.tag ? ' · ' + o.tag : '')
         + ((o.milestones || []).length ? ' · ' + o.milestones.length + ' milestone' + (o.milestones.length === 1 ? '' : 's') : '')
-        + (snoozedUntil(o) ? ' · later ' + escapeHtml(shortDateLabel(snoozedUntil(o))) + (effInfo(o).step ? ' (step)' : '') : '') + '</span>'
+        + (snoozedUntil(o) ? ' · planned ' + escapeHtml(shortDateLabel(snoozedUntil(o))) + (effInfo(o).step ? ' (step)' : '') : '') + '</span>'
         + ctxUnion(o).map(c => ' <span class="badge ctx-badge">@' + escapeHtml(c) + '</span>').join('') + '</div>';
       if (o.budget) {
         const acc = budgetAcc(o), target = o.budget.target;
@@ -4368,13 +4381,13 @@ For God alone my soul waits in silence. — Psalm 62:1`;
       html += '<div class="outcome-row-notes"' + (expanded ? '' : ' style="display:none;"') + '>'
         + '<textarea class="outcome-row-notes-input" placeholder="Notes — pulled up when you work this…">' + escapeHtml(notesByKey[o.id] || '') + '</textarea>'
         + renderOutcomeTree(o)
-        + (o.completed ? '' : '<div class="snooze-row" title="Later — off Today until then">'
-          + (o.today && !ownSnoozed(o) ? '' : '<span class="chip" data-snooze="today">Today</span>')
-          + snoozeOptions().map(([label, key]) => '<span class="chip' + (o.nextActionDate === key ? ' selected' : '') + '" data-snooze="' + key + '">' + label + '</span>').join('')
-          + '<span class="chip snooze-pick' + (ownSnoozed(o) && !snoozeOptions().some(([, k]) => k === o.nextActionDate) ? ' selected' : '') + '" title="Pick a date">'
+        + (o.completed ? '' : '<div class="snooze-row" title="Plan it for a day">'
+          + (isToday(o) ? '' : '<span class="chip" data-snooze="today">Today</span>')
+          + snoozeOptions().map(([label, key]) => '<span class="chip' + (o.planned === key ? ' selected' : '') + '" data-snooze="' + key + '">' + label + '</span>').join('')
+          + '<span class="chip snooze-pick' + (ownSnoozed(o) && !snoozeOptions().some(([, k]) => k === o.planned) ? ' selected' : '') + '" title="Pick a date">'
           + '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3.5" y="5" width="17" height="15.5" rx="2.5"/><path d="M3.5 10h17M8 3v4M16 3v4"/></svg>'
           + '<input type="date" aria-label="Pick a date" min="' + addDaysKey(1) + '"></span></div>'
-          + (ownSnoozed(o) ? '<div class="snooze-status">Later · ' + escapeHtml(shortDateLabel(ownSnoozed(o))) + ' — off Today till then'
+          + (ownSnoozed(o) ? '<div class="snooze-status">Planned · ' + escapeHtml(shortDateLabel(ownSnoozed(o))) + ' — back on Today then'
             + '<button type="button" class="snooze-clear">clear</button></div>' : ''))
         + '</div>';
       row.innerHTML = html;
@@ -4398,19 +4411,19 @@ For God alone my soul waits in silence. — Psalm 62:1`;
       if (pick) pick.addEventListener('change', () => { if (pick.value) { snoozeOutcome(o, pick.value); changed(); } });
       // clear = drop the date only; it stays off Today until starred (or Today tapped)
       const clearSnooze = row.querySelector('.snooze-clear');
-      if (clearSnooze) clearSnooze.addEventListener('click', () => { o.nextActionDate = null; changed(); });
-      row.querySelector('.today-star').addEventListener('click', () => { if (o.today) o.today = false; else starToday(o); changed(); });
+      if (clearSnooze) clearSnooze.addEventListener('click', () => { o.planned = null; changed(); });
+      row.querySelector('.today-star').addEventListener('click', () => { o.starred = !o.starred; changed(); });
       row.querySelector('.maybe-toggle').addEventListener('click', () => { o.maybe = !o.maybe; changed(); });
       const completeBtn = row.querySelector('.complete-btn');
       if (completeBtn) completeBtn.addEventListener('click', () => { o.completed = !o.completed; if (o.completed) celebrate('done'); changed(); });
       row.querySelector('.edit-btn').addEventListener('click', () => {
         openOutcomeModal({
           title: 'Edit outcome', name: o.t, type: o.type, tag: o.tag, budget: o.budget, notes: notesByKey[o.id],
-          maybe: o.maybe, nextActionDate: o.nextActionDate,
-          onSave: (name, type, tag, budget, notes, maybe, nextActionDate) => {
+          maybe: o.maybe, planned: o.planned,
+          onSave: (name, type, tag, budget, notes, maybe, planned) => {
             const cur = findOutcome(o.id);
             if (!cur) return;
-            cur.t = name; cur.type = type; cur.tag = tag; cur.maybe = maybe; cur.nextActionDate = nextActionDate;
+            cur.t = name; cur.type = type; cur.tag = tag; cur.maybe = maybe; cur.planned = planned;
             applyBudgetSpec(cur, budget);
             setOutcomeNotes(cur.id, notes);
             changed();
@@ -4455,9 +4468,10 @@ For God alone my soul waits in silence. — Psalm 62:1`;
     openOutcomeModal({
       title: 'New outcome',
       maybe: filterRole === 'Maybe',
-      onSave: (name, type, tag, budget, notes, maybe, nextActionDate) => {
-        const o = makeOutcome(name, type, tag, { maybe, nextActionDate });
-        if (filterRole === 'Today') starToday(o); // added while looking at Today → lands there
+      onSave: (name, type, tag, budget, notes, maybe, planned) => {
+        const o = makeOutcome(name, type, tag, { maybe, planned });
+        if (filterRole === 'Today') planToday(o); // added while looking at Today → lands there
+        if (filterRole === 'Starred') o.starred = true;
         applyBudgetSpec(o, budget);
         setOutcomeNotes(o.id, notes);
         outcomes.push(o);
@@ -4470,7 +4484,7 @@ For God alone my soul waits in silence. — Psalm 62:1`;
   // mind map: root → buckets (Inbox/Today/Week/Later/Open/Maybe/Done) → outcomes →
   // note lines (steps are the "- "/"+" ones) + milestones → their lines. Edits the same `outcomes` store, so Step/Ahead stay
   // in sync. Buckets are derived from existing fields (no new data): moving an
-  // outcome between them just sets today / nextActionDate / maybe / completed / type.
+  // outcome between them just sets today / planned / maybe / completed / type.
   // No confirm boxes — every change is undoable instead. =====
   const MAPV = (() => {
     const BUCKETS = ['Inbox', 'Today', 'Week', 'Later', 'Open', 'Maybe', 'Done'];
@@ -4484,18 +4498,18 @@ For God alone my soul waits in silence. — Psalm 62:1`;
     function bucketOf(o) {
       if (o.completed) return 'Done';
       if (o.maybe) return 'Maybe';
-      if (o.today) return 'Today';
+      if (isToday(o)) return 'Today';
       const d = snoozedUntil(o);
       if (d) return d <= addDaysKey(7) ? 'Week' : 'Later';
       return o.type ? 'Open' : 'Inbox';
     }
     function moveToBucket(o, b) {
-      o.completed = false; o.maybe = false; o.today = false;
-      if (b === 'Inbox') { o.nextActionDate = null; o.type = null; }
-      else if (b === 'Today') { starToday(o); o.nextActionDate = null; }
-      else if (b === 'Week') { if (bucketOf(o) !== 'Week') o.nextActionDate = addDaysKey(1); }
-      else if (b === 'Later') { if (bucketOf(o) !== 'Later') o.nextActionDate = addDaysKey(14); }
-      else if (b === 'Open') { o.nextActionDate = null; if (!o.type) o.type = 'Destination'; }
+      o.completed = false; o.maybe = false;
+      if (b === 'Inbox') { o.planned = null; o.type = null; }
+      else if (b === 'Today') planToday(o);
+      else if (b === 'Week') { if (bucketOf(o) !== 'Week') o.planned = addDaysKey(1); }
+      else if (b === 'Later') { if (bucketOf(o) !== 'Later') o.planned = addDaysKey(14); }
+      else if (b === 'Open') { o.planned = null; if (!o.type) o.type = 'Destination'; }
       else if (b === 'Maybe') o.maybe = true;
       else if (b === 'Done') { o.completed = true; celebrate('done'); }
       folded.delete('b:' + b);
@@ -4627,7 +4641,7 @@ For God alone my soul waits in silence. — Psalm 62:1`;
         inner = n.kind === 'line' ? ctxHtml(escapeHtml(labelOf(n))) : escapeHtml(labelOf(n));
         if (n.kind === 'bucket') inner += '<span class="ct">' + kidsOf(n).length + '</span>';
         // - open, + closed; plain note lines carry no marker
-        if (n.kind === 'outcome') inner = '<span class="tag mk">' + (n.o.completed ? '+' : '-') + '</span>' + inner + '<span class="tag typ">' + (n.o.type === 'Destination' ? '◎' : n.o.type === 'Directive' ? '∞' : '') + '</span>';
+        if (n.kind === 'outcome') inner = '<span class="tag mk">' + (n.o.completed ? '+' : '-') + '</span>' + (n.o.starred ? '<span class="star">★</span>' : '') + inner + '<span class="tag typ">' + (n.o.type === 'Destination' ? '◎' : n.o.type === 'Directive' ? '∞' : '') + '</span>';
         if (n.kind === 'ms') inner = '<span class="tag mk">' + (n.m.completed ? '+' : '-') + '</span>' + inner;
         if (n.kind === 'line' && n.mark) inner = '<span class="tag mk">' + n.mark + '</span>' + inner;
         if (isFolded) inner += '<span class="fold">▸ ' + n.kids.length + '</span>';
@@ -4676,8 +4690,9 @@ For God alone my soul waits in silence. — Psalm 62:1`;
           + f('bucket', 'Bucket', '<select data-f="bucket">' + BUCKETS.map(x => opt(x, x, bucketOf(o))).join('') + '</select>')
           + '<div class="row2">' + f('kind', 'Kind', '<select data-f="kind">' + opt('', 'Inbox (none)', o.type || '') + opt('Destination', 'Destination', o.type) + opt('Directive', 'Directive', o.type) + '</select>')
           + f('tag', 'Role', '<select data-f="tag">' + opt('', '—', o.tag || '') + ['Roots', 'Resources', 'Reach', 'Reality'].map(x => opt(x, x, o.tag)).join('') + '</select>') + '</div>'
-          + f('date', 'Later — off Today until', '<input type="date" data-f="date" min="' + addDaysKey(1) + '" value="' + (ownSnoozed(o) || '') + '">')
+          + f('date', 'Planned for', '<input type="date" data-f="date" value="' + (o.planned || '') + '">')
           + (effInfo(o).step && effInfo(o).date ? '<div class="fine" style="margin:-4px 0 10px">Next up ' + escapeHtml(shortDateLabel(effInfo(o).date)) + ' — a dated step sets it</div>' : '')
+          + chk('starred', 'Important ★', o.starred)
           + chk('maybe', 'Maybe — trying it on', o.maybe)
           + chk('done', 'Done', o.completed)
           + '<div style="height:10px"></div>'
@@ -4717,7 +4732,8 @@ For God alone my soul waits in silence. — Psalm 62:1`;
         if (f === 'bucket') mutate(() => moveToBucket(o, v));
         else if (f === 'kind') mutate(() => { o.type = v || null; });
         else if (f === 'tag') mutate(() => { o.tag = v || null; });
-        else if (f === 'date') mutate(() => { if (v) snoozeOutcome(o, v); else o.nextActionDate = null; });
+        else if (f === 'date') mutate(() => { if (v) snoozeOutcome(o, v); else o.planned = null; });
+        else if (f === 'starred') mutate(() => { o.starred = v; });
         else if (f === 'maybe') mutate(() => { o.maybe = v; });
         else if (f === 'done') mutate(() => { o.completed = v; if (v) celebrate('done'); });
         else if (f === 'budgetT' || f === 'budgetP') {
@@ -5146,7 +5162,7 @@ For God alone my soul waits in silence. — Psalm 62:1`;
       } else if (n.kind === 'ms') { // a milestone becomes its own outcome, right after its parent
         const o = n.o; let o2;
         mutate(() => {
-          o2 = makeOutcome(n.m.t, o.type, o.tag, { today: o.today, maybe: o.maybe, nextActionDate: o.nextActionDate, completed: n.m.completed });
+          o2 = makeOutcome(n.m.t, o.type, o.tag, { planned: o.planned, maybe: o.maybe, completed: n.m.completed });
           const lines = noteLines(noteKeyFor(o, n.m));
           o.milestones = o.milestones.filter(x => x !== n.m); dropNoteKeys(o.id + '#' + n.m.id);
           outcomes.splice(outcomes.indexOf(o) + 1, 0, o2); writeNoteLines(o2, null, lines);
@@ -5308,6 +5324,7 @@ For God alone my soul waits in silence. — Psalm 62:1`;
       if (k === 'Backspace' || k === 'Delete') { handled(); del(n); return; }
       if (k === 'd') { handled(); toggleDone(n); return; }
       if (k === 'y') { handled(); cycleType(n); return; }
+      if (k === 's') { handled(); if (n.kind === 'outcome') { mutate(() => { n.o.starred = !n.o.starred; }); render(); toast(n.o.starred ? 'Marked important ★' : 'Unmarked'); } else toast('s marks an outcome important'); return; }
       if (k === 'm') { handled(); if (n.kind === 'outcome') startPending('ms', n, n.kids.length, n.o.milestones.length); else toast('m adds a milestone to an outcome'); return; }
       if (k === 'x') { handled(); cut(n); return; }
       if (k === 'p') { handled(); paste(n); return; }

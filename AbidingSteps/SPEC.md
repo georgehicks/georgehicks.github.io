@@ -846,3 +846,15 @@ never during a timer, Abide, a dialog or typing; after an offer it waits that lo
 again. Halfway to the offer the red heart in the top bar glows louder (`beckon`);
 tapping it opens the moment any time. Device-local keys: `__local_lastSeen`,
 `__local_microAt`, `__local_microDay`. Enter on the heart places it; Esc = Not now.
+
+### Starred ≠ planned (2026-10-14)
+
+`starred` = important (a flag; nothing to do with when). `planned` = the day you
+intend to work on it: today or earlier = Today (a past day not finished = carried
+over → the morning review asks), a future day = Week/Later, none = Open/Inbox.
+Replaces `today` + `starredOn` + `nextActionDate` (`normalizeOutcomes` migrates them
+— and rows from an older build — on sight; migrated stars start empty). Choosing to
+work on an outcome plans it for today. Ahead has a Starred filter and floats
+starred first; the Step picker puts starred first within Today; the map shows ★ and
+`s` toggles it. A dated step coming due still pulls its outcome onto Today
+(`autoPlanKey`); the Effective Next Date is the earliest of the plan and any step date.
