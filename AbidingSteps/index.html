@@ -562,22 +562,26 @@
     background: radial-gradient(circle, rgba(255,236,170,0) 0, rgba(255,236,170,0) 16%, rgba(255,226,140,.55) 30%, rgba(255,200,90,.2) 52%, rgba(255,200,90,0) 70%);
     will-change: transform, opacity; animation: bp-ring 8s cubic-bezier(.25,.55,.3,1) infinite; }
   @keyframes bp-ring { 0%, 45% { opacity: 0; transform: scale(.4); } 52% { opacity: .95; } 80% { opacity: .4; transform: scale(2.2); } 95%, 100% { opacity: 0; transform: scale(3.1); } }
-  /* embers: soft points that lift off the bloom as it opens, each at its own spot, size and moment,
-     swaying a little as they rise and fading slowly — not flying out evenly like a burst */
+  /* embers that radiate: soft points leave the cross in irregular directions, each its own distance,
+     size and moment, curving slightly as they go and fading slowly — slowing down as they travel,
+     so it reads as drifting embers rather than an even burst */
   .bp-spark { position: absolute; z-index: 3; top: 100px; left: 50%; width: var(--s, 7px); height: var(--s, 7px); margin: calc(var(--s, 7px) / -2); pointer-events: none; opacity: 0; border-radius: 50%;
     background: radial-gradient(circle, rgba(255,252,236,1) 0, rgba(255,226,140,.75) 32%, rgba(255,200,90,0) 70%);
-    will-change: transform, opacity; animation: bp-ember 8s cubic-bezier(.3,.5,.4,1) infinite; animation-delay: var(--d, 0s); }
-  .bp-spark:nth-of-type(1) { --x0: -62px; --y0: 12px;  --sx: 10px;  --s: 8px; --d: 0s; }
-  .bp-spark:nth-of-type(2) { --x0: -30px; --y0: -12px; --sx: -9px;  --s: 6px; --d: .5s; }
-  .bp-spark:nth-of-type(3) { --x0: 14px;  --y0: 26px;  --sx: 12px;  --s: 9px; --d: .15s; }
-  .bp-spark:nth-of-type(4) { --x0: 50px;  --y0: 0px;   --sx: -10px; --s: 6px; --d: .8s; }
-  .bp-spark:nth-of-type(5) { --x0: -8px;  --y0: -26px; --sx: 8px;   --s: 7px; --d: .35s; }
-  .bp-spark:nth-of-type(6) { --x0: 72px;  --y0: 18px;  --sx: -12px; --s: 8px; --d: .65s; }
+    will-change: transform, opacity; animation: bp-ember 8s cubic-bezier(.2,.6,.3,1) infinite; animation-delay: var(--d, 0s); }
+  .bp-spark:nth-of-type(1) { --mx: 69px; --my: 27px; --ex: 112px; --ey: 40px; --s: 7px; --d: 0s; }
+  .bp-spark:nth-of-type(2) { --mx: 47px; --my: 38px; --ex: 74px; --ey: 63px; --s: 5px; --d: 0.45s; }
+  .bp-spark:nth-of-type(3) { --mx: -21px; --my: 79px; --ex: -29px; --ey: 128px; --s: 9px; --d: 0.2s; }
+  .bp-spark:nth-of-type(4) { --mx: -35px; --my: 55px; --ex: -60px; --ey: 87px; --s: 6px; --d: 0.7s; }
+  .bp-spark:nth-of-type(5) { --mx: -77px; --my: 3px; --ex: -124px; --ey: 8px; --s: 8px; --d: 0.1s; }
+  .bp-spark:nth-of-type(6) { --mx: -57px; --my: -14px; --ex: -90px; --ey: -27px; --s: 5px; --d: 0.55s; }
+  .bp-spark:nth-of-type(7) { --mx: -23px; --my: -82px; --ex: -40px; --ey: -131px; --s: 9px; --d: 0.3s; }
+  .bp-spark:nth-of-type(8) { --mx: 10px; --my: -67px; --ex: 19px; --ey: -107px; --s: 6px; --d: 0.8s; }
+  .bp-spark:nth-of-type(9) { --mx: 70px; --my: -28px; --ex: 111px; --ey: -49px; --s: 7px; --d: 0.4s; }
   @keyframes bp-ember {
-    0%, 48% { opacity: 0;   transform: translate3d(var(--x0), var(--y0), 0) scale(.5); }
-    56%     { opacity: .9; }
-    74%     { opacity: .7;  transform: translate3d(calc(var(--x0) + var(--sx)), calc(var(--y0) - 42px), 0) scale(1); }
-    100%    { opacity: 0;   transform: translate3d(calc(var(--x0) - var(--sx) * .6), calc(var(--y0) - 96px), 0) scale(.3); } }
+    0%, 47% { opacity: 0;   transform: translate3d(0, 0, 0) scale(.4); }
+    55%     { opacity: .95; }
+    74%     { opacity: .75; transform: translate3d(var(--mx), var(--my), 0) scale(1); }
+    100%    { opacity: 0;   transform: translate3d(var(--ex), var(--ey), 0) scale(.3); } }
   .ma-rest .breath-cross, .ma-rest .bp-ring, .ma-rest .bp-spark { top: 75px; }
   .ma-rest .breath-cross { margin-top: -16px; }
   @keyframes cross-reveal {
@@ -1099,7 +1103,7 @@
             <div class="petal" style="--i:7"></div>
           </div>
           <div class="breath-cross"><span class="cross-v"></span><span class="cross-h"></span></div>
-          <div class="bp-ring"></div><i class="bp-spark"></i><i class="bp-spark"></i><i class="bp-spark"></i><i class="bp-spark"></i><i class="bp-spark"></i><i class="bp-spark"></i>
+          <div class="bp-ring"></div><i class="bp-spark"></i><i class="bp-spark"></i><i class="bp-spark"></i><i class="bp-spark"></i><i class="bp-spark"></i><i class="bp-spark"></i><i class="bp-spark"></i><i class="bp-spark"></i><i class="bp-spark"></i>
           <div class="breath-caption" id="breathCaption">&nbsp;</div>
           <div class="breath-progress-track" id="breathProgressTrack">
             <div class="breath-progress-fill" id="breathProgressFill"></div>
@@ -1485,7 +1489,7 @@
   // Jesus ("Jesus, I place my heart with you."), then a few still breaths with a verse.
   // Offered once on open (or on returning to the app) after time away; always skippable.
   // No score, nothing counted beyond the usual abide tally. =====
-  const BP_HTML = '<div class="bp-ring"></div>' + '<i class="bp-spark"></i>'.repeat(6);
+  const BP_HTML = '<div class="bp-ring"></div>' + '<i class="bp-spark"></i>'.repeat(9);
   const microAbide = (() => {
     let root = null, open = false;
     const HEART = '<svg viewBox="0 0 64 60" aria-hidden="true"><path d="M32 56C10 40 6 28 6 20a13 13 0 0 1 26-3 13 13 0 0 1 26 3c0 8-4 20-26 36z" fill="#e5383b"/></svg>';
