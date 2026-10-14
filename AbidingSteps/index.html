@@ -604,6 +604,7 @@
   .mt-box.k-line { background: transparent; color: var(--text); }
   .mt-box.k-line.note { color: var(--text-dim); font-style: italic; }
   .mt-box.done { text-decoration: line-through; opacity: 0.55; }
+  .mt-box.drop { outline: 2px dashed var(--ahead); outline-offset: 2px; background: color-mix(in srgb, var(--ahead) 20%, var(--bg-elevated)); }
   .mt-box.cutting { opacity: 0.35; outline: 1px dashed var(--ahead); }
   .mt-box.hit { box-shadow: 0 0 0 2px color-mix(in srgb, #e8c15a 70%, transparent); }
   .mt-box.sel { background: color-mix(in srgb, var(--ahead) 30%, var(--bg-elevated)); border-color: var(--ahead); color: var(--text); box-shadow: 0 0 0 2px color-mix(in srgb, var(--ahead) 45%, transparent); }
@@ -1094,6 +1095,7 @@
     <div><kbd>1</kbd> Inbox · <kbd>2</kbd> Today · <kbd>3</kbd> Week · <kbd>4</kbd> Later · <kbd>5</kbd> Open · <kbd>6</kbd> Maybe · <kbd>7</kbd> Done — moves the selected outcome</div>
     <div><kbd>Ctrl</kbd>/<kbd>⌘</kbd><kbd>↑</kbd><kbd>↓</kbd> or <kbd>⌥↑</kbd><kbd>⌥↓</kbd> move an outcome within its bucket, and at the edge hop into the next bucket · <kbd>⌥←</kbd><kbd>⌥→</kbd> jump a whole bucket · on a line: outdent / indent (a child of the line above)</div>
     <div><kbd>⌥↑</kbd><kbd>⌥↓</kbd> reorder among siblings</div>
+    <div><b>Transform:</b> <kbd>Ctrl</kbd>/<kbd>⌘</kbd><kbd>→</kbd> (or <kbd>&gt;</kbd>) demotes the node one level — outcome → milestone → step → substep — and <kbd>Ctrl</kbd>/<kbd>⌘</kbd><kbd>←</kbd> (or <kbd>&lt;</kbd>) promotes it back. Its children come along. <b>Drag</b> any node onto another to move it there.</div>
     <div><kbd>x</kbd> cut, then select a target and <kbd>p</kbd> paste (line → outcome, milestone or another line, milestone → outcome, outcome → bucket)</div>
     <h4>Work &amp; music</h4>
     <div><kbd>w</kbd> work on the selected outcome / milestone / step: pick a length (<kbd>1</kbd>–<kbd>9</kbd> or <kbd>←</kbd><kbd>→</kbd> + <kbd>Enter</kbd>). The timer is the Step timer, music switches to Step music, time counts as Step time</div>
@@ -4198,7 +4200,8 @@ For God alone my soul waits in silence. — Psalm 62:1`;
         if (n.kind === 'line' && n.mark) inner = '<span class="tag mk">' + n.mark + '</span>' + inner;
         if (isFolded) inner += '<span class="fold">▸ ' + n.kids.length + '</span>';
       }
-      return '<div class="' + cls + '" data-key="' + escapeHtml(n.key) + '">' + inner + '</div>';
+      const drag = (n.kind === 'outcome' || n.kind === 'ms' || n.kind === 'line') && !(editing && editing.key === n.key) ? ' draggable="true"' : '';
+      return '<div class="' + cls + '" data-key="' + escapeHtml(n.key) + '"' + drag + '>' + inner + '</div>';
     }
     function ghostHtml() { return '<div class="mt-n"><div class="mt-box sel k-' + pending.kind + '" data-key="new"><input class="mt-edit" placeholder="' + ({ outcome: 'New outcome', ms: 'New milestone', line: '- step, or a plain note' }[pending.kind]) + '" value="' + escapeHtml(pending.prefill || '') + '"></div></div>'; }
     function nodeHtml(n) {
@@ -4619,23 +4622,9 @@ For God alone my soul waits in silence. — Psalm 62:1`;
         const dir = k === 'ArrowLeft' ? -1 : 1;
         if (n.kind === 'outcome') {
           const b = BUCKETS[BUCKETS.indexOf(bucketOf(n.o)) + dir]; if (b) toBucket(n, b);
-        } else if (n.kind === 'line' && dir > 0) { // indent: become the last child of the sibling above
-          const above = lineKids(n.parent)[lineKids(n.parent).indexOf(n) - 1];
-          if (!above) { toast('Nothing above to nest under'); return; }
-          mutate(() => {
-            const lines = noteLines(noteKeyFor(n.o, n.m)), e = blockEnd(lines, n.line);
-            lines.splice(n.line, e - n.line, ...reindent(lines.slice(n.line, e), 2)); writeNoteLines(n.o, n.m, lines);
-          });
-          folded.delete(above.key); render();
-        } else if (n.kind === 'line' && n.parent.kind === 'line') { // outdent: land just after the old parent
-          let newLine;
-          mutate(() => {
-            const lines = noteLines(noteKeyFor(n.o, n.m)), e = blockEnd(lines, n.line);
-            const blk = reindent(lines.splice(n.line, e - n.line), -2);
-            const at = blockEnd(lines, n.parent.line); lines.splice(at, 0, ...blk); newLine = at; writeNoteLines(n.o, n.m, lines);
-          });
-          sel = lineKey(n.o, n.m, newLine); render();
-        } else if (n.kind === 'line' && n.m) { // top-level line in a milestone: up to the outcome's own notes
+        } else if (n.kind === 'line' && dir > 0) indentLine(n);
+        else if (n.kind === 'line' && n.parent.kind === 'line') outdentLine(n);
+        else if (n.kind === 'line' && n.m) { // top-level line in a milestone: up to the outcome's own notes
           const at = endLine(n.o, null);
           mutate(() => {
             const from = noteLines(noteKeyFor(n.o, n.m)), e = blockEnd(from, n.line), blk = from.splice(n.line, e - n.line);
@@ -4647,10 +4636,115 @@ For God alone my soul waits in silence. — Psalm 62:1`;
         } else toast('x to cut, select a target, p to paste');
       }
     }
+    // ---- transforms: Ctrl+→ demotes (outcome → milestone → step → substep), Ctrl+← promotes back.
+    // Each one rebuilds the node's text/notes in its new shape and carries its children along.
+    function indentLine(n) { // become the last child of the sibling line above
+      const above = lineKids(n.parent)[lineKids(n.parent).indexOf(n) - 1];
+      if (!above) { toast('Nothing above to nest under'); return false; }
+      mutate(() => {
+        const lines = noteLines(noteKeyFor(n.o, n.m)), e = blockEnd(lines, n.line);
+        lines.splice(n.line, e - n.line, ...reindent(lines.slice(n.line, e), 2)); writeNoteLines(n.o, n.m, lines);
+      });
+      folded.delete(above.key); render(); return true;
+    }
+    function outdentLine(n) { // land just after the old parent line
+      let newLine;
+      mutate(() => {
+        const lines = noteLines(noteKeyFor(n.o, n.m)), e = blockEnd(lines, n.line);
+        const blk = reindent(lines.splice(n.line, e - n.line), -2);
+        const at = blockEnd(lines, n.parent.line); lines.splice(at, 0, ...blk); newLine = at; writeNoteLines(n.o, n.m, lines);
+      });
+      sel = lineKey(n.o, n.m, newLine); render(); return true;
+    }
+    function dropNoteKeys(prefix, withHash) { // forget a node's notes once its text has moved elsewhere
+      Object.keys(notesByKey).forEach(k => { if (k === prefix || k.startsWith(prefix + '|') || (withHash && k.startsWith(prefix + '#'))) delete notesByKey[k]; });
+      store.set('notes', notesByKey);
+    }
+    const markOf = (done) => done ? '+ ' : '- ';
+    function demoteNode(n) {
+      let newKey = null;
+      if (n.kind === 'outcome') {
+        const prev = n.parent.kids[n.parent.kids.indexOf(n) - 1];
+        if (!prev) { toast('Needs an outcome above it to become a milestone of'); return; }
+        mutate(() => {
+          const o = n.o, P = prev.o, m = makeMilestone(o.t); m.completed = o.completed;
+          const lines = noteLines(o.id).slice();
+          o.milestones.forEach(om => { // its own milestones flatten into steps with their lines nested underneath
+            lines.push(markOf(om.completed) + om.t);
+            noteLines(noteKeyFor(o, om)).forEach(l => lines.push(l.trim() === '' ? l : '  ' + l));
+          });
+          Object.keys(notesByKey).forEach(k => { if (k.startsWith(o.id + '|')) notesByKey[P.id + '#' + m.id + k.slice(o.id.length)] = notesByKey[k]; });
+          dropNoteKeys(o.id, true);
+          outcomes = outcomes.filter(x => x !== o);
+          P.milestones.push(m); writeNoteLines(P, m, lines);
+          newKey = 'm:' + P.id + ':' + m.id;
+        });
+      } else if (n.kind === 'ms') {
+        const o = n.o, Q = o.milestones[o.milestones.indexOf(n.m) - 1] || null; // step inside the milestone above, else on the outcome
+        let at;
+        mutate(() => {
+          const blk = [markOf(n.m.completed) + n.m.t].concat(noteLines(noteKeyFor(o, n.m)).map(l => l.trim() === '' ? l : '  ' + l));
+          const dest = noteLines(noteKeyFor(o, Q)); at = endLine(o, Q);
+          dest.splice(at, 0, ...blk);
+          o.milestones = o.milestones.filter(x => x !== n.m); dropNoteKeys(o.id + '#' + n.m.id);
+          writeNoteLines(o, Q, dest);
+        });
+        newKey = lineKey(o, Q, at);
+      } else if (n.kind === 'line') { indentLine(n); return; }
+      else { toast('Select an outcome, milestone or line'); return; }
+      sel = newKey; reveal(sel); render();
+    }
+    function promoteNode(n) {
+      let newKey = null;
+      if (n.kind === 'line' && n.parent.kind === 'line') { outdentLine(n); return; }
+      if (n.kind === 'line') { // a top-level line becomes a milestone, its nested lines become the milestone's lines
+        const o = n.o;
+        mutate(() => {
+          const lines = noteLines(noteKeyFor(o, n.m)), e = blockEnd(lines, n.line), blk = lines.splice(n.line, e - n.line);
+          const m2 = makeMilestone(n.text); m2.completed = n.mark === '+';
+          const at = n.m ? o.milestones.indexOf(n.m) + 1 : o.milestones.length;
+          o.milestones.splice(at, 0, m2);
+          writeNoteLines(o, n.m, lines); writeNoteLines(o, m2, reindent(blk.slice(1), -2));
+          newKey = 'm:' + o.id + ':' + m2.id;
+        });
+      } else if (n.kind === 'ms') { // a milestone becomes its own outcome, right after its parent
+        const o = n.o; let o2;
+        mutate(() => {
+          o2 = makeOutcome(n.m.t, o.type, o.tag, { today: o.today, maybe: o.maybe, nextActionDate: o.nextActionDate, completed: n.m.completed });
+          const lines = noteLines(noteKeyFor(o, n.m));
+          o.milestones = o.milestones.filter(x => x !== n.m); dropNoteKeys(o.id + '#' + n.m.id);
+          outcomes.splice(outcomes.indexOf(o) + 1, 0, o2); writeNoteLines(o2, null, lines);
+        });
+        newKey = 'o:' + o2.id;
+      } else { toast('Already at the top level'); return; }
+      sel = newKey; reveal(sel); render();
+    }
+    // dropping a milestone or line on a bucket makes it a new outcome there
+    function toOutcomeIn(src, bucket) {
+      let o2;
+      mutate(() => {
+        const o = src.o;
+        if (src.kind === 'ms') {
+          o2 = makeOutcome(src.m.t, o.type, o.tag, { completed: src.m.completed });
+          const lines = noteLines(noteKeyFor(o, src.m));
+          o.milestones = o.milestones.filter(x => x !== src.m); dropNoteKeys(o.id + '#' + src.m.id);
+          outcomes.push(o2); writeNoteLines(o2, null, lines);
+        } else {
+          const lines = noteLines(noteKeyFor(o, src.m)), e = blockEnd(lines, src.line), blk = lines.splice(src.line, e - src.line);
+          o2 = makeOutcome(src.text, o.type, o.tag, { completed: src.mark === '+' });
+          writeNoteLines(o, src.m, lines); outcomes.push(o2); writeNoteLines(o2, null, reindent(blk.slice(1), -src.ind - 2));
+        }
+        moveToBucket(o2, bucket);
+      });
+      return 'o:' + o2.id;
+    }
     function cut(n) { if (!['outcome', 'ms', 'line'].includes(n.kind)) return; cutKey = n.key; render(); }
     function paste(t) {
       const src = cutKey && model.nodes[cutKey]; if (!src) { toast('Nothing cut — x first'); return; }
       let newSel = null;
+      if ((src.kind === 'line' || src.kind === 'ms') && t.kind === 'bucket') {
+        newSel = toOutcomeIn(src, t.bucket); cutKey = null; sel = newSel; reveal(sel); render(); return;
+      }
       if (src.kind === 'line') {
         let dm, at, ind; // destination scope (milestone or null) / insert line / indent of the pasted root
         if (t.kind === 'outcome') { dm = null; at = endLine(t.o, null); ind = 0; }
@@ -4746,6 +4840,10 @@ For God alone my soul waits in silence. — Psalm 62:1`;
       }
       if (e.metaKey || e.ctrlKey) {
         if (e.key.toLowerCase() === 'z') { e.preventDefault(); doUndo(); }
+        else if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
+          e.preventDefault(); const cn = model.nodes[sel]; if (!cn) return;
+          if (e.key === 'ArrowRight') demoteNode(cn); else promoteNode(cn);
+        }
         else if (e.key === 'ArrowUp' || e.key === 'ArrowDown') { // the buckets are stacked, so up/down = the bucket above/below
           e.preventDefault();
           const cn = model.nodes[sel];
@@ -4777,6 +4875,8 @@ For God alone my soul waits in silence. — Psalm 62:1`;
       if (k === 'x') { handled(); cut(n); return; }
       if (k === 'p') { handled(); paste(n); return; }
       if (k === 'u') { handled(); doUndo(); return; }
+      if (k === '>') { handled(); demoteNode(n); return; }
+      if (k === '<') { handled(); promoteNode(n); return; }
       if (k === 'i') { handled(); focusPanel(); return; }
       if (k === 'w') { handled(); openWork(n); return; }
       if (k === 'b') { handled(); startAbide(); return; }
@@ -4794,6 +4894,30 @@ For God alone my soul waits in silence. — Psalm 62:1`;
       const box = e.target.closest('.mt-box'); if (!box || box.dataset.key === 'new' || e.target.classList.contains('mt-edit')) return;
       if (pending || editing) { pending = null; editing = null; }
       sel = box.dataset.key; render();
+    });
+    // drag a node onto another: same as cut + paste into it (a step dropped on an outcome, milestone
+    // or line nests there; a milestone on an outcome; an outcome on a bucket; a step/milestone on
+    // a bucket becomes an outcome)
+    let dragKey = null;
+    tree.addEventListener('dragstart', (e) => {
+      const box = e.target.closest && e.target.closest('.mt-box'); if (!box || !model.nodes[box.dataset.key]) return;
+      dragKey = box.dataset.key; sel = dragKey;
+      e.dataTransfer.effectAllowed = 'move'; e.dataTransfer.setData('text/plain', dragKey);
+      box.classList.add('cutting');
+    });
+    tree.addEventListener('dragover', (e) => {
+      if (!dragKey) return;
+      const box = e.target.closest('.mt-box'); tree.querySelectorAll('.mt-box.drop').forEach(b => b.classList.remove('drop'));
+      if (!box || box.dataset.key === dragKey || box.dataset.key === 'new') return;
+      e.preventDefault(); e.dataTransfer.dropEffect = 'move'; box.classList.add('drop');
+    });
+    tree.addEventListener('dragend', () => { dragKey = null; tree.querySelectorAll('.mt-box.drop, .mt-box.cutting').forEach(b => b.classList.remove('drop', 'cutting')); });
+    tree.addEventListener('drop', (e) => {
+      const box = e.target.closest('.mt-box'); if (!dragKey || !box) return;
+      e.preventDefault();
+      const target = model.nodes[box.dataset.key]; cutKey = dragKey; dragKey = null;
+      if (target) paste(target);
+      cutKey = null; render();
     });
     tree.addEventListener('dblclick', (e) => {
       const box = e.target.closest('.mt-box'); if (!box || !model.nodes[box.dataset.key]) return;
