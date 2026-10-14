@@ -582,7 +582,7 @@
      just a start and an end keyframe, so its easing runs once across the whole distance (an eased
      keyframe in the middle makes things stop and restart) */
   @keyframes bp-ember-move { 0%, 47% { transform: translate3d(0, 0, 0) scale(.5); } 100% { transform: translate3d(var(--ex), var(--ey), 0) scale(.9); } }
-  @keyframes bp-ember-fade { 0%, 47% { opacity: 0; } 56% { opacity: .95; } 100% { opacity: 0; } }
+  @keyframes bp-ember-fade { 0%, 47% { opacity: 0; } 56% { opacity: var(--pk, .95); } 100% { opacity: 0; } }
   .ma-rest .breath-cross, .ma-rest .bp-ring, .ma-rest .bp-spark { top: 75px; }
   .ma-rest .breath-cross { margin-top: -16px; }
   @keyframes cross-reveal {
@@ -1604,6 +1604,21 @@
   // leave it frozen at its start, so there the angle is turned by script instead
   const NEEDS_JS_SPIN = !(window.CSS && CSS.registerProperty);
   if (NEEDS_JS_SPIN) document.documentElement.classList.add('mg-js-spin');
+  // each breath re-rolls every ember — its own direction, distance, drift, size and brightness —
+  // at the moment it launches (it is invisible then), so no two breaths look alike
+  function emberReroll(e) {
+    if (e.animationName !== 'bp-ember-move' || !e.target.classList || !e.target.classList.contains('bp-spark')) return;
+    const el = e.target, sibs = [...el.parentNode.querySelectorAll(':scope > .bp-spark')], i = sibs.indexOf(el), n = sibs.length || 1;
+    const ang = ((i / n) * 360 + (Math.random() - .5) * (360 / n) * 1.7) * Math.PI / 180;       // spread around, but never an even ring
+    const r = 84 + Math.random() * 62, c = (Math.random() < .5 ? -1 : 1) * (5 + Math.random() * 13);
+    const ux = Math.cos(ang), uy = Math.sin(ang);
+    el.style.setProperty('--ex', Math.round(ux * r - uy * c) + 'px');
+    el.style.setProperty('--ey', Math.round(uy * r + ux * c) + 'px');
+    el.style.setProperty('--s', (4.5 + Math.random() * 5.5).toFixed(1) + 'px');
+    el.style.setProperty('--pk', (0.55 + Math.random() * 0.45).toFixed(2));
+  }
+  document.addEventListener('animationstart', emberReroll, true);
+  document.addEventListener('animationiteration', emberReroll, true);
   let glowEl = null, spinAng = 0;
   if (NEEDS_JS_SPIN) setInterval(() => { if (glowEl && document.visibilityState === 'visible') { spinAng = (spinAng + 4.5) % 360; glowEl.style.setProperty('--mg-ang', spinAng + 'deg'); } }, 40);
   function glowTarget() {
