@@ -87,7 +87,8 @@
     clip-path: polygon(50% 0, 62% 38%, 100% 50%, 62% 62%, 50% 100%, 38% 62%, 0 50%, 38% 38%); filter: drop-shadow(0 0 3px #ffd86b);
     animation: hb-twinkle 2.8s ease-in-out infinite; animation-delay: var(--d, 0s); }
   @keyframes hb-twinkle { 0%, 55%, 100% { opacity: 0; transform: translate(var(--x), var(--y)) scale(.2); } 75% { opacity: 1; transform: translate(var(--x), calc(var(--y) - 4px)) scale(1) rotate(45deg); } }
-  @media (prefers-reduced-motion: reduce) { .heart-btn, .heart-btn svg, .hb-spark { animation: none !important; } .hb-spark { display: none; } .heart-btn.lit { box-shadow: 0 0 8px 1px rgba(229,56,59,.45); } }
+  /* the effects below respect the device's Reduce Motion ONLY if Settings → Celebrations says so (html[data-motion=reduce]) */
+  @media (prefers-reduced-motion: reduce) { html[data-motion="reduce"] .heart-btn, html[data-motion="reduce"] .heart-btn svg, html[data-motion="reduce"] .hb-spark { animation: none !important; } html[data-motion="reduce"] .hb-spark { display: none; } html[data-motion="reduce"] .heart-btn.lit { box-shadow: 0 0 8px 1px rgba(229,56,59,.45); } }
   .music-btn.playing { color: var(--accent); border-color: var(--accent); }
 
   main { flex: 1; min-height: 0; padding: 4px 16px calc(90px + env(safe-area-inset-bottom)); display: flex; flex-direction: column; }
@@ -401,6 +402,7 @@
     -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0); -webkit-mask-composite: xor; mask-composite: exclude;
     animation: mg-spin 3.2s linear infinite; }
   @keyframes mg-spin { to { --mg-ang: 360deg; } }
+  .mg-js-spin .magic-glow::before { animation: none; }
   @keyframes mg-pulse {
     0%, 100% { box-shadow: 0 0 6px 0 color-mix(in srgb, var(--accent) 35%, transparent), 0 0 18px 2px color-mix(in srgb, var(--accent) 16%, transparent); }
     50% { box-shadow: 0 0 12px 2px color-mix(in srgb, var(--accent) 60%, transparent), 0 0 34px 6px color-mix(in srgb, var(--accent) 28%, transparent); } }
@@ -421,8 +423,8 @@
     45%  { opacity: .8;  transform: translate3d(var(--sx, 4px), -13px, 0) scale(1); }
     75%  { opacity: .35; transform: translate3d(calc(var(--sx, 4px) * -.7), -26px, 0) scale(.7); }
     100% { opacity: 0;   transform: translate3d(calc(var(--sx, 4px) * .4), -38px, 0) scale(.25); } }
-  @media (prefers-reduced-motion: reduce) { .magic-glow, .magic-glow::before, .mg-spark { animation: none; } .mg-spark { display: none; } .magic-glow { box-shadow: 0 0 14px 2px color-mix(in srgb, var(--accent) 45%, transparent); } }
-  @media (prefers-reduced-motion: reduce) { .cele i, .cele-ring { display: none; } .cele-pill { animation: cele-fade 2.6s ease-out forwards; }
+  @media (prefers-reduced-motion: reduce) { html[data-motion="reduce"] .magic-glow, html[data-motion="reduce"] .magic-glow::before, html[data-motion="reduce"] .mg-spark { animation: none; } html[data-motion="reduce"] .mg-spark { display: none; } html[data-motion="reduce"] .magic-glow { box-shadow: 0 0 14px 2px color-mix(in srgb, var(--accent) 45%, transparent); } }
+  @media (prefers-reduced-motion: reduce) { html[data-motion="reduce"] .cele i, html[data-motion="reduce"] .cele-ring { display: none; } html[data-motion="reduce"] .cele-pill { animation: cele-fade 2.6s ease-out forwards; }
     @keyframes cele-fade { 0%, 80% { opacity: 1; } 100% { opacity: 0; } } }
 
   /* ===== a quiet Abide moment after time away — the same first move as Treasuring ===== */
@@ -451,7 +453,7 @@
     -webkit-mask: radial-gradient(circle, transparent 0 11%, #000 18%, rgba(0,0,0,.4) 45%, transparent 72%); mask: radial-gradient(circle, transparent 0 11%, #000 18%, rgba(0,0,0,.4) 45%, transparent 72%); }
   .ma-rays.go { animation: ma-rays 2.6s ease-out forwards; }
   @keyframes ma-rays { 0% { opacity: 0; transform: scale(.3) rotate(0deg); } 18% { opacity: .95; } 100% { opacity: 0; transform: scale(1.35) rotate(22deg); } }
-  @media (prefers-reduced-motion: reduce) { .ma-rays { display: none; } }
+  @media (prefers-reduced-motion: reduce) { html[data-motion="reduce"] .ma-rays { display: none; } }
   .ma-rest { display: none; flex-direction: column; align-items: center; } .ma-rest.show { display: flex; animation: ma-fade 1.2s ease both; }
   @keyframes ma-fade { from { opacity: 0; } to { opacity: 1; } }
   .ma-rest .breath-bloom { width: 150px; height: 150px; } .ma-rest .petal { width: 52px; height: 52px; margin: -26px 0 0 -26px; }
@@ -571,7 +573,7 @@
   .bp-spark::after { transform: rotate(90deg); }
   @keyframes bp-spark { 0%, 47% { opacity: 0; transform: rotate(var(--a)) translateY(-18px) scale(.3); } 54% { opacity: 1; transform: rotate(var(--a)) translateY(-46px) scale(1.1); }
     82%, 100% { opacity: 0; transform: rotate(var(--a)) translateY(-135px) scale(.3); } }
-  @media (prefers-reduced-motion: reduce) { .bp-ring, .bp-spark { display: none; } }
+  @media (prefers-reduced-motion: reduce) { html[data-motion="reduce"] .bp-ring, html[data-motion="reduce"] .bp-spark { display: none; } }
   .ma-rest .breath-cross, .ma-rest .bp-ring, .ma-rest .bp-spark { top: 75px; }
   .ma-rest .breath-cross { margin-top: -16px; }
   @keyframes cross-reveal {
@@ -979,6 +981,7 @@
         <h3>Celebrations</h3>
         <div class="settings-row"><span>Micro celebrations (sparks and a glow when you start, finish, or abide — plus a little welcome when you open the app)</span><input type="checkbox" id="celebrateToggle"></div>
         <div class="settings-row"><span>Glow on your next step</span><input type="checkbox" id="glowToggle"></div>
+        <div class="settings-row"><span>Follow my phone’s Reduce Motion setting (turns the sparkles, glow and breath pulse off when it’s on)</span><input type="checkbox" id="reduceMotionToggle"></div>
         <div class="settings-row"><span>Offer a quiet Abide moment (a heart placed with Jesus) after being idle</span>
           <select id="microAbideSelect"><option value="0">Never</option><option value="5">5 min</option><option value="10">10 min</option><option value="15">15 min</option><option value="30">30 min</option><option value="60">1 hour</option><option value="120">2 hours</option></select></div>
         <button class="btn" id="microAbidePreview" style="width:100%; margin-top:4px;">Preview it now</button>
@@ -1291,6 +1294,7 @@
     icsUrls: '', icsProxy: '',
     syncIdleMin: 2, // cloud push waits this many idle minutes after your last change (0 = only the Sync now button)
     microAbideMins: 15, // offer a quiet Abide moment after this many idle minutes (or this long away from the app); 0 = never
+    respectReduceMotion: false, // the effects are opt-in already, so they ignore the phone's Reduce Motion unless this is on
     glow: true, // a magical glow on the next step (only while celebrations are on)
     celebrate: false, // opt-in layer of tiny moments; never changes behavior
   };
@@ -1378,7 +1382,7 @@
   const magic = (() => {
     let cv = null, ctx = null, W = 0, H = 0, dpr = 1, parts = [], blooms = [], raf = 0, last = 0;
     const sprites = {}, rnd = (a, b) => a + Math.random() * (b - a);
-    const reduce = () => window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const reduce = () => document.documentElement.dataset.motion === 'reduce';
     function size() { dpr = Math.min(2, window.devicePixelRatio || 1); W = innerWidth; H = innerHeight; cv.width = W * dpr; cv.height = H * dpr; ctx.setTransform(dpr, 0, 0, dpr, 0, 0); }
     function ensure() {
       if (cv) return;
@@ -1591,7 +1595,17 @@
 
   // ===== glow on the next step: found by looking, not by being told — so it stays right
   // whatever changed it (a tap, a sync, a finished timer) =====
-  let glowEl = null;
+  function applyMotionPref() {
+    const respect = !!settings.respectReduceMotion && window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
+    document.documentElement.dataset.motion = respect ? 'reduce' : '';
+  }
+  applyMotionPref();
+  // the light that circles the edge turns an @property angle; a browser without @property would
+  // leave it frozen at its start, so there the angle is turned by script instead
+  const NEEDS_JS_SPIN = !(window.CSS && CSS.registerProperty);
+  if (NEEDS_JS_SPIN) document.documentElement.classList.add('mg-js-spin');
+  let glowEl = null, spinAng = 0;
+  if (NEEDS_JS_SPIN) setInterval(() => { if (glowEl && document.visibilityState === 'visible' && document.documentElement.dataset.motion !== 'reduce') { spinAng = (spinAng + 4.5) % 360; glowEl.style.setProperty('--mg-ang', spinAng + 'deg'); } }, 40);
   function glowTarget() {
     if (!settings.celebrate || settings.glow === false) return null;
     if (!document.getElementById('view-step').classList.contains('active') || document.getElementById('mapOverlay').classList.contains('show') || workSeg) return null;
@@ -1629,6 +1643,7 @@
   document.getElementById('microAbideSelect').addEventListener('change', (e) => { settings.microAbideMins = parseInt(e.target.value, 10) || 0; saveSettings(); });
   document.getElementById('microAbidePreview').addEventListener('click', () => microAbide.show(true));
   document.getElementById('heartBtn').addEventListener('click', () => microAbide.show());
+  document.getElementById('reduceMotionToggle').addEventListener('change', (e) => { settings.respectReduceMotion = e.target.checked; saveSettings(); applyMotionPref(); });
   document.getElementById('glowToggle').addEventListener('change', (e) => { settings.glow = e.target.checked; saveSettings(); updateMagic(); });
 
   // ===== tab / mode switching =====
@@ -5418,7 +5433,7 @@ For God alone my soul waits in silence. — Psalm 62:1`;
     autoOverrunEnabled = !!settings.autoOverrun; setChk('autoOverrunToggle', autoOverrunEnabled);
     bumpMinutes = settings.bumpMinutes; setVal('bumpLengthInput', bumpMinutes); updateContinueLabel();
     setVal('weekResetSelect', settings.weekReset); setVal('syncIdleSelect', String(settings.syncIdleMin));
-    setChk('celebrateToggle', !!settings.celebrate); setChk('glowToggle', settings.glow !== false); setVal('microAbideSelect', String(settings.microAbideMins)); renderTallies(); updateMagic();
+    setChk('celebrateToggle', !!settings.celebrate); setChk('glowToggle', settings.glow !== false); setChk('reduceMotionToggle', !!settings.respectReduceMotion); applyMotionPref(); setVal('microAbideSelect', String(settings.microAbideMins)); renderTallies(); updateMagic();
     voiceNotesEnabled = settings.voiceNotes !== false; setChk('voiceNotesToggle', voiceNotesEnabled); updateMicBtnVisibility();
     setVal('icsUrls', settings.icsUrls); setVal('icsProxy', settings.icsProxy);
     ['step', 'ahead', 'abide'].forEach(m => {
