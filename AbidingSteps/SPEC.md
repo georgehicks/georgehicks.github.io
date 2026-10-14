@@ -821,3 +821,16 @@ arrives the outcome is starred back onto Today once per date (`autoStarKey`).
 `ownSnoozed(o)` is just the outcome's own date (what the snooze controls edit).
 Ahead shows each step's @contexts/dates and an @context badge per outcome. Step's
 picker: By outcome · By context · By date (agenda of all dated open steps).
+
+### Map context filter + magic (2026-10-14)
+
+Map: `@` opens a strip of @contexts (plus Due) with counts; 1-9 toggle, c clears;
+the map keeps only branches holding a matching open step (own or inherited
+context) and hides the rest. Celebrations are drawn on a canvas (`magic`):
+sparkle stars + glow sprites, per-kind bursts (done/milestone = three staggered
+bursts + glitter rain; abide = slow motes; review/welcome = motes rising from the
+bottom). A welcome plays when the app opens (celebrations on). `updateMagic()`
+polls once a second and puts a travelling-light glow + CSS twinkles on the next
+step (selected outcome's summary bar, else the first Today chip, else the first
+By-context/date row). Both opt-in via Settings → Celebrations; reduced-motion
+gets the pill only.

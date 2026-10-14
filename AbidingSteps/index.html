@@ -368,6 +368,30 @@
     20% { transform: translateX(-50%) scale(1); } 82% { opacity: 1; } 100% { opacity: 0; transform: translateX(-50%) translateY(-14px); } }
   @keyframes cele-ring { 0% { opacity: 0.9; transform: scale(0.4); } 100% { opacity: 0; transform: scale(9); } }
   @keyframes cele-spark { 0% { opacity: 1; transform: translate(0, 0) scale(1); } 100% { opacity: 0; transform: translate(var(--x), var(--y)) scale(0.4); } }
+  /* the pill gets a soft gold shimmer; the sparks themselves are drawn on a canvas (see `magic`) */
+  .cele-pill { background: linear-gradient(135deg, var(--accent), color-mix(in srgb, var(--accent) 55%, #ffd86b)); overflow: hidden; }
+  .cele-pill::after { content: ''; position: absolute; top: 0; bottom: 0; width: 40%; left: -50%; background: linear-gradient(100deg, transparent, rgba(255,255,255,.55), transparent);
+    animation: cele-shine 1.4s .25s ease-out forwards; }
+  @keyframes cele-shine { to { left: 120%; } }
+  /* a magical glow on the next step: a light that travels round the edge, a breathing halo,
+     and a few twinkles drifting up — all CSS, so it costs nothing while idle */
+  @property --mg-ang { syntax: '<angle>'; initial-value: 0deg; inherits: false; }
+  .magic-glow { position: relative; animation: mg-pulse 2.8s ease-in-out infinite; }
+  .magic-glow::before { content: ''; position: absolute; inset: -2px; border-radius: inherit; padding: 2px; pointer-events: none;
+    background: conic-gradient(from var(--mg-ang), transparent 0 50%, var(--accent), #ffd86b, #fff, transparent);
+    -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0); -webkit-mask-composite: xor; mask-composite: exclude;
+    animation: mg-spin 3.2s linear infinite; }
+  @keyframes mg-spin { to { --mg-ang: 360deg; } }
+  @keyframes mg-pulse {
+    0%, 100% { box-shadow: 0 0 6px 0 color-mix(in srgb, var(--accent) 35%, transparent), 0 0 18px 2px color-mix(in srgb, var(--accent) 16%, transparent); }
+    50% { box-shadow: 0 0 12px 2px color-mix(in srgb, var(--accent) 60%, transparent), 0 0 34px 6px color-mix(in srgb, var(--accent) 28%, transparent); } }
+  .mg-spark { position: absolute; width: 9px; height: 9px; margin: -4.5px; pointer-events: none; opacity: 0; background: #fff6d6;
+    clip-path: polygon(50% 0, 62% 38%, 100% 50%, 62% 62%, 50% 100%, 38% 62%, 0 50%, 38% 38%);
+    filter: drop-shadow(0 0 3px #ffd86b); animation: mg-twinkle 2.6s ease-in-out infinite; animation-delay: var(--d, 0s); }
+  .mg-spark:nth-child(3n) { width: 6px; height: 6px; background: var(--accent); }
+  @keyframes mg-twinkle { 0% { opacity: 0; transform: translateY(6px) scale(.3) rotate(0); } 35% { opacity: 1; transform: translateY(-4px) scale(1) rotate(45deg); }
+    100% { opacity: 0; transform: translateY(-20px) scale(.2) rotate(90deg); } }
+  @media (prefers-reduced-motion: reduce) { .magic-glow, .magic-glow::before, .mg-spark { animation: none; } .mg-spark { display: none; } .magic-glow { box-shadow: 0 0 14px 2px color-mix(in srgb, var(--accent) 45%, transparent); } }
   @media (prefers-reduced-motion: reduce) { .cele i, .cele-ring { display: none; } .cele-pill { animation: cele-fade 2.6s ease-out forwards; }
     @keyframes cele-fade { 0%, 80% { opacity: 1; } 100% { opacity: 0; } } }
 
@@ -577,6 +601,12 @@
   .map-bar kbd, .map-help kbd { background: var(--bg-raised); border: 1px solid var(--border); border-bottom-width: 2px; border-radius: 4px; padding: 0 5px; font: inherit; font-size: 0.72rem; color: var(--text); }
   .map-bar .spacer { flex: 1; }
   .map-find { background: var(--bg-raised); border: 1px solid var(--ahead); color: var(--text); border-radius: 6px; padding: 3px 8px; font: inherit; width: 220px; }
+  .map-ctx { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; padding: 6px 16px; border-bottom: 1px solid var(--border); font-size: 0.78rem; color: var(--text-dim); background: var(--bg-elevated); }
+  .map-ctx .chip { border: 1px solid var(--border); border-radius: 999px; padding: 2px 10px; cursor: pointer; background: var(--bg-raised); color: var(--text); }
+  .map-ctx .chip.on { border-color: var(--step); color: var(--step); background: color-mix(in srgb, var(--step) 16%, var(--bg-raised)); }
+  .map-ctx .chip kbd, .map-ctx kbd { background: var(--bg); border: 1px solid var(--border); border-bottom-width: 2px; border-radius: 4px; padding: 0 5px; font: inherit; font-size: 0.7rem; margin-right: 4px; color: var(--text); }
+  .map-ctx.focus { box-shadow: inset 0 -2px 0 var(--step); }
+  .mt-box.ctxhit { box-shadow: 0 0 0 2px color-mix(in srgb, var(--step) 55%, transparent); }
   .map-body { flex: 1; display: flex; min-height: 0; }
   #mapPanel { width: 270px; flex: none; border-left: 1px solid var(--border); background: var(--bg-elevated); overflow: auto; padding: 12px 14px 24px; font-size: 0.8rem; display: none; }
   #mapPanel.show { display: block; }
@@ -856,7 +886,8 @@
 
       <div class="settings-section">
         <h3>Celebrations</h3>
-        <div class="settings-row"><span>Micro celebrations (a small glow when you start, finish, or abide)</span><input type="checkbox" id="celebrateToggle"></div>
+        <div class="settings-row"><span>Micro celebrations (sparks and a glow when you start, finish, or abide — plus a little welcome when you open the app)</span><input type="checkbox" id="celebrateToggle"></div>
+        <div class="settings-row"><span>Glow on your next step</span><input type="checkbox" id="glowToggle"></div>
         <div class="settings-row" style="display:block;"><span id="tallyLine" style="color:var(--text-dim);font-size:0.82rem;"></span></div>
       </div>
 
@@ -1071,12 +1102,13 @@
   <div class="map-bar">
     <b>MAP</b>
     <span><kbd>↑↓←→</kbd> move</span><span><kbd>Enter</kbd> next line</span><span><kbd>Tab</kbd> child</span>
-    <span><kbd>e</kbd> edit</span><span><kbd>1</kbd>–<kbd>7</kbd> bucket</span><span><kbd>w</kbd> work</span><span><kbd>i</kbd> details</span><span><kbd>?</kbd> all keys</span><span><kbd>Esc</kbd> close</span>
+    <span><kbd>e</kbd> edit</span><span><kbd>1</kbd>–<kbd>7</kbd> bucket</span><span><kbd>w</kbd> work</span><span><kbd>@</kbd> filter</span><span><kbd>i</kbd> details</span><span><kbd>?</kbd> all keys</span><span><kbd>Esc</kbd> close</span>
     <input type="text" class="map-find" id="mapFind" placeholder="Find…" hidden>
     <span class="spacer"></span><span id="mapStatus"></span><span id="mapSync" title="Last cloud sync"></span>
     <span class="map-timer" id="mapTimer" hidden title="Timer running — w to open"></span>
     <button type="button" class="map-mode-btn" id="mapMusic" title="Music for this mode (.)">♪ <span id="mapModeLbl">Ahead</span></button>
   </div>
+  <div class="map-ctx" id="mapCtx" hidden></div>
   <div class="map-body">
     <div id="mapScroll"><div id="mapCanvas"><svg id="mapSvg"></svg><div id="mapTree"></div></div></div>
     <aside id="mapPanel" aria-label="Details"></aside>
@@ -1101,6 +1133,8 @@
     <div><kbd>w</kbd> work on the selected outcome / milestone / step: pick a length (<kbd>1</kbd>–<kbd>9</kbd> or <kbd>←</kbd><kbd>→</kbd> + <kbd>Enter</kbd>). The timer is the Step timer, music switches to Step music, time counts as Step time</div>
     <div>While it runs: <kbd>c</kbd> continue (+ more time) · <kbd>d</kbd> done · <kbd>s</kbd> stop · <kbd>n</kbd> capture a note (it appears in the map at once; Enter again for another) · <kbd>Esc</kbd> tuck the popup away (the timer stays in the top bar; <kbd>w</kbd> brings it back)</div>
     <div><kbd>b</kbd> Abide pause (verse + Abide music) · <kbd>.</kbd> music on/off · planning in the map plays Ahead music</div>
+    <h4>Context filter</h4>
+    <div><kbd>@</kbd> opens a strip of your @contexts (and Due) — <kbd>1</kbd>–<kbd>9</kbd> toggle one, <kbd>c</kbd> clears, <kbd>Enter</kbd>/<kbd>Esc</kbd> back to the map with the filter still on. The map shows only branches with a matching open step (and its nested lines); everything else hides. Clear the filter to add or restructure.</div>
     <h4>Details panel</h4>
     <div><kbd>i</kbd> jump into the side panel (kind, role, bucket, date, maybe, done, budget) · <kbd>Tab</kbd> between fields · <kbd>Enter</kbd> or <kbd>Esc</kbd> back to the map · <kbd>I</kbd> hide it</div>
     <h4>Other</h4>
@@ -1161,6 +1195,7 @@
     musicVolume: 40, // percent of device volume — background music should sit under your thinking, not over it
     icsUrls: '', icsProxy: '',
     syncIdleMin: 2, // cloud push waits this many idle minutes after your last change (0 = only the Sync now button)
+    glow: true, // a magical glow on the next step (only while celebrations are on)
     celebrate: false, // opt-in layer of tiny moments; never changes behavior
   };
   function loadSettings() {
@@ -1190,7 +1225,8 @@
     milestone: ['Milestone reached', 'A mark passed'],
     abide: ['You paused with Him', 'Abided', 'Rested in Him'],
     added: ['Step added — a clear next move', 'Named it. That helps', 'One more step on the path'],
-    review: ['Day laid out', 'Morning review done']
+    review: ['Day laid out', 'Morning review done'],
+    welcome: ['Welcome back', 'Good to see you', 'Abide in me — now take the next step']
   };
   // can't-lose counters: lifetime totals that only ever go up — no streaks, no resets.
   // They start counting from when celebrations are turned on.
@@ -1212,17 +1248,18 @@
   // named by anchorSel (for things nobody tapped — a timer ending), else bottom-centre
   let lastTap = null;
   document.addEventListener('pointerdown', (e) => { lastTap = { x: e.clientX, y: e.clientY, at: Date.now() }; }, { passive: true, capture: true });
-  function celebrate(kind, anchorSel) {
+  function celebrate(kind, anchorSel, pos) {
     if (!settings.celebrate) return;
     const now = Date.now();
     if (now - lastCeleAt < 1500) return; // never stack
     lastCeleAt = now;
-    const n = bumpTally(kind);
+    const n = kind === 'welcome' ? 0 : bumpTally(kind);
     document.querySelectorAll('.cele').forEach(x => x.remove());
     const lines = CELEBRATE_LINES[kind] || CELEBRATE_LINES.done;
     let x = innerWidth / 2, y = innerHeight - 140;
     const anchor = anchorSel && document.querySelector(anchorSel);
-    if (anchor && anchor.offsetParent !== null) {
+    if (pos) { x = pos.x; y = pos.y; }
+    else if (anchor && anchor.offsetParent !== null) {
       const r = anchor.getBoundingClientRect(); x = r.left + r.width / 2; y = r.top + r.height / 2;
     } else if (lastTap && now - lastTap.at < 8000) { x = lastTap.x; y = lastTap.y; }
     x = Math.max(120, Math.min(innerWidth - 120, x)); y = Math.max(90, Math.min(innerHeight - 20, y));
@@ -1230,27 +1267,140 @@
     el.className = 'cele'; el.setAttribute('role', 'status');
     el.style.left = x + 'px'; el.style.top = y + 'px';
     const pill = document.createElement('div'); pill.className = 'cele-pill';
-    pill.textContent = lines[Math.floor(Math.random() * lines.length)];
+    pill.textContent = '✦ ' + lines[Math.floor(Math.random() * lines.length)];
     if (n > 1 && (n % 5 === 0 || n === 10 || kind === 'done')) { const c = document.createElement('small'); c.textContent = '#' + n; pill.appendChild(c); }
     el.appendChild(pill);
-    const ring = document.createElement('div'); ring.className = 'cele-ring'; el.appendChild(ring);
-    const count = kind === 'done' || kind === 'milestone' ? 26 : 16;
-    for (let i = 0; i < count; i++) {
-      const ang = (i / count) * Math.PI * 2 + Math.random() * 0.3, r = 50 + Math.random() * 55, sp = document.createElement('i');
-      sp.style.setProperty('--x', Math.round(Math.cos(ang) * r) + 'px');
-      sp.style.setProperty('--y', Math.round(Math.sin(ang) * r) + 'px');
-      sp.style.setProperty('--d', (i % 4) * 0.03 + 's');
-      el.appendChild(sp);
-    }
     document.body.appendChild(el);
+    magic.play(kind, x, y);
     renderTallies();
     setTimeout(() => el.remove(), 2700);
-    if (navigator.vibrate) { try { navigator.vibrate(kind === 'done' || kind === 'milestone' ? [30, 40, 30] : 20); } catch (e) {} }
+    if (navigator.vibrate && kind !== 'welcome') { try { navigator.vibrate(kind === 'done' || kind === 'milestone' ? [30, 40, 30] : 20); } catch (e) {} }
   }
+
+  // ===== magic: sparks, glitter and blooms of light on one transparent canvas. It only
+  // runs while there is something to draw, and does nothing under reduced-motion. =====
+  const magic = (() => {
+    let cv = null, ctx = null, W = 0, H = 0, dpr = 1, parts = [], blooms = [], raf = 0, last = 0;
+    const sprites = {}, rnd = (a, b) => a + Math.random() * (b - a);
+    const reduce = () => window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
+    function size() { dpr = Math.min(2, window.devicePixelRatio || 1); W = innerWidth; H = innerHeight; cv.width = W * dpr; cv.height = H * dpr; ctx.setTransform(dpr, 0, 0, dpr, 0, 0); }
+    function ensure() {
+      if (cv) return;
+      cv = document.createElement('canvas'); cv.setAttribute('aria-hidden', 'true');
+      cv.style.cssText = 'position:fixed;left:0;top:0;width:100%;height:100%;pointer-events:none;z-index:300';
+      document.body.appendChild(cv); ctx = cv.getContext('2d'); size(); addEventListener('resize', size);
+    }
+    function accent() {
+      const m = /^#?([0-9a-f]{6})$/i.exec(getComputedStyle(document.documentElement).getPropertyValue('--accent').trim());
+      const n = m ? parseInt(m[1], 16) : 0x4fd1c5; return [n >> 16 & 255, n >> 8 & 255, n & 255];
+    }
+    const lighten = (c, t) => c.map(v => Math.round(v + (255 - v) * t));
+    const palette = () => { const a = accent(); return [a, lighten(a, .5), [255, 216, 107], [255, 246, 214], [190, 170, 255]]; };
+    function sprite(c) {
+      const k = c.join(','); if (sprites[k]) return sprites[k];
+      const s = document.createElement('canvas'); s.width = s.height = 64; const x = s.getContext('2d');
+      const g = x.createRadialGradient(32, 32, 0, 32, 32, 32);
+      g.addColorStop(0, 'rgba(' + k + ',1)'); g.addColorStop(.25, 'rgba(' + k + ',.5)'); g.addColorStop(1, 'rgba(' + k + ',0)');
+      x.fillStyle = g; x.fillRect(0, 0, 64, 64); return (sprites[k] = s);
+    }
+    const add = (p) => parts.push(Object.assign({ vx: 0, vy: 0, g: 0, drag: .97, age: 0, life: 1, size: 4, col: [255, 255, 255], tw: Math.random() * 6, star: true, spin: rnd(-3, 3) }, p));
+    const bloom = (x, y, r, col, dur) => blooms.push({ x, y, r, col: col || accent(), age: 0, dur: dur || .9 });
+    const pick = (P) => P[Math.floor(Math.random() * P.length)];
+    function burst(x, y, n, o) {
+      const P = palette();
+      for (let i = 0; i < n; i++) {
+        const ang = rnd(0, Math.PI * 2), sp = rnd(o.s[0], o.s[1]);
+        add({ x, y, vx: Math.cos(ang) * sp, vy: Math.sin(ang) * sp - (o.up || 0), g: o.g == null ? .05 : o.g, life: rnd(o.l[0], o.l[1]), size: rnd(o.z[0], o.z[1]), col: pick(P) });
+      }
+    }
+    function rain(n) { // glitter falling from the top
+      const P = palette();
+      for (let i = 0; i < n; i++) add({ x: rnd(0, W), y: rnd(-40, H * .2), vx: rnd(-.4, .4), vy: rnd(.7, 1.9), g: .012, drag: .995, life: rnd(1.4, 2.6), size: rnd(1.8, 3.8), col: pick(P) });
+    }
+    function rise(n, x0, x1, y, o) { // soft motes lifting off
+      const P = palette();
+      for (let i = 0; i < n; i++) add({ x: rnd(x0, x1), y: y + rnd(-10, 10), vx: rnd(-.35, .35), vy: -rnd(o.v[0], o.v[1]), g: -.002, drag: .995, life: rnd(o.l[0], o.l[1]), size: rnd(o.z[0], o.z[1]), col: pick(P), star: !!o.star });
+    }
+    function frame(ts) {
+      const dt = Math.min(.05, (ts - last) / 1000 || .016); last = ts; const f = dt * 60;
+      ctx.clearRect(0, 0, W, H); ctx.globalCompositeOperation = 'lighter';
+      blooms = blooms.filter(b => (b.age += dt) < b.dur);
+      blooms.forEach(b => { const t = b.age / b.dur, r = b.r * (.35 + t * .85); ctx.globalAlpha = (1 - t) * .5; ctx.drawImage(sprite(b.col), b.x - r, b.y - r, r * 2, r * 2); });
+      parts = parts.filter(p => (p.age += dt) < p.life && p.y < H + 40 && p.y > -80);
+      parts.forEach(p => {
+        p.vx *= Math.pow(p.drag, f); p.vy = p.vy * Math.pow(p.drag, f) + p.g * f; p.x += p.vx * f; p.y += p.vy * f;
+        const t = p.age / p.life, a = (t < .12 ? t / .12 : 1 - (t - .12) / .88) * (.65 + .35 * Math.sin(p.tw + p.age * 14));
+        ctx.globalAlpha = Math.max(0, a) * .8; const gs = p.size * 5; ctx.drawImage(sprite(p.col), p.x - gs / 2, p.y - gs / 2, gs, gs);
+        if (p.star) {
+          ctx.globalAlpha = Math.max(0, a); ctx.fillStyle = 'rgb(' + p.col.join(',') + ')';
+          ctx.save(); ctx.translate(p.x, p.y); ctx.rotate(p.spin * p.age); ctx.beginPath();
+          for (let i = 0; i < 8; i++) { const r = i % 2 ? p.size * .38 : p.size * 1.7, an = i * Math.PI / 4; ctx.lineTo(Math.cos(an) * r, Math.sin(an) * r); }
+          ctx.closePath(); ctx.fill(); ctx.restore();
+        }
+      });
+      ctx.globalAlpha = 1; ctx.globalCompositeOperation = 'source-over';
+      if (parts.length || blooms.length) raf = requestAnimationFrame(frame); else { raf = 0; ctx.clearRect(0, 0, W, H); }
+    }
+    function go() { if (!raf) { last = performance.now(); raf = requestAnimationFrame(frame); } }
+    function play(kind, x, y) {
+      if (reduce()) return;
+      ensure();
+      if (kind === 'done' || kind === 'milestone') {
+        bloom(x, y, 220, null, 1.1); burst(x, y, 54, { s: [1.5, 6], l: [.9, 1.6], z: [2.5, 5.5], g: .06 });
+        setTimeout(() => { bloom(x - 80, y - 70, 130, [255, 216, 107], .8); burst(x - 80, y - 70, 36, { s: [1, 4.5], l: [.8, 1.4], z: [2, 4.5], g: .06 }); }, 200);
+        setTimeout(() => { bloom(x + 90, y - 40, 130, [190, 170, 255], .8); burst(x + 90, y - 40, 36, { s: [1, 4.5], l: [.8, 1.4], z: [2, 4.5], g: .06 }); }, 380);
+        rain(70);
+      } else if (kind === 'chunk') {
+        bloom(x, y, 170); burst(x, y, 38, { s: [1.2, 5], l: [.8, 1.4], z: [2.5, 5], g: .05 }); rain(30);
+      } else if (kind === 'start') {
+        bloom(x, y, 120); burst(x, y, 28, { s: [1.2, 4.4], l: [.7, 1.2], z: [2.5, 5], g: .03 });
+      } else if (kind === 'added') {
+        burst(x, y, 18, { s: [.8, 3], l: [.7, 1.2], z: [2, 4], g: .04, up: 2.2 });
+      } else if (kind === 'abide') {
+        bloom(x, y, 200, [143, 191, 122], 1.6); rise(26, x - 90, x + 90, y + 20, { v: [.3, 1], l: [2.2, 3.6], z: [3, 6], star: false });
+      } else if (kind === 'review') {
+        bloom(W / 2, H, 360, [255, 216, 107], 1.8); rise(46, 0, W, H, { v: [.8, 2.2], l: [2, 3.4], z: [2, 5], star: true });
+      } else if (kind === 'welcome') {
+        bloom(x, y, 240, null, 1.6); rise(58, 0, W, H, { v: [.9, 2.6], l: [2.2, 3.8], z: [2, 5], star: true }); burst(x, y, 22, { s: [.6, 2.6], l: [1, 1.7], z: [2, 4], g: .01 });
+      } else return;
+      go();
+    }
+    return { play };
+  })();
+
+  // ===== glow on the next step: found by looking, not by being told — so it stays right
+  // whatever changed it (a tap, a sync, a finished timer) =====
+  let glowEl = null;
+  function glowTarget() {
+    if (!settings.celebrate || settings.glow === false) return null;
+    if (!document.getElementById('view-step').classList.contains('active') || document.getElementById('mapOverlay').classList.contains('show') || workSeg) return null;
+    const rev = document.getElementById('morningReview'); if (rev && !rev.hidden) return null;
+    const vis = (el) => el && el.offsetParent !== null ? el : null;
+    if (selectedOutcomeId) return vis(document.getElementById('outcomeSummary'));
+    if (pickMode === 'ctx' || pickMode === 'date') return vis(document.querySelector('#ctxPicker .ctx-item'));
+    return vis(document.querySelector('#outcomesToday .outcome-chip:not(.add-chip)')) || vis(document.querySelector('#outcomesRecent .outcome-chip:not(.add-chip)'));
+  }
+  function updateMagic() {
+    const t = glowTarget();
+    if (t === glowEl) return;
+    if (glowEl) { glowEl.classList.remove('magic-glow'); glowEl.querySelectorAll(':scope > .mg-spark').forEach(x => x.remove()); }
+    glowEl = t;
+    if (!t) return;
+    t.classList.add('magic-glow');
+    for (let i = 0; i < 7; i++) {
+      const sp = document.createElement('i'); sp.className = 'mg-spark';
+      sp.style.left = (6 + Math.random() * 88) + '%'; sp.style.top = (Math.random() < .5 ? 8 : 92) + '%';
+      sp.style.setProperty('--d', (i * 0.37).toFixed(2) + 's'); t.appendChild(sp);
+    }
+  }
+  setInterval(updateMagic, 1000);
+
   document.getElementById('celebrateToggle').addEventListener('change', (e) => {
     settings.celebrate = e.target.checked; saveSettings();
     if (settings.celebrate) celebrate('start');
+    updateMagic();
   });
+  document.getElementById('glowToggle').addEventListener('change', (e) => { settings.glow = e.target.checked; saveSettings(); updateMagic(); });
 
   // ===== tab / mode switching =====
   function switchTab(tab) {
@@ -4142,10 +4292,12 @@ For God alone my soul waits in silence. — Psalm 62:1`;
       const stack = []; // enclosing lines, by indent
       noteLines(noteKeyFor(o, m)).forEach((raw, i) => {
         if (raw.trim() === '') return;
-        const r = STEP_RE.exec(raw), ind = indentOf(raw);
+        const r = STEP_RE.exec(raw), ind = indentOf(raw), text = r ? r[2] : raw.trim();
         while (stack.length && stack[stack.length - 1].ind >= ind) stack.pop();
-        const node = mk(lineKey(o, m, i), 'line', stack.length ? stack[stack.length - 1].node : parent, { o, m, line: i, raw, ind, mark: r ? r[1] : null, text: r ? r[2] : raw.trim() });
-        stack.push({ ind, node });
+        const par = stack[stack.length - 1];
+        const ctx = [...new Set([...(par ? par.ctx : []), ...ctxIn(text)])], date = dateIn(text) || (par ? par.date : null);
+        const node = mk(lineKey(o, m, i), 'line', par ? par.node : parent, { o, m, line: i, raw, ind, mark: r ? r[1] : null, text, ctx, date });
+        stack.push({ ind, node, ctx, date });
       });
     }
     // a line plus everything indented under it: [line, end) — blank lines inside count,
@@ -4178,9 +4330,62 @@ For God alone my soul waits in silence. — Psalm 62:1`;
     }
     function labelOf(n) { return n.kind === 'root' ? 'Ahead' : n.kind === 'bucket' ? n.bucket : n.kind === 'outcome' ? n.o.t : n.kind === 'ms' ? n.m.t : n.text; }
     const editText = (n) => n.kind === 'line' ? n.raw.replace(/\s+$/, '') : labelOf(n);
+    // ---- context filter: keep only branches holding a matching open step ----
+    const ctxBar = $('mapCtx');
+    let ctxSet = new Set(), ctxFocus = false, keep = null;
+    const filterOn = () => ctxSet.size > 0;
+    const kidsOf = (n) => (keep ? n.kids.filter(k => keep.has(k.key)) : n.kids);
+    function lineMatches(n) {
+      if (n.kind !== 'line' || n.mark !== '-') return false;
+      return [...ctxSet].some(c => c === '_due' ? !!(n.date && n.date <= todayKeyLocal()) : n.ctx.includes(c));
+    }
+    function computeKeep() {
+      if (!filterOn()) { keep = null; return; }
+      keep = new Set(['root']);
+      const walk = (n, forced) => {
+        const f = forced || lineMatches(n); let k = f;
+        n.kids.forEach(c => { if (walk(c, f)) k = true; });
+        if (k) keep.add(n.key);
+        return k;
+      };
+      model.root.kids.forEach(b => walk(b, false));
+    }
+    function ctxChips() { // contexts that exist on open steps, most used first
+      const counts = {}; let due = 0;
+      Object.values(model.nodes).forEach(n => {
+        if (n.kind !== 'line' || n.mark !== '-') return;
+        n.ctx.forEach(c => { counts[c] = (counts[c] || 0) + 1; });
+        if (n.date && n.date <= todayKeyLocal()) due++;
+      });
+      const names = Object.keys(counts).sort((a, b) => counts[b] - counts[a] || a.localeCompare(b));
+      return (due ? [{ id: '_due', label: 'Due', n: due }] : []).concat(names.map(c => ({ id: c, label: '@' + c, n: counts[c] })));
+    }
+    let ctxList = [];
+    function renderCtxBar() {
+      ctxList = ctxChips();
+      [...ctxSet].forEach(c => { if (!ctxList.some(x => x.id === c)) ctxSet.delete(c); }); // a context nobody uses any more
+      ctxBar.hidden = !(ctxFocus || filterOn());
+      ctxBar.classList.toggle('focus', ctxFocus);
+      if (ctxBar.hidden) return;
+      ctxBar.innerHTML = '<b style="color:var(--step)">FILTER</b>'
+        + (ctxList.length ? ctxList.slice(0, 9).map((c, i) => '<span class="chip' + (ctxSet.has(c.id) ? ' on' : '') + '" data-c="' + escapeHtml(c.id) + '"><kbd>' + (i + 1) + '</kbd>' + escapeHtml(c.label) + ' ' + c.n + '</span>').join('')
+          : '<span>No @contexts on open steps yet — add one like <b>- call venue @call</b></span>')
+        + (ctxFocus ? '<span><kbd>c</kbd> clear · <kbd>Enter</kbd> done</span>' : '<span>' + (filterOn() ? '<kbd>@</kbd> change' : '') + '</span>');
+    }
+    ctxBar.addEventListener('click', (e) => {
+      const c = e.target.closest('.chip'); if (!c) return;
+      if (ctxSet.has(c.dataset.c)) ctxSet.delete(c.dataset.c); else ctxSet.add(c.dataset.c);
+      render();
+    });
+    function ctxKey(e) { // the strip owns the keyboard while open
+      const k = e.key; e.preventDefault();
+      if (/^[1-9]$/.test(k) && ctxList[+k - 1]) { const id = ctxList[+k - 1].id; if (ctxSet.has(id)) ctxSet.delete(id); else ctxSet.add(id); render(); }
+      else if (k === 'c' || k === '0') { ctxSet.clear(); render(); }
+      else if (k === 'Escape' || k === 'Enter' || k === '@') { ctxFocus = false; if (!filterOn()) ctxBar.hidden = true; render(); }
+    }
     function visible() { // preorder list of what's on screen, with depth
       const out = [];
-      (function walk(n, d) { out.push({ n, d }); if (!folded.has(n.key)) n.kids.forEach(k => walk(k, d + 1)); })(model.root, 0);
+      (function walk(n, d) { out.push({ n, d }); if (!folded.has(n.key) || keep) kidsOf(n).forEach(k => walk(k, d + 1)); })(model.root, 0);
       return out;
     }
     function reveal(key) { for (let n = model.nodes[key] && model.nodes[key].parent; n; n = n.parent) folded.delete(n.key); }
@@ -4188,12 +4393,12 @@ For God alone my soul waits in silence. — Psalm 62:1`;
     function boxHtml(n, isFolded) {
       const done = (n.kind === 'outcome' && n.o.completed) || (n.kind === 'ms' && n.m.completed);
       const closed = n.kind === 'line' && n.mark === '+';
-      let cls = 'mt-box k-' + n.kind + (n.kind === 'line' && !n.mark ? ' note' : '') + (closed ? ' done' : '') + (sel === n.key ? ' sel' : '') + (done ? ' done' : '') + (cutKey === n.key ? ' cutting' : '') + (hits.includes(n.key) ? ' hit' : '');
+      let cls = 'mt-box k-' + n.kind + (n.kind === 'line' && !n.mark ? ' note' : '') + (closed ? ' done' : '') + (sel === n.key ? ' sel' : '') + (done ? ' done' : '') + (cutKey === n.key ? ' cutting' : '') + (hits.includes(n.key) ? ' hit' : '') + (keep && lineMatches(n) ? ' ctxhit' : '');
       let inner;
       if (editing && editing.key === n.key) inner = '<input class="mt-edit" value="' + escapeHtml(editText(n)) + '">';
       else {
         inner = n.kind === 'line' ? ctxHtml(escapeHtml(labelOf(n))) : escapeHtml(labelOf(n));
-        if (n.kind === 'bucket') inner += '<span class="ct">' + n.kids.length + '</span>';
+        if (n.kind === 'bucket') inner += '<span class="ct">' + kidsOf(n).length + '</span>';
         // - open, + closed; plain note lines carry no marker
         if (n.kind === 'outcome') inner = '<span class="tag mk">' + (n.o.completed ? '+' : '-') + '</span>' + inner + '<span class="tag typ">' + (n.o.type === 'Destination' ? '◎' : n.o.type === 'Directive' ? '∞' : '') + '</span>';
         if (n.kind === 'ms') inner = '<span class="tag mk">' + (n.m.completed ? '+' : '-') + '</span>' + inner;
@@ -4205,10 +4410,10 @@ For God alone my soul waits in silence. — Psalm 62:1`;
     }
     function ghostHtml() { return '<div class="mt-n"><div class="mt-box sel k-' + pending.kind + '" data-key="new"><input class="mt-edit" placeholder="' + ({ outcome: 'New outcome', ms: 'New milestone', line: '- step, or a plain note' }[pending.kind]) + '" value="' + escapeHtml(pending.prefill || '') + '"></div></div>'; }
     function nodeHtml(n) {
-      const isFolded = folded.has(n.key) && n.kids.length > 0;
+      const isFolded = !keep && folded.has(n.key) && n.kids.length > 0;
       let inner = '';
       if (!isFolded) {
-        const parts = n.kids.map(nodeHtml);
+        const parts = kidsOf(n).map(nodeHtml);
         if (pending && pending.parentKey === n.key) parts.splice(pending.kidIndex, 0, ghostHtml());
         if (parts.length) inner = '<div class="mt-kids">' + parts.join('') + '</div>';
       }
@@ -4443,7 +4648,9 @@ For God alone my soul waits in silence. — Psalm 62:1`;
     }
     function render() {
       model = build();
+      computeKeep(); renderCtxBar(); computeKeep();
       if (sel !== 'new' && !model.nodes[sel]) sel = 'root';
+      if (keep && sel !== 'new' && !keep.has(sel)) sel = 'root';
       tree.innerHTML = nodeHtml(model.root);
       const inp = tree.querySelector('.mt-edit');
       if (inp) { inp.focus(); if (pending && pending.prefill) inp.setSelectionRange(inp.value.length, inp.value.length); else inp.select(); }
@@ -4452,7 +4659,8 @@ For God alone my soul waits in silence. — Psalm 62:1`;
       const box = tree.querySelector('.mt-box.sel');
       if (box) box.scrollIntoView({ block: 'nearest', inline: 'nearest' });
       const n = model.nodes[sel];
-      $('mapStatus').textContent = cutKey && model.nodes[cutKey] ? 'Cut “' + labelOf(model.nodes[cutKey]) + '” — select a target, p to paste' : (n && n.kind === 'outcome' ? bucketOf(n.o) + ' · ' + (n.o.type || 'Inbox') : '');
+      const fcount = keep ? Object.values(model.nodes).filter(lineMatches).length : 0;
+      $('mapStatus').textContent = keep ? fcount + ' matching step' + (fcount === 1 ? '' : 's') : cutKey && model.nodes[cutKey] ? 'Cut “' + labelOf(model.nodes[cutKey]) + '” — select a target, p to paste' : (n && n.kind === 'outcome' ? bucketOf(n.o) + ' · ' + (n.o.type || 'Inbox') : '');
     }
 
     // ---- data changes: snapshot for undo, mutate, then mirror to Step + Ahead ----
@@ -4478,6 +4686,7 @@ For God alone my soul waits in silence. — Psalm 62:1`;
 
     // ---- typing things in ----
     function startPending(kind, parent, kidIndex, dataIndex, prefill) {
+      if (keep) { toast('Clear the filter (@ then c) to add things'); return; }
       folded.delete(parent.key);
       pending = { kind, parentKey: parent.key, kidIndex, dataIndex, prefill: prefill || '', prevSel: sel };
       editing = null; sel = 'new'; render();
@@ -4801,8 +5010,8 @@ For God alone my soul waits in silence. — Psalm 62:1`;
       const v = visible(), i = v.findIndex(x => x.n === n); if (i < 0) return;
       if (key === 'ArrowLeft') { if (n.parent) sel = n.parent.key; return; }
       if (key === 'ArrowRight') {
-        if (!n.kids.length) { toast('Tab adds a child'); return; }
-        folded.delete(n.key); sel = n.kids[0].key; return;
+        const ks = kidsOf(n); if (!ks.length) { toast('Tab adds a child'); return; }
+        folded.delete(n.key); sel = ks[0].key; return;
       }
       const dir = key === 'ArrowDown' ? 1 : -1, d = v[i].d;
       for (let j = i + dir; j >= 0 && j < v.length; j += dir) if (v[j].d === d) { sel = v[j].n.key; return; }
@@ -4821,6 +5030,7 @@ For God alone my soul waits in silence. — Psalm 62:1`;
         return;
       }
       if (wk && !wkHidden && !e.metaKey && !e.ctrlKey) { workKey(e); return; }
+      if (ctxFocus && e.target.tagName !== 'INPUT') { ctxKey(e); return; }
       if (e.target === findEl) {
         if (e.key === 'Escape') { e.preventDefault(); closeFind(); }
         else if (e.key === 'Enter') { e.preventDefault(); if (hits.length) { hitI = (hitI + 1) % hits.length; sel = hits[hitI]; reveal(sel); findEl.blur(); render(); findEl.focus(); } }
@@ -4877,6 +5087,7 @@ For God alone my soul waits in silence. — Psalm 62:1`;
       if (k === 'u') { handled(); doUndo(); return; }
       if (k === '>') { handled(); demoteNode(n); return; }
       if (k === '<') { handled(); promoteNode(n); return; }
+      if (k === '@') { handled(); ctxFocus = true; render(); return; }
       if (k === 'i') { handled(); focusPanel(); return; }
       if (k === 'w') { handled(); openWork(n); return; }
       if (k === 'b') { handled(); startAbide(); return; }
@@ -4963,7 +5174,7 @@ For God alone my soul waits in silence. — Psalm 62:1`;
     autoOverrunEnabled = !!settings.autoOverrun; setChk('autoOverrunToggle', autoOverrunEnabled);
     bumpMinutes = settings.bumpMinutes; setVal('bumpLengthInput', bumpMinutes); updateContinueLabel();
     setVal('weekResetSelect', settings.weekReset); setVal('syncIdleSelect', String(settings.syncIdleMin));
-    setChk('celebrateToggle', !!settings.celebrate); renderTallies();
+    setChk('celebrateToggle', !!settings.celebrate); setChk('glowToggle', settings.glow !== false); renderTallies(); updateMagic();
     voiceNotesEnabled = settings.voiceNotes !== false; setChk('voiceNotesToggle', voiceNotesEnabled); updateMicBtnVisibility();
     setVal('icsUrls', settings.icsUrls); setVal('icsProxy', settings.icsProxy);
     ['step', 'ahead', 'abide'].forEach(m => {
@@ -5275,6 +5486,12 @@ For God alone my soul waits in silence. — Psalm 62:1`;
     if (notesSaveTimer) { clearTimeout(notesSaveTimer); notesSaveTimer = null; store.set('notes', notesByKey); }
     if (cloudSync.pushTimer) cloudSync.pushNow();
   });
+  // a little welcome when the app opens (celebrations on, nothing already running)
+  setTimeout(() => {
+    if (settings.celebrate && !workSeg && document.getElementById('view-step').classList.contains('active')) {
+      celebrate('welcome', null, { x: innerWidth / 2, y: innerHeight * 0.42 }); updateMagic();
+    }
+  }, 900);
   // warm the music player once the page settles, so the very first 🎵 tap plays
   loadLocalTracks().then(() => setTimeout(() => musicPlayer.preload(), 1500));
 
