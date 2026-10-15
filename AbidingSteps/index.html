@@ -222,7 +222,11 @@
   .outcome-chip.destination .type-dot { background: var(--step); }
   .outcome-chip.directive .type-dot { background: var(--ahead); }
   .add-chip { border-style: dashed; color: var(--text-faint); }
-  .sub-outcome-row { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+  .sub-outcome-row { display: flex; flex-direction: column; gap: 7px; margin-top: 9px; }
+  .sub-outcome-row:empty { display: none; }
+  .sub-group { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+  .sub-group.nested { padding-left: 14px; border-left: 2px solid color-mix(in srgb, var(--accent) 28%, transparent); }
+  .milestone-chip.within { border-style: solid; background: color-mix(in srgb, var(--accent) 14%, transparent); }
   .milestone-chip { border-style: solid; border-color: color-mix(in srgb, var(--accent) 45%, var(--border)); }
 
   /* ===== Action block — the strong visual focal point; everything else stays subdued ===== */
@@ -876,8 +880,9 @@
             <div class="outcome-list" id="outcomesOther"></div>
           </div>
           <div class="outcome-list" id="outcomesMoreRow"></div>
-          <div class="sub-outcome-row" id="subOutcomeRow"></div>
         </div>
+        <!-- the chosen outcome's milestones and steps stay on screen under the "Working on" bar -->
+        <div class="sub-outcome-row" id="subOutcomeRow"></div>
       </div>
 
       <div class="action-block" id="actionBlock" style="display:none;">
@@ -3360,6 +3365,7 @@ For God alone my soul waits in silence. — Psalm 62:1`;
     // outcome-summary bar above would just repeat it and waste vertical space, so it
     // hides for the duration of the chunk and comes back once idle
     document.getElementById('outcomeSummary').style.display = 'none';
+    document.getElementById('subOutcomeRow').style.display = 'none'; // the timer's focus line stands in for it
     document.getElementById('actionFocus').textContent = 'Working on ' + (selectedOutcome() ? selectionLabel(selectedOutcome()) : '—');
     document.getElementById('timerSub').textContent = '';
     if (tickHandle) clearInterval(tickHandle);
@@ -3488,6 +3494,7 @@ For God alone my soul waits in silence. — Psalm 62:1`;
   // time blindness / ADHD focus, visible-but-unusable options are still clutter
   function expandOutcomePicker() {
     document.getElementById('outcomeSummary').style.display = 'none';
+    document.getElementById('subOutcomeRow').style.display = 'none';
     document.getElementById('outcomeFull').style.display = 'block';
     document.getElementById('actionBlock').style.display = 'none';
   }
@@ -3495,6 +3502,7 @@ For God alone my soul waits in silence. — Psalm 62:1`;
     if (otherExpanded) { otherExpanded = false; renderOutcomePicker(); } // next open starts short again
     document.getElementById('pickerNotice').hidden = true; // a notice is for this one open only
     document.getElementById('outcomeSummary').style.display = 'flex';
+    document.getElementById('subOutcomeRow').style.display = '';
     document.getElementById('outcomeFull').style.display = 'none';
     document.getElementById('actionBlock').style.display = '';
   }
@@ -3886,31 +3894,38 @@ For God alone my soul waits in silence. — Psalm 62:1`;
   // milestones, then the steps of whatever is chosen (the milestone, else the outcome)
   function selMilestone(o) { return selectedMilestoneId ? (o.milestones || []).find(m => m.id === selectedMilestoneId) || null : null; }
   function stepScope(o) { const m = selMilestone(o); if (m) return m; if (!o.subs) o.subs = []; return o; }
+  // everything you can focus on inside the chosen outcome, at once: its own steps, then each open
+  // milestone (tap it to focus the milestone) with that milestone's steps beside it. Tapping a
+  // chosen one again steps back out a level.
   function renderSubOutcomeRow(o) {
     const row = document.getElementById('subOutcomeRow');
     row.innerHTML = '';
-    const chip = (cls, text, onClick) => {
+    const group = (nested) => { const g = document.createElement('div'); g.className = 'sub-group' + (nested ? ' nested' : ''); row.appendChild(g); return g; };
+    const chip = (g, cls, text, onClick) => {
       const c = document.createElement('span'); c.className = cls; c.textContent = text;
-      c.addEventListener('click', onClick); row.appendChild(c); return c;
+      c.addEventListener('click', onClick); g.appendChild(c); return c;
     };
+    const pick = (msId, sub) => {
+      selectedMilestoneId = msId; selectedSubOutcome = sub;
+      if (msId) { const m = (o.milestones || []).find(x => x.id === msId); if (m) { m.lastWorked = Date.now(); saveOutcomes(); } }
+      renderSubOutcomeRow(o); finishOutcomeSelection(o);
+    };
+    const own = o.subs || [];
+    if (own.length) {
+      const g = group(false);
+      own.forEach(s => chip(g, 'chip' + (!selectedMilestoneId && s === selectedSubOutcome ? ' selected' : ''), s,
+        () => pick(null, (!selectedMilestoneId && s === selectedSubOutcome) ? null : s)));
+    }
     (o.milestones || []).filter(m => !m.completed || m.id === selectedMilestoneId).forEach(m => {
-      chip('chip milestone-chip' + (m.id === selectedMilestoneId ? ' selected' : ''), '◆ ' + m.t, () => {
-        // tapping the chosen milestone again steps back out to the outcome itself
-        selectedMilestoneId = m.id === selectedMilestoneId ? null : m.id;
-        selectedSubOutcome = null;
-        if (selectedMilestoneId) { m.lastWorked = Date.now(); saveOutcomes(); }
-        renderSubOutcomeRow(o); finishOutcomeSelection(o);
-      });
+      const g = group(false);
+      const here = m.id === selectedMilestoneId;
+      chip(g, 'chip milestone-chip' + (here && !selectedSubOutcome ? ' selected' : (here ? ' within' : '')), '◆ ' + m.t,
+        () => pick((here && !selectedSubOutcome) ? null : m.id, null));
+      (m.subs || []).forEach(s => chip(g, 'chip' + (here && s === selectedSubOutcome ? ' selected' : ''), s,
+        () => pick(m.id, (here && s === selectedSubOutcome) ? null : s)));
     });
-    const scope = stepScope(o);
-    scope.subs.forEach(s => {
-      chip('chip' + (s === selectedSubOutcome ? ' selected' : ''), s, () => {
-        selectedSubOutcome = s === selectedSubOutcome ? null : s;
-        renderSubOutcomeRow(o); finishOutcomeSelection(o);
-      });
-    });
-    const ms = selMilestone(o);
-    chip('chip add-chip', '+ step', () => {
+    const ms = selMilestone(o), ga = group(false);
+    chip(ga, 'chip add-chip', '+ step', () => {
       openTextModal({
         title: 'New step for ' + (ms ? ms.t : o.t),
         onSave: (s) => {
@@ -3923,7 +3938,7 @@ For God alone my soul waits in silence. — Psalm 62:1`;
         }
       });
     });
-    if (!ms) chip('chip add-chip', '+ milestone', () => {
+    chip(ga, 'chip add-chip', '+ milestone', () => {
       openTextModal({
         title: 'New milestone for ' + o.t,
         onSave: (t) => {
