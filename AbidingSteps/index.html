@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="en" data-mode="step">
 <head>
+<link rel="help" href="AGENTIC_GUIDE.md" title="Guide for agents and automation">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#0e1016">
@@ -6036,7 +6037,7 @@ For God alone my soul waits in silence. — Psalm 62:1`;
       for (const it of (list || [])) { const r = await call(it.op, it.args); out.push(r); if (stopOnError && !r.ok) break; }
       return ok({ results: out });
     }
-    const help = () => ({ schema: 1, note: 'call(op, args) → {ok, ...} | {ok:false, error}. Outcomes/milestones/steps can be named by id, exact title or a unique piece of it. Destructive ops need confirm:true.',
+    const help = () => ({ schema: 1, guide: new URL('AGENTIC_GUIDE.md', location.href).href, note: 'call(op, args) → {ok, ...} | {ok:false, error}. Outcomes/milestones/steps can be named by id, exact title or a unique piece of it. Destructive ops need confirm:true.',
       buckets: lib.BUCKETS, grammar: '- open step | + done step | indent 2 spaces = substep | @context | >YYYY-MM-DD (or >tomorrow >wed: rewritten to a date)',
       ops: Object.fromEntries(Object.entries(ops).map(([k, v]) => [k, v[0]])) });
     return { call, batch, help, ready: true, schema: 1, mode: AGENT_MODE ? 'agent' : 'normal' };

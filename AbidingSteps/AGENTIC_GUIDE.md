@@ -54,7 +54,7 @@ Call shape: `op` + `args` → `{ok:true, ...}` or `{ok:false, error, candidates?
 | `syncNow` | – | pushes now (browser path) |
 | `batch` | `{ops:[{op,args}], stopOnError?}` | `{results:[…]}` — **one round trip for many ops** |
 
-`window.abidingAgent.help()` returns this list from the running app — trust it over this file if they differ.
+`window.abidingAgent.help()` returns this list (and the URL of this guide) from the running app — trust it over this file if they differ. The page also advertises the guide with `<link rel="help">`.
 
 ## 3. The model in 60 seconds
 
