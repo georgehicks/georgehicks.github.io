@@ -858,3 +858,13 @@ work on an outcome plans it for today. Ahead has a Starred filter and floats
 starred first; the Step picker puts starred first within Today; the map shows ★ and
 `s` toggles it. A dated step coming due still pulls its outcome onto Today
 (`autoPlanKey`); the Effective Next Date is the earliest of the plan and any step date.
+
+### Agent access (2026-10-19)
+
+`window.abidingAgent` (call/batch/help) — a text-first API over the same code paths as the UI
+(`mut()` snapshots for undo, saves, redraws Ahead/Step/Map). `?agent=1` = quiet mode (no welcome,
+Abide invitation, celebrations, glow). Cloud inbox: ops are docs `users/{uid}/apps/as-op-{id}`
+(`kind:'as-op'`); any signed-in device claims one via a transaction that deletes it (at-most-once),
+applies it, writes `as-res-{id}`, and pushes at once so other devices sync. Ops older than 6 h are
+refused. Never writes the data doc directly. Docs: AGENTIC_GUIDE.md, agent-tools.json (generated
+from `help()`), agent/abidingsteps_agent.py. Settings → Sync shows the user's ID for automation.

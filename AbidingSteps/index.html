@@ -1060,6 +1060,7 @@
         <p style="font-size:0.72rem; color:var(--text-faint); margin:0 0 8px;">Everything saves on this device automatically, signed in or not. Sign in to also sync across your devices.</p>
         <div id="syncStatus" style="font-size:0.76rem; color:var(--text-dim); margin-bottom:4px;">Saved on this device</div>
         <div id="syncLast" style="font-size:0.76rem; color:var(--text-faint); margin-bottom:8px;"></div>
+        <div id="syncUid" hidden style="font-size:0.7rem; color:var(--text-faint); margin-bottom:8px; cursor:pointer; overflow-wrap:anywhere;" title="Tap to copy — your agents need this (see AGENTIC_GUIDE.md)"></div>
         <div class="settings-row"><span>Auto-sync after idle</span>
           <select id="syncIdleSelect"><option value="0">Manual only</option><option value="1">1 min</option><option value="2">2 min</option><option value="5">5 min</option></select></div>
         <p style="font-size:0.72rem; color:var(--text-faint); margin:0 0 8px;">Changes are batched into one write after you stop for this long (and when you leave the app), which keeps Firebase's free tier safe. Sync now sends them immediately.</p>
@@ -1327,6 +1328,12 @@
   }
   let settings = loadSettings();
   function saveSettings() { store.set('settings', settings); }
+  // ?agent=1 = a quiet mode for automation: no welcome, no Abide invitation, no celebrations or glow.
+  // agentApplying is true while an agent operation is being applied (here or from the cloud inbox),
+  // so a remote "mark done" doesn't throw confetti on whichever device happens to process it.
+  const AGENT_MODE = new URLSearchParams(location.search).has('agent');
+  let agentApplying = false;
+  if (AGENT_MODE) document.documentElement.dataset.agent = '1';
 
   // ===== micro celebrations: tiny, quiet, opt-in. They only observe — nothing here
   // changes what any button does, and nothing is counted or stored. =====
@@ -1361,7 +1368,7 @@
   let lastTap = null;
   document.addEventListener('pointerdown', (e) => { lastTap = { x: e.clientX, y: e.clientY, at: Date.now() }; }, { passive: true, capture: true });
   function celebrate(kind, anchorSel, pos) {
-    if (!settings.celebrate) return;
+    if (!settings.celebrate || AGENT_MODE || agentApplying) return;
     const now = Date.now();
     if (now - lastCeleAt < 1500) return; // never stack
     lastCeleAt = now;
@@ -1572,7 +1579,7 @@
   ['pointerdown', 'keydown', 'wheel', 'touchstart'].forEach(ev => document.addEventListener(ev, () => { lastActive = Date.now(); }, { passive: true, capture: true }));
   function abideBlocked() {
     const a = document.activeElement;
-    return !!(workSeg || microAbide.isOpen() || document.querySelector('.modal-overlay.show') || document.getElementById('view-abide').classList.contains('active')
+    return !!(AGENT_MODE || workSeg || microAbide.isOpen() || document.querySelector('.modal-overlay.show') || document.getElementById('view-abide').classList.contains('active')
       || (a && (a.tagName === 'TEXTAREA' || (a.tagName === 'INPUT' && a.type === 'text') || a.isContentEditable)));
   }
   // lit = not placed yet today; the heart rests dim for the rest of the day once you have
@@ -1627,7 +1634,7 @@
   let glowEl = null, spinAng = 0;
   if (NEEDS_JS_SPIN) setInterval(() => { if (glowEl && document.visibilityState === 'visible') { spinAng = (spinAng + 4.5) % 360; glowEl.style.setProperty('--mg-ang', spinAng + 'deg'); } }, 40);
   function glowTarget() {
-    if (!settings.celebrate || settings.glow === false) return null;
+    if (!settings.celebrate || settings.glow === false || AGENT_MODE) return null;
     if (!document.getElementById('view-step').classList.contains('active') || document.getElementById('mapOverlay').classList.contains('show') || workSeg) return null;
     const rev = document.getElementById('morningReview'); if (rev && !rev.hidden) return null;
     const vis = (el) => el && el.offsetParent !== null ? el : null;
@@ -5439,7 +5446,7 @@ For God alone my soul waits in silence. — Psalm 62:1`;
       renderAheadList();
     }
     document.getElementById('mapOpenBtn').addEventListener('click', open);
-    return { open, close };
+    return { open, close, lib: { BUCKETS, bucketOf, moveToBucket, blockEnd, endLine } };
   })();
 
   // click outside popover closes it
@@ -5541,7 +5548,7 @@ For God alone my soul waits in silence. — Psalm 62:1`;
   };
   const FIREBASE_SDK = 'https://www.gstatic.com/firebasejs/10.12.0/';
   const cloudSync = {
-    docRef: null, pushTimer: null, paused: false, unsubscribe: null,
+    docRef: null, pushTimer: null, paused: false, unsubscribe: null, inboxUnsub: null,
     status(msg) { document.getElementById('syncStatus').textContent = msg; this.topStatus(); },
     topStatus() { const t = document.getElementById('syncTopStatus'); if (t) t.textContent = [document.getElementById('syncStatus').textContent, document.getElementById('syncLast').textContent].filter(Boolean).join(' · '); },
     // last time this device pushed to or pulled from the cloud — kept apart from the
@@ -5638,6 +5645,30 @@ For God alone my soul waits in silence. — Psalm 62:1`;
         document.head.appendChild(el);
       });
     },
+    // ---- agent inbox: automation drops operations (docs of kind "as-op") next to the data doc;
+    // whichever signed-in device is open claims one (a transaction deletes it, so exactly one
+    // device wins), applies it through window.abidingAgent, writes the answer to an "as-res" doc,
+    // and pushes at once so every other device sees the change. Never touches the data doc directly,
+    // so an agent can't clobber a device's own batched writes. See AGENTIC_GUIDE.md. ----
+    watchInbox(db, uid) {
+      const apps = db.collection('users').doc(uid).collection('apps');
+      this.inboxUnsub = apps.where('kind', '==', 'as-op').onSnapshot(qs => {
+        qs.docChanges().forEach(ch => { if (ch.type === 'added' && !ch.doc.metadata.hasPendingWrites) this.runInboxOp(db, apps, ch.doc.ref); });
+      }, () => { /* rules or network — the inbox just stays quiet */ });
+    },
+    async runInboxOp(db, apps, ref) {
+      let op = null;
+      try { op = await db.runTransaction(async tx => { const s = await tx.get(ref); if (!s.exists) return null; const d = s.data(); tx.delete(ref); return d; }); } catch (e) { return; }
+      if (!op) return; // another device got it first
+      let res;
+      try {
+        if (Date.now() - (Number(op.at) || 0) > 6 * 3600e3) res = { ok: false, error: 'expired (older than 6 h when picked up) — send it again' };
+        else res = op.op === 'batch' ? await abidingAgent.batch(op.args && op.args.ops, op.args && op.args.stopOnError) : await abidingAgent.call(op.op, op.args);
+      } catch (e) { res = { ok: false, error: String((e && e.message) || e) }; }
+      const id = op.id || ref.id;
+      try { await apps.doc('as-res-' + id).set({ kind: 'as-res', id, op: op.op, ok: !!(res && res.ok), result: JSON.stringify(res), at: Date.now() }); } catch (e) {}
+      if (res && res.ok && op.op !== 'syncNow') this.pushNow();
+    },
     async init() {
       const signIn = document.getElementById('syncSignInBtn'), signOut = document.getElementById('syncSignOutBtn');
       this.status('Saved on this device · not signed in');
@@ -5671,11 +5702,15 @@ For God alone my soul waits in silence. — Psalm 62:1`;
         signIn.style.display = user ? 'none' : '';
         signOut.style.display = user ? '' : 'none';
         if (this.unsubscribe) { this.unsubscribe(); this.unsubscribe = null; }
+        if (this.inboxUnsub) { this.inboxUnsub(); this.inboxUnsub = null; }
         clearTimeout(this.pushTimer); this.pushTimer = null;
+        const uidEl = document.getElementById('syncUid');
+        if (uidEl) { uidEl.hidden = !user; if (user) { uidEl.textContent = 'For automation — your ID: ' + user.uid + ' (tap to copy)'; uidEl.onclick = () => { try { navigator.clipboard.writeText(user.uid); uidEl.textContent = 'Copied ✓ ' + user.uid; } catch (e) {} }; } }
         if (!user) { this.docRef = null; this.paused = false; this.status('Saved on this device · not signed in'); return; }
         this.status('Signed in as ' + (user.email || user.uid) + ' · connecting…');
         // its own doc, NOT FocusFlow's /users/{uid} — FocusFlow overwrites that whole doc on every push
         this.docRef = db.collection('users').doc(user.uid).collection('apps').doc('abidingsteps');
+        this.watchInbox(db, user.uid);
         let first = true;
         this.unsubscribe = this.docRef.onSnapshot(snap => {
           if (snap.metadata.hasPendingWrites) return; // echo of our own write
@@ -5742,6 +5777,272 @@ For God alone my soul waits in silence. — Psalm 62:1`;
     document.body.appendChild(input); input.click();
   });
 
+  // ===== Agent access — one small, text-first API for automation (a headless browser, or the
+  // cloud inbox below). It does everything through the same code paths as the screen, so the UI,
+  // the map and cloud sync all stay in step. Calls return compact JSON; nothing needs a screenshot.
+  //   page.evaluate(() => window.abidingAgent.call('state'))
+  // See AGENTIC_GUIDE.md. =====
+  const abidingAgent = (() => {
+    const lib = MAPV.lib, SNAPS = [];
+    const ok = (o) => Object.assign({ ok: true }, o), no = (error, extra) => Object.assign({ ok: false, error }, extra);
+    const norm = (t) => String(t == null ? '' : t).trim().toLowerCase();
+    const canonBucket = (b) => lib.BUCKETS.find(x => norm(x) === norm(b)) || null;
+    const fail = (msg, extra) => { const e = new Error(msg); e.extra = extra; throw e; };
+
+    // ---- lookups: by id, exact title, or a unique piece of the title ----
+    function findO(ref) {
+      if (ref == null || ref === '') fail('outcome required');
+      ref = String(ref);
+      const byId = outcomes.find(x => x.id === ref); if (byId) return byId;
+      const n = norm(ref), exact = outcomes.filter(x => norm(x.t) === n);
+      if (exact.length === 1) return exact[0];
+      const part = exact.length ? exact : outcomes.filter(x => norm(x.t).includes(n));
+      if (part.length === 1) return part[0];
+      fail(part.length ? 'ambiguous outcome' : 'no such outcome', part.length ? { candidates: part.slice(0, 8).map(x => ({ id: x.id, title: x.t })) } : undefined);
+    }
+    function findM(o, ref) {
+      if (ref == null || ref === '') return null;
+      const n = norm(ref), all = o.milestones || [];
+      const hit = all.find(m => m.id === ref) || (all.filter(m => norm(m.t) === n).length === 1 ? all.find(m => norm(m.t) === n) : null)
+        || (all.filter(m => norm(m.t).includes(n)).length === 1 ? all.find(m => norm(m.t).includes(n)) : null);
+      if (!hit) fail('no such milestone', { milestones: all.map(m => ({ id: m.id, title: m.t })) });
+      return hit;
+    }
+    // a step/note line by its text (exact, else unique piece) in one scope — or across the outcome
+    function findLine(o, mref, text, stepsOnly) {
+      if (!text) fail('step text required');
+      const scopes = mref != null && mref !== '' ? [findM(o, mref)] : [null].concat(o.milestones);
+      const n = norm(text).replace(/^[-+]\s+/, ''), hits = [];
+      scopes.forEach(m => noteLines(noteKeyFor(o, m)).forEach((ln, i) => {
+        const r = STEP_RE.exec(ln); if (stepsOnly && !r) return;
+        const t = norm(r ? r[2] : ln);
+        if (t === n || t.includes(n)) hits.push({ m, i, ln, exact: t === n });
+      }));
+      const ex = hits.filter(h => h.exact), use = ex.length ? ex : hits;
+      if (use.length === 1) return use[0];
+      fail(use.length ? 'ambiguous step' : 'no such step', use.length ? { candidates: use.slice(0, 8).map(h => ({ milestone: h.m ? h.m.t : undefined, line: h.ln.trim() })) } : undefined);
+    }
+    function checkDate(v) {
+      if (v === 'today') return todayKeyLocal();
+      const abs = /^\d{4}-\d{2}-\d{2}$/.test(String(v)) ? String(v) : absDates('>' + v).slice(1);
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(abs)) fail('bad date — use YYYY-MM-DD, today, tomorrow or a weekday');
+      return abs;
+    }
+    // every change: snapshot for undo → run → save → redraw everything that shows outcomes
+    function mut(fn) {
+      SNAPS.push(JSON.stringify({ o: outcomes, n: notesByKey })); if (SNAPS.length > 40) SNAPS.shift();
+      agentApplying = true;
+      try {
+        const r = fn();
+        saveOutcomes();
+        const so = selectedOutcome();
+        if (selectedOutcomeId && !so) clearSelection(); else if (so) { revalidateSelection(); updateSelectionLabels(); }
+        renderAheadList(); renderOutcomePicker(); if (mapRefresh) mapRefresh();
+        return r;
+      } catch (e) { SNAPS.pop(); throw e; } finally { agentApplying = false; }
+    }
+    const openCount = (o) => scanSteps(o).length;
+    const row = (o) => { const r = { id: o.id, title: o.t, bucket: lib.bucketOf(o) }; if (o.starred) r.starred = 1; if (o.planned) r.planned = o.planned; if (o.type) r.type = o.type; const n = openCount(o); if (n) r.open = n; if (o.milestones.length) r.milestones = o.milestones.length; return r; };
+    function outlineOf(o) {
+      const head = '# ' + o.id + ' ' + o.t + ' [' + lib.bucketOf(o) + ']' + (o.starred ? ' ★' : '') + (o.planned ? ' plan:' + o.planned : '') + (o.type ? ' ' + o.type : '');
+      const out = [head].concat(noteLines(o.id));
+      o.milestones.forEach(m => { out.push('◆ ' + m.id + ' ' + m.t + (m.completed ? ' (done)' : '')); noteLines(noteKeyFor(o, m)).forEach(l => out.push('  ' + l)); });
+      return out.join('\n');
+    }
+    const clip = (n, d) => Math.max(1, Math.min(200, parseInt(n, 10) || d));
+
+    const ops = {
+      // ---------------- reading ----------------
+      state: ['{} — one-glance overview: counts per bucket, due steps, what is next, timer, sync', () => {
+        const tk = todayKeyLocal(), counts = {}; lib.BUCKETS.forEach(b => { counts[b] = 0; });
+        let due = 0, starred = 0;
+        outcomes.forEach(o => { counts[lib.bucketOf(o)]++; if (o.starred && !o.completed) starred++; if (!o.completed && !o.maybe) scanSteps(o).forEach(it => { if (it.date && it.date <= tk) due++; }); });
+        const next = outcomes.filter(o => lib.bucketOf(o) === 'Today').sort((a, b) => (b.starred ? 1 : 0) - (a.starred ? 1 : 0)).slice(0, 5)
+          .map(o => { const st = scanSteps(o)[0]; return Object.assign({ id: o.id, outcome: o.t }, st ? { step: st.text } : {}); });
+        const f = selectedOutcome();
+        return ok({ today: tk, counts, starred, dueSteps: due, nextUp: next,
+          timer: workSeg ? { focus: f ? selectionLabel(f) : '', remainingSec: Math.round((endsAt - Date.now()) / 1000) } : null,
+          sync: { signedIn: !!cloudSync.docRef, lastSyncedAt: Number(store.get('__local_lastSynced', 0)) || null } });
+      }],
+      list: ['{bucket?, q?, starred?, limit?=25} — outcomes as compact rows', (a) => {
+        let l = outcomes.slice();
+        if (a.bucket) { const b = canonBucket(a.bucket); if (!b) fail('bucket must be one of ' + lib.BUCKETS.join('|')); l = l.filter(o => lib.bucketOf(o) === b); }
+        else l = l.filter(o => !o.completed);
+        if (a.q) l = l.filter(o => norm(o.t).includes(norm(a.q)));
+        if (a.starred) l = l.filter(o => o.starred);
+        return ok({ total: l.length, items: l.slice(0, clip(a.limit, 25)).map(row) });
+      }],
+      outline: ['{outcome? | bucket?} — the notes outline (steps/notes/milestones) as compact text; cheapest way to read an outcome', (a) => {
+        if (a.outcome != null && a.outcome !== '') return ok({ text: outlineOf(findO(a.outcome)) });
+        const b = a.bucket ? canonBucket(a.bucket) : null; if (a.bucket && !b) fail('bucket must be one of ' + lib.BUCKETS.join('|'));
+        const l = outcomes.filter(o => b ? lib.bucketOf(o) === b : !o.completed && !o.maybe);
+        return ok({ count: l.length, text: l.map(outlineOf).join('\n\n') });
+      }],
+      agenda: ['{context?, due?, date?, includeFuture?, limit?=50} — open steps by @context and/or date (what Step\'s By context / By date show)', (a) => {
+        const tk = todayKeyLocal(), ctx = a.context ? norm(a.context).replace(/^@/, '') : null, lim = a.date ? checkDate(a.date) : null, items = [];
+        outcomes.forEach(o => { if (o.completed || o.maybe) return; scanSteps(o).forEach(it => {
+          if (!ctx && !it.date && !a.due && !lim) return;
+          if (ctx && !it.ctx.includes(ctx)) return;
+          if (a.due && !(it.date && it.date <= tk)) return;
+          if (lim && !(it.date && it.date <= lim)) return;
+          if (!a.includeFuture && it.date && it.date > tk && !lim) return;
+          const r = { outcome: o.t, id: o.id, step: it.text }; if (it.m) r.milestone = it.m.t; if (it.ctx.length) r.ctx = it.ctx; if (it.date) r.date = it.date; items.push(r);
+        }); });
+        items.sort((x, y) => (x.date || '9').localeCompare(y.date || '9'));
+        return ok({ total: items.length, items: items.slice(0, clip(a.limit, 50)) });
+      }],
+      find: ['{q, limit?=20} — search outcome titles and every step/note line', (a) => {
+        const n = norm(a.q); if (!n) fail('q required'); const hits = [];
+        outcomes.forEach(o => {
+          if (norm(o.t).includes(n)) hits.push({ outcome: o.t, id: o.id, title: true });
+          [null].concat(o.milestones).forEach(m => noteLines(noteKeyFor(o, m)).forEach(ln => { if (norm(ln).includes(n)) { const h = { outcome: o.t, id: o.id, line: ln.trim() }; if (m) h.milestone = m.t; hits.push(h); } }));
+        });
+        return ok({ total: hits.length, items: hits.slice(0, clip(a.limit, 20)) });
+      }],
+      // ---------------- writing ----------------
+      add: ['{title, bucket?, planned?, starred?, type?, tag?, steps?[], notes?} — new outcome', (a) => {
+        if (!a.title || !String(a.title).trim()) fail('title required');
+        const b = a.bucket ? canonBucket(a.bucket) : null; if (a.bucket && !b) fail('bucket must be one of ' + lib.BUCKETS.join('|'));
+        if (a.type != null && a.type !== '' && !['Destination', 'Directive'].includes(a.type)) fail('type must be Destination or Directive');
+        const planned = a.planned ? checkDate(a.planned) : null;
+        return mut(() => {
+          const o = makeOutcome(String(a.title).trim(), a.type || null, a.tag || null, {}); if (a.starred) o.starred = true;
+          outcomes.push(o);
+          if (b) lib.moveToBucket(o, b); if (planned) snoozeOutcome(o, planned);
+          const lines = (a.steps || []).map(s => '- ' + absDates(String(s).trim()).replace(/^[-+]\s+/, ''));
+          if (a.notes) String(a.notes).split('\n').forEach(l => lines.push(l));
+          if (lines.length) writeNoteLines(o, null, lines);
+          return ok(row(o));
+        });
+      }],
+      update: ['{outcome, title?, starred?, planned?(YYYY-MM-DD|today|tomorrow|weekday|null), bucket?, type?, tag?, maybe?, completed?, budget?:{minutes,per:week|total}|null} — change fields', (a) => {
+        const o = findO(a.outcome);
+        const b = a.bucket ? canonBucket(a.bucket) : null; if (a.bucket && !b) fail('bucket must be one of ' + lib.BUCKETS.join('|'));
+        if ('type' in a && a.type && !['Destination', 'Directive'].includes(a.type)) fail('type must be Destination or Directive');
+        const planned = ('planned' in a && a.planned) ? checkDate(a.planned) : null;
+        return mut(() => {
+          if (a.title) o.t = String(a.title).trim();
+          if ('starred' in a) o.starred = !!a.starred; if ('maybe' in a) o.maybe = !!a.maybe; if ('completed' in a) o.completed = !!a.completed;
+          if ('type' in a) o.type = a.type || null; if ('tag' in a) o.tag = a.tag || null;
+          if ('planned' in a) { if (!a.planned) o.planned = null; else snoozeOutcome(o, planned); }
+          if (b) lib.moveToBucket(o, b);
+          if ('budget' in a) applyBudgetSpec(o, a.budget ? { target: +a.budget.minutes, period: a.budget.per === 'total' ? 'total' : 'week' } : null);
+          return ok(row(o));
+        });
+      }],
+      addStep: ['{outcome, text, milestone?, under?} — append "- text" (add @context and >date inside the text); under = nest beneath that step', (a) => {
+        const o = findO(a.outcome); if (!a.text || !String(a.text).trim()) fail('text required');
+        return mut(() => {
+          const text = absDates(String(a.text).trim()).replace(/^[-+]\s+/, '');
+          if (a.under) {
+            const h = findLine(o, a.milestone, a.under, false), lines = noteLines(noteKeyFor(o, h.m)), at = lib.blockEnd(lines, h.i);
+            lines.splice(at, 0, ' '.repeat(indentOf(lines[h.i]) + 2) + '- ' + text); writeNoteLines(o, h.m, lines);
+          } else {
+            const m = findM(o, a.milestone), lines = noteLines(noteKeyFor(o, m)); lines.splice(lib.endLine(o, m), 0, '- ' + text); writeNoteLines(o, m, lines);
+          }
+          return ok({ outline: outlineOf(o) });
+        });
+      }],
+      setStep: ['{outcome, step, done?, milestone?} — mark a step done (+) or open (-); omit done to toggle; step = its text or a unique piece of it', (a) => {
+        const o = findO(a.outcome), h = findLine(o, a.milestone, a.step, true);
+        return mut(() => {
+          const lines = noteLines(noteKeyFor(o, h.m)), isDone = /^\s*\+/.test(lines[h.i]), want = ('done' in a) ? !!a.done : !isDone;
+          lines[h.i] = lines[h.i].replace(/^(\s*)[-+]/, '$1' + (want ? '+' : '-')); writeNoteLines(o, h.m, lines);
+          return ok({ line: lines[h.i].trim() });
+        });
+      }],
+      editStep: ['{outcome, step, text, milestone?} — rewrite a step\'s text (keeps its - / + and indent)', (a) => {
+        const o = findO(a.outcome), h = findLine(o, a.milestone, a.step, true); if (!a.text) fail('text required');
+        return mut(() => {
+          const lines = noteLines(noteKeyFor(o, h.m)), r = STEP_RE.exec(lines[h.i]);
+          lines[h.i] = lines[h.i].replace(/^(\s*[-+]\s+).*$/, '$1' + absDates(String(a.text).trim())); writeNoteLines(o, h.m, lines);
+          if (r && indentOf(lines[h.i]) === 0) { const nt = STEP_RE.exec(lines[h.i]); if (nt && nt[2] !== r[2]) { const from = noteKeyFor(o, h.m) + '|' + r[2], to = noteKeyFor(o, h.m) + '|' + nt[2]; if (from in notesByKey) { notesByKey[to] = notesByKey[from]; delete notesByKey[from]; store.set('notes', notesByKey); } } }
+          return ok({ line: lines[h.i].trim() });
+        });
+      }],
+      removeStep: ['{outcome, step, milestone?, confirm:true} — delete a step and anything nested under it', (a) => {
+        if (a.confirm !== true) fail('removeStep needs confirm:true');
+        const o = findO(a.outcome), h = findLine(o, a.milestone, a.step, false);
+        return mut(() => { const lines = noteLines(noteKeyFor(o, h.m)); lines.splice(h.i, lib.blockEnd(lines, h.i) - h.i); writeNoteLines(o, h.m, lines); return ok({}); });
+      }],
+      note: ['{outcome, text, milestone?, under?} — append a plain note line (no - or +)', (a) => {
+        const o = findO(a.outcome); if (!a.text || !String(a.text).trim()) fail('text required');
+        return mut(() => {
+          const text = String(a.text).trim().replace(/^[-+]\s+/, '');
+          if (a.under) { const h = findLine(o, a.milestone, a.under, false), lines = noteLines(noteKeyFor(o, h.m)), at = lib.blockEnd(lines, h.i); lines.splice(at, 0, ' '.repeat(indentOf(lines[h.i]) + 2) + text); writeNoteLines(o, h.m, lines); }
+          else { const m = findM(o, a.milestone), lines = noteLines(noteKeyFor(o, m)); lines.splice(lib.endLine(o, m), 0, text); writeNoteLines(o, m, lines); }
+          return ok({});
+        });
+      }],
+      setNotes: ['{outcome, text, milestone?, confirm:true} — REPLACE the whole notes text (the steps live in it)', (a) => {
+        if (a.confirm !== true) fail('setNotes needs confirm:true');
+        const o = findO(a.outcome), m = findM(o, a.milestone);
+        return mut(() => { writeNotes(noteKeyFor(o, m), String(a.text == null ? '' : a.text)); return ok({ outline: outlineOf(o) }); });
+      }],
+      addMilestone: ['{outcome, title, steps?[]} — new milestone', (a) => {
+        const o = findO(a.outcome); if (!a.title) fail('title required');
+        return mut(() => { const m = makeMilestone(String(a.title).trim()); o.milestones.push(m); if ((a.steps || []).length) writeNoteLines(o, m, a.steps.map(s => '- ' + absDates(String(s).trim()))); return ok({ id: m.id }); });
+      }],
+      updateMilestone: ['{outcome, milestone, title?, done?} — rename or complete a milestone', (a) => {
+        const o = findO(a.outcome), m = findM(o, a.milestone); if (!m) fail('milestone required');
+        return mut(() => { if (a.title) m.t = String(a.title).trim(); if ('done' in a) m.completed = !!a.done; return ok({ id: m.id, title: m.t, done: !!m.completed }); });
+      }],
+      removeMilestone: ['{outcome, milestone, confirm:true} — delete a milestone and its lines', (a) => {
+        if (a.confirm !== true) fail('removeMilestone needs confirm:true');
+        const o = findO(a.outcome), m = findM(o, a.milestone); if (!m) fail('milestone required');
+        return mut(() => { o.milestones = o.milestones.filter(x => x !== m); Object.keys(notesByKey).forEach(k => { if (k === o.id + '#' + m.id || k.startsWith(o.id + '#' + m.id + '|')) delete notesByKey[k]; }); store.set('notes', notesByKey); return ok({}); });
+      }],
+      remove: ['{outcome, confirm:true} — delete an outcome (undo can bring it back)', (a) => {
+        if (a.confirm !== true) fail('remove needs confirm:true');
+        const o = findO(a.outcome);
+        return mut(() => { outcomes = outcomes.filter(x => x !== o); Object.keys(notesByKey).forEach(k => { if (k === o.id || k.startsWith(o.id + '|') || k.startsWith(o.id + '#')) delete notesByKey[k]; }); store.set('notes', notesByKey); return ok({}); });
+      }],
+      undo: ['{} — undo the last change this API made (up to 40)', () => {
+        const snap = SNAPS.pop(); if (!snap) fail('nothing to undo');
+        agentApplying = true;
+        try {
+          const st = JSON.parse(snap); outcomes = st.o; notesByKey = st.n; normalizeOutcomes(outcomes); store.set('notes', notesByKey); reconcileAllSteps(); saveOutcomes();
+          const so = selectedOutcome(); if (selectedOutcomeId && !so) clearSelection(); else if (so) { revalidateSelection(); updateSelectionLabels(); }
+          renderAheadList(); renderOutcomePicker(); if (mapRefresh) mapRefresh();
+        } finally { agentApplying = false; }
+        return ok({});
+      }],
+      // ---------------- focus timer ----------------
+      start: ['{outcome, minutes?=15, milestone?, step?} — start the Step timer on an outcome / milestone / top-level step (also plans it for today)', (a) => {
+        const o = findO(a.outcome), m = findM(o, a.milestone); let sub = null;
+        if (a.step) { const sc = m || o; sub = (sc.subs || []).find(s => norm(s) === norm(a.step)) || (sc.subs || []).find(s => norm(s).includes(norm(a.step))); if (!sub) fail('no such open top-level step in that scope', { steps: sc.subs }); }
+        const min = Math.max(1, Math.min(240, parseInt(a.minutes, 10) || 15));
+        selectOutcome(o.id, { ms: m && m.id, sub }); startChunk(min);
+        return ok({ focus: selectionLabel(o), minutes: min });
+      }],
+      stop: ['{} — stop the running timer', () => { if (workSeg) returnToIdle('Stopped'); return ok({}); }],
+      timer: ['{} — is a timer running, and how long is left', () => { const f = selectedOutcome(); return ok({ running: !!workSeg, focus: workSeg && f ? selectionLabel(f) : null, remainingSec: workSeg ? Math.round((endsAt - Date.now()) / 1000) : null }); }],
+      // ---------------- sync ----------------
+      syncNow: ['{} — push to the cloud right now (other devices pick it up); resolves after the push', async () => {
+        if (!cloudSync.docRef || cloudSync.paused) fail('not signed in to cloud sync on this browser');
+        cloudSync.pushNow(); await new Promise(r => setTimeout(r, 1600));
+        return ok({ status: document.getElementById('syncStatus').textContent });
+      }],
+    };
+
+    async function call(op, args) {
+      const def = ops[op];
+      if (!def) return no('unknown op', { ops: Object.keys(ops) });
+      try { const r = await def[1](args && typeof args === 'object' ? args : {}); return r; }
+      catch (e) { return no(e.message || String(e), e.extra); }
+    }
+    async function batch(list, stopOnError) {
+      const out = [];
+      for (const it of (list || [])) { const r = await call(it.op, it.args); out.push(r); if (stopOnError && !r.ok) break; }
+      return ok({ results: out });
+    }
+    const help = () => ({ schema: 1, note: 'call(op, args) → {ok, ...} | {ok:false, error}. Outcomes/milestones/steps can be named by id, exact title or a unique piece of it. Destructive ops need confirm:true.',
+      buckets: lib.BUCKETS, grammar: '- open step | + done step | indent 2 spaces = substep | @context | >YYYY-MM-DD (or >tomorrow >wed: rewritten to a date)',
+      ops: Object.fromEntries(Object.entries(ops).map(([k, v]) => [k, v[0]])) });
+    return { call, batch, help, ready: true, schema: 1, mode: AGENT_MODE ? 'agent' : 'normal' };
+  })();
+  window.abidingAgent = abidingAgent;
+
   // ===== startup — restore what this device saved, then (optionally) connect sync =====
   applySettingsToUI();
   (function restoreSelection() {
@@ -5776,6 +6077,7 @@ For God alone my soul waits in silence. — Psalm 62:1`;
   });
   // a little welcome when the app opens (celebrations on, nothing already running)
   setTimeout(() => {
+    if (AGENT_MODE) return;
     if (maybeInviteAbide()) return; // after time away, the quiet moment takes the place of the welcome
     if (settings.celebrate && !workSeg && document.getElementById('view-step').classList.contains('active')) {
       celebrate('welcome', null, { x: innerWidth / 2, y: innerHeight * 0.42 }); updateMagic();
