@@ -4449,8 +4449,9 @@ For God alone my soul waits in silence. — Psalm 62:1`;
     const role = activeRoleFilter();
     const doneInFilter = outcomes.filter(o => o.completed && outcomeMatchesFilter(o, role));
     const clearDoneBtn = document.getElementById('clearDoneBtn');
-    clearDoneBtn.textContent = 'Clear ' + doneInFilter.length + ' done';
-    clearDoneBtn.style.display = doneInFilter.length ? '' : 'none';
+    const dv = doneInView(role), dvBits = doneBits(dv);
+    clearDoneBtn.textContent = 'Clear done · ' + dvBits.join(', ');
+    clearDoneBtn.style.display = dvBits.length ? '' : 'none';
     // starred (important) float to the top of every filter, then today's plans; done items
     // sink to the bottom; otherwise keep the saved order
     const rank = o => o.completed ? 3 : (o.starred ? 0 : (isToday(o) ? 1 : 2));
@@ -4550,17 +4551,34 @@ For God alone my soul waits in silence. — Psalm 62:1`;
       aheadList.appendChild(row);
     });
   }
+  // what "Clear done" would remove in the current view: finished outcomes, plus the done steps
+  // ("+" lines with nothing open inside) and done milestones of the outcomes still open
+  function doneInView(role) {
+    const outs = outcomes.filter(o => o.completed && outcomeMatchesFilter(o, role));
+    let steps = 0, mss = 0; const touch = [];
+    outcomes.forEach(o => {
+      if (o.completed || !outcomeMatchesFilter(o, role)) return;
+      let st = pruneDoneLines(noteLines(o.id)).removed, ms = 0;
+      o.milestones.forEach(m => { const key = noteKeyFor(o, m); st += pruneDoneLines(noteLines(key)).removed; if (m.completed && !noteLines(key).some(isOpenStepLine)) ms++; });
+      if (st || ms) { steps += st; mss += ms; touch.push(o); }
+    });
+    return { outs, steps, mss, touch };
+  }
+  const doneBits = (d) => [d.outs.length && d.outs.length + ' outcome' + (d.outs.length === 1 ? '' : 's'), d.steps && d.steps + ' step' + (d.steps === 1 ? '' : 's'), d.mss && d.mss + ' milestone' + (d.mss === 1 ? '' : 's')].filter(Boolean);
   document.getElementById('clearDoneBtn').addEventListener('click', () => {
-    const role = activeRoleFilter();
-    const toRemove = outcomes.filter(o => o.completed && outcomeMatchesFilter(o, role));
-    if (!toRemove.length) return;
+    const role = activeRoleFilter(), d = doneInView(role), bits = doneBits(d);
+    if (!bits.length) return;
     openConfirmModal({
-      title: 'Clear ' + toRemove.length + ' done outcome' + (toRemove.length === 1 ? '' : 's') + '?',
-      message: (role && role !== 'All' ? 'Only the ones matching "' + role + '"' : 'Across all filters') + " — this can't be undone.",
+      title: 'Clear ' + bits.join(', ') + '?',
+      message: (role && role !== 'All' ? 'Only what matches "' + role + '"' : 'Across all filters') + ". Done steps that still have something open inside them are kept. This can't be undone here (the map's Shift+D can be undone).",
       onOk: () => {
-        const ids = new Set(toRemove.map(o => o.id));
+        const ids = new Set(d.outs.map(o => o.id));
+        d.outs.forEach(o => Object.keys(notesByKey).forEach(k => { if (k === o.id || k.startsWith(o.id + '|') || k.startsWith(o.id + '#')) delete notesByKey[k]; }));
         outcomes = outcomes.filter(o => !ids.has(o.id));
+        d.touch.forEach(o => { if (outcomes.includes(o)) clearDoneIn(o); });
+        store.set('notes', notesByKey);
         if (selectedOutcomeId && ids.has(selectedOutcomeId)) clearSelection();
+        else if (selectedOutcomeId) revalidateSelection();
         saveOutcomes(); renderAheadList(); renderOutcomePicker();
       }
     });
