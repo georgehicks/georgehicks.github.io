@@ -62,9 +62,9 @@ everything still saves locally.
 |---|---|---|
 | **AbidingSteps** (main) | `users/{uid}/apps/abidingsteps` (+ agent docs `as-op-*` / `as-res-*` next to it) | merges three-way; only `abidingsteps:` keys |
 | **FocusFlowFireBase** (`focus-flow.html`) | `users/{uid}` | last-write-wins overwrite, heartbeat writes; **no key namespace** |
-| **AbidingFlow** (abandoned prototype) | `abidingflow_users/{uid}` | same engine as FocusFlow; **no key namespace** |
+| **AbidingFlow** (prototype) | ~~`abidingflow_users/{uid}`~~ | **RETIRED 2026-10-20** — replaced by AbidingSteps; page is now a static notice, sync removed, code kept as text in `AbidingFlow/reference/` |
 
 All other apps (Treasure, I Am Here, With, Notice, Span, Flash, Vox, Charisma, Abide, FocusFlow, focus-app, microsprint)
 are local-only. But every app on georgehicks.github.io shares ONE localStorage, and FocusFlowFireBase and
-AbidingFlow used to upload and write back *every key on the domain* — including `abidingsteps:*`. Both now skip other apps'
-namespaces (`FOREIGN_APP_KEY`). The firestore rule `match /users/{userId}/apps/{appId}` covers AbidingSteps only.
+AbidingFlow used to upload and write back *every key on the domain* — including `abidingsteps:*`. FocusFlowFireBase now skips other apps'
+namespaces (`FOREIGN_APP_KEY`); AbidingFlow is retired. The firestore rule `match /users/{userId}/apps/{appId}` covers AbidingSteps only.

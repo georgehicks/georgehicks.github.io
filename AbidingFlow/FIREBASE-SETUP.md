@@ -1,3 +1,5 @@
+> **RETIRED 2026-10-20 — AbidingFlow is replaced by AbidingSteps and its Firebase sync is switched off.** Kept for reference only; see RETIRED.md.
+
 # AbidingFlow — Firebase setup
 
 AbidingFlow shares the same Firebase project as FocusFlow (Sync)

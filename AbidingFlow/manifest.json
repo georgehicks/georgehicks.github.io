@@ -1,7 +1,7 @@
 {
-  "name": "AbidingFlow — Remain in the Vine",
+  "name": "AbidingFlow — retired (use AbidingSteps)",
   "short_name": "AbidingFlow",
-  "description": "The Vine first, every day. Living Aims, Faithful Sowing, Take Heart, and Rest — lists that serve remaining, not the other way around.",
+  "description": "RETIRED — replaced by AbidingSteps. Formerly: The Vine first, every day. Living Aims, Faithful Sowing, Take Heart, and Rest — lists that serve remaining, not the other way around.",
   "start_url": "./index.html",
   "scope": "./",
   "id": "./",
