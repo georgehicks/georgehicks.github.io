@@ -5647,8 +5647,111 @@ For God alone my soul waits in silence. — Psalm 62:1`;
     appId: "1:735380295401:web:08bd07e9ce19a74c8b2a78"
   };
   const FIREBASE_SDK = 'https://www.gstatic.com/firebasejs/10.12.0/';
+  // ===== three-way merge for cloud sync. The cloud doc used to be overwritten wholesale by whichever
+  // device pushed last, so one device's edits silently erased another's. Now every push/pull merges
+  // three copies — BASE (the cloud state this device last synced), LOCAL (what's here now) and REMOTE
+  // (what's in the cloud now) — so each side's changes survive:
+  //   · a key only one side changed takes that side's version
+  //   · outcomes merge by id and field by field (starred here + planned there = both)
+  //   · notes merge line by line (a step added here + a step toggled there = both)
+  //   · counters (tallies, time budgets) take the larger value so time is never lost
+  //   · a true conflict on one field is resolved in favour of the device doing the merging =====
+  const jparse = (t, d) => { try { return t == null ? d : JSON.parse(t); } catch (e) { return d; } };
+  const sameJ = (a, b) => JSON.stringify(a) === JSON.stringify(b);
+  const sameMap = (a, b) => { const ka = Object.keys(a), kb = Object.keys(b); return ka.length === kb.length && ka.every(k => a[k] === b[k]); };
+  const isObj = (v) => v && typeof v === 'object' && !Array.isArray(v);
+  function lcsPairs(a, b) { // matched index pairs of the longest common subsequence
+    const n = a.length, m = b.length; if (n * m > 4e6) return [];
+    const dp = Array.from({ length: n + 1 }, () => new Uint16Array(m + 1));
+    for (let i = n - 1; i >= 0; i--) for (let j = m - 1; j >= 0; j--) dp[i][j] = a[i] === b[j] ? dp[i + 1][j + 1] + 1 : Math.max(dp[i + 1][j], dp[i][j + 1]);
+    const pairs = []; let i = 0, j = 0;
+    while (i < n && j < m) { if (a[i] === b[j]) { pairs.push([i, j]); i++; j++; } else if (dp[i + 1][j] >= dp[i][j + 1]) i++; else j++; }
+    return pairs;
+  }
+  // text: start from the remote lines, take away what local deleted, add what local added after its neighbour
+  function mergeText(b, l, r) {
+    if (l === r) return l; if (l === b) return r; if (r === b) return l;
+    const bl = b.split('\n'), ll = l.split('\n'), rl = r.split('\n');
+    const pairs = lcsPairs(bl, ll), keptB = new Set(pairs.map(p => p[0])), keptL = new Set(pairs.map(p => p[1]));
+    const out = rl.slice();
+    bl.forEach((ln, i) => { if (!keptB.has(i) && ln.trim() !== '') { const k = out.indexOf(ln); if (k >= 0) out.splice(k, 1); } });
+    ll.forEach((ln, j) => {
+      if (keptL.has(j) || ln.trim() === '' || out.includes(ln)) return;
+      const anchor = j > 0 ? ll[j - 1] : null, at = anchor == null ? -1 : out.lastIndexOf(anchor);
+      out.splice(at + 1, 0, ln);
+    });
+    return out.join('\n');
+  }
+  function merge3(b, l, r, counters) { // plain JSON
+    if (sameJ(l, r)) return l; if (sameJ(l, b)) return r; if (sameJ(r, b)) return l;
+    if (isObj(l) && isObj(r)) {
+      const bb = isObj(b) ? b : {}, out = {};
+      new Set([...Object.keys(l), ...Object.keys(r)]).forEach(k => {
+        const v = merge3(bb[k], l[k], r[k], counters); if (v !== undefined) out[k] = v;
+      });
+      return out;
+    }
+    if (counters && typeof l === 'number' && typeof r === 'number') return Math.max(l, r);
+    return l;
+  }
+  function mergeById(ba, la, ra, mergeObj) { // arrays of {id, …}: add/remove/reorder/edit
+    const idx = (a) => new Map(a.map(x => [x.id, x])), B = idx(ba), L = idx(la), R = idx(ra);
+    const oB = ba.map(x => x.id), oL = la.map(x => x.id), oR = ra.map(x => x.id);
+    const order = sameJ(oL, oB) ? oR : (sameJ(oR, oB) ? oL : oR);   // whoever reordered wins; else the cloud's order
+    const ids = [...order]; oL.concat(oR).forEach(id => { if (!ids.includes(id)) ids.push(id); });
+    const out = [];
+    ids.forEach(id => {
+      const b = B.get(id), l = L.get(id), r = R.get(id); let v = null;
+      if (l && r) v = sameJ(l, r) ? l : sameJ(l, b) ? r : sameJ(r, b) ? l : mergeObj(b, l, r);
+      else if (l) v = (b && sameJ(l, b)) ? null : l;      // gone from the cloud: drop it only if we hadn't touched it
+      else if (r) v = (b && sameJ(r, b)) ? null : r;      // we deleted it: drop it only if the cloud copy is untouched
+      if (v) out.push(v);
+    });
+    return out;
+  }
+  function mergeOutcomeObj(b, l, r) {
+    const bb = b || {}, out = {};
+    new Set([...Object.keys(l), ...Object.keys(r)]).forEach(f => {
+      const lv = l[f], rv = r[f], bv = bb[f];
+      let v;
+      if (sameJ(lv, rv)) v = lv; else if (sameJ(lv, bv)) v = rv; else if (sameJ(rv, bv)) v = lv;
+      else if (f === 'milestones') v = mergeById(bv || [], lv || [], rv || [], (mb, ml, mr) => merge3(mb, ml, mr, false));
+      else if (f === 'budget' && isObj(lv) && isObj(rv)) v = Object.assign({}, lv, { acc: Math.max(lv.acc || 0, rv.acc || 0) });
+      else if (f === 'lastWorked') v = Math.max(lv || 0, rv || 0) || null;
+      else v = lv;
+      if (v !== undefined) out[f] = v;
+    });
+    return out;
+  }
+  function mergeData(base, local, remote) { // maps of key → JSON string (what cloud sync stores)
+    base = base || {}; const out = {};
+    new Set([...Object.keys(local), ...Object.keys(remote)]).forEach(k => {
+      if (k.startsWith('__local_')) return;
+      const l = local[k], r = remote[k], b = base[k];
+      if (l === undefined) { if (!(b !== undefined && r === b)) out[k] = r; return; }  // deleted here and untouched there → stays deleted
+      if (r === undefined) { if (!(b !== undefined && l === b)) out[k] = l; return; }
+      if (l === r) { out[k] = l; return; }
+      if (l === b) { out[k] = r; return; }
+      if (r === b) { out[k] = l; return; }
+      try {
+        if (k === 'outcomes') out[k] = JSON.stringify(mergeById(jparse(b, []), jparse(l, []), jparse(r, []), mergeOutcomeObj));
+        else if (k === 'notes') {
+          const bn = jparse(b, {}), ln = jparse(l, {}), rn = jparse(r, {}), o = {};
+          new Set([...Object.keys(ln), ...Object.keys(rn)]).forEach(key => {
+            const lv = ln[key], rv = rn[key], bv = bn[key];
+            if (lv === undefined) { if (!(bv !== undefined && rv === bv)) o[key] = rv; }
+            else if (rv === undefined) { if (!(bv !== undefined && lv === bv)) o[key] = lv; }
+            else o[key] = mergeText(bv == null ? '' : bv, lv, rv);
+          });
+          out[k] = JSON.stringify(o);
+        } else out[k] = JSON.stringify(merge3(jparse(b, undefined), jparse(l, undefined), jparse(r, undefined), /^(tallies|tally_|outcomeTally_)/.test(k)));
+      } catch (e) { out[k] = l; }
+    });
+    return out;
+  }
+
   const cloudSync = {
-    docRef: null, pushTimer: null, paused: false, unsubscribe: null, inboxUnsub: null,
+    db: null, pushing: null, docRef: null, pushTimer: null, paused: false, unsubscribe: null, inboxUnsub: null,
     status(msg) { document.getElementById('syncStatus').textContent = msg; this.topStatus(); },
     topStatus() { const t = document.getElementById('syncTopStatus'); if (t) t.textContent = [document.getElementById('syncStatus').textContent, document.getElementById('syncLast').textContent].filter(Boolean).join(' · '); },
     // last time this device pushed to or pulled from the cloud — kept apart from the
@@ -5680,6 +5783,19 @@ For God alone my soul waits in silence. — Psalm 62:1`;
     },
     dirtyAt() { return Number(store.get('__local_dirtyAt', 0)) || 0; },
     markDirty() { store.set('__local_dirtyAt', Date.now()); },
+    // BASE = the cloud state this device last synced — the common ancestor for the three-way merge
+    getBase() { try { const t = localStorage.getItem(STORE_PREFIX + '__local_syncBase'); return t ? JSON.parse(t) : null; } catch (e) { return null; } },
+    baseAt() { return Number(store.get('__local_syncBaseAt', 0)) || 0; },
+    setBase(map, at) { try { localStorage.setItem(STORE_PREFIX + '__local_syncBase', JSON.stringify(map || {})); localStorage.setItem(STORE_PREFIX + '__local_syncBaseAt', JSON.stringify(at || 0)); } catch (e) {} },
+    clearBase() { try { localStorage.removeItem(STORE_PREFIX + '__local_syncBase'); localStorage.removeItem(STORE_PREFIX + '__local_syncBaseAt'); } catch (e) {} },
+    applyData(map) { // write whatever differs into this device's storage; true if anything changed
+      let changed = false;
+      Object.keys(map || {}).forEach(k => {
+        if (k.startsWith('__local_') || typeof map[k] !== 'string') return;
+        try { if (localStorage.getItem(STORE_PREFIX + k) !== map[k]) { localStorage.setItem(STORE_PREFIX + k, map[k]); changed = true; } } catch (e) {}
+      });
+      return changed;
+    },
     // every change lands in localStorage at once; the cloud write is batched — it waits
     // for syncIdleMin of quiet (never longer than MAX_WAIT of continuous editing) so a
     // long session is a handful of Firestore writes, not hundreds
@@ -5694,26 +5810,51 @@ For God alone my soul waits in silence. — Psalm 62:1`;
       this.pushTimer = setTimeout(() => this.pushNow(), wait);
       this.status('Changes waiting — syncing after ' + idleMin + ' min idle');
     },
+    // Push = read the cloud copy, merge it with ours, write the merge — all in one transaction, so a
+    // push from another device in between can't be lost (the transaction just re-runs). Then adopt the
+    // merged result locally, so this device also picks up what the others changed.
     pushNow() {
       clearTimeout(this.pushTimer); this.pushTimer = null; this.pendingSince = 0;
-      if (!this.docRef || this.paused) return;
-      const stamp = Date.now();
-      this.docRef.set({ data: this.allData(), updatedAt: stamp })
-        .then(() => {
-          if (this.dirtyAt() <= stamp) store.set('__local_dirtyAt', 0);
-          this.markSynced();
-          this.status('Synced ✓');
-        })
-        .catch(e => this.status(this.errorText(e)));
-    },
-    applyRemote(data) {
-      let changed = false;
-      Object.keys(data || {}).forEach(k => {
-        if (k.startsWith('__local_') || typeof data[k] !== 'string') return;
-        try {
-          if (localStorage.getItem(STORE_PREFIX + k) !== data[k]) { localStorage.setItem(STORE_PREFIX + k, data[k]); changed = true; }
-        } catch (e) {}
+      if (!this.docRef || this.paused || !this.db) return Promise.resolve();
+      if (this.pushing) { this.pushAgain = true; return this.pushing; }
+      const local = this.allData(), stamp = Date.now();
+      let merged = null;
+      this.pushing = this.db.runTransaction(async tx => {
+        const snap = await tx.get(this.docRef);
+        const remote = snap.exists ? ((snap.data() || {}).data || {}) : null;
+        merged = remote ? mergeData(this.getBase(), local, remote) : local;
+        tx.set(this.docRef, { data: merged, updatedAt: stamp });
+      }).then(() => {
+        this.setBase(merged, stamp);
+        const cur = this.allData();
+        const fin = sameMap(cur, local) ? merged : mergeData(local, cur, merged);   // edits made while it was in flight
+        const changed = this.applyData(fin);
+        if (!sameMap(fin, merged)) { store.set('__local_dirtyAt', Date.now()); this.queuePush(); }
+        else if (this.dirtyAt() <= stamp) store.set('__local_dirtyAt', 0);
+        if (changed) refreshFromStore();
+        this.markSynced(); this.status('Synced ✓');
+      }).catch(e => this.status(this.errorText(e))).finally(() => {
+        this.pushing = null; if (this.pushAgain) { this.pushAgain = false; this.queuePush(); }
       });
+      return this.pushing;
+    },
+    // another device pushed: merge its changes into ours instead of ignoring or replacing
+    mergeIn(remote) {
+      const rdata = (remote && remote.data) || {}, at = (remote && remote.updatedAt) || 0;
+      if (at && at === this.baseAt()) return;                 // our own last push coming back
+      const base = this.getBase(), local = this.allData();
+      // no saved base yet (first sync after this update): a device with unsynced edits merges as a union
+      // (nothing it has is dropped); a clean one simply adopts the cloud so it can't resurrect old data
+      const merged = base ? mergeData(base, local, rdata) : (this.dirtyAt() ? mergeData({}, local, rdata) : rdata);
+      const changed = this.applyData(merged);
+      this.setBase(rdata, at);
+      if (!sameMap(merged, rdata)) { store.set('__local_dirtyAt', Date.now()); this.queuePush(); } else store.set('__local_dirtyAt', 0);
+      if (changed) refreshFromStore();
+      this.markSynced(); this.status('Synced ✓');
+    },
+    applyRemote(data, at) { // wholesale adopt (first sign-in "use cloud")
+      const changed = this.applyData(data);
+      this.setBase(data, at || 0);
       if (changed) refreshFromStore();
       this.markSynced();
       this.status('Synced ✓');
@@ -5721,13 +5862,14 @@ For God alone my soul waits in silence. — Psalm 62:1`;
     // first snapshot after sign-in: decide whether this device or the cloud wins
     reconcile(remote, uid) {
       const syncedBefore = store.get('__local_syncedUid', null) === uid;
+      if (!syncedBefore) this.clearBase();
       const done = () => { this.paused = false; store.set('__local_syncedUid', uid); };
-      const useCloud = () => { done(); this.applyRemote(remote.data); store.set('__local_dirtyAt', 0); };
+      const useCloud = () => { done(); this.applyRemote(remote.data, remote.updatedAt); store.set('__local_dirtyAt', 0); };
       const useLocal = () => { done(); this.pushNow(); };
       if (!remote || !remote.data) return useLocal();   // empty cloud: seed it from this device
+      if (syncedBefore) { done(); this.mergeIn(remote); return; }   // been here before: merge, never replace
       const dirty = this.dirtyAt();
       if (!dirty) return useCloud();                     // nothing unsynced here
-      if (syncedBefore) return dirty > (remote.updatedAt || 0) ? useLocal() : useCloud(); // offline edits: newest wins
       // first sign-in on a device with its own unsynced edits — ask instead of silently wiping either side
       this.paused = true;
       this.status('Sync paused — choose which copy to keep (or reload to be asked again)');
@@ -5781,7 +5923,7 @@ For God alone my soul waits in silence. — Psalm 62:1`;
         this.status('Saved on this device · cloud sync unavailable right now');
         return;
       }
-      const auth = firebase.auth(), db = firebase.firestore();
+      const auth = firebase.auth(), db = firebase.firestore(); this.db = db;
       firebase.firestore.setLogLevel('error');
       try {
         db.settings({ cache: firebase.firestore.persistentLocalCache({ tabManager: firebase.firestore.persistentMultipleTabManager() }) });
@@ -5798,6 +5940,7 @@ For God alone my soul waits in silence. — Psalm 62:1`;
         });
       });
       signOut.addEventListener('click', () => auth.signOut());
+      window.addEventListener('online', () => { if (this.docRef && this.dirtyAt()) this.queuePush(); });
       auth.onAuthStateChanged(user => {
         signIn.style.display = user ? 'none' : '';
         signOut.style.display = user ? '' : 'none';
@@ -5816,8 +5959,8 @@ For God alone my soul waits in silence. — Psalm 62:1`;
           if (snap.metadata.hasPendingWrites) return; // echo of our own write
           const remote = snap.exists ? snap.data() : null;
           if (first) { first = false; this.reconcile(remote, user.uid); return; }
-          if (this.paused || this.pushTimer) return;  // a local change is about to push and win anyway
-          if (remote) this.applyRemote(remote.data);
+          if (this.paused) return;
+          if (remote) this.mergeIn(remote);               // merge — a change waiting to push no longer hides this
         }, e => { this.docRef = null; this.status(this.errorText(e)); });
       });
     },
@@ -6133,7 +6276,7 @@ For God alone my soul waits in silence. — Psalm 62:1`;
       // ---------------- sync ----------------
       syncNow: ['{} — push to the cloud right now (other devices pick it up); resolves after the push', async () => {
         if (!cloudSync.docRef || cloudSync.paused) fail('not signed in to cloud sync on this browser');
-        cloudSync.pushNow(); await new Promise(r => setTimeout(r, 1600));
+        await cloudSync.pushNow();
         return ok({ status: document.getElementById('syncStatus').textContent });
       }],
     };

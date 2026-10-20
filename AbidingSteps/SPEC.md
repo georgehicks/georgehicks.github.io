@@ -868,3 +868,14 @@ Abide invitation, celebrations, glow). Cloud inbox: ops are docs `users/{uid}/ap
 applies it, writes `as-res-{id}`, and pushes at once so other devices sync. Ops older than 6 h are
 refused. Never writes the data doc directly. Docs: AGENTIC_GUIDE.md, agent-tools.json (generated
 from `help()`), agent/abidingsteps_agent.py. Settings → Sync shows the user's ID for automation.
+
+### Sync merges instead of overwriting (2026-10-20)
+
+The cloud doc used to be replaced wholesale by whichever device pushed last (and a device with a change
+waiting ignored incoming changes), so devices lost each other's edits. Now `mergeData(base, local, remote)`
+(three-way) runs on every push (inside a Firestore transaction: read cloud → merge → write) and on every
+incoming change. BASE = the cloud state this device last synced (`__local_syncBase`). Outcomes merge by id and
+field-by-field (milestones by id), notes line-by-line, tallies/time budgets by max, other keys per field; a
+true conflict on one field goes to the merging device. Deletions only stick if the other side didn't touch it.
+A device with no base yet merges as a union if it has unsynced edits, else adopts the cloud. All devices must be
+on this version — older builds still overwrite.
