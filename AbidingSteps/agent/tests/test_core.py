@@ -136,5 +136,53 @@ class RestRequests(unittest.TestCase):
         self.assertEqual(json.loads(body["fields"]["data"]["mapValue"]["fields"]["notes"]["stringValue"]), {"o1": "- a"})
 
 
+class ServiceAccount(unittest.TestCase):
+    """The service-account sign-in is plain Python (no libraries): its RS256 signature must verify with real OpenSSL."""
+
+    def setUp(self):
+        import shutil
+        if not shutil.which("openssl"):
+            self.skipTest("openssl not available")
+        import subprocess
+        self.dir = tempfile.mkdtemp()
+        run = lambda *a: subprocess.run(a, cwd=self.dir, check=True, capture_output=True)
+        run("openssl", "genrsa", "-out", "k.pem", "2048")                                     # PKCS#1 or PKCS#8 depending on the OpenSSL
+        run("openssl", "pkcs8", "-topk8", "-nocrypt", "-in", "k.pem", "-out", "k8.pem")      # PKCS#8 (the form Google's key files use)
+        run("openssl", "rsa", "-in", "k.pem", "-pubout", "-out", "pub.pem")
+        self.run_cmd = run
+
+    def _verify(self, pem_name):
+        with open(os.path.join(self.dir, pem_name)) as f:
+            pem = f.read()
+        msg = b"header.claims"
+        with open(os.path.join(self.dir, "msg"), "wb") as f:
+            f.write(msg)
+        with open(os.path.join(self.dir, "sig"), "wb") as f:
+            f.write(core.rs256_sign(msg, pem))
+        r = self.run_cmd("openssl", "dgst", "-sha256", "-verify", "pub.pem", "-signature", "sig", "msg")
+        self.assertIn(b"Verified OK", r.stdout)
+
+    def test_signature_verifies_pkcs8(self):
+        self._verify("k8.pem")
+
+    def test_signature_verifies_whatever_openssl_wrote(self):
+        self._verify("k.pem")
+
+    def test_jwt_shape_and_reststore_uses_service_account(self):
+        import base64 as b64
+        with open(os.path.join(self.dir, "k8.pem")) as f:
+            pem = f.read()
+        sa = {"client_email": "bot@proj.iam.gserviceaccount.com", "private_key": pem, "project_id": "proj-x"}
+        jwt = core.service_account_jwt(sa, "https://www.googleapis.com/auth/datastore", now=1000)
+        head, claims, sig = jwt.split(".")
+        dec = lambda t: json.loads(b64.urlsafe_b64decode(t + "=" * (-len(t) % 4)))
+        self.assertEqual(dec(head), {"alg": "RS256", "typ": "JWT"})
+        c = dec(claims)
+        self.assertEqual((c["iss"], c["scope"], c["iat"], c["exp"]), ("bot@proj.iam.gserviceaccount.com", "https://www.googleapis.com/auth/datastore", 1000, 4600))
+        self.assertEqual(c["aud"], "https://oauth2.googleapis.com/token")
+        s = core.RestStore(uid="U", service_account=sa)
+        self.assertIn("/projects/proj-x/", s.base)          # project taken from the key file
+
+
 if __name__ == "__main__":
     unittest.main()

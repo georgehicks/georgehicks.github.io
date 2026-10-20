@@ -16,8 +16,9 @@ with their own work (three-way), exactly as they merge each other's.
     call("state")                                  # uses RestStore() configured from the environment
     call("addStep", {"outcome": "Plan retreat", "text": "Call venue @call >fri"})
 """
-import copy
+import base64
 import datetime as _dt
+import hashlib
 import json
 import os
 import random
@@ -868,6 +869,74 @@ def apply_undo(model, rec, force=False):
 
 
 # ------------------------------------------------------------------------------------------------ stores
+
+# ------------------------------------------------------------------------------------------------ service-account sign-in (stdlib only)
+def _b64u(b):
+    return base64.urlsafe_b64encode(b).rstrip(b"=").decode()
+
+
+def _der_read(data, i):
+    """One DER element at data[i:] → (tag, content bytes, next index)."""
+    tag = data[i]
+    ln = data[i + 1]
+    j = i + 2
+    if ln & 0x80:
+        nb = ln & 0x7F
+        ln = int.from_bytes(data[j:j + nb], "big")
+        j += nb
+    return tag, data[j:j + ln], j + ln
+
+
+def _rsa_private_key(pem):
+    """(n, d) from a PKCS#8 ('BEGIN PRIVATE KEY') or PKCS#1 ('BEGIN RSA PRIVATE KEY') PEM."""
+    body = "".join(l for l in pem.strip().splitlines() if not l.startswith("-----"))
+    der = base64.b64decode(body)
+    _, seq, _ = _der_read(der, 0)
+    t, first, nxt = _der_read(seq, 0)
+    if "RSA PRIVATE KEY" not in pem:                 # PKCS#8: version, algorithm, OCTET STRING holding the PKCS#1 key
+        _, _, nxt = _der_read(seq, nxt)              # skip the algorithm identifier
+        _, octets, _ = _der_read(seq, nxt)
+        _, seq, _ = _der_read(octets, 0)
+        t, first, nxt = _der_read(seq, 0)            # version
+    _, n_b, nxt = _der_read(seq, nxt)
+    _, _e, nxt = _der_read(seq, nxt)
+    _, d_b, _ = _der_read(seq, nxt)
+    return int.from_bytes(n_b, "big"), int.from_bytes(d_b, "big")
+
+
+_SHA256_PREFIX = bytes.fromhex("3031300d060960864801650304020105000420")
+
+
+def rs256_sign(message, pem):
+    """RSASSA-PKCS1-v1_5 with SHA-256 — what Google expects for a service-account JWT."""
+    n, d = _rsa_private_key(pem)
+    k = (n.bit_length() + 7) // 8
+    t = _SHA256_PREFIX + hashlib.sha256(message).digest()
+    em = b"\x00\x01" + b"\xff" * (k - len(t) - 3) + b"\x00" + t
+    return pow(int.from_bytes(em, "big"), d, n).to_bytes(k, "big")
+
+
+def service_account_jwt(sa, scope, now=None):
+    now = int(now or time.time())
+    head = _b64u(json.dumps({"alg": "RS256", "typ": "JWT"}, separators=(",", ":")).encode())
+    claims = _b64u(json.dumps({"iss": sa["client_email"], "scope": scope, "aud": sa.get("token_uri", "https://oauth2.googleapis.com/token"),
+                               "iat": now, "exp": now + 3600}, separators=(",", ":")).encode())
+    signing_input = (head + "." + claims).encode()
+    return head + "." + claims + "." + _b64u(rs256_sign(signing_input, sa["private_key"]))
+
+
+def load_service_account():
+    """From ABIDINGSTEPS_SERVICE_ACCOUNT / GOOGLE_APPLICATION_CREDENTIALS (a key-file path) or
+    ABIDINGSTEPS_SERVICE_ACCOUNT_JSON (the JSON itself). None if not configured."""
+    raw = os.environ.get("ABIDINGSTEPS_SERVICE_ACCOUNT_JSON")
+    path = os.environ.get("ABIDINGSTEPS_SERVICE_ACCOUNT") or os.environ.get("GOOGLE_APPLICATION_CREDENTIALS")
+    if raw:
+        return json.loads(raw)
+    if path and os.path.exists(path):
+        with open(path, encoding="utf-8") as f:
+            return json.load(f)
+    return None
+
 def _typed(v):
     return {"stringValue": v}
 
@@ -933,10 +1002,11 @@ class RestStore:
     """The user's cloud data doc over Firestore REST, signed in as a dedicated bot user (see the guide for the rules).
     Reads/edits only data.outcomes and data.notes, guarded by the doc's updateTime."""
 
-    def __init__(self, uid=None, project=None, email=None, password=None, api_key=None, id_token=None):
+    def __init__(self, uid=None, project=None, email=None, password=None, api_key=None, id_token=None, service_account=None):
         env = os.environ.get
         self.uid = uid or env("ABIDINGSTEPS_UID")
-        self.project = project or env("ABIDINGSTEPS_PROJECT", "focusflowgeorge")
+        self.sa = service_account if service_account is not None else (None if (id_token or env("ABIDINGSTEPS_ID_TOKEN") or env("ABIDINGSTEPS_BOT_EMAIL")) else load_service_account())
+        self.project = project or env("ABIDINGSTEPS_PROJECT") or (self.sa or {}).get("project_id") or "focusflowgeorge"
         self.email = email or env("ABIDINGSTEPS_BOT_EMAIL")
         self.password = password or env("ABIDINGSTEPS_BOT_PASSWORD")
         self.api_key = api_key or env("ABIDINGSTEPS_API_KEY")
@@ -948,6 +1018,18 @@ class RestStore:
 
     def _token(self):
         if self._tok and time.time() < self._exp - 60:
+            return self._tok
+        if self.sa:   # service account: a signed request to Google's token endpoint → an access token (acts as admin; ignores rules)
+            form = urllib.parse.urlencode({"grant_type": "urn:ietf:params:oauth:grant-type:jwt-bearer",
+                                           "assertion": service_account_jwt(self.sa, "https://www.googleapis.com/auth/datastore")}).encode()
+            req = urllib.request.Request(self.sa.get("token_uri", "https://oauth2.googleapis.com/token"), data=form, method="POST",
+                                         headers={"Content-Type": "application/x-www-form-urlencoded"})
+            try:
+                with urllib.request.urlopen(req, timeout=30) as resp:
+                    r = json.loads(resp.read())
+            except urllib.error.HTTPError as e:
+                raise RuntimeError("service-account sign-in failed (HTTP %s): %s" % (e.code, e.read()[:300].decode("utf-8", "replace")))
+            self._tok, self._exp = r["access_token"], time.time() + int(r.get("expires_in", 3600))
             return self._tok
         body = json.dumps({"email": self.email, "password": self.password, "returnSecureToken": True}).encode()
         r = self._http("POST", "https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key=" + self.api_key, body, auth=False)

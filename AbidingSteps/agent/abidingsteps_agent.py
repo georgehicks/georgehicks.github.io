@@ -5,9 +5,11 @@ Default (direct): the agent's own runtime reads/edits the cloud copy of your dat
 operations as the in-app API. Your devices merge those changes the next time they open. No server of yours, no device
 needed. Standard library only. See ../AGENTIC_GUIDE.md.
 
-Sign in as a dedicated bot user (rules in the guide limit it to this one doc):
-    export ABIDINGSTEPS_UID=<your UID — Settings → Sync shows it>
-    export ABIDINGSTEPS_BOT_EMAIL=…  ABIDINGSTEPS_BOT_PASSWORD=…  ABIDINGSTEPS_API_KEY=<Firebase web API key>
+Sign in one of two ways (set ABIDINGSTEPS_UID — the app's Settings → Sync shows it):
+  1) a dedicated bot user (recommended; the rules in the guide limit it to this one doc):
+       ABIDINGSTEPS_BOT_EMAIL=…  ABIDINGSTEPS_BOT_PASSWORD=…  ABIDINGSTEPS_API_KEY=<Firebase web API key>
+  2) a service-account key you already have (it is ADMIN: it ignores the security rules and can reach the whole project):
+       ABIDINGSTEPS_SERVICE_ACCOUNT=/path/to/key.json     (or GOOGLE_APPLICATION_CREDENTIALS, or ABIDINGSTEPS_SERVICE_ACCOUNT_JSON='{…}')
 
 Usage:
     python abidingsteps_agent.py state

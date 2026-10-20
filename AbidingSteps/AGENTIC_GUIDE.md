@@ -115,6 +115,15 @@ The library is `agent/abidingsteps_core.py` (standard library only, no installs)
 3. **Your user id:** the app's Settings → Sync shows **"For automation — your ID"**; tap to copy it.
 4. **Give the agent's runtime these environment variables** (as secrets): `ABIDINGSTEPS_UID`, `ABIDINGSTEPS_BOT_EMAIL`,
    `ABIDINGSTEPS_BOT_PASSWORD`, `ABIDINGSTEPS_API_KEY`. Copy the `agent/` folder next to it.
+
+**Already have a service-account key (for example one GrokBot holds)? Use it instead — steps 1–2 aren't needed:**
+set `ABIDINGSTEPS_UID` and point `ABIDINGSTEPS_SERVICE_ACCOUNT` at the key file (or `GOOGLE_APPLICATION_CREDENTIALS`, or put the
+JSON itself in `ABIDINGSTEPS_SERVICE_ACCOUNT_JSON`). The library signs in to Google itself — still no installs. The project is read
+from the key file. **Know what that means:** a service account is *admin* — it ignores the Firestore rules and can read and
+change everything in the project (every app's data, not just AbidingSteps). The restriction "outcomes and notes only" is enforced
+by the rules, so it does **not** apply to this key; only the library's own behaviour keeps it to outcomes and notes. If you use
+it, keep the key in one place, scope the service account's IAM role to **Cloud Datastore User** (not Owner/Editor), and prefer
+the bot login when you can.
 5. **Try it:**
 
 ```bash
@@ -162,12 +171,13 @@ specifically want the app itself to run the operation (for example the timer). P
 |---|---|
 | `no such outcome` + no candidates | wrong name; call `find{q}` |
 | `ambiguous …` with `candidates` | use an id from `candidates`, or `nth` for identical steps |
-| Path A: `HTTP 403` | the rules aren't published, or the bot's email in `isBot()` doesn't match |
+| Path A: `HTTP 403` | bot login: the rules aren't published, or the bot's email in `isBot()` doesn't match · service account: the key's IAM role lacks Datastore access |
+| Path A: `service-account sign-in failed` | wrong/expired key file, or the key's project isn't the one holding your data (set `ABIDINGSTEPS_PROJECT`) |
 | Path A: `the cloud copy kept changing` | a device was writing constantly; just retry |
 | Path A: `needs a device or browser` | that op (timer/syncNow) isn't available directly; use Path B or C |
 | Phone doesn't show the agent's change | a device that was closed merges it when it next opens; an open one within seconds |
 | `expired` (Path C) | op sat >6 h; send again |
 
 *Status:* the Python library is checked against the in-app API's own recorded answers and unit-tested (undo, conflict retry, the
-exact Firestore request shapes); the agent→device merge was tested with the real app code. **Not yet run against your live
-Firebase project:** bot sign-in, the rules above, and live Firestore reads/writes.
+exact Firestore request shapes); the agent→device merge was tested with the real app code. The service-account sign-in is plain Python whose signature is verified against real OpenSSL. **Not yet run against your live
+Firebase project:** bot or service-account sign-in, the rules above, and live Firestore reads/writes.
