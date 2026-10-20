@@ -1,42 +1,44 @@
 # AbidingSteps — guide for agents and automation
 
-Point your bot (GrokBot or any tool-calling agent) at this file. **Never use screenshots.** The app has a small
-text API, so a typical read is ~100–400 tokens and a write is one short JSON call.
+Point your agent (GrokBot or any tool-calling LLM agent) at this file. **Never use screenshots**: the app has a small text
+API, so a typical read costs ~100–400 tokens and a write is one short JSON call.
 
-**The idea:** you talk with an LLM to *survey and plan*; your own devices (phone, laptop) *run the app and carry the
-changes out*. There is no server of yours in the loop. Two ways for the LLM to reach the app — pick by what your agent
-platform can do:
+## The idea
 
-- **The agent has a browser tool →** let it open the app in *its* browser, sign in once, and call `window.abidingAgent`
-  (Path B). It is simply one more device; its changes sync to yours.
-- **The agent can only call HTTP / run code (no browser) →** it queues operations in the cloud and **your devices apply
-  them** whenever the app is open (Path A). Typical answer time 2–3 s while a device has the app open.
+You talk with an LLM to **survey and plan**, and it **manages your outcomes on the fly — even while none of your devices
+is open**. Later, when you open the app on your phone or desktop, your devices **catch up automatically** (they merge the
+agent's changes with anything you did there, three-way, so neither side loses work). Devices already open show the
+agent's changes within seconds. There is no server of yours in the loop.
 
-## 0. Paste-ready system prompt (copy this into the bot)
+How: the agent's own runtime (a code-execution tool, or a shell) talks to your cloud copy over plain HTTPS using the
+standard-library Python in `agent/` — the same operations as the in-app API, with the same rules.
+
+## 0. Paste-ready system prompt (copy this into the agent)
 
 ```
-You manage the user's task app "AbidingSteps" through the tool `abidingsteps(op, args)` (and
+You help the user plan and run their task app "AbidingSteps" through the tool `abidingsteps(op, args)` (and
 `abidingsteps_batch`). Hierarchy: outcome → milestone → step. Steps are plain lines: "- open", "+ done",
 2-space indent = substep, "@call" = context, ">2026-10-20" (or >tomorrow, >wed) = not before that day.
 "starred" means important; "planned" is the day to work on it (today or earlier = Today bucket).
-Work cheaply: start with op "state", read one outcome with "outline", find things with "agenda"/"find".
-Name outcomes/milestones/steps by id, exact title, or a unique piece of the title. Batch writes into one
-call. Never delete (remove*/setNotes need confirm:true) unless the user clearly asked. After a change,
-re-read only that outcome's "outline". If a call fails, the error lists candidates — fix and retry once.
+Survey first, cheaply: op "state", then "outline" for one outcome, "agenda"/"find" for slices. Talk the plan through
+with the user, then apply it with one batch. Name outcomes/milestones/steps by id, exact title, or a unique piece of
+the title. Never delete (remove*/setNotes/clearDone need confirm:true) unless the user clearly asked. Every write
+returns an `undo` id — keep it and offer it if the user changes their mind. If a call fails, the error lists
+candidates — fix and retry once. The user also edits on their own devices; re-read an outcome's "outline" before
+changing it if time has passed.
 ```
 
 Tool definitions (JSON schema, generated from the app itself): [`agent-tools.json`](agent-tools.json).
 
-## 1. Pick a path (your data must stay in sync with your devices)
+## 1. Pick a path
 
-| Path | Needs | Best for | Sync with phone/desktop |
+| Path | Works when no device is open? | Needs | Use when |
 |---|---|---|---|
-| **A. Cloud inbox — your devices execute** | a Firebase bot login (or service account) + your UID; the app open and signed in on at least one of your devices | agents with no browser | ✅ automatic — whichever of your devices has the app open applies each op with the app's own code and pushes |
-| **B. Agent's own browser** | the agent's browser tool, signed in once | agents that can drive a browser (nothing to host) | ✅ it is just another signed-in device; call `syncNow` after changes |
-| **C. Read-only** | service account | dashboards, "what's due?" with no device open | n/a (reads the cloud copy) |
+| **A. Direct** *(recommended)* | ✅ yes | code execution (Python 3) + a bot login | the agent can run code or a shell |
+| **B. Agent's own browser** | ✅ yes | a browser tool, signed in once | the agent can drive a browser; also gives the focus timer |
+| **C. Via your devices** *(optional)* | ❌ waits for a device | bot login | you want the app's own code to apply each change |
 
-Never write to the data doc (`users/{uid}/apps/abidingsteps`) directly: devices overwrite it wholesale and
-will clobber (or be clobbered by) a raw edit. Path A exists to avoid exactly that.
+All three keep your devices in sync. Paths A and B are "just another device" to the cloud copy.
 
 ## 2. The operations (same on every path)
 
@@ -45,7 +47,7 @@ Call shape: `op` + `args` → `{ok:true, ...}` or `{ok:false, error, candidates?
 
 | op | args | returns |
 |---|---|---|
-| `state` | – | counts per bucket, starred, dueSteps, nextUp[5], timer, sync — **call this first** |
+| `state` | – | counts per bucket, starred, dueSteps, nextUp[5] — **call this first** |
 | `list` | `{bucket?, q?, starred?, limit=25}` | compact outcome rows |
 | `outline` | `{outcome}` or `{bucket}` | the notes outline as text — **cheapest way to read an outcome** |
 | `agenda` | `{context?, due?, date?, includeFuture?, limit=50}` | open steps by `@context` / date |
@@ -57,13 +59,12 @@ Call shape: `op` + `args` → `{ok:true, ...}` or `{ok:false, error, candidates?
 | `editStep` | `{outcome, step, text, milestone?}` | the new line |
 | `note` | `{outcome, text, milestone?, under?}` | – |
 | `addMilestone` / `updateMilestone` | `{outcome, title, steps?[]}` / `{outcome, milestone, title?, done?}` | id |
-| `removeStep` `removeMilestone` `remove` `setNotes` `clearDone` | need `confirm:true` (`clearDone{outcome|bucket|all}` removes done steps and milestones) | – |
-| `start` / `stop` / `timer` | `{outcome, minutes=15, milestone?, step?}` | focus timer (also plans it for today) |
-| `undo` | `{id? \| ids?[], force?}` | **every write returns `undo:<id>`**; `undo{id}` reverses exactly that change, **from any device**, for ~24 h. Several ids go newest-first. It refuses (`changed since`) if those items were edited afterwards, unless `force:true` |
-| `syncNow` | – | pushes now (browser path) |
+| `removeStep` `removeMilestone` `remove` `setNotes` `clearDone` | need `confirm:true` (`clearDone{outcome\|bucket\|all}` removes done steps and milestones) | – |
+| `undo` | `{id? \| ids?[], force?}` | **every write returns `undo:<id>`**; `undo{id}` reverses exactly that change (any path, ~24 h). Newest-first for several ids. Refuses (`changed since`) if those items were edited afterwards, unless `force:true` |
+| `start` / `stop` / `timer` / `syncNow` | – | the focus timer and a manual push — **browser path (B) and via-devices (C) only**; Path A answers "needs a device" |
 | `batch` | `{ops:[{op,args}], stopOnError?}` | `{results:[…]}` — **one round trip for many ops** |
 
-`window.abidingAgent.help()` returns this list (and the URL of this guide) from the running app — trust it over this file if they differ. The page also advertises the guide with `<link rel="help">`.
+`window.abidingAgent.help()` (Path B) returns this list from the running app — trust it over this file if they differ.
 
 ## 3. The model in 60 seconds
 
@@ -75,8 +76,8 @@ Call shape: `op` + `args` → `{ok:true, ...}` or `{ok:false, error, candidates?
 - `@word` anywhere in a step = context (GTD); children inherit their parent's contexts and date.
   `>date` = not before that day; until then the step stays out of the Step picker, and a dated step coming due
   pulls its outcome onto Today. (Effective next date = the earliest of the plan and any step date.)
-- Steps are identified **by their text** (they have no ids). A piece of the text works if it is unique; otherwise the error returns
-  `candidates` with an `nth` for each, and you resend with `nth`. Repeating the same `addStep` is harmless (`duplicate:true`).
+- Steps are identified **by their text** (they have no ids). A piece of the text works if it is unique; otherwise the error
+  returns `candidates` with an `nth` for each, and you resend with `nth`. Repeating the same `addStep` is harmless.
 
 ## 4. Spend fewer tokens
 
@@ -85,102 +86,88 @@ Call shape: `op` + `args` → `{ok:true, ...}` or `{ok:false, error, candidates?
 3. Writes return the data you need (`addStep` returns the outline) — don't re-read afterwards unless unsure.
 4. Group related writes in `abidingsteps_batch`. Set `limit` on lists.
 5. Use ids once you have them (they are stable); titles are fine for a first reference.
-6. Keep the tool description (in `agent-tools.json`) in the model's tools list instead of pasting this guide each turn.
+6. Keep the tool description (`agent-tools.json`) in the model's tools list instead of pasting this guide each turn.
 
-## 5. Path A — cloud inbox (recommended)
+## 5. Path A — Direct (agent's code ⇄ your cloud copy)
 
-How it works: the bot writes a small doc `users/{uid}/apps/as-op-{id}`; any signed-in AbidingSteps device that is
-open claims it (a transaction deletes the doc, so only one device applies it), runs it through
-`window.abidingAgent`, writes `as-res-{id}`, and pushes immediately — so your other devices update too.
+The library is `agent/abidingsteps_core.py` (standard library only, no installs). The CLI is `agent/abidingsteps_agent.py`.
 
-**Choose how the bot signs in — least privilege first:**
+**One-time setup (a few minutes):**
 
-- **Recommended — a dedicated bot login, locked down by Firestore rules (no admin key at all).** Create an email/password
-  user in Firebase Authentication just for the bot, then add this to your rules, inside the existing
-  `match /users/{userId}` block, next to the `apps` rule. The bot can then drop operations and read its answers —
-  and nothing else; it can never read or write your actual data, or any other app's.
+1. **Make a bot login.** Firebase console → Authentication → add an email/password user just for the agent
+   (e.g. `bot@yourdomain.example`). Note the project's **web API key** (Project settings → General).
+2. **Lock it down with Firestore rules** — inside the existing `match /users/{userId}` block, replace/extend the `apps` rule:
 
-  ```
-  match /apps/{docId} {
-    allow read, write: if request.auth != null && request.auth.uid == userId;          // you (the app) — as before
-    allow create:      if isBot() && docId.matches('as-op-.*');                         // the bot may queue operations…
-    allow get, delete: if isBot() && docId.matches('as-res-.*');                        // …and collect/clear its answers
-  }
-  function isBot() { return request.auth != null && request.auth.token.email == 'bot@your-domain.example'; }
-  ```
-  `isBot()` is defined at the same level as the `match` blocks. The helper signs in over REST (see below) and sends
-  `argsJson` (the args as a JSON string).
-- **Fallback — a service account.** In Google Cloud IAM make a *dedicated* one with only **Cloud Datastore User**. Be
-  aware that this role reaches the **whole Firestore database** (all your apps' data) and ignores the rules, so guard
-  the key like a password.
-
-1. In the app: Settings → Sync shows **"For automation — your ID"**; tap to copy it (`ABIDINGSTEPS_UID`).
-2. Bot-login mode needs no install. Service-account mode needs `pip install firebase-admin`. Then:
+   ```
+   match /apps/{docId} {
+     allow read, write: if request.auth != null && request.auth.uid == userId;       // you (the app) — as before
+     // the agent: read the data doc, change ONLY its outcomes and notes, nothing else, no create/delete
+     allow get:    if isBot() && docId == 'abidingsteps';
+     allow update: if isBot() && docId == 'abidingsteps'
+                   && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['data', 'updatedAt'])
+                   && request.resource.data.data.diff(resource.data.data).affectedKeys().hasOnly(['outcomes', 'notes']);
+     allow create, get, delete: if isBot() && docId.matches('as-undo-.*');            // its undo records
+   }
+   function isBot() { return request.auth != null && request.auth.token.email == 'bot@yourdomain.example'; }
+   ```
+   (`isBot()` sits next to your other top-level rules/functions. Optional, only for Path C, add:
+   `allow create: if isBot() && docId.matches('as-op-.*'); allow get, delete: if isBot() && docId.matches('as-res-.*');`)
+3. **Your user id:** the app's Settings → Sync shows **"For automation — your ID"**; tap to copy it.
+4. **Give the agent's runtime these environment variables** (as secrets): `ABIDINGSTEPS_UID`, `ABIDINGSTEPS_BOT_EMAIL`,
+   `ABIDINGSTEPS_BOT_PASSWORD`, `ABIDINGSTEPS_API_KEY`. Copy the `agent/` folder next to it.
+5. **Try it:**
 
 ```bash
-# bot-login mode (recommended):
-export ABIDINGSTEPS_UID=<uid> ABIDINGSTEPS_BOT_EMAIL=bot@your-domain.example ABIDINGSTEPS_BOT_PASSWORD=… ABIDINGSTEPS_API_KEY=<Firebase web API key>
-# or service-account mode:  export GOOGLE_APPLICATION_CREDENTIALS=/path/key.json ABIDINGSTEPS_UID=<uid>
 python agent/abidingsteps_agent.py state
 python agent/abidingsteps_agent.py op addStep '{"outcome":"Plan retreat","text":"Call venue @call >fri"}'
+python agent/abidingsteps_agent.py batch '[{"op":"setStep","args":{"outcome":"Plan retreat","step":"Call venue","done":true}},{"op":"state"}]'
 ```
 
-As a library: `from abidingsteps_agent import send, batch, read_outline` (`send("addStep", {...})` blocks until a device answers).
-Without Python, the protocol is just two docs:
+As a library: `from abidingsteps_core import call, batch` → `call("addStep", {...})`. With a tool-calling platform, register the two
+tools from `agent-tools.json` and have your tool executor call `call(op, args)` / `batch(ops)`.
 
-```
-create  users/{uid}/apps/as-op-{id}  {kind:"as-op", id, op, args:{…} | argsJson:"<JSON string>", at:<ms epoch>}
-read    users/{uid}/apps/as-res-{id}  → {ok, result:"<JSON string>"}      (delete it after reading)
-```
+**Why this is safe alongside your devices:** each change reads the cloud doc, applies the operation, and writes back **only
+`data.outcomes` and `data.notes`**, guarded by the doc's `updateTime` — if a device wrote in between, it reloads and re-applies
+(never overwrites). Your devices then merge the agent's changes with theirs line by line. The Python rules are tested against
+the app's own answers (see `agent/tests/`).
 
-Semantics to design around: **at-most-once** (an op is claimed before it runs); ops older than 6 h are refused;
-if no device is open the op waits (no answer in time ⇒ read state before retrying a non-idempotent op like
-`addStep`, though `addStep` now ignores a repeat); results should be deleted by the reader. Nothing needs to run on a server: if no device
-of yours has the app open, the operation just waits (up to 6 h) until you next open it.
+## 6. Path B — the agent's own browser
 
-## 6. Path B — headless browser
-
-```python
-from playwright.sync_api import sync_playwright
-with sync_playwright() as p:
-    ctx = p.chromium.launch_persistent_context("/data/abidingsteps-profile", headless=True)   # keeps login + data
-    page = ctx.new_page()
-    page.goto("https://georgehicks.github.io/AbidingSteps/index.html?agent=1")
-    page.wait_for_function("window.abidingAgent && window.abidingAgent.ready")
-    r = page.evaluate("([op, args]) => window.abidingAgent.call(op, args)", ["state", {}])
-    page.evaluate("() => window.abidingAgent.call('syncNow')")       # push before closing
-```
+If the agent has a browser tool: open `https://georgehicks.github.io/AbidingSteps/index.html?agent=1`, sign in with Google
+once (Settings → Sync), then `window.abidingAgent.call(op, args)` runs any operation, including the focus timer, and
+`window.abidingAgent.call('syncNow')` pushes before the agent finishes.
 
 - **`?agent=1`** switches off the welcome, the Abide invitation, celebrations and the glow so nothing blocks the page.
-- The profile directory is the data store. For it to share your devices' data it must be **signed in once**
-  (Settings → Sync → Sign in with Google). Google often refuses sign-in inside automated browsers; do the one-time
-  sign-in with that same profile launched normally (headed, not automated), then reuse it headless.
+- Its browser profile is a device like any other; keep it persistent so the sign-in survives.
 - Cheap alternatives to screenshots if you must look at the page: `document.body.innerText`, or `window.abidingAgent.call('outline', {outcome})`.
 
-## 7. Path C — read-only
+## 7. Path C — via your devices (optional)
 
-`python agent/abidingsteps_agent.py read` fetches the data doc and prints the outline with no device open (bucket
-names are approximate; `state`/`list` answered by a device are authoritative). Data doc fields are JSON *strings*:
-`data.outcomes`, `data.notes` (`{outcomeId: text, "outcomeId#milestoneId": text}`).
+`python agent/abidingsteps_agent.py --via-devices op state` queues the operation in the cloud; whichever of your signed-in devices
+has the app open applies it with the app's own code (answer in ~2–3 s). If none is open, it waits (up to 6 h). Use it only if you
+specifically want the app itself to run the operation (for example the timer). Path A already works with no device open.
 
 ## 8. Safety
 
 - Deletes and wholesale rewrites need `confirm:true`; ask the human before sending them.
-- **Undo:** keep the `undo` id each write returns. It travels with the change (the cloud inbox stores the record), so it
-  works whichever device receives the undo — and it will not overwrite later edits unless you pass `force:true`. Records last ~24 h.
+- **Undo:** keep the `undo` id each write returns. It works from any path, even from another machine, and will not overwrite
+  later edits unless you pass `force:true`. Records last ~24 h.
 - Don't loop: one `state` per task, then targeted reads.
-- Dates relative to "today" are resolved at write time, in the device's local timezone.
+- Dates relative to "today" resolve at write time in the agent's timezone — set `ABIDINGSTEPS_TZ=Europe/London` (or your zone) in Path A.
+- The bot can read your whole data doc (outcomes, notes, settings). It cannot touch anything else in your database.
 
 ## 9. Troubleshooting
 
 | symptom | cause / fix |
 |---|---|
 | `no such outcome` + no candidates | wrong name; call `find{q}` |
-| `ambiguous …` with `candidates` | use an id from `candidates` |
-| Path A times out | none of your devices has the app open and signed in — open it (the operation waits up to 6 h) |
-| `expired` | op sat >6 h; send again |
-| Browser path loses data | the persistent profile wasn't reused (`launch_persistent_context` dir) |
-| Changes missing on phone | `syncNow` (browser) / wait for the device push; phone must be open or reopened to pull |
+| `ambiguous …` with `candidates` | use an id from `candidates`, or `nth` for identical steps |
+| Path A: `HTTP 403` | the rules aren't published, or the bot's email in `isBot()` doesn't match |
+| Path A: `the cloud copy kept changing` | a device was writing constantly; just retry |
+| Path A: `needs a device or browser` | that op (timer/syncNow) isn't available directly; use Path B or C |
+| Phone doesn't show the agent's change | a device that was closed merges it when it next opens; an open one within seconds |
+| `expired` (Path C) | op sat >6 h; send again |
 
-*Status: the in-app API, the inbox claim/apply logic and cross-device undo are tested in a browser with a stand-in for Firestore;
-the Firestore rules, the bot-login (REST) mode, the service-account setup and the Python helper have not been run against your live project.*
+*Status:* the Python library is checked against the in-app API's own recorded answers and unit-tested (undo, conflict retry, the
+exact Firestore request shapes); the agent→device merge was tested with the real app code. **Not yet run against your live
+Firebase project:** bot sign-in, the rules above, and live Firestore reads/writes.

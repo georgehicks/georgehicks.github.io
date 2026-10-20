@@ -1,0 +1,203 @@
+{
+ "today": "2026-10-20",
+ "results": [
+  {
+   "ok": true,
+   "title": "Parity A",
+   "bucket": "Today",
+   "starred": 1,
+   "planned": "2026-10-20",
+   "open": 3
+  },
+  {
+   "ok": true,
+   "title": "Parity B",
+   "bucket": "Open",
+   "type": "Directive"
+  },
+  {
+   "ok": true
+  },
+  {
+   "ok": true,
+   "outline": "# Parity A [Today] ★ plan:2026-10-20\n- Call venue @call >2026-10-23\n  - ask about parking\n- Write memo @computer\n- Plan >2026-12-24\n◆ Phase one\n  - Alpha @errands\n  - Beta"
+  },
+  {
+   "ok": true,
+   "duplicate": true
+  },
+  {
+   "ok": true,
+   "line": "+ Write memo @computer"
+  },
+  {
+   "ok": true,
+   "line": "+ Alpha @errands"
+  },
+  {
+   "ok": true,
+   "line": "- Beta renamed >2026-10-21"
+  },
+  {
+   "ok": true
+  },
+  {
+   "ok": true,
+   "title": "Parity B",
+   "bucket": "Week",
+   "starred": 1,
+   "planned": "2026-10-26",
+   "type": "Directive"
+  },
+  {
+   "ok": true,
+   "title": "Parity C",
+   "bucket": "Later",
+   "planned": "2026-11-10",
+   "type": "Destination"
+  },
+  {
+   "ok": true,
+   "title": "Parity D",
+   "bucket": "Maybe"
+  },
+  {
+   "ok": true,
+   "title": "Parity C",
+   "bucket": "Later",
+   "planned": "2026-11-10",
+   "type": "Destination"
+  },
+  {
+   "ok": true,
+   "title": "Phase one",
+   "done": true
+  },
+  {
+   "ok": true,
+   "steps": 2,
+   "milestones": 0,
+   "outcomes": 0
+  },
+  {
+   "ok": true,
+   "outline": "# Parity C [Later] plan:2026-11-10 Destination\n- twin"
+  },
+  {
+   "ok": true,
+   "outline": "# Parity C [Later] plan:2026-11-10 Destination\n- twin\n- twin"
+  },
+  {
+   "ok": true,
+   "line": "+ twin"
+  },
+  {
+   "ok": false,
+   "error": "ambiguous step — add nth (1-based) to pick one of the identical/similar lines",
+   "candidates": [
+    {
+     "nth": 1,
+     "line": "- twin"
+    },
+    {
+     "nth": 2,
+     "line": "+ twin"
+    }
+   ]
+  }
+ ],
+ "outlines": {
+  "Parity A": "# Parity A [Today] ★ plan:2026-10-20\n- Call venue @call >2026-10-23\n  - ask about parking\n- Plan >2026-12-24\n◆ Phase one (done)\n  - Beta renamed >2026-10-21\n  remember the budget",
+  "Parity B": "# Parity B [Week] ★ plan:2026-10-26 Directive\nplain note",
+  "Parity C": "# Parity C [Later] plan:2026-11-10 Destination\n- twin\n+ twin",
+  "Parity D": "# Parity D [Maybe]"
+ },
+ "list": [
+  {
+   "title": "Parity A",
+   "bucket": "Today",
+   "starred": 1,
+   "planned": "2026-10-20",
+   "open": 3,
+   "milestones": 1
+  },
+  {
+   "title": "Parity B",
+   "bucket": "Week",
+   "starred": 1,
+   "planned": "2026-10-26",
+   "type": "Directive"
+  },
+  {
+   "title": "Parity C",
+   "bucket": "Later",
+   "planned": "2026-11-10",
+   "type": "Destination",
+   "open": 1
+  },
+  {
+   "title": "Parity D",
+   "bucket": "Maybe"
+  }
+ ],
+ "listAll": [
+  {
+   "title": "Parity C",
+   "bucket": "Later",
+   "planned": "2026-11-10",
+   "type": "Destination",
+   "open": 1
+  }
+ ],
+ "agenda": [
+  {
+   "outcome": "Parity A",
+   "step": "Call venue @call >2026-10-23",
+   "ctx": [
+    "call"
+   ],
+   "date": "2026-10-23"
+  },
+  {
+   "outcome": "Parity A",
+   "step": "ask about parking",
+   "ctx": [
+    "call"
+   ],
+   "date": "2026-10-23"
+  }
+ ],
+ "agendaDate": [
+  {
+   "outcome": "Parity A",
+   "step": "Call venue @call >2026-10-23",
+   "ctx": [
+    "call"
+   ],
+   "date": "2026-10-23"
+  },
+  {
+   "outcome": "Parity A",
+   "step": "ask about parking",
+   "ctx": [
+    "call"
+   ],
+   "date": "2026-10-23"
+  },
+  {
+   "outcome": "Parity A",
+   "step": "Plan >2026-12-24",
+   "date": "2026-12-24"
+  }
+ ],
+ "find": [],
+ "errors": [
+  "ambiguous outcome",
+  "ambiguous step — add nth (1-based) to pick one of the identical/similar lines",
+  "remove needs confirm:true",
+  "bucket must be one of Inbox|Today|Week|Later|Open|Maybe|Done"
+ ],
+ "failures": [
+  18
+ ]
+}

@@ -879,3 +879,12 @@ field-by-field (milestones by id), notes line-by-line, tallies/time budgets by m
 true conflict on one field goes to the merging device. Deletions only stick if the other side didn't touch it.
 A device with no base yet merges as a union if it has unsynced edits, else adopts the cloud. All devices must be
 on this version — older builds still overwrite.
+
+### Direct-cloud agent (2026-10-20)
+
+`agent/abidingsteps_core.py` is a dependency-free Python port of the in-app agent API that edits the cloud copy directly
+(Firestore REST, dedicated bot login restricted by rules to `data.outcomes`/`data.notes` of the one doc), so an LLM agent
+can manage outcomes while no device is open; devices merge the change on their next sync (three-way). Guarded by the doc's
+`updateTime` precondition (reload + re-apply on conflict). Undo records use the same format as the app (`as-undo-<id>` docs).
+`agent/tests/` replays an operation list against answers recorded from the real app so the port cannot drift silently.
+mergeText now replays local hunks onto the remote text (in-place ticks stay in place, appended lines stay appended).

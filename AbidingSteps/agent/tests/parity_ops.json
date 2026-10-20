@@ -1,0 +1,21 @@
+[
+ {"op":"add","args":{"title":"Parity A","bucket":"Today","starred":true,"steps":["Call venue @call >fri","Write memo @computer","Plan >2026-12-24"]}},
+ {"op":"add","args":{"title":"Parity B","bucket":"Open","type":"Directive","notes":"plain note"}},
+ {"op":"addMilestone","args":{"outcome":"Parity A","title":"Phase one","steps":["Alpha @errands","Beta"]}},
+ {"op":"addStep","args":{"outcome":"Parity A","text":"ask about parking","under":"call venue"}},
+ {"op":"addStep","args":{"outcome":"Parity A","text":"ask about parking","under":"call venue"}},
+ {"op":"setStep","args":{"outcome":"Parity A","step":"write memo","done":true}},
+ {"op":"setStep","args":{"outcome":"Parity A","step":"alpha","milestone":"Phase one","done":true}},
+ {"op":"editStep","args":{"outcome":"Parity A","step":"beta","text":"Beta renamed >tomorrow"}},
+ {"op":"note","args":{"outcome":"Parity A","text":"remember the budget","milestone":"Phase one"}},
+ {"op":"update","args":{"outcome":"Parity B","planned":"mon","starred":true}},
+ {"op":"add","args":{"title":"Parity C","planned":"2026-11-10","type":"Destination"}},
+ {"op":"add","args":{"title":"Parity D","bucket":"Maybe"}},
+ {"op":"update","args":{"outcome":"Parity C","bucket":"Later"}},
+ {"op":"updateMilestone","args":{"outcome":"Parity A","milestone":"Phase one","done":true}},
+ {"op":"clearDone","args":{"outcome":"Parity A","confirm":true}},
+ {"op":"addStep","args":{"outcome":"Parity C","text":"twin","allowDuplicate":true}},
+ {"op":"addStep","args":{"outcome":"Parity C","text":"twin","allowDuplicate":true}},
+ {"op":"setStep","args":{"outcome":"Parity C","step":"twin","nth":2,"done":true}},
+ {"op":"setStep","args":{"outcome":"Parity C","step":"twin"}}
+]

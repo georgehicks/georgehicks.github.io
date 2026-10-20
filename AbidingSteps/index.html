@@ -5681,17 +5681,27 @@ For God alone my soul waits in silence. — Psalm 62:1`;
     while (i < n && j < m) { if (a[i] === b[j]) { pairs.push([i, j]); i++; j++; } else if (dp[i + 1][j] >= dp[i][j + 1]) i++; else j++; }
     return pairs;
   }
-  // text: start from the remote lines, take away what local deleted, add what local added after its neighbour
+  // text: start from the remote lines and replay what LOCAL did relative to the base, hunk by hunk — a hunk is a
+  // stretch of lines local removed and/or added. Added lines go where the removed ones were (so ticking a step in
+  // place stays in place), else right after the line that preceded them, else at the end (so an appended line stays
+  // appended even when another device changed its neighbour).
   function mergeText(b, l, r) {
     if (l === r) return l; if (l === b) return r; if (r === b) return l;
     const bl = b.split('\n'), ll = l.split('\n'), rl = r.split('\n');
-    const pairs = lcsPairs(bl, ll), keptB = new Set(pairs.map(p => p[0])), keptL = new Set(pairs.map(p => p[1]));
-    const out = rl.slice();
-    bl.forEach((ln, i) => { if (!keptB.has(i) && ln.trim() !== '') { const k = out.indexOf(ln); if (k >= 0) out.splice(k, 1); } });
-    ll.forEach((ln, j) => {
-      if (keptL.has(j) || ln.trim() === '' || out.includes(ln)) return;
-      const anchor = j > 0 ? ll[j - 1] : null, at = anchor == null ? -1 : out.lastIndexOf(anchor);
-      out.splice(at + 1, 0, ln);
+    const pairs = lcsPairs(bl, ll), out = rl.slice(), hunks = [];
+    let bi = 0, li = 0;
+    pairs.concat([[bl.length, ll.length]]).forEach(([pb, pl]) => {
+      if (pb > bi || pl > li) hunks.push({ removed: bl.slice(bi, pb).filter(x => x.trim() !== ''), added: ll.slice(li, pl).filter(x => x.trim() !== ''), prev: li > 0 ? ll[li - 1] : null });
+      bi = pb + 1; li = pl + 1;
+    });
+    hunks.forEach(h => {
+      let at;
+      const where = h.removed.map(x => out.indexOf(x)).filter(k => k >= 0);
+      if (where.length) at = Math.min(...where);                                   // where the removed line sat
+      else if (h.prev != null) { const k = out.lastIndexOf(h.prev); at = k >= 0 ? k + 1 : out.length; }
+      else at = 0;
+      h.removed.forEach(x => { const k = out.indexOf(x); if (k >= 0) { out.splice(k, 1); if (k < at) at--; } });
+      h.added.forEach(x => { if (!out.includes(x)) { out.splice(at, 0, x); at++; } });
     });
     return out.join('\n');
   }
