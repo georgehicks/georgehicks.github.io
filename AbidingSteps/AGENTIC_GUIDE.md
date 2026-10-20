@@ -3,6 +3,15 @@
 Point your bot (GrokBot or any tool-calling agent) at this file. **Never use screenshots.** The app has a small
 text API, so a typical read is ~100–400 tokens and a write is one short JSON call.
 
+**The idea:** you talk with an LLM to *survey and plan*; your own devices (phone, laptop) *run the app and carry the
+changes out*. There is no server of yours in the loop. Two ways for the LLM to reach the app — pick by what your agent
+platform can do:
+
+- **The agent has a browser tool →** let it open the app in *its* browser, sign in once, and call `window.abidingAgent`
+  (Path B). It is simply one more device; its changes sync to yours.
+- **The agent can only call HTTP / run code (no browser) →** it queues operations in the cloud and **your devices apply
+  them** whenever the app is open (Path A). Typical answer time 2–3 s while a device has the app open.
+
 ## 0. Paste-ready system prompt (copy this into the bot)
 
 ```
@@ -22,8 +31,8 @@ Tool definitions (JSON schema, generated from the app itself): [`agent-tools.jso
 
 | Path | Needs | Best for | Sync with phone/desktop |
 |---|---|---|---|
-| **A. Cloud inbox** *(recommended)* | Firebase service account + your UID; at least one signed-in AbidingSteps open somewhere | bots that run on a server/shell/cron | ✅ automatic — a device applies each op with the app's own code and pushes |
-| **B. Browser API** | a headless browser logged in to your sync | bots with a browser tool and no Firebase access | ✅ if that browser profile is signed in (then it is just another device) |
+| **A. Cloud inbox — your devices execute** | a Firebase bot login (or service account) + your UID; the app open and signed in on at least one of your devices | agents with no browser | ✅ automatic — whichever of your devices has the app open applies each op with the app's own code and pushes |
+| **B. Agent's own browser** | the agent's browser tool, signed in once | agents that can drive a browser (nothing to host) | ✅ it is just another signed-in device; call `syncNow` after changes |
 | **C. Read-only** | service account | dashboards, "what's due?" with no device open | n/a (reads the cloud copy) |
 
 Never write to the data doc (`users/{uid}/apps/abidingsteps`) directly: devices overwrite it wholesale and
@@ -126,9 +135,8 @@ read    users/{uid}/apps/as-res-{id}  → {ok, result:"<JSON string>"}      (del
 
 Semantics to design around: **at-most-once** (an op is claimed before it runs); ops older than 6 h are refused;
 if no device is open the op waits (no answer in time ⇒ read state before retrying a non-idempotent op like
-`addStep`, though `addStep` now ignores a repeat); results should be deleted by the reader. For **always-on** operation, run one headless browser (Path B)
-signed in to your account — it is simply a device that is always open. `agent/worker/` has a ready-made one that runs on any OS
-(one Python file; Docker or any process manager; sign in once and carry one `auth-state.json`) — see its README; it is written but not yet run against your account.
+`addStep`, though `addStep` now ignores a repeat); results should be deleted by the reader. Nothing needs to run on a server: if no device
+of yours has the app open, the operation just waits (up to 6 h) until you next open it.
 
 ## 6. Path B — headless browser
 
@@ -143,8 +151,6 @@ with sync_playwright() as p:
     page.evaluate("() => window.abidingAgent.call('syncNow')")       # push before closing
 ```
 
-- **Simplest of all (no code):** `python agent/worker/abidingsteps_worker.py --call state` (or `--call addStep --args '{…}'`) opens the
-  app signed in from a portable `auth-state.json`, runs one operation, syncs, and exits — nothing left running. See `agent/worker/README.md`.
 - **`?agent=1`** switches off the welcome, the Abide invitation, celebrations and the glow so nothing blocks the page.
 - The profile directory is the data store. For it to share your devices' data it must be **signed in once**
   (Settings → Sync → Sign in with Google). Google often refuses sign-in inside automated browsers; do the one-time
@@ -171,7 +177,7 @@ names are approximate; `state`/`list` answered by a device are authoritative). D
 |---|---|
 | `no such outcome` + no candidates | wrong name; call `find{q}` |
 | `ambiguous …` with `candidates` | use an id from `candidates` |
-| Path A times out | no signed-in AbidingSteps is open; open the app (or run the headless worker) |
+| Path A times out | none of your devices has the app open and signed in — open it (the operation waits up to 6 h) |
 | `expired` | op sat >6 h; send again |
 | Browser path loses data | the persistent profile wasn't reused (`launch_persistent_context` dir) |
 | Changes missing on phone | `syncNow` (browser) / wait for the device push; phone must be open or reopened to pull |
