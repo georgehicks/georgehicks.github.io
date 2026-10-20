@@ -1251,7 +1251,7 @@
     <h4>Details panel</h4>
     <div><kbd>i</kbd> jump into the side panel (kind, role, bucket, date, maybe, done, budget) · <kbd>Tab</kbd> between fields · <kbd>Enter</kbd> or <kbd>Esc</kbd> back to the map · <kbd>I</kbd> hide it</div>
     <h4>Other</h4>
-    <div><kbd>d</kbd> flips a step between - and + · <kbd>y</kbd> cycle Inbox → Destination → Directive · <kbd>s</kbd> star it as important (a separate thing from the day you plan it for: buckets and dates say <i>when</i>, ★ says <i>how much it matters</i>)</div>
+    <div><kbd>d</kbd> flips a step between - and + · <kbd>D</kbd> (Shift+d) clears what's done under the selection — on the top node, everywhere; on the Done bucket it also deletes finished outcomes (<kbd>u</kbd> undoes) · <kbd>y</kbd> cycle Inbox → Destination → Directive · <kbd>s</kbd> star it as important (a separate thing from the day you plan it for: buckets and dates say <i>when</i>, ★ says <i>how much it matters</i>)</div>
     <div><kbd>⌫</kbd> delete · <kbd>u</kbd> or <kbd>⌘Z</kbd> undo (no confirm boxes here — undo instead)</div>
   </div>
   <div id="mapWork" role="dialog" aria-label="Work on this"></div>
@@ -4208,6 +4208,38 @@ For God alone my soul waits in silence. — Psalm 62:1`;
     if (outChanged) store.set('outcomes', outcomes, { quiet: true });
     return notesChanged || outChanged;
   }
+  // ---- clearing what's finished: "+ " lines (with their nested lines) go, unless something inside
+  // is still open; a completed milestone goes once nothing open is left in it ----
+  const isOpenStepLine = (l) => { const r = STEP_RE.exec(l); return !!(r && r[1] === '-'); };
+  function pruneDoneLines(lines) {
+    const out = []; let removed = 0;
+    for (let i = 0; i < lines.length;) {
+      const ln = lines[i], r = STEP_RE.exec(ln);
+      if (r && r[1] === '+') {
+        const ind = indentOf(ln); let j = i + 1;
+        while (j < lines.length && (lines[j].trim() === '' || indentOf(lines[j]) > ind)) j++;
+        const blk = lines.slice(i, j);
+        if (!blk.some(isOpenStepLine)) { removed += blk.filter(b => { const x = STEP_RE.exec(b); return x && x[1] === '+'; }).length; i = j; continue; }
+      }
+      out.push(ln); i++;
+    }
+    return { lines: out, removed };
+  }
+  // done steps and done milestones inside one outcome → { steps, mss }
+  function clearDoneIn(o) {
+    let steps = 0, mss = 0;
+    const r = pruneDoneLines(noteLines(o.id)); if (r.removed) { writeNoteLines(o, null, r.lines); steps += r.removed; }
+    o.milestones.slice().forEach(m => {
+      const key = noteKeyFor(o, m), rm = pruneDoneLines(noteLines(key));
+      if (rm.removed) { writeNoteLines(o, m, rm.lines); steps += rm.removed; }
+      if (m.completed && !noteLines(key).some(isOpenStepLine)) {
+        o.milestones = o.milestones.filter(x => x !== m); mss++;
+        Object.keys(notesByKey).forEach(k => { if (k === key || k.startsWith(key + '|')) delete notesByKey[k]; });
+        store.set('notes', notesByKey);
+      }
+    });
+    return { steps, mss };
+  }
   function stepLineIndex(lines, text, done) {
     return lines.findIndex(ln => { const r = topStep(ln); return r && r[2] === text && (r[1] === '+') === !!done; });
   }
@@ -5262,6 +5294,34 @@ For God alone my soul waits in silence. — Psalm 62:1`;
       });
       return 'o:' + o2.id;
     }
+    // Shift+D — clear what's done under the selection (top node = everywhere; the Done bucket also
+    // drops finished outcomes). Undoable; open work inside a done step is never lost.
+    function clearDone(n) {
+      let steps = 0, mss = 0, outs = 0;
+      const targets = n.kind === 'root' ? outcomes.slice() : n.kind === 'bucket' ? n.kids.map(k => k.o) : [n.o];
+      mutate(() => {
+        if (n.kind === 'root' || (n.kind === 'bucket' && n.bucket === 'Done') || (n.kind === 'outcome' && n.o.completed)) {
+          targets.filter(o => o.completed).forEach(o => {
+            outcomes = outcomes.filter(x => x !== o); outs++;
+            Object.keys(notesByKey).forEach(k => { if (k === o.id || k.startsWith(o.id + '|') || k.startsWith(o.id + '#')) delete notesByKey[k]; });
+            store.set('notes', notesByKey);
+          });
+        }
+        if (n.kind === 'ms') {
+          const key = noteKeyFor(n.o, n.m), rm = pruneDoneLines(noteLines(key));
+          if (rm.removed) { writeNoteLines(n.o, n.m, rm.lines); steps += rm.removed; }
+          if (n.m.completed && !noteLines(key).some(isOpenStepLine)) { n.o.milestones = n.o.milestones.filter(x => x !== n.m); mss++; writeNotes(key, ''); }
+        } else if (n.kind === 'line') {
+          const lines = noteLines(noteKeyFor(n.o, n.m)), e = blockEnd(lines, n.line), blk = pruneDoneLines(lines.slice(n.line + 1, e));
+          if (blk.removed) { lines.splice(n.line + 1, e - n.line - 1, ...blk.lines); writeNoteLines(n.o, n.m, lines); steps += blk.removed; }
+        } else if (!(n.kind === 'outcome' && n.o.completed)) {
+          targets.filter(o => !o.completed && outcomes.includes(o)).forEach(o => { const r = clearDoneIn(o); steps += r.steps; mss += r.mss; });
+        }
+      });
+      render(); if (!model.nodes[sel]) { sel = (n.parent || model.root).key; render(); }
+      const bits = [steps && steps + ' done step' + (steps === 1 ? '' : 's'), mss && mss + ' milestone' + (mss === 1 ? '' : 's'), outs && outs + ' outcome' + (outs === 1 ? '' : 's')].filter(Boolean);
+      toast(bits.length ? 'Cleared ' + bits.join(', ') + ' — u to undo' : 'Nothing done to clear here');
+    }
     function cut(n) { if (!['outcome', 'ms', 'line'].includes(n.kind)) return; cutKey = n.key; render(); }
     function paste(t) {
       const src = cutKey && model.nodes[cutKey]; if (!src) { toast('Nothing cut — x first'); return; }
@@ -5394,6 +5454,7 @@ For God alone my soul waits in silence. — Psalm 62:1`;
       if (k === 'Tab') { handled(); if (!e.shiftKey) newChild(n); return; }
       if (k === 'e' || k === 'F2') { handled(); startEdit(n); return; }
       if (k === 'Backspace' || k === 'Delete') { handled(); del(n); return; }
+      if (k === 'D' || (k === 'd' && e.shiftKey)) { handled(); clearDone(n); return; }
       if (k === 'd') { handled(); toggleDone(n); return; }
       if (k === 'y') { handled(); cycleType(n); return; }
       if (k === 's') { handled(); if (n.kind === 'outcome') { mutate(() => { n.o.starred = !n.o.starred; }); render(); toast(n.o.starred ? 'Marked important ★' : 'Unmarked'); } else toast('s marks an outcome important'); return; }
@@ -6017,6 +6078,19 @@ For God alone my soul waits in silence. — Psalm 62:1`;
         if (a.confirm !== true) fail('remove needs confirm:true');
         const o = findO(a.outcome);
         return mut(() => { outcomes = outcomes.filter(x => x !== o); Object.keys(notesByKey).forEach(k => { if (k === o.id || k.startsWith(o.id + '|') || k.startsWith(o.id + '#')) delete notesByKey[k]; }); store.set('notes', notesByKey); return ok({}); });
+      }],
+      clearDone: ['{outcome?|bucket?|all?, confirm:true} — delete done steps ("+" lines whose nested lines are all done), done milestones with nothing open, and with all/bucket:Done finished outcomes', (a) => {
+        if (a.confirm !== true) fail('clearDone needs confirm:true');
+        const list = a.outcome != null && a.outcome !== '' ? [findO(a.outcome)] : a.bucket ? outcomes.filter(o => lib.bucketOf(o) === canonBucket(a.bucket)) : a.all ? outcomes.slice() : fail('give outcome, bucket or all:true');
+        const b = a.bucket ? canonBucket(a.bucket) : null; if (a.bucket && !b) fail('bucket must be one of ' + lib.BUCKETS.join('|'));
+        return mut(() => {
+          let steps = 0, milestones = 0, outs = 0;
+          list.forEach(o => {
+            if (o.completed) { if (a.all || b === 'Done') { outcomes = outcomes.filter(x => x !== o); outs++; Object.keys(notesByKey).forEach(k => { if (k === o.id || k.startsWith(o.id + '|') || k.startsWith(o.id + '#')) delete notesByKey[k]; }); store.set('notes', notesByKey); } return; }
+            const r = clearDoneIn(o); steps += r.steps; milestones += r.mss;
+          });
+          return ok({ steps, milestones, outcomes: outs });
+        });
       }],
       undo: ['{} — undo the last change this API made (up to 40)', () => {
         const snap = SNAPS.pop(); if (!snap) fail('nothing to undo');

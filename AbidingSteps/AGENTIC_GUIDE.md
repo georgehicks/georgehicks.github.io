@@ -48,7 +48,7 @@ Call shape: `op` + `args` → `{ok:true, ...}` or `{ok:false, error, candidates?
 | `editStep` | `{outcome, step, text, milestone?}` | the new line |
 | `note` | `{outcome, text, milestone?, under?}` | – |
 | `addMilestone` / `updateMilestone` | `{outcome, title, steps?[]}` / `{outcome, milestone, title?, done?}` | id |
-| `removeStep` `removeMilestone` `remove` `setNotes` | need `confirm:true` | – |
+| `removeStep` `removeMilestone` `remove` `setNotes` `clearDone` | need `confirm:true` (`clearDone{outcome|bucket|all}` removes done steps and milestones) | – |
 | `start` / `stop` / `timer` | `{outcome, minutes=15, milestone?, step?}` | focus timer (also plans it for today) |
 | `undo` | – | undoes the last change **made by this API on that device** (40 deep) |
 | `syncNow` | – | pushes now (browser path) |
