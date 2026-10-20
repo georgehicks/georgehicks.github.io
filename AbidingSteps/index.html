@@ -1221,6 +1221,7 @@
     <input type="text" class="map-find" id="mapFind" placeholder="Find…" hidden>
     <span class="spacer"></span><span id="mapStatus"></span><span id="mapSync" title="Last cloud sync"></span>
     <span class="map-timer" id="mapTimer" hidden title="Timer running — w to open"></span>
+    <button type="button" class="map-mode-btn heart-btn" id="mapHeart" title="Place your heart with Jesus — in Map mode it only glows; it never pops up on its own" aria-label="Place your heart with Jesus"><svg width="14" height="14" viewBox="0 0 64 60" aria-hidden="true"><path d="M32 56C10 40 6 28 6 20a13 13 0 0 1 26-3 13 13 0 0 1 26 3c0 8-4 20-26 36z" fill="currentColor"/></svg><i class="hb-spark" style="--x:-8px;--y:-7px;--d:0s"></i><i class="hb-spark" style="--x:9px;--y:-5px;--d:.9s"></i></button>
     <button type="button" class="map-mode-btn" id="mapMusic" title="Music for this mode (.)">♪ <span id="mapModeLbl">Ahead</span></button>
   </div>
   <div class="map-ctx" id="mapCtx" hidden></div>
@@ -1582,11 +1583,14 @@
   ['pointerdown', 'keydown', 'wheel', 'touchstart'].forEach(ev => document.addEventListener(ev, () => { lastActive = Date.now(); }, { passive: true, capture: true }));
   function abideBlocked() {
     const a = document.activeElement;
-    return !!(AGENT_MODE || workSeg || microAbide.isOpen() || document.querySelector('.modal-overlay.show') || document.getElementById('view-abide').classList.contains('active')
+    return !!(AGENT_MODE || workSeg || microAbide.isOpen() || document.getElementById('mapOverlay').classList.contains('show') || document.querySelector('.modal-overlay.show') || document.getElementById('view-abide').classList.contains('active')
       || (a && (a.tagName === 'TEXTAREA' || (a.tagName === 'INPUT' && a.type === 'text') || a.isContentEditable)));
   }
   // lit = not placed yet today; the heart rests dim for the rest of the day once you have
-  function updateHeartLit() { const h = document.getElementById('heartBtn'); if (h) h.classList.toggle('lit', store.get('__local_heartDay', '') !== todayKeyLocal()); }
+  function updateHeartLit() { // both hearts (top bar and Map bar) light together
+    const lit = store.get('__local_heartDay', '') !== todayKeyLocal();
+    ['heartBtn', 'mapHeart'].forEach(id => { const h = document.getElementById(id); if (h) h.classList.toggle('lit', lit); });
+  }
   updateHeartLit();
   function offerAbide() { const now = Date.now(); store.set('__local_microAt', now); store.set('__local_microDay', todayKeyLocal()); lastActive = now; microAbide.show(true); return true; }
   function maybeInviteAbide() { // on open / coming back
@@ -1609,7 +1613,10 @@
     store.set('__local_lastSeen', now);
     // halfway to the offer the little heart starts to call a bit louder
     updateHeartLit();
-    heart.classList.toggle('beckon', !!mins && idle >= mins * 30000 && !abideBlocked());
+    const calling = !!mins && idle >= mins * 30000;
+    heart.classList.toggle('beckon', calling && !abideBlocked());
+    const mh = document.getElementById('mapHeart');   // in Map mode the heart may call louder, but nothing ever opens by itself
+    if (mh) mh.classList.toggle('beckon', calling && !AGENT_MODE && !workSeg && !microAbide.isOpen());
     if (mins && idle >= mins * 60000 && !abideBlocked() && now - (Number(store.get('__local_microAt', 0)) || 0) >= mins * 60000) offerAbide();
   }, 15000);
 
@@ -1673,6 +1680,7 @@
   document.getElementById('microAbideSelect').addEventListener('change', (e) => { settings.microAbideMins = parseInt(e.target.value, 10) || 0; saveSettings(); });
   document.getElementById('microAbidePreview').addEventListener('click', () => microAbide.show(true));
   document.getElementById('heartBtn').addEventListener('click', () => microAbide.show());
+  document.getElementById('mapHeart').addEventListener('click', () => microAbide.show());
   document.getElementById('glowToggle').addEventListener('change', (e) => { settings.glow = e.target.checked; saveSettings(); updateMagic(); });
 
   // ===== tab / mode switching =====
@@ -5413,6 +5421,7 @@ For God alone my soul waits in silence. — Psalm 62:1`;
       for (let j = i + dir; j >= 0 && j < v.length; j += dir) if (v[j].d === d) { sel = v[j].n.key; return; }
     }
     function onKey(e) {
+      if (isOpen() && microAbide.isOpen()) return;   // the heart moment (opened by clicking the heart) owns the keyboard
       if (!isOpen()) {
         const t = e.target, typing = t && (/^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName) || t.isContentEditable);
         if (e.code === 'KeyM' && !e.metaKey && !e.ctrlKey && !typing && document.getElementById('view-ahead').classList.contains('active')
