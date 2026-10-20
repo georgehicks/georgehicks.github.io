@@ -1,6 +1,9 @@
 // Keep the version suffix in sync with APP_VERSION in app.js (shown at the
 // bottom of the app) so a stale cache is easy to spot.
-const CACHE = 'abide-v15';
+const CACHE = 'abide-v16';
+// Only ever clean up THIS app's own old caches. Cache Storage is shared by every app on the domain, so
+// deleting "everything that isn't mine" would also wipe the other apps' offline copies (and AbidingSteps' music).
+const CACHE_PREFIX = CACHE.replace(/v\d+$/, '');
 const ASSETS = [
   './index.html',
   './app.js',
@@ -22,7 +25,7 @@ self.addEventListener('install', e => {
 self.addEventListener('activate', e => {
   e.waitUntil(
     caches.keys().then(keys =>
-      Promise.all(keys.filter(k => k !== CACHE).map(k => caches.delete(k)))
+      Promise.all(keys.filter(k => k.startsWith(CACHE_PREFIX) && k !== CACHE).map(k => caches.delete(k)))
     )
   );
   self.clients.claim();

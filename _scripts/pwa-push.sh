@@ -16,6 +16,10 @@ fi
 
 cd "$(dirname "$0")/.."
 
+# every app on this domain shares one localStorage / Cache Storage / Firebase project — refuse to push if any app
+# could damage another's data (see _scripts/check-storage-isolation.py)
+python3 _scripts/check-storage-isolation.py || { echo "Storage isolation check failed — fix the FAIL lines above before pushing."; exit 1; }
+
 APP="$1"
 IDX="$APP/index.html"
 SW="$APP/sw.js"

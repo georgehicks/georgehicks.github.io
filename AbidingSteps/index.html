@@ -1073,7 +1073,9 @@
         <h3>Backup</h3>
         <p style="font-size:0.72rem; color:var(--text-faint); margin:0 0 8px;">Everything this app stores — outcomes with their milestones and steps, notes, settings — as one JSON file. Restore replaces what's here (and, if signed in, on your other devices).</p>
         <button class="btn" id="exportStoreBtn" style="width:100%; margin-bottom:8px;">Download store JSON</button>
-        <button class="btn" id="restoreStoreBtn" style="width:100%;">Restore store JSON</button>
+        <button class="btn" id="restoreStoreBtn" style="width:100%; margin-bottom:8px;">Restore store JSON</button>
+        <button class="btn" id="safetyRestoreBtn" style="width:100%;">Restore newest local safety copy</button>
+        <div id="safetyStatus" style="font-size:0.72rem; color:var(--text-faint); margin-top:6px;">Rolling copies kept on this device in a separate store, in case anything ever wipes the app's data.</div>
         <div id="backupStatus" style="font-size:0.72rem; color:var(--text-dim); margin-top:6px;"></div>
       </div>
 
@@ -3577,6 +3579,7 @@ For God alone my soul waits in silence. — Psalm 62:1`;
     ];
   }
   let outcomes = store.get('outcomes', null);
+  const seededOnStartup = !Array.isArray(outcomes); // nothing valid in storage: first run, OR something wiped it
   if (!Array.isArray(outcomes)) { outcomes = seedOutcomes(); store.set('outcomes', outcomes, { quiet: true }); }
   else if (normalizeOutcomes(outcomes)) store.set('outcomes', outcomes, { quiet: true });
   autoStarDueOutcomes();
@@ -5992,6 +5995,13 @@ For God alone my soul waits in silence. — Psalm 62:1`;
     if (cloudSync.docRef && !cloudSync.paused) cloudSync.pushNow();
     document.getElementById('backupStatus').textContent = 'Restored ✓' + (cloudSync.docRef ? ' — syncing to your other devices' : '');
   }
+  async function showSafetyStatus() { const s = await safety.latest(); document.getElementById('safetyStatus').textContent = s ? 'Newest local safety copy: ' + fmtWhen(s.at) + ' (rolling copies of the last 8 changes, kept in a separate store).' : 'No local safety copy yet — one is taken a few seconds after opening, then after changes.'; }
+  setTimeout(showSafetyStatus, 3000);
+  document.getElementById('safetyRestoreBtn').addEventListener('click', async () => {
+    const s = await safety.latest(); if (!s) { document.getElementById('safetyStatus').textContent = 'No local safety copy yet.'; return; }
+    openConfirmModal({ title: 'Restore the safety copy?', okLabel: 'Restore', message: 'Replaces what is on this device with the copy from ' + fmtWhen(s.at) + '. Anything changed since then is lost on this device (cloud sync, if on, will merge).',
+      onOk: async () => { await safety.snapshot(true); const at = await safety.restoreLatest(s); if (at) { refreshFromStore(); document.getElementById('safetyStatus').textContent = 'Restored the copy from ' + fmtWhen(at) + '.'; } } });
+  });
   document.getElementById('restoreStoreBtn').addEventListener('click', () => {
     const input = document.createElement('input');
     input.type = 'file'; input.accept = '.json,application/json'; input.style.display = 'none';
@@ -6299,6 +6309,58 @@ For God alone my soul waits in silence. — Psalm 62:1`;
   })();
   window.abidingAgent = abidingAgent;
 
+  // ===== local safety copy — a rolling set of snapshots kept in IndexedDB, a different browser store from
+  // localStorage (and one no other app on this domain uses). If anything ever wipes or corrupts this app's
+  // localStorage data — another app on georgehicks.github.io, clearing site data, a bug — the newest snapshot is
+  // restored automatically on the next open, with or without the cloud. Snapshots never record an empty state. =====
+  const safety = (() => {
+    const DB = 'abidingsteps-safety', ST = 'snaps', KEEP = 8, EVERY = 30 * 60000;
+    const openDb = () => new Promise((res, rej) => { try { const r = indexedDB.open(DB, 1); r.onupgradeneeded = () => r.result.createObjectStore(ST, { keyPath: 'at' }); r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error); } catch (e) { rej(e); } });
+    const run = async (mode, fn) => { const db = await openDb(); try { return await new Promise((res, rej) => { const tx = db.transaction(ST, mode); const q = fn(tx.objectStore(ST)); tx.oncomplete = () => res(q && q.result); tx.onerror = () => rej(tx.error); tx.onabort = () => rej(tx.error); }); } finally { db.close(); } };
+    const collect = () => { // this app's own keys only (and never its device-private ones)
+      const o = {};
+      for (let i = 0; i < localStorage.length; i++) {
+        const k = localStorage.key(i); if (!k || !k.startsWith(STORE_PREFIX)) continue;
+        const short = k.slice(STORE_PREFIX.length); if (!short.startsWith('__local_')) o[short] = localStorage.getItem(k);
+      }
+      return o;
+    };
+    async function snapshot(force) {
+      try {
+        const now = Date.now(), last = Number(store.get('__local_safetyAt', 0)) || 0;
+        if (!force && now - last < EVERY) return false;
+        const data = collect(), outs = jparse(data.outcomes, null);
+        if (!Array.isArray(outs) || !outs.length) return false;                      // never keep an empty or damaged state
+        const sig = (data.outcomes || '') + '\u0001' + (data.notes || '');
+        if (!force && sig === store.get('__local_safetySig', '')) { store.set('__local_safetyAt', now); return false; }   // unchanged
+        await run('readwrite', os => os.put({ at: now, data }));
+        const all = (await run('readonly', os => os.getAll())) || [];
+        if (all.length > KEEP) await run('readwrite', os => { all.sort((a, b) => a.at - b.at).slice(0, all.length - KEEP).forEach(x => os.delete(x.at)); });
+        store.set('__local_safetyAt', now); store.set('__local_safetySig', sig);
+        return true;
+      } catch (e) { return false; }
+    }
+    async function latest() {
+      try {
+        const all = (await run('readonly', os => os.getAll())) || [];
+        return all.filter(x => { const o = jparse(x.data && x.data.outcomes, null); return Array.isArray(o) && o.length; }).sort((a, b) => b.at - a.at)[0] || null;
+      } catch (e) { return null; }
+    }
+    async function restoreLatest(chosen) {
+      const snap = chosen || await latest(); if (!snap) return null;
+      Object.keys(snap.data).forEach(k => { try { localStorage.setItem(STORE_PREFIX + k, snap.data[k]); } catch (e) {} });
+      store.set('__local_dirtyAt', Date.now());   // it counts as an unsynced local edit, so sync merges it up rather than replacing it
+      return snap.at;
+    }
+    return { snapshot, latest, restoreLatest };
+  })();
+  const fmtWhen = (ms) => new Date(ms).toLocaleString([], { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' });
+  function announceRestore(at) {
+    openConfirmModal({ title: 'Restored from a safety copy', okLabel: 'OK', cancelLabel: 'Close',
+      message: 'AbidingSteps\' saved data on this device had gone missing (something cleared or overwrote it), so the local safety copy from ' + fmtWhen(at) + ' was put back. If you use cloud sync it will merge with the cloud copy.',
+      onOk: () => {}, onCancel: () => {} });
+  }
+
   // ===== startup — restore what this device saved, then (optionally) connect sync =====
   applySettingsToUI();
   (function restoreSelection() {
@@ -6317,6 +6379,11 @@ For God alone my soul waits in silence. — Psalm 62:1`;
     if (cloudSync.pushTimer || cloudSync.pendingSince) cloudSync.queuePush(); // re-time what's already waiting
   });
   cloudSync.init();
+  // damaged or wiped storage → bring the newest safety copy back; otherwise keep taking snapshots
+  if (seededOnStartup) {
+    safety.restoreLatest().then(at => { if (at) { refreshFromStore(); announceRestore(at); } }).finally(() => safety.snapshot());
+  } else setTimeout(() => safety.snapshot(), 8000);
+  setInterval(() => safety.snapshot(), 10 * 60000);
   renderTally();
   // save Ahead/Abide time once a minute, and keep the tally live while Abide is open
   setInterval(() => {
@@ -6330,6 +6397,7 @@ For God alone my soul waits in silence. — Psalm 62:1`;
     commitWork();
     if (notesSaveTimer) { clearTimeout(notesSaveTimer); notesSaveTimer = null; store.set('notes', notesByKey); }
     if (cloudSync.pushTimer) cloudSync.pushNow();
+    safety.snapshot();
   });
   // a little welcome when the app opens (celebrations on, nothing already running)
   setTimeout(() => {

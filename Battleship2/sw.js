@@ -1,4 +1,7 @@
-const CACHE = 'battleship2-v1';
+const CACHE = 'battleship2-v2';
+// Only ever clean up THIS app's own old caches. Cache Storage is shared by every app on the domain, so
+// deleting "everything that isn't mine" would also wipe the other apps' offline copies (and AbidingSteps' music).
+const CACHE_PREFIX = CACHE.replace(/v\d+$/, '');
 const ASSETS = ['./index.html', './manifest.json', './icon.svg', './qrcode.js', './jsQR.js'];
 
 self.addEventListener('install', e => {
@@ -9,7 +12,7 @@ self.addEventListener('install', e => {
 self.addEventListener('activate', e => {
   e.waitUntil(
     caches.keys().then(keys =>
-      Promise.all(keys.filter(k => k !== CACHE).map(k => caches.delete(k)))
+      Promise.all(keys.filter(k => k.startsWith(CACHE_PREFIX) && k !== CACHE).map(k => caches.delete(k)))
     )
   );
   self.clients.claim();
