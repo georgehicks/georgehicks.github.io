@@ -1,15 +1,23 @@
 #!/usr/bin/env python3
 """AbidingSteps always-on worker — a signed-in headless browser that is simply "a device that is always open".
 
-Why: agents queue operations in the cloud inbox (see ../../AGENTIC_GUIDE.md, Path A). A signed-in copy of the app has
-to be open somewhere to apply them. This keeps one open, headless, so a bot never waits for your phone.
+Two ways to use it — NEITHER needs a background service unless you want one:
+
+  ONE-SHOT (no service): open the app signed in, do one operation, sync, close. Seconds, then nothing is left running.
+      python abidingsteps_worker.py --call state
+      python abidingsteps_worker.py --call addStep --args '{"outcome":"Plan retreat","text":"Call venue @call"}'
+
+  ALWAYS-ON (optional): keep one open so a bot with no browser of its own gets answers even when none of your devices are
+  open (agents queue operations in the cloud inbox — see ../../AGENTIC_GUIDE.md, Path A). Only then does it need
+  something to keep it alive.
 
 Runs anywhere Python + a Chromium/Chrome runs (macOS, Windows, Linux, Raspberry Pi, a container). It has no
 OS-specific service of its own — run it under whatever keeps processes alive for you (Docker, systemd, pm2, Task
 Scheduler, tmux…; see README.md).
 
     python abidingsteps_worker.py --login        # ONCE, on any desktop: sign in with Google; writes auth-state.json
-    python abidingsteps_worker.py --service      # run headless; restarts the browser on any trouble
+    python abidingsteps_worker.py --call OP      # one-shot: run one operation and exit (see above)
+    python abidingsteps_worker.py --service      # always-on: run headless; restarts the browser on any trouble
     python abidingsteps_worker.py --status       # is it alive? (reads status.json)
 
 Sign-in is carried by ONE FILE, auth-state.json (cookies + the app's local data + its IndexedDB — where the cloud
@@ -143,6 +151,50 @@ def do_login(out_path):
         return 3
 
 
+READ_ONLY = {"state", "list", "outline", "agenda", "find", "timer"}
+
+
+def do_call(op, args_json):
+    """One-shot: open the app signed in, run ONE operation, push it to the cloud, close. Prints the result as JSON."""
+    from playwright.sync_api import sync_playwright
+    try:
+        args = json.loads(args_json) if args_json else {}
+    except ValueError as e:
+        print(json.dumps({"ok": False, "error": "--args is not valid JSON: %s" % e}))
+        return 1
+    if not STATE.exists():
+        print(json.dumps({"ok": False, "error": "no auth-state.json — run --login on a machine with a screen first"}))
+        return 2
+    with sync_playwright() as p:
+        browser = start_browser(p, headless=True)
+        try:
+            ctx = browser.new_context(storage_state=str(STATE), viewport={"width": 480, "height": 900})
+            page = ctx.new_page()
+            page.goto(URL + ("&" if "?" in URL else "?") + "agent=1", wait_until="domcontentloaded")
+            wait_ready(page)
+            deadline = time.time() + 30
+            while time.time() < deadline and not signed_in(page):
+                time.sleep(1)
+            if not signed_in(page):
+                print(json.dumps({"ok": False, "error": "the saved sign-in no longer works — run --login again"}))
+                return 2
+            time.sleep(2)   # let the first cloud sync land, so the operation sees your current data
+            result = page.evaluate("([op, args]) => window.abidingAgent.call(op, args)", [op, args])
+            if op not in READ_ONLY and result.get("ok"):
+                page.evaluate("() => window.abidingAgent.call('syncNow')")   # push the change before closing
+            try:
+                save_state(ctx, STATE)
+            except Exception:
+                pass
+            print(json.dumps(result, ensure_ascii=False))
+            return 0 if result.get("ok") else 1
+        finally:
+            try:
+                browser.close()
+            except Exception:
+                pass
+
+
 def run_once(check_signin=True):
     """One browser lifetime. Returns normally when asked to stop; raises on trouble (the caller restarts)."""
     from playwright.sync_api import sync_playwright
@@ -203,6 +255,8 @@ def run_once(check_signin=True):
 def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--login", action="store_true", help="once, on a machine with a screen: sign in and write auth-state.json")
+    ap.add_argument("--call", metavar="OP", help="one-shot (no service): run one operation, push it, exit — e.g. --call state")
+    ap.add_argument("--args", help="JSON arguments for --call")
     ap.add_argument("--status", action="store_true", help="show whether the worker is alive")
     ap.add_argument("--state", help="path of auth-state.json (default: <worker home>/auth-state.json)")
     ap.add_argument("--service", action="store_true", help="for a supervisor/container: when not signed in, wait and retry instead of exiting")
@@ -215,6 +269,8 @@ def main():
         return show_status()
     if a.login:
         return do_login(STATE)
+    if a.call:
+        return do_call(a.call, a.args)
     signal.signal(signal.SIGTERM, lambda *_: STOP.update(now=True))
     signal.signal(signal.SIGINT, lambda *_: STOP.update(now=True))
     backoff = 5

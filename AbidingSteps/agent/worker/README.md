@@ -1,11 +1,19 @@
 # AbidingSteps always-on worker
 
-A signed-in headless browser that acts as **a device that is always open**, so cloud operations from bots
-(Path A in [`../../AGENTIC_GUIDE.md`](../../AGENTIC_GUIDE.md)) are applied within seconds — even when your phone and
-laptop are closed. It runs the real app (`?agent=1`), so it uses the same merge-based sync as every other device.
+**You do not need a background service.** Why anything is needed at all: the app has no server — the logic that applies
+a change (step grammar, merging, undo) runs inside the app in a browser — so some browser must run it. Three ways:
 
-It is **not tied to any operating system**: one Python file, plus either Docker or whatever keeps processes alive on
-the machine you pick. Run it on any always-on device — a NAS, a Raspberry Pi, a small VPS, a spare PC or Mac.
+1. **One-shot (no service) — the simple one.** The bot's own machine runs one command; a signed-in headless browser opens
+   the app, does the operation, syncs it to your other devices, and closes. Nothing stays running:
+   `python abidingsteps_worker.py --call state`
+   `python abidingsteps_worker.py --call addStep --args '{"outcome":"Plan retreat","text":"Call venue @call"}'`
+2. **One of your own devices.** The cloud inbox (Path A in the guide) is for bots without a browser: if your phone or
+   laptop has the app open, it applies the operation.
+3. **Always-on (optional)** — only if a bot with no browser needs answers when none of your devices is open. This is the
+   part that needs something to keep a process alive (Docker, systemd, …) — everything below from "Keep it running".
+
+It is **not tied to any operating system**: one Python file. It runs the real app (`?agent=1`), so it uses the same
+merge-based sync as every other device.
 
 > **Status: written but not yet run.** Nothing here has been executed against your account. Step 3 is the proof.
 
@@ -26,10 +34,10 @@ worker's machine. (A browser *profile folder* doesn't travel between operating s
    `auth-state.json` (default folder `~/.abidingsteps-worker/`, or choose with `--state PATH`) and closes itself.
    Google sometimes refuses sign-in in an automated browser; the window hides the automation banner to reduce that. If it
    still refuses, tell me — there is a manual route.
-3. **Prove it works** on the worker machine (copy the file into its worker folder first): `python abidingsteps_worker.py`
-   (Ctrl+C stops it; `--status` in another terminal shows the heartbeat), then from anywhere send
-   `python ../abidingsteps_agent.py state` — it should answer within a couple of seconds.
-4. **Keep it running** — pick what fits that machine:
+3. **Prove it works** (one-shot, no service): `python abidingsteps_worker.py --call state` — it should print your overview
+   within a few seconds. (For the always-on route: `python abidingsteps_worker.py`, then from anywhere
+   `python ../abidingsteps_agent.py state`; `--status` shows its heartbeat.)
+4. **Only for always-on — keep it running**; pick what fits that machine:
 
    **Docker** (works everywhere Docker does):
    ```

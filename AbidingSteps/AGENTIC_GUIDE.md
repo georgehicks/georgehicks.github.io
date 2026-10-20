@@ -143,6 +143,8 @@ with sync_playwright() as p:
     page.evaluate("() => window.abidingAgent.call('syncNow')")       # push before closing
 ```
 
+- **Simplest of all (no code):** `python agent/worker/abidingsteps_worker.py --call state` (or `--call addStep --args '{…}'`) opens the
+  app signed in from a portable `auth-state.json`, runs one operation, syncs, and exits — nothing left running. See `agent/worker/README.md`.
 - **`?agent=1`** switches off the welcome, the Abide invitation, celebrations and the glow so nothing blocks the page.
 - The profile directory is the data store. For it to share your devices' data it must be **signed in once**
   (Settings → Sync → Sign in with Google). Google often refuses sign-in inside automated browsers; do the one-time
