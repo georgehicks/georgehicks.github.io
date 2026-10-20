@@ -16,6 +16,7 @@ Usage:
     python abidingsteps_agent.py op outline '{"outcome":"Plan retreat"}'
     python abidingsteps_agent.py op addStep '{"outcome":"Plan retreat","text":"Call venue @call >fri"}'
     python abidingsteps_agent.py batch '[{"op":"setStep","args":{"outcome":"Plan retreat","step":"Call venue","done":true}},{"op":"state"}]'
+    python abidingsteps_agent.py --stop-on-error batch '[…]'    # stop the batch at the first failed operation
     python abidingsteps_agent.py --file doc.json state          # work on a local JSON file instead (tests, offline)
     python abidingsteps_agent.py --via-devices op state         # optional: queue it for one of YOUR devices to apply (needs the app open)
 
@@ -55,12 +56,15 @@ def main(argv):
         return 0
     store = None
     devices = False
+    stop = False
     while argv and argv[0].startswith("--"):
         flag = argv.pop(0)
         if flag == "--file":
             store = core.FileStore(argv.pop(0))
         elif flag == "--via-devices":
             devices = True
+        elif flag == "--stop-on-error":
+            stop = True
         else:
             print("unknown option", flag)
             return 2
@@ -71,7 +75,7 @@ def main(argv):
         op, args = argv[1], (json.loads(argv[2]) if len(argv) > 2 else {})
     elif cmd == "batch" and len(argv) >= 2:
         ops = json.loads(argv[1])
-        res = core.batch(ops, store=store) if not devices else {"ok": True, "results": [via_devices(o["op"], o.get("args")) for o in ops]}
+        res = core.batch(ops, stop_on_error=stop, store=store) if not devices else {"ok": True, "results": [via_devices(o["op"], o.get("args")) for o in ops]}
         print(json.dumps(res, ensure_ascii=False))
         return 0
     else:

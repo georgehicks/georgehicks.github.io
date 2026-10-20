@@ -47,9 +47,9 @@ Call shape: `op` + `args` → `{ok:true, ...}` or `{ok:false, error, candidates?
 
 | op | args | returns |
 |---|---|---|
-| `state` | – | counts per bucket, starred, dueSteps, nextUp[5] — **call this first** |
+| `state` | – | counts per bucket, starred, dueSteps, `nextUp` (**up to** 5 items; fewer if fewer exist) — **call this first** |
 | `list` | `{bucket?, q?, starred?, limit=25}` | compact outcome rows |
-| `outline` | `{outcome}` or `{bucket}` | the notes outline as text — **cheapest way to read an outcome** |
+| `outline` | `{outcome}` or `{bucket}` | `{text}` — the notes outline as text — **cheapest way to read an outcome** |
 | `agenda` | `{context?, due?, date?, includeFuture?, limit=50}` | open steps by `@context` / date |
 | `find` | `{q, limit=20}` | title and step/note line hits |
 | `add` | `{title, bucket?, planned?, starred?, type?, tag?, steps?[], notes?}` | new outcome row |
@@ -60,9 +60,11 @@ Call shape: `op` + `args` → `{ok:true, ...}` or `{ok:false, error, candidates?
 | `note` | `{outcome, text, milestone?, under?}` | – |
 | `addMilestone` / `updateMilestone` | `{outcome, title, steps?[]}` / `{outcome, milestone, title?, done?}` | id |
 | `removeStep` `removeMilestone` `remove` `setNotes` `clearDone` | need `confirm:true` (`clearDone{outcome\|bucket\|all}` removes done steps and milestones) | – |
-| `undo` | `{id? \| ids?[], force?}` | **every write returns `undo:<id>`**; `undo{id}` reverses exactly that change (any path, ~24 h). Newest-first for several ids. Refuses (`changed since`) if those items were edited afterwards, unless `force:true` |
-| `start` / `stop` / `timer` / `syncNow` | – | the focus timer and a manual push — **browser path (B) and via-devices (C) only**; Path A answers "needs a device" |
-| `batch` | `{ops:[{op,args}], stopOnError?}` | `{results:[…]}` — **one round trip for many ops** |
+| `undo` | `{id? \| ids?[], force?}` | **every write returns `undo:<id>`**; `undo{id}` reverses exactly that change (any path, **24 h**, and **each id works once**). Several ids go newest-first. Refuses (`changed since`) if those items were edited afterwards, unless `force:true`. **In direct-cloud mode `id`/`ids` is required** — there is no "last change" (that form works only in the browser/device paths) |
+| `start` / `stop` / `timer` / `syncNow` | – | the focus timer and a manual push — **browser path (B) and via-devices (C) only**; Path A answers `needs a device or browser running the app — not available in direct-cloud mode` |
+| `batch` | `{ops:[{op,args}], stopOnError?}` (Python: `stop_on_error=`; CLI: `--stop-on-error`) | `{ok:true, results:[…], failed?:[indexes]}` — `ok:true` means the batch ran; check `failed` for steps that didn't. **One round trip for many ops** |
+
+**Result field names:** the `outline` op returns its text in `text`; writes (`addStep`, `setStep`, `setNotes`…) return the outline in `outline`. Failures — including network and sign-in problems — always come back as `{ok:false, error, …}` (an unknown op also returns `ops`, the list of valid ones).
 
 `window.abidingAgent.help()` (Path B) returns this list from the running app — trust it over this file if they differ.
 
@@ -107,6 +109,7 @@ The library is `agent/abidingsteps_core.py` (standard library only, no installs)
                    && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['data', 'updatedAt'])
                    && request.resource.data.data.diff(resource.data.data).affectedKeys().hasOnly(['outcomes', 'notes']);
      allow create, get, delete: if isBot() && docId.matches('as-undo-.*');            // its undo records
+     allow list:   if isBot() && resource.data.kind == 'as-undo';                       // lets it sweep old undo records (optional)
    }
    function isBot() { return request.auth != null && request.auth.token.email == 'bot@yourdomain.example'; }
    ```
@@ -115,6 +118,18 @@ The library is `agent/abidingsteps_core.py` (standard library only, no installs)
 3. **Your user id:** the app's Settings → Sync shows **"For automation — your ID"**; tap to copy it.
 4. **Give the agent's runtime these environment variables** (as secrets): `ABIDINGSTEPS_UID`, `ABIDINGSTEPS_BOT_EMAIL`,
    `ABIDINGSTEPS_BOT_PASSWORD`, `ABIDINGSTEPS_API_KEY`. Copy the `agent/` folder next to it.
+
+**All the settings, and which sign-in wins** (the first one set is used):
+
+| variable | meaning |
+|---|---|
+| `ABIDINGSTEPS_UID` | your user id (required) |
+| `ABIDINGSTEPS_ID_TOKEN` | a ready-made bearer token (any kind) — wins over everything below |
+| `ABIDINGSTEPS_BOT_EMAIL` + `ABIDINGSTEPS_BOT_PASSWORD` + `ABIDINGSTEPS_API_KEY` | the bot login — wins over a service account if its email is set |
+| `ABIDINGSTEPS_SERVICE_ACCOUNT` (or `GOOGLE_APPLICATION_CREDENTIALS`) = key-file path, or `ABIDINGSTEPS_SERVICE_ACCOUNT_JSON` = the key as text | the service-account key |
+| `ABIDINGSTEPS_FILE` | work on a local JSON file instead of the cloud (tests, offline) |
+| `ABIDINGSTEPS_PROJECT` | Firebase project id (default: from the key file, else `focusflowgeorge`) |
+| `ABIDINGSTEPS_TZ` | your timezone, e.g. `America/New_York` — what "today" means |
 
 **Already have a service-account key (for example one GrokBot holds)? Use it instead — steps 1–2 aren't needed:**
 set `ABIDINGSTEPS_UID` and point `ABIDINGSTEPS_SERVICE_ACCOUNT` at the key file (or `GOOGLE_APPLICATION_CREDENTIALS`, or put the
@@ -159,11 +174,12 @@ specifically want the app itself to run the operation (for example the timer). P
 ## 8. Safety
 
 - Deletes and wholesale rewrites need `confirm:true`; ask the human before sending them.
-- **Undo:** keep the `undo` id each write returns. It works from any path, even from another machine, and will not overwrite
-  later edits unless you pass `force:true`. Records last ~24 h.
+- **Undo:** keep the `undo` id each write returns. It works from any path, even from another machine, will not overwrite later
+  edits unless you pass `force:true`, **works once**, and expires after 24 h (old records are swept automatically). The id is stored
+  *before* the change is written, so a change can never exist without its undo id; if the record can't be stored, nothing is changed.
 - Don't loop: one `state` per task, then targeted reads.
-- Dates relative to "today" resolve at write time in the agent's timezone — set `ABIDINGSTEPS_TZ=Europe/London` (or your zone) in Path A.
-- The bot can read your whole data doc (outcomes, notes, settings). It cannot touch anything else in your database.
+- Dates relative to "today" resolve at write time in the agent's timezone — set `ABIDINGSTEPS_TZ=America/New_York` (or your zone) in Path A.
+- **What the credential can reach depends on how it signs in.** With the **bot login** + the rules above, it can read your data doc and change only its outcomes and notes — nothing else in your database. With a **service-account key** it is an *admin*: the rules don't apply, so it can read and change everything in the Firebase project (every app's data); only the library's own behaviour keeps it to outcomes and notes. Narrow that key's IAM role to **Cloud Datastore User** (not Owner/Editor), keep the key in one place, and never commit it.
 
 ## 9. Troubleshooting
 
@@ -171,6 +187,7 @@ specifically want the app itself to run the operation (for example the timer). P
 |---|---|
 | `no such outcome` + no candidates | wrong name; call `find{q}` |
 | `ambiguous …` with `candidates` | use an id from `candidates`, or `nth` for identical steps |
+| Path A: `cloud access failed — …` | network, sign-in or permission problem — the text after the dash says which |
 | Path A: `HTTP 403` | bot login: the rules aren't published, or the bot's email in `isBot()` doesn't match · service account: the key's IAM role lacks Datastore access |
 | Path A: `service-account sign-in failed` | wrong/expired key file, or the key's project isn't the one holding your data (set `ABIDINGSTEPS_PROJECT`) |
 | Path A: `the cloud copy kept changing` | a device was writing constantly; just retry |
@@ -178,6 +195,6 @@ specifically want the app itself to run the operation (for example the timer). P
 | Phone doesn't show the agent's change | a device that was closed merges it when it next opens; an open one within seconds |
 | `expired` (Path C) | op sat >6 h; send again |
 
-*Status:* the Python library is checked against the in-app API's own recorded answers and unit-tested (undo, conflict retry, the
-exact Firestore request shapes); the agent→device merge was tested with the real app code. The service-account sign-in is plain Python whose signature is verified against real OpenSSL. **Not yet run against your live
-Firebase project:** bot or service-account sign-in, the rules above, and live Firestore reads/writes.
+*Status:* **verified live (2026-10-20):** an agent ran `state`, then a write and its undo, against the real Firebase project with a
+service-account key and no device open. The Python library is also checked against the in-app API's own recorded answers and
+unit-tested; the agent→device merge was tested with the real app code. **Not yet exercised live:** the bot-login mode and the rules above.

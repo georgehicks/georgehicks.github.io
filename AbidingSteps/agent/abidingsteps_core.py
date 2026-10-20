@@ -37,6 +37,7 @@ WORD_DATE_RE = re.compile(r"(^|\s)>(today|tomorrow|(?:sun|mon|tue|wed|thu|fri|sa
 WEEKDAY_OK = re.compile(r"^(sun(day)?|mon(day)?|tue(s|sday)?|wed(nesday)?|thu(r|rs|rsday)?|fri(day)?|sat(urday)?)$")
 DOW = {"sun": 0, "mon": 1, "tue": 2, "wed": 3, "thu": 4, "fri": 5, "sat": 6}
 _TODAY = {"override": None}
+UNDO_TTL_MS = 24 * 3600 * 1000      # undo records are kept this long
 
 
 class AgentError(Exception):
@@ -997,6 +998,13 @@ class FileStore:
         u.pop(uid, None)
         self._write_undos(u)
 
+    def prune_undos(self, ttl_ms):
+        cutoff = int(time.time() * 1000) - ttl_ms
+        u = self._undos()
+        keep = {k: v for k, v in u.items() if v.get("at", 0) >= cutoff}
+        if len(keep) != len(u):
+            self._write_undos(keep)
+
 
 class RestStore:
     """The user's cloud data doc over Firestore REST, signed in as a dedicated bot user (see the guide for the rules).
@@ -1080,6 +1088,19 @@ class RestStore:
     def del_undo(self, uid):
         self._http("DELETE", self.base + "/as-undo-" + uid)
 
+    def prune_undos(self, ttl_ms):
+        """Delete undo records older than ttl_ms. (A query returns just each record's name and `at`, never the data doc.)"""
+        parent = self.base[:-len("/apps")]
+        q = {"structuredQuery": {"from": [{"collectionId": "apps"}],
+                                 "where": {"fieldFilter": {"field": {"fieldPath": "kind"}, "op": "EQUAL", "value": {"stringValue": "as-undo"}}},
+                                 "select": {"fields": [{"fieldPath": "at"}]}}}
+        rows = self._http("POST", parent + ":runQuery", json.dumps(q).encode()) or []
+        cutoff = int(time.time() * 1000) - ttl_ms
+        for r in rows:
+            d = r.get("document")
+            if d and int((d.get("fields", {}).get("at") or {}).get("integerValue", 0)) < cutoff:
+                self._http("DELETE", "https://firestore.googleapis.com/v1/" + d["name"])
+
 
 # ------------------------------------------------------------------------------------------------ the entry point
 _default = {"store": None}
@@ -1092,10 +1113,23 @@ def default_store():
     return _default["store"]
 
 
+def _safe(e):
+    return ("%s: %s" % (type(e).__name__, e))[:300]
+
+
 def call(op, args=None, store=None, retries=4):
-    """Run one operation against the cloud copy (or a FileStore). Returns {ok:true,…} or {ok:false,error,…}.
-    Every change returns `undo:<id>`; call("undo", {"id": …}) reverses it."""
-    store = store or default_store()
+    """Run one operation against the cloud copy (or a FileStore). Returns {ok:true,…} or {ok:false,error,…} — always, even
+    when the network or the sign-in fails. Every change returns `undo:<id>`; call("undo", {"id": …}) reverses it."""
+    try:
+        store = store or default_store()
+        return _call(op, args, store, retries)
+    except SystemExit as e:                      # missing configuration
+        return {"ok": False, "error": str(e)}
+    except Exception as e:                       # network, sign-in, permissions…
+        return {"ok": False, "error": "cloud access failed — " + _safe(e)}
+
+
+def _call(op, args, store, retries):
     args = args if isinstance(args, dict) else {}
     if op == "undo":
         return _undo(store, args, retries)
@@ -1119,16 +1153,26 @@ def call(op, args=None, store=None, retries=4):
         rec = build_undo(model, pre_o, pre_n)
         if not rec:
             return res
+        # the undo record is stored BEFORE the change is written, so a change can never exist without its undo id
+        try:
+            store.put_undo(rec)
+        except Exception as e:
+            return {"ok": False, "error": "could not store the undo record, so nothing was changed — " + _safe(e)}
         try:
             store.save(model.outcomes, model.notes, version)
         except Conflict:
+            try:
+                store.del_undo(rec["id"])
+            except Exception:
+                pass
             time.sleep(0.2 * (attempt + 1))
-            continue   # someone (a device) wrote meanwhile: reload and redo the operation on the fresh data
-        try:
-            store.put_undo(rec)
-            res["undo"] = rec["id"]
-        except Exception:
-            pass
+            continue   # a device wrote meanwhile: reload and redo the operation on the fresh data
+        res["undo"] = rec["id"]
+        if random.random() < 0.1:   # now and then, sweep records past their 24 h life
+            try:
+                store.prune_undos(UNDO_TTL_MS)
+            except Exception:
+                pass
         return res
     return {"ok": False, "error": "the cloud copy kept changing — try again"}
 
@@ -1136,12 +1180,18 @@ def call(op, args=None, store=None, retries=4):
 def _undo(store, args, retries):
     ids = list(reversed(args["ids"])) if isinstance(args.get("ids"), list) else ([args["id"]] if args.get("id") else [])
     if not ids:
-        return {"ok": False, "error": "pass the undo id returned by the write (direct-cloud mode keeps no per-device history)"}
+        return {"ok": False, "error": "pass the undo id returned by the write — direct-cloud mode has no \"last change\"; use {id} or {ids:[…]}"}
     done = []
     for uid in ids:
         rec = store.get_undo(uid)
+        if rec and int(time.time() * 1000) - int(rec.get("at", 0)) > UNDO_TTL_MS:
+            try:
+                store.del_undo(uid)
+            except Exception:
+                pass
+            rec = None
         if not rec:
-            return {"ok": False, "error": "unknown or expired undo id %s" % uid, "undone": done}
+            return {"ok": False, "error": "unknown or expired undo id %s (an undo id works once, for 24 h)" % uid, "undone": done}
         for attempt in range(retries):
             outcomes, notes, version = store.load()
             model = Model(outcomes, notes)
@@ -1166,11 +1216,19 @@ def _undo(store, args, retries):
     return {"ok": True, "undone": done}
 
 
-def batch(ops, stop_on_error=False, store=None):
+def batch(ops, stop_on_error=False, store=None, stopOnError=None):
+    """Run several operations in order. {ok:true, results:[…]} — plus `failed:[indexes]` when any of them failed.
+    Accepts stop_on_error (Python) or stopOnError (as in the tool schema)."""
+    if stopOnError is not None:
+        stop_on_error = bool(stopOnError)
     out = []
     for it in ops or []:
         r = call(it.get("op"), it.get("args"), store=store)
         out.append(r)
         if stop_on_error and not r.get("ok"):
             break
-    return {"ok": True, "results": out}
+    res = {"ok": True, "results": out}
+    failed = [i for i, r in enumerate(out) if not r.get("ok")]
+    if failed:
+        res["failed"] = failed
+    return res

@@ -109,6 +109,69 @@ class Behaviour(unittest.TestCase):
         self.assertEqual((o[0]["subs"], o[0]["doneSubs"]), (["beta"], ["alpha"]))
 
 
+class Reliability(unittest.TestCase):
+    """What the live GrokBot run reported: failures come back as {ok:false}, undo can't be missing, undo ids expire."""
+
+    def setUp(self):
+        self.st = fresh()
+        core.call("add", {"title": "Rel", "bucket": "Today", "steps": ["one"]}, store=self.st)
+
+    def test_undo_record_failing_means_nothing_changes(self):
+        def boom(rec):
+            raise RuntimeError("permission denied")
+        self.st.put_undo = boom
+        r = core.call("addStep", {"outcome": "Rel", "text": "two"}, store=self.st)
+        self.assertFalse(r["ok"])
+        self.assertIn("nothing was changed", r["error"])
+        self.assertNotIn("two", core.call("outline", {"outcome": "Rel"}, store=self.st)["text"])
+
+    def test_network_and_signin_failures_are_results_not_exceptions(self):
+        def down():
+            raise RuntimeError("service-account sign-in failed (HTTP 401)")
+        self.st.load = down
+        r = core.call("state", {}, store=self.st)
+        self.assertEqual(r["ok"], False)
+        self.assertIn("cloud access failed", r["error"])
+
+    def test_undo_expires_after_24h_and_old_records_are_swept(self):
+        w = core.call("addStep", {"outcome": "Rel", "text": "two"}, store=self.st)
+        u = self.st._undos()
+        u[w["undo"]]["at"] -= core.UNDO_TTL_MS + 60000      # make it 24 h + 1 min old
+        self.st._write_undos(u)
+        r = core.call("undo", {"id": w["undo"]}, store=self.st)
+        self.assertFalse(r["ok"])
+        self.assertIn("expired", r["error"])
+        w2 = core.call("addStep", {"outcome": "Rel", "text": "three"}, store=self.st)
+        u = self.st._undos()
+        u[w2["undo"]]["at"] -= core.UNDO_TTL_MS + 60000
+        self.st._write_undos(u)
+        self.st.prune_undos(core.UNDO_TTL_MS)
+        left = self.st._undos()
+        self.assertNotIn(w2["undo"], left)          # the old record is swept…
+        self.assertEqual(len(left), 1)              # …the recent one (from setUp's add) is kept
+
+    def test_undo_without_an_id_explains_itself(self):
+        r = core.call("undo", {}, store=self.st)
+        self.assertFalse(r["ok"])
+        self.assertIn("pass the undo id", r["error"])
+
+    def test_batch_reports_failures_and_can_stop(self):
+        ops = [{"op": "addStep", "args": {"outcome": "Rel", "text": "a"}},
+               {"op": "setStep", "args": {"outcome": "Rel", "step": "nope"}},
+               {"op": "addStep", "args": {"outcome": "Rel", "text": "b"}}]
+        r = core.batch(ops, store=self.st)
+        self.assertEqual((r["ok"], r["failed"], len(r["results"])), (True, [1], 3))
+        r = core.batch(ops, stop_on_error=True, store=self.st)         # python name
+        self.assertEqual(len(r["results"]), 2)
+        r = core.batch(ops, stopOnError=True, store=self.st)           # schema name
+        self.assertEqual(len(r["results"]), 2)
+
+    def test_unknown_op_lists_the_ops(self):
+        r = core.call("nope", {}, store=self.st)
+        self.assertEqual(r["error"], "unknown op")
+        self.assertIn("addStep", r["ops"])
+
+
 class RestRequests(unittest.TestCase):
     """The Firestore REST calls are shaped correctly (no network: the HTTP layer is replaced)."""
 

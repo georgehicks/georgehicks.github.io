@@ -6355,7 +6355,7 @@ For God alone my soul waits in silence. — Psalm 62:1`;
           return ok({ steps, milestones, outcomes: outs });
         });
       }],
-      undo: ['{id? | ids?[], force?} — undo a change by the `undo` id its result returned (works from any device, for ~24 h); several ids undo newest-first; with no id, the last change made on this device. Refuses if those items changed since unless force:true', async (a) => {
+      undo: ['{id? | ids?[], force?} — undo a change by the `undo` id its result returned (works from any device, for ~24 h); several ids undo newest-first; with no id, the last change made on this device (browser/device paths only — the direct-cloud path always needs the id). An undo id works once. Refuses if those items changed since unless force:true', async (a) => {
         const ids = Array.isArray(a.ids) ? a.ids.slice().reverse() : (a.id ? [a.id] : []);
         if (!ids.length) { const last = undoList[undoList.length - 1]; if (!last) fail('nothing to undo on this device — pass the undo id from the write\'s result'); applyUndo(last, !!a.force); return ok({ undone: last.id }); }
         const done = [];
@@ -6393,7 +6393,8 @@ For God alone my soul waits in silence. — Psalm 62:1`;
     async function batch(list, stopOnError) {
       const out = [];
       for (const it of (list || [])) { const r = await call(it.op, it.args); out.push(r); if (stopOnError && !r.ok) break; }
-      return ok({ results: out });
+      const failed = out.map((r, i) => r.ok ? null : i).filter(i => i !== null);
+      return ok(failed.length ? { results: out, failed } : { results: out });
     }
     const help = () => ({ schema: 1, guide: new URL('AGENTIC_GUIDE.md', location.href).href, note: 'call(op, args) → {ok, ...} | {ok:false, error}. Outcomes/milestones/steps can be named by id, exact title or a unique piece of it. Destructive ops need confirm:true.',
       buckets: lib.BUCKETS, grammar: '- open step | + done step | indent 2 spaces = substep | @context | >YYYY-MM-DD (or >tomorrow >wed: rewritten to a date)',
