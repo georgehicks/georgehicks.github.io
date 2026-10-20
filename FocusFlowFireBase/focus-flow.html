@@ -3214,11 +3214,16 @@ if ('serviceWorker' in navigator) {
 
     function syncStatus(msg) { const el = document.getElementById('sync-status'); if (el) el.textContent = msg; }
 
+    // Every app on this domain shares one localStorage. This app's sync must only ever carry ITS OWN
+    // keys — it used to upload (and write back) every key on the origin, so a stale copy of another
+    // app's data (AbidingSteps, Treasure, I Am Here, With, …) could overwrite that app's current data
+    // on a device. Other apps' namespaces are skipped in both directions.
+    const FOREIGN_APP_KEY = /^(abidingsteps:|treasure:|iamhere\.|with\.|notice-|span-state|flash-state|vox-state|charisma-state|abide-|focusApp)|^(targets|timeLog|currentTarget)$/;
     function allLocalData() {
       const out = {};
       for (let i = 0; i < localStorage.length; i++) {
         const k = localStorage.key(i);
-        if (k.startsWith('__local_')) continue; // device-private keys never sync
+        if (k.startsWith('__local_') || FOREIGN_APP_KEY.test(k)) continue; // device-private and other apps' keys never sync
         out[k] = localStorage.getItem(k);
       }
       return out;
@@ -3244,7 +3249,7 @@ if ('serviceWorker' in navigator) {
       _fbApplyingRemote = true;
       let nonPresenceChanged = false;
       Object.keys(data).forEach(k => {
-        if (k.startsWith('__local_')) return;               // never accept device-private keys
+        if (k.startsWith('__local_') || FOREIGN_APP_KEY.test(k)) return; // never accept device-private keys or other apps' keys
         if (isTextarea && active.dataset.key === k) return; // don't clobber active edit
         if (k === activeBlockKey) return;
         if (isDayNoteInput && k === 'dayEntries') return;    // don't clobber an in-progress day note

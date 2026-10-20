@@ -55,3 +55,16 @@ everything still saves locally.
 - The first time you sign in on a device that has its own unsynced edits, and the cloud
   already has data, it asks which copy to keep instead of silently replacing one.
 - Device-only settings, like the read-aloud voice and the current outcome selection, never sync.
+
+## Shared project: who else uses this Firebase project (focusflowgeorge) — audited 2026-10-20
+
+| App | Where it syncs | Notes |
+|---|---|---|
+| **AbidingSteps** (main) | `users/{uid}/apps/abidingsteps` (+ agent docs `as-op-*` / `as-res-*` next to it) | merges three-way; only `abidingsteps:` keys |
+| **FocusFlowFireBase** (`focus-flow.html`) | `users/{uid}` | last-write-wins overwrite, heartbeat writes; **no key namespace** |
+| **AbidingFlow** (abandoned prototype) | `abidingflow_users/{uid}` | same engine as FocusFlow; **no key namespace** |
+
+All other apps (Treasure, I Am Here, With, Notice, Span, Flash, Vox, Charisma, Abide, FocusFlow, focus-app, microsprint)
+are local-only. But every app on georgehicks.github.io shares ONE localStorage, and FocusFlowFireBase and
+AbidingFlow used to upload and write back *every key on the domain* — including `abidingsteps:*`. Both now skip other apps'
+namespaces (`FOREIGN_APP_KEY`). The firestore rule `match /users/{userId}/apps/{appId}` covers AbidingSteps only.

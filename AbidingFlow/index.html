@@ -459,7 +459,7 @@
 
   // Keep this in sync with the CACHE suffix in sw.js — shown in Settings so
   // a stale install is easy to spot, and "Check for updates" below busts it.
-  const APP_VERSION = 'v4';
+  const APP_VERSION = 'v5';
 
   // ===== storage =====
   const storage = {
@@ -1354,11 +1354,16 @@
 
   function syncStatus(msg) { const el = document.getElementById('sync-status'); if (el) el.textContent = msg; }
 
+  // Every app on this domain shares one localStorage. This app's sync must only ever carry ITS OWN
+  // keys — it used to upload (and write back) every key on the origin, so a stale copy of another
+  // app's data (AbidingSteps, Treasure, I Am Here, With, …) could overwrite that app's current data
+  // on a device. Other apps' namespaces are skipped in both directions.
+  const FOREIGN_APP_KEY = /^(abidingsteps:|treasure:|iamhere\.|with\.|notice-|span-state|flash-state|vox-state|charisma-state|abide-|focusApp)|^(targets|timeLog|currentTarget)$/;
   function allLocalData() {
     const out = {};
     for (let i = 0; i < localStorage.length; i++) {
       const k = localStorage.key(i);
-      if (k.startsWith('__local_')) continue;
+      if (k.startsWith('__local_') || FOREIGN_APP_KEY.test(k)) continue;
       out[k] = localStorage.getItem(k);
     }
     return out;
@@ -1381,7 +1386,7 @@
     _fbApplyingRemote = true;
     let changed = false;
     Object.keys(remote).forEach(k => {
-      if (k.startsWith('__local_')) return;
+      if (k.startsWith('__local_') || FOREIGN_APP_KEY.test(k)) return;
       if (localStorage.getItem(k) !== remote[k]) changed = true;
       localStorage.setItem(k, remote[k]);
     });
