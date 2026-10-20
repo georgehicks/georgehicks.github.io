@@ -3888,9 +3888,29 @@ For God alone my soul waits in silence. — Psalm 62:1`;
     renderStepBudget();
   }
 
+  // "Done" completes whatever you're focused on: the step (its line becomes "+ …" in the notes, which
+  // is what the map and Ahead read), else the milestone, else the whole outcome. Steps and milestones
+  // can be finished in any outcome; only Destinations can be finished as a whole.
+  function updateDoneButton(o) {
+    const btn = document.getElementById('markDoneBtn'); if (!btn || !o) return;
+    const kind = selectedSubOutcome ? 'step' : (selMilestone(o) ? 'milestone' : 'outcome');
+    btn.textContent = kind === 'step' ? '✓ Step done' : kind === 'milestone' ? '✓ Milestone done' : '✓ Done';
+    btn.title = kind === 'step' ? 'Mark this step done' : kind === 'milestone' ? 'Mark this milestone done' : 'Mark this outcome complete';
+    btn.style.display = (kind === 'outcome' && o.type !== 'Destination') ? 'none' : '';
+  }
   document.getElementById('markDoneBtn').addEventListener('click', () => {
     const o = selectedOutcome();
     if (!o) return;
+    const m = selMilestone(o);
+    if (selectedSubOutcome || m) {
+      if (selectedSubOutcome) { toggleStepLine(o, m, selectedSubOutcome, false); celebrate('done'); }
+      else { m.completed = true; celebrate('milestone'); selectedMilestoneId = null; }
+      selectedSubOutcome = null;
+      saveOutcomes(); renderAheadList(); renderOutcomePicker();
+      if (workSeg) returnToIdle('✓ Done — pick the next one');
+      renderSubOutcomeRow(o); finishOutcomeSelection(o);
+      return;
+    }
     o.completed = true;
     celebrate('done');
     saveOutcomes();
@@ -3973,7 +3993,7 @@ For God alone my soul waits in silence. — Psalm 62:1`;
     switchNotesContext(selectionNotesKey(o), label);
     store.set('__local_selection', { id: o.id, ms: selectedMilestoneId, sub: selectedSubOutcome });
     renderStepBudget();
-    document.getElementById('markDoneBtn').style.display = o.type === 'Destination' ? '' : 'none';
+    updateDoneButton(o);
   }
   // after a rename (here or synced from another device), refresh every place the name shows
   function updateSelectionLabels() {
@@ -3983,7 +4003,7 @@ For God alone my soul waits in silence. — Psalm 62:1`;
     document.getElementById('outcomeSummaryText').textContent = label;
     if (document.getElementById('actionRunning').style.display !== 'none') document.getElementById('actionFocus').textContent = 'Working on ' + label;
     document.getElementById('notesArea').placeholder = 'Notes for ' + label + '…';
-    document.getElementById('markDoneBtn').style.display = o.type === 'Destination' ? '' : 'none';
+    updateDoneButton(o);
   }
 
   // ===== notes are scoped to whatever outcome (+ sub-outcome) is current, not global.
