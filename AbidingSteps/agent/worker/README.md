@@ -4,41 +4,65 @@ A signed-in headless browser that acts as **a device that is always open**, so c
 (Path A in [`../../AGENTIC_GUIDE.md`](../../AGENTIC_GUIDE.md)) are applied within seconds — even when your phone and
 laptop are closed. It runs the real app (`?agent=1`), so it uses the same merge-based sync as every other device.
 
-> **Status: written but not yet run.** Nothing here has been installed or executed against your account. Do the steps
-> below in order; step 3 is the proof.
+It is **not tied to any operating system**: one Python file, plus either Docker or whatever keeps processes alive on
+the machine you pick. Run it on any always-on device — a NAS, a Raspberry Pi, a small VPS, a spare PC or Mac.
 
-## Where to run it
+> **Status: written but not yet run.** Nothing here has been executed against your account. Step 3 is the proof.
 
-| Host | Verdict |
-|---|---|
-| A machine that is always on (Mac mini, a spare Mac, a small Linux box/VPS) | ✅ true 24/7 |
-| This laptop | Works while it is awake. `service-macos.sh` uses `caffeinate` so it won't idle-sleep, but closing the lid sleeps it and the worker stops until it wakes. |
+## The one idea: sign in once, carry one file
 
-## Steps (macOS; Linux is the same minus step 4 — use a systemd user service or `nohup`)
+Sign-in happens in a real browser window on any machine with a screen (any OS). That writes **`auth-state.json`** — the
+cookies, the app's local data and its IndexedDB, which is where the cloud sign-in lives. Copy that single file to the
+worker's machine. (A browser *profile folder* doesn't travel between operating systems; this file does.)
+**auth-state.json is a credential: treat it like a password, never commit or share it.**
 
-1. **Set up** (private Python environment; uses your installed Chrome, downloads no browser):
-   `./setup.sh`
-2. **Sign in once** — a normal window opens; use Settings → Sync → *Sign in with Google*; it closes itself when done:
-   `~/.abidingsteps-worker/venv/bin/python abidingsteps_worker.py --login`
-   (Google sometimes refuses sign-in inside an automated browser. The window is launched without the automation banner to
-   reduce that. If it still refuses, sign in with that same profile directory using a plain Chrome:
-   `open -na "Google Chrome" --args --user-data-dir="$HOME/.abidingsteps-worker/profile"`, sign in at the app's Settings → Sync, quit Chrome.)
-3. **Prove it works** (foreground; Ctrl+C to stop; in another terminal run `--status`):
-   `~/.abidingsteps-worker/venv/bin/python abidingsteps_worker.py`
-   then send any operation, e.g. `python ../abidingsteps_agent.py state` — it should answer in a couple of seconds.
-4. **Keep it running** (starts at login, restarts if it dies): `./service-macos.sh install`
-   — check with `./service-macos.sh status`, read `./service-macos.sh logs`, remove with `./service-macos.sh uninstall`.
+## Steps
+
+1. **Install** (on the worker machine and on the machine you'll sign in from):
+   `pip install -r requirements.txt` (a virtualenv is fine). By default it drives your installed **Chrome** — no browser
+   download. No Chrome? `playwright install chromium` and set `ABIDINGSTEPS_BROWSER_CHANNEL=` (empty).
+2. **Sign in once**, on any machine with a screen:
+   `python abidingsteps_worker.py --login` → a window opens; Settings → Sync → *Sign in with Google*; it saves
+   `auth-state.json` (default folder `~/.abidingsteps-worker/`, or choose with `--state PATH`) and closes itself.
+   Google sometimes refuses sign-in in an automated browser; the window hides the automation banner to reduce that. If it
+   still refuses, tell me — there is a manual route.
+3. **Prove it works** on the worker machine (copy the file into its worker folder first): `python abidingsteps_worker.py`
+   (Ctrl+C stops it; `--status` in another terminal shows the heartbeat), then from anywhere send
+   `python ../abidingsteps_agent.py state` — it should answer within a couple of seconds.
+4. **Keep it running** — pick what fits that machine:
+
+   **Docker** (works everywhere Docker does):
+   ```
+   mkdir -p data && cp /path/to/auth-state.json data/
+   docker compose up -d --build        # restarts by itself; status: cat data/status.json
+   ```
+
+   **systemd** (Linux): `~/.config/systemd/user/abidingsteps-worker.service`
+   ```
+   [Service]
+   ExecStart=/usr/bin/python3 /path/to/abidingsteps_worker.py --service
+   Restart=always
+   RestartSec=15
+   [Install]
+   WantedBy=default.target
+   ```
+   then `systemctl --user enable --now abidingsteps-worker` (and `loginctl enable-linger $USER` so it runs without a login).
+
+   **Anything else** (pm2, supervisor, Windows Task Scheduler/NSSM, `tmux`…): the command is just
+   `python abidingsteps_worker.py --service`. It restarts its own browser on trouble; you only need something to restart
+   *it* if the whole process dies.
 
 ## What it does for you
 
-- Reloads the page every 6 h so it picks up new app versions; restarts the browser on a crash, a network drop or a lost sign-in
-  (backing off up to 5 min); writes `~/.abidingsteps-worker/status.json` every ~30 s (`--status` reads it).
-- If it is not signed in it says so and waits (`--service`) instead of spinning.
+- Reloads the page every 6 h so it picks up new app versions; restarts the browser on a crash, a network drop or a lost
+  sign-in (backing off up to 5 min); refreshes `auth-state.json` hourly; writes `status.json` every ~30 s
+  (`--status` reads it).
+- If the sign-in file is missing or stops working it says so and waits (`--service`) — replace the file and it recovers.
 - Quiet mode (`?agent=1`): no welcome, no Abide invitation, no celebrations — nothing to click.
 
 ## Cautions
 
-- The profile folder `~/.abidingsteps-worker/profile` contains your Google sign-in session. Treat it like a password;
-  don't copy it around or commit it.
 - It is one more device in your sync: it holds a full copy of your data and takes part in merges like any other.
-- Only one process may use the profile at a time (the `--login` window and the service can't run together; stop the service first).
+- If you sign out of cloud sync on the worker's account, or revoke the session in your Google account, the saved sign-in
+  stops working (the worker will say so).
+- Laptops sleep: on a laptop it only works while awake. Use a machine that stays on.

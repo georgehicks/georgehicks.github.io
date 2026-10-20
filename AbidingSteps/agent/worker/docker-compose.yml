@@ -1,0 +1,9 @@
+# docker compose up -d --build        (put auth-state.json in ./data first — see README.md)
+services:
+  abidingsteps-worker:
+    build: .
+    restart: unless-stopped
+    init: true
+    shm_size: 1gb            # Chromium needs more than Docker's default /dev/shm
+    volumes:
+      - ./data:/data         # auth-state.json in, status.json out

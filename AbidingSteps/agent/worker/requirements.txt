@@ -1,0 +1,2 @@
+# >= 1.51 so the saved sign-in can include IndexedDB (where the app's cloud sign-in lives)
+playwright>=1.51

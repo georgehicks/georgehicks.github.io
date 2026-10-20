@@ -127,8 +127,8 @@ read    users/{uid}/apps/as-res-{id}  → {ok, result:"<JSON string>"}      (del
 Semantics to design around: **at-most-once** (an op is claimed before it runs); ops older than 6 h are refused;
 if no device is open the op waits (no answer in time ⇒ read state before retrying a non-idempotent op like
 `addStep`, though `addStep` now ignores a repeat); results should be deleted by the reader. For **always-on** operation, run one headless browser (Path B)
-signed in to your account — it is simply a device that is always open. `agent/worker/` has a ready-made one (setup,
-one-time login, background service, health check) — see its README; it is written but not yet run against your account.
+signed in to your account — it is simply a device that is always open. `agent/worker/` has a ready-made one that runs on any OS
+(one Python file; Docker or any process manager; sign in once and carry one `auth-state.json`) — see its README; it is written but not yet run against your account.
 
 ## 6. Path B — headless browser
 

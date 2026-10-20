@@ -1,0 +1,5 @@
+# credentials and runtime files — never commit
+auth-state.json
+*.tmp
+status.json
+data/
