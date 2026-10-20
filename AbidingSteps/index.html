@@ -1,14 +1,15 @@
 <!DOCTYPE html>
 <html lang="en" data-mode="step">
 <head>
-<link rel="help" href="AGENTIC_GUIDE.md" title="Guide for agents and automation">
 <meta charset="UTF-8">
+<link rel="help" href="AGENTIC_GUIDE.md" title="Guide for agents and automation">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#0e1016">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" href="icon.svg">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
 <title>AbidingSteps</title>
 <style>
   :root {
@@ -5914,12 +5915,25 @@ For God alone my soul waits in silence. — Psalm 62:1`;
       let op = null;
       try { op = await db.runTransaction(async tx => { const s = await tx.get(ref); if (!s.exists) return null; const d = s.data(); tx.delete(ref); return d; }); } catch (e) { return; }
       if (!op) return; // another device got it first
+      abidingAgent.drainUndo();   // start clean: only what THIS op changes gets stored for undo
       let res;
       try {
         if (Date.now() - (Number(op.at) || 0) > 6 * 3600e3) res = { ok: false, error: 'expired (older than 6 h when picked up) — send it again' };
-        else res = op.op === 'batch' ? await abidingAgent.batch(op.args && op.args.ops, op.args && op.args.stopOnError) : await abidingAgent.call(op.op, op.args);
+        else {
+          const args = typeof op.argsJson === 'string' ? JSON.parse(op.argsJson) : (op.args || {});   // argsJson: what a plain REST client sends
+          res = op.op === 'batch' ? await abidingAgent.batch(args.ops, args.stopOnError) : await abidingAgent.call(op.op, args);
+        }
       } catch (e) { res = { ok: false, error: String((e && e.message) || e) }; }
       const id = op.id || ref.id;
+      // the undo records of whatever this op changed go to the cloud FIRST, so any device can undo it
+      // by the time the bot has its answer; old ones (>24 h) are swept every so often
+      try {
+        for (const rec of abidingAgent.drainUndo()) await apps.doc('as-undo-' + rec.id).set({ kind: 'as-undo', id: rec.id, at: Date.now(), rec: JSON.stringify(rec) });
+        if ((this.opCount = (this.opCount || 0) + 1) % 20 === 0) {
+          const old = await apps.where('kind', '==', 'as-undo').get();
+          old.forEach(d => { if (Date.now() - ((d.data() || {}).at || 0) > 24 * 3600e3) d.ref.delete(); });
+        }
+      } catch (e) {}
       try { await apps.doc('as-res-' + id).set({ kind: 'as-res', id, op: op.op, ok: !!(res && res.ok), result: JSON.stringify(res), at: Date.now() }); } catch (e) {}
       if (res && res.ok && op.op !== 'syncNow') this.pushNow();
     },
@@ -6045,7 +6059,7 @@ For God alone my soul waits in silence. — Psalm 62:1`;
   //   page.evaluate(() => window.abidingAgent.call('state'))
   // See AGENTIC_GUIDE.md. =====
   const abidingAgent = (() => {
-    const lib = MAPV.lib, SNAPS = [];
+    const lib = MAPV.lib;
     const ok = (o) => Object.assign({ ok: true }, o), no = (error, extra) => Object.assign({ ok: false, error }, extra);
     const norm = (t) => String(t == null ? '' : t).trim().toLowerCase();
     const canonBucket = (b) => lib.BUCKETS.find(x => norm(x) === norm(b)) || null;
@@ -6071,7 +6085,7 @@ For God alone my soul waits in silence. — Psalm 62:1`;
       return hit;
     }
     // a step/note line by its text (exact, else unique piece) in one scope — or across the outcome
-    function findLine(o, mref, text, stepsOnly) {
+    function findLine(o, mref, text, stepsOnly, nth) {
       if (!text) fail('step text required');
       const scopes = mref != null && mref !== '' ? [findM(o, mref)] : [null].concat(o.milestones);
       const n = norm(text).replace(/^[-+]\s+/, ''), hits = [];
@@ -6082,7 +6096,8 @@ For God alone my soul waits in silence. — Psalm 62:1`;
       }));
       const ex = hits.filter(h => h.exact), use = ex.length ? ex : hits;
       if (use.length === 1) return use[0];
-      fail(use.length ? 'ambiguous step' : 'no such step', use.length ? { candidates: use.slice(0, 8).map(h => ({ milestone: h.m ? h.m.t : undefined, line: h.ln.trim() })) } : undefined);
+      if (nth && use[nth - 1]) return use[nth - 1];   // identical steps: nth (1-based) picks one
+      fail(use.length ? 'ambiguous step — add nth (1-based) to pick one of the identical/similar lines' : 'no such step', use.length ? { candidates: use.slice(0, 8).map((h, i) => ({ nth: i + 1, milestone: h.m ? h.m.t : undefined, line: h.ln.trim() })) } : undefined);
     }
     function checkDate(v) {
       if (v === 'today') return todayKeyLocal();
@@ -6090,9 +6105,33 @@ For God alone my soul waits in silence. — Psalm 62:1`;
       if (!/^\d{4}-\d{2}-\d{2}$/.test(abs)) fail('bad date — use YYYY-MM-DD, today, tomorrow or a weekday');
       return abs;
     }
-    // every change: snapshot for undo → run → save → redraw everything that shows outcomes
+    // ---- undo that travels. Each change records, for exactly the outcomes and notes it touched, what they
+    // were before and after. The record's short id comes back in the result (`undo`); the cloud inbox also
+    // stores the record as a doc, so ANY signed-in device can apply it — not just the one that made the change.
+    // Undo refuses if the same things changed since (unless force:true), so it never overwrites later work.
+    let undoList = (store.get('__local_agentUndo', []) || []).filter(r => r && r.id);
+    let pendingUndo = [];
+    const newUndoId = () => Math.random().toString(36).slice(2, 7) + Date.now().toString(36).slice(-3);
+    const snapO = () => { const m = new Map(); outcomes.forEach((o, i) => m.set(o.id, { j: JSON.stringify(o), i })); return m; };
+    function buildUndo(preO, preN) {
+      const postO = snapO(), o = {}, post = {}, n = {}, npost = {};
+      new Set([...preO.keys(), ...postO.keys()]).forEach(id => {
+        const a = preO.get(id), b = postO.get(id);
+        if ((a && a.j) !== (b && b.j)) { o[id] = a ? { j: a.j, i: a.i } : null; post[id] = b ? b.j : null; }
+      });
+      new Set([...Object.keys(preN), ...Object.keys(notesByKey)]).forEach(k => {
+        if (preN[k] !== notesByKey[k]) { n[k] = preN[k] === undefined ? null : preN[k]; npost[k] = notesByKey[k] === undefined ? null : notesByKey[k]; }
+      });
+      return (Object.keys(o).length || Object.keys(n).length) ? { id: newUndoId(), at: Date.now(), o, post, n, npost } : null;
+    }
+    function rememberUndo(rec) {
+      undoList.push(rec); if (undoList.length > 12) undoList.shift();
+      pendingUndo.push(rec); if (pendingUndo.length > 40) pendingUndo.shift();
+      try { store.set('__local_agentUndo', undoList); } catch (e) {}
+    }
+    // every change: remember what it touches → run → save → redraw everything that shows outcomes
     function mut(fn) {
-      SNAPS.push(JSON.stringify({ o: outcomes, n: notesByKey })); if (SNAPS.length > 40) SNAPS.shift();
+      const preO = snapO(), preN = Object.assign({}, notesByKey);
       agentApplying = true;
       try {
         const r = fn();
@@ -6100,8 +6139,38 @@ For God alone my soul waits in silence. — Psalm 62:1`;
         const so = selectedOutcome();
         if (selectedOutcomeId && !so) clearSelection(); else if (so) { revalidateSelection(); updateSelectionLabels(); }
         renderAheadList(); renderOutcomePicker(); if (mapRefresh) mapRefresh();
+        const rec = buildUndo(preO, preN);
+        if (rec) { rememberUndo(rec); if (r && typeof r === 'object') r.undo = rec.id; }
         return r;
-      } catch (e) { SNAPS.pop(); throw e; } finally { agentApplying = false; }
+      } catch (e) {   // a failed change must not leave half of itself behind
+        outcomes = [...preO.values()].sort((a, b) => a.i - b.i).map(x => JSON.parse(x.j)); notesByKey = preN; store.set('notes', notesByKey); saveOutcomes();
+        renderAheadList(); renderOutcomePicker(); throw e;
+      } finally { agentApplying = false; }
+    }
+    const cloudUndoRef = (id) => (cloudSync.docRef ? cloudSync.docRef.parent.doc('as-undo-' + id) : null);
+    async function fetchCloudUndo(id) {
+      try { const ref = cloudUndoRef(id); if (!ref) return null; const snap = await ref.get(); return snap.exists ? JSON.parse(snap.data().rec) : null; } catch (e) { return null; }
+    }
+    function applyUndo(rec, force) {
+      if (!force) {
+        const o = Object.keys(rec.post).filter(id => { const cur = outcomes.find(x => x.id === id); return (cur ? JSON.stringify(cur) : null) !== rec.post[id]; });
+        const n = Object.keys(rec.npost).filter(k => (notesByKey[k] === undefined ? null : notesByKey[k]) !== rec.npost[k]);
+        if (o.length || n.length) fail('those items changed since that edit — undo with force:true to overwrite the newer changes', { changed: o.length + n.length });
+      }
+      agentApplying = true;
+      try {
+        Object.keys(rec.o).forEach(id => {
+          const pre = rec.o[id], idx = outcomes.findIndex(x => x.id === id);
+          if (pre === null) { if (idx >= 0) outcomes.splice(idx, 1); }
+          else { const obj = JSON.parse(pre.j); if (idx >= 0) outcomes[idx] = obj; else outcomes.splice(Math.min(pre.i, outcomes.length), 0, obj); }
+        });
+        Object.keys(rec.n).forEach(k => { if (rec.n[k] === null) delete notesByKey[k]; else notesByKey[k] = rec.n[k]; });
+        store.set('notes', notesByKey); normalizeOutcomes(outcomes); reconcileAllSteps(); saveOutcomes();
+        const so = selectedOutcome(); if (selectedOutcomeId && !so) clearSelection(); else if (so) { revalidateSelection(); updateSelectionLabels(); }
+        renderAheadList(); renderOutcomePicker(); if (mapRefresh) mapRefresh();
+      } finally { agentApplying = false; }
+      undoList = undoList.filter(r => r.id !== rec.id); try { store.set('__local_agentUndo', undoList); } catch (e) {}
+      try { const ref = cloudUndoRef(rec.id); if (ref) ref.delete(); } catch (e) {}
     }
     const openCount = (o) => scanSteps(o).length;
     const row = (o) => { const r = { id: o.id, title: o.t, bucket: lib.bucketOf(o) }; if (o.starred) r.starred = 1; if (o.planned) r.planned = o.planned; if (o.type) r.type = o.type; const n = openCount(o); if (n) r.open = n; if (o.milestones.length) r.milestones = o.milestones.length; return r; };
@@ -6192,21 +6261,25 @@ For God alone my soul waits in silence. — Psalm 62:1`;
           return ok(row(o));
         });
       }],
-      addStep: ['{outcome, text, milestone?, under?} — append "- text" (add @context and >date inside the text); under = nest beneath that step', (a) => {
+      addStep: ['{outcome, text, milestone?, under?, nth?, allowDuplicate?} — append "- text" (add @context and >date inside the text); under = nest beneath that step. A step that already exists in that place is not added again (duplicate:true) unless allowDuplicate:true', (a) => {
         const o = findO(a.outcome); if (!a.text || !String(a.text).trim()) fail('text required');
         return mut(() => {
           const text = absDates(String(a.text).trim()).replace(/^[-+]\s+/, '');
+          const sameStep = (l) => { const r = STEP_RE.exec(l); return r && norm(r[2]) === norm(text); };
           if (a.under) {
-            const h = findLine(o, a.milestone, a.under, false), lines = noteLines(noteKeyFor(o, h.m)), at = lib.blockEnd(lines, h.i);
-            lines.splice(at, 0, ' '.repeat(indentOf(lines[h.i]) + 2) + '- ' + text); writeNoteLines(o, h.m, lines);
+            const h = findLine(o, a.milestone, a.under, false, a.nth), lines = noteLines(noteKeyFor(o, h.m)), end = lib.blockEnd(lines, h.i);
+            if (!a.allowDuplicate && lines.slice(h.i + 1, end).some(sameStep)) return ok({ duplicate: true });
+            lines.splice(end, 0, ' '.repeat(indentOf(lines[h.i]) + 2) + '- ' + text); writeNoteLines(o, h.m, lines);
           } else {
-            const m = findM(o, a.milestone), lines = noteLines(noteKeyFor(o, m)); lines.splice(lib.endLine(o, m), 0, '- ' + text); writeNoteLines(o, m, lines);
+            const m = findM(o, a.milestone), lines = noteLines(noteKeyFor(o, m));
+            if (!a.allowDuplicate && lines.some(l => indentOf(l) === 0 && sameStep(l))) return ok({ duplicate: true });
+            lines.splice(lib.endLine(o, m), 0, '- ' + text); writeNoteLines(o, m, lines);
           }
           return ok({ outline: outlineOf(o) });
         });
       }],
-      setStep: ['{outcome, step, done?, milestone?} — mark a step done (+) or open (-); omit done to toggle; step = its text or a unique piece of it', (a) => {
-        const o = findO(a.outcome), h = findLine(o, a.milestone, a.step, true);
+      setStep: ['{outcome, step, done?, milestone?, nth?} — mark a step done (+) or open (-); omit done to toggle; step = its text or a unique piece of it (nth picks one of several identical steps)', (a) => {
+        const o = findO(a.outcome), h = findLine(o, a.milestone, a.step, true, a.nth);
         return mut(() => {
           const lines = noteLines(noteKeyFor(o, h.m)), isDone = /^\s*\+/.test(lines[h.i]), want = ('done' in a) ? !!a.done : !isDone;
           lines[h.i] = lines[h.i].replace(/^(\s*)[-+]/, '$1' + (want ? '+' : '-')); writeNoteLines(o, h.m, lines);
@@ -6214,7 +6287,7 @@ For God alone my soul waits in silence. — Psalm 62:1`;
         });
       }],
       editStep: ['{outcome, step, text, milestone?} — rewrite a step\'s text (keeps its - / + and indent)', (a) => {
-        const o = findO(a.outcome), h = findLine(o, a.milestone, a.step, true); if (!a.text) fail('text required');
+        const o = findO(a.outcome), h = findLine(o, a.milestone, a.step, true, a.nth); if (!a.text) fail('text required');
         return mut(() => {
           const lines = noteLines(noteKeyFor(o, h.m)), r = STEP_RE.exec(lines[h.i]);
           lines[h.i] = lines[h.i].replace(/^(\s*[-+]\s+).*$/, '$1' + absDates(String(a.text).trim())); writeNoteLines(o, h.m, lines);
@@ -6224,7 +6297,7 @@ For God alone my soul waits in silence. — Psalm 62:1`;
       }],
       removeStep: ['{outcome, step, milestone?, confirm:true} — delete a step and anything nested under it', (a) => {
         if (a.confirm !== true) fail('removeStep needs confirm:true');
-        const o = findO(a.outcome), h = findLine(o, a.milestone, a.step, false);
+        const o = findO(a.outcome), h = findLine(o, a.milestone, a.step, false, a.nth);
         return mut(() => { const lines = noteLines(noteKeyFor(o, h.m)); lines.splice(h.i, lib.blockEnd(lines, h.i) - h.i); writeNoteLines(o, h.m, lines); return ok({}); });
       }],
       note: ['{outcome, text, milestone?, under?} — append a plain note line (no - or +)', (a) => {
@@ -6272,15 +6345,16 @@ For God alone my soul waits in silence. — Psalm 62:1`;
           return ok({ steps, milestones, outcomes: outs });
         });
       }],
-      undo: ['{} — undo the last change this API made (up to 40)', () => {
-        const snap = SNAPS.pop(); if (!snap) fail('nothing to undo');
-        agentApplying = true;
-        try {
-          const st = JSON.parse(snap); outcomes = st.o; notesByKey = st.n; normalizeOutcomes(outcomes); store.set('notes', notesByKey); reconcileAllSteps(); saveOutcomes();
-          const so = selectedOutcome(); if (selectedOutcomeId && !so) clearSelection(); else if (so) { revalidateSelection(); updateSelectionLabels(); }
-          renderAheadList(); renderOutcomePicker(); if (mapRefresh) mapRefresh();
-        } finally { agentApplying = false; }
-        return ok({});
+      undo: ['{id? | ids?[], force?} — undo a change by the `undo` id its result returned (works from any device, for ~24 h); several ids undo newest-first; with no id, the last change made on this device. Refuses if those items changed since unless force:true', async (a) => {
+        const ids = Array.isArray(a.ids) ? a.ids.slice().reverse() : (a.id ? [a.id] : []);
+        if (!ids.length) { const last = undoList[undoList.length - 1]; if (!last) fail('nothing to undo on this device — pass the undo id from the write\'s result'); applyUndo(last, !!a.force); return ok({ undone: last.id }); }
+        const done = [];
+        for (const id of ids) {
+          const rec = undoList.find(r => r.id === id) || await fetchCloudUndo(id);
+          if (!rec) fail('unknown or expired undo id ' + id + ' (kept ~24 h; the device must reach the cloud)', { undone: done });
+          applyUndo(rec, !!a.force); done.push(id);
+        }
+        return ok({ undone: done });
       }],
       // ---------------- focus timer ----------------
       start: ['{outcome, minutes?=15, milestone?, step?} — start the Step timer on an outcome / milestone / top-level step (also plans it for today)', (a) => {
@@ -6314,7 +6388,8 @@ For God alone my soul waits in silence. — Psalm 62:1`;
     const help = () => ({ schema: 1, guide: new URL('AGENTIC_GUIDE.md', location.href).href, note: 'call(op, args) → {ok, ...} | {ok:false, error}. Outcomes/milestones/steps can be named by id, exact title or a unique piece of it. Destructive ops need confirm:true.',
       buckets: lib.BUCKETS, grammar: '- open step | + done step | indent 2 spaces = substep | @context | >YYYY-MM-DD (or >tomorrow >wed: rewritten to a date)',
       ops: Object.fromEntries(Object.entries(ops).map(([k, v]) => [k, v[0]])) });
-    return { call, batch, help, ready: true, schema: 1, mode: AGENT_MODE ? 'agent' : 'normal' };
+    const drainUndo = () => { const r = pendingUndo; pendingUndo = []; return r; };
+    return { call, batch, help, drainUndo, ready: true, schema: 1, mode: AGENT_MODE ? 'agent' : 'normal' };
   })();
   window.abidingAgent = abidingAgent;
 

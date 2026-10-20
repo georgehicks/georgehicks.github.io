@@ -43,14 +43,14 @@ Call shape: `op` + `args` → `{ok:true, ...}` or `{ok:false, error, candidates?
 | `find` | `{q, limit=20}` | title and step/note line hits |
 | `add` | `{title, bucket?, planned?, starred?, type?, tag?, steps?[], notes?}` | new outcome row |
 | `update` | `{outcome, title?, starred?, planned?, bucket?, type?, tag?, maybe?, completed?, budget?}` | row |
-| `addStep` | `{outcome, text, milestone?, under?}` | outline |
-| `setStep` | `{outcome, step, done?, milestone?}` (omit `done` = toggle) | the new line |
+| `addStep` | `{outcome, text, milestone?, under?, nth?, allowDuplicate?}` — a step already there is **not** added twice (`duplicate:true`) | outline |
+| `setStep` | `{outcome, step, done?, milestone?, nth?}` (omit `done` = toggle; `nth` picks one of several identical steps) | the new line |
 | `editStep` | `{outcome, step, text, milestone?}` | the new line |
 | `note` | `{outcome, text, milestone?, under?}` | – |
 | `addMilestone` / `updateMilestone` | `{outcome, title, steps?[]}` / `{outcome, milestone, title?, done?}` | id |
 | `removeStep` `removeMilestone` `remove` `setNotes` `clearDone` | need `confirm:true` (`clearDone{outcome|bucket|all}` removes done steps and milestones) | – |
 | `start` / `stop` / `timer` | `{outcome, minutes=15, milestone?, step?}` | focus timer (also plans it for today) |
-| `undo` | – | undoes the last change **made by this API on that device** (40 deep) |
+| `undo` | `{id? \| ids?[], force?}` | **every write returns `undo:<id>`**; `undo{id}` reverses exactly that change, **from any device**, for ~24 h. Several ids go newest-first. It refuses (`changed since`) if those items were edited afterwards, unless `force:true` |
 | `syncNow` | – | pushes now (browser path) |
 | `batch` | `{ops:[{op,args}], stopOnError?}` | `{results:[…]}` — **one round trip for many ops** |
 
@@ -66,7 +66,8 @@ Call shape: `op` + `args` → `{ok:true, ...}` or `{ok:false, error, candidates?
 - `@word` anywhere in a step = context (GTD); children inherit their parent's contexts and date.
   `>date` = not before that day; until then the step stays out of the Step picker, and a dated step coming due
   pulls its outcome onto Today. (Effective next date = the earliest of the plan and any step date.)
-- Steps are identified **by their text** (no ids). Use a unique piece of it in `step`.
+- Steps are identified **by their text** (they have no ids). A piece of the text works if it is unique; otherwise the error returns
+  `candidates` with an `nth` for each, and you resend with `nth`. Repeating the same `addStep` is harmless (`duplicate:true`).
 
 ## 4. Spend fewer tokens
 
@@ -83,14 +84,34 @@ How it works: the bot writes a small doc `users/{uid}/apps/as-op-{id}`; any sign
 open claims it (a transaction deletes the doc, so only one device applies it), runs it through
 `window.abidingAgent`, writes `as-res-{id}`, and pushes immediately — so your other devices update too.
 
-1. Firebase console → project **focusflowgeorge** → Project settings → Service accounts → create a key. Better: in Google
-   Cloud IAM create a **dedicated service account with only `Cloud Datastore User`** and use its key. *(Admin
-   credentials bypass Firestore rules and the project is shared with your other apps — keep the key secret.)*
-2. In the app: Settings → Sync shows **"For automation — your ID"**; tap to copy it.
-3. `pip install firebase-admin`, then:
+**Choose how the bot signs in — least privilege first:**
+
+- **Recommended — a dedicated bot login, locked down by Firestore rules (no admin key at all).** Create an email/password
+  user in Firebase Authentication just for the bot, then add this to your rules, inside the existing
+  `match /users/{userId}` block, next to the `apps` rule. The bot can then drop operations and read its answers —
+  and nothing else; it can never read or write your actual data, or any other app's.
+
+  ```
+  match /apps/{docId} {
+    allow read, write: if request.auth != null && request.auth.uid == userId;          // you (the app) — as before
+    allow create:      if isBot() && docId.matches('as-op-.*');                         // the bot may queue operations…
+    allow get, delete: if isBot() && docId.matches('as-res-.*');                        // …and collect/clear its answers
+  }
+  function isBot() { return request.auth != null && request.auth.token.email == 'bot@your-domain.example'; }
+  ```
+  `isBot()` is defined at the same level as the `match` blocks. The helper signs in over REST (see below) and sends
+  `argsJson` (the args as a JSON string).
+- **Fallback — a service account.** In Google Cloud IAM make a *dedicated* one with only **Cloud Datastore User**. Be
+  aware that this role reaches the **whole Firestore database** (all your apps' data) and ignores the rules, so guard
+  the key like a password.
+
+1. In the app: Settings → Sync shows **"For automation — your ID"**; tap to copy it (`ABIDINGSTEPS_UID`).
+2. Bot-login mode needs no install. Service-account mode needs `pip install firebase-admin`. Then:
 
 ```bash
-export GOOGLE_APPLICATION_CREDENTIALS=/path/key.json ABIDINGSTEPS_UID=<uid>
+# bot-login mode (recommended):
+export ABIDINGSTEPS_UID=<uid> ABIDINGSTEPS_BOT_EMAIL=bot@your-domain.example ABIDINGSTEPS_BOT_PASSWORD=… ABIDINGSTEPS_API_KEY=<Firebase web API key>
+# or service-account mode:  export GOOGLE_APPLICATION_CREDENTIALS=/path/key.json ABIDINGSTEPS_UID=<uid>
 python agent/abidingsteps_agent.py state
 python agent/abidingsteps_agent.py op addStep '{"outcome":"Plan retreat","text":"Call venue @call >fri"}'
 ```
@@ -99,13 +120,13 @@ As a library: `from abidingsteps_agent import send, batch, read_outline` (`send(
 Without Python, the protocol is just two docs:
 
 ```
-create  users/{uid}/apps/as-op-{id}  {kind:"as-op", id, op, args:{…}, at:<ms epoch>}
+create  users/{uid}/apps/as-op-{id}  {kind:"as-op", id, op, args:{…} | argsJson:"<JSON string>", at:<ms epoch>}
 read    users/{uid}/apps/as-res-{id}  → {ok, result:"<JSON string>"}      (delete it after reading)
 ```
 
 Semantics to design around: **at-most-once** (an op is claimed before it runs); ops older than 6 h are refused;
 if no device is open the op waits (no answer in time ⇒ read state before retrying a non-idempotent op like
-`addStep`); results should be deleted by the reader. For **always-on** operation, run one headless browser (Path B)
+`addStep`, though `addStep` now ignores a repeat); results should be deleted by the reader. For **always-on** operation, run one headless browser (Path B)
 signed in to your account — it is simply a device that is always open.
 
 ## 6. Path B — headless browser
@@ -136,9 +157,9 @@ names are approximate; `state`/`list` answered by a device are authoritative). D
 ## 8. Safety
 
 - Deletes and wholesale rewrites need `confirm:true`; ask the human before sending them.
-- `undo` is per device and in memory (cleared on reload); for a bot, the safe habit is: read `outline` before a
-  risky edit and keep it to restore with `setNotes`.
-- Don't loop: one `state` per task, then targeted reads. Repeated identical writes create duplicates (steps are text).
+- **Undo:** keep the `undo` id each write returns. It travels with the change (the cloud inbox stores the record), so it
+  works whichever device receives the undo — and it will not overwrite later edits unless you pass `force:true`. Records last ~24 h.
+- Don't loop: one `state` per task, then targeted reads.
 - Dates relative to "today" are resolved at write time, in the device's local timezone.
 
 ## 9. Troubleshooting
@@ -152,5 +173,5 @@ names are approximate; `state`/`list` answered by a device are authoritative). D
 | Browser path loses data | the persistent profile wasn't reused (`launch_persistent_context` dir) |
 | Changes missing on phone | `syncNow` (browser) / wait for the device push; phone must be open or reopened to pull |
 
-*Status: the in-app API and the inbox claim/apply logic are tested in a browser with a stand-in for Firestore;
-the Firestore rules/service-account setup and the Python helper have not been run against your live project.*
+*Status: the in-app API, the inbox claim/apply logic and cross-device undo are tested in a browser with a stand-in for Firestore;
+the Firestore rules, the bot-login (REST) mode, the service-account setup and the Python helper have not been run against your live project.*

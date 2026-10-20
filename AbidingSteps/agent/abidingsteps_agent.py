@@ -8,10 +8,13 @@ How it works (see ../AGENTIC_GUIDE.md):
   * READ without any device open: `read` fetches the data doc and prints a compact outline (approximate
     buckets; the `state`/`outline` ops answered by a device are authoritative).
 
-Setup:
-  pip install firebase-admin
-  export GOOGLE_APPLICATION_CREDENTIALS=/path/to/service-account.json   # least privilege: role Cloud Datastore User
-  export ABIDINGSTEPS_UID=<the Firebase UID shown in the app: Settings → Sync>
+Two ways to sign in (see the guide, section 5):
+  A) bot login (recommended — no admin key; Firestore rules limit it to the as-op / as-res docs; stdlib only):
+       export ABIDINGSTEPS_UID=<UID shown in the app: Settings → Sync>
+       export ABIDINGSTEPS_BOT_EMAIL=… ABIDINGSTEPS_BOT_PASSWORD=… ABIDINGSTEPS_API_KEY=<Firebase web API key>
+  B) service account (reaches the WHOLE database and ignores the rules — guard the key):
+       pip install firebase-admin
+       export GOOGLE_APPLICATION_CREDENTIALS=/path/to/service-account.json ABIDINGSTEPS_UID=<UID>
 
 Usage:
   python abidingsteps_agent.py state
@@ -26,29 +29,83 @@ import sys
 import time
 import uuid
 
-import firebase_admin
-from firebase_admin import credentials, firestore
+import urllib.error
+import urllib.request
 
 _db = None
+PROJECT = os.environ.get("ABIDINGSTEPS_PROJECT", "focusflowgeorge")
+_tok = {"t": None, "exp": 0.0}
+
+
+def _rest():
+    return bool(os.environ.get("ABIDINGSTEPS_BOT_EMAIL"))
+
+
+def _http(method, url, body=None, token=None):
+    headers = {"Content-Type": "application/json"}
+    if token:
+        headers["Authorization"] = "Bearer " + token
+    req = urllib.request.Request(url, data=body, method=method, headers=headers)
+    try:
+        with urllib.request.urlopen(req, timeout=30) as resp:
+            raw = resp.read()
+            return json.loads(raw) if raw else {}
+    except urllib.error.HTTPError as e:
+        if e.code == 404:
+            return None
+        raise RuntimeError("HTTP %s from %s: %s" % (e.code, url.split("?")[0], e.read()[:300].decode("utf-8", "replace")))
+
+
+def _id_token():
+    if _tok["t"] and time.time() < _tok["exp"] - 60:
+        return _tok["t"]
+    body = json.dumps({"email": os.environ["ABIDINGSTEPS_BOT_EMAIL"], "password": os.environ["ABIDINGSTEPS_BOT_PASSWORD"], "returnSecureToken": True}).encode()
+    r = _http("POST", "https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key=" + os.environ["ABIDINGSTEPS_API_KEY"], body)
+    _tok["t"], _tok["exp"] = r["idToken"], time.time() + int(r["expiresIn"])
+    return _tok["t"]
+
+
+def _uid():
+    uid = os.environ.get("ABIDINGSTEPS_UID")
+    if not uid:
+        raise SystemExit("Set ABIDINGSTEPS_UID (Settings → Sync shows it).")
+    return uid
+
+
+def _rest_send(op, args, wait, poll):
+    base = "https://firestore.googleapis.com/v1/projects/%s/databases/(default)/documents/users/%s/apps" % (PROJECT, _uid())
+    op_id = uuid.uuid4().hex[:12]
+    fields = {"kind": {"stringValue": "as-op"}, "id": {"stringValue": op_id}, "op": {"stringValue": op},
+              "argsJson": {"stringValue": json.dumps(args or {})}, "at": {"integerValue": str(int(time.time() * 1000))}}
+    _http("POST", "%s?documentId=as-op-%s" % (base, op_id), json.dumps({"fields": fields}).encode(), _id_token())
+    deadline = time.time() + wait
+    while time.time() < deadline:
+        d = _http("GET", "%s/as-res-%s" % (base, op_id), token=_id_token())
+        if d:
+            _http("DELETE", "%s/as-res-%s" % (base, op_id), token=_id_token())
+            return json.loads(d["fields"]["result"]["stringValue"])
+        time.sleep(poll)
+    return {"ok": False, "error": "no device answered in %ds — is a signed-in AbidingSteps open?" % wait, "id": op_id}
 
 
 def _apps():
     global _db
     if _db is None:
+        import firebase_admin                      # service-account mode only
+        from firebase_admin import credentials, firestore
         if not firebase_admin._apps:
             cred_path = os.environ.get("GOOGLE_APPLICATION_CREDENTIALS")
             firebase_admin.initialize_app(credentials.Certificate(cred_path) if cred_path else None)
         _db = firestore.client()
-    uid = os.environ.get("ABIDINGSTEPS_UID")
-    if not uid:
-        raise SystemExit("Set ABIDINGSTEPS_UID (Settings → Sync shows it).")
-    return _db.collection("users").document(uid).collection("apps")
+    return _db.collection("users").document(_uid()).collection("apps")
 
 
 def send(op, args=None, wait=60, poll=1.0):
     """Queue one operation and wait for the device's answer. Returns the app's result dict.
     At-most-once: if nobody answers in `wait` seconds, the op may still run later (it expires after 6 h) —
     check with a read op before re-sending anything that isn't idempotent."""
+    if _rest():
+        return _rest_send(op, args, wait, poll)
     apps = _apps()
     op_id = uuid.uuid4().hex[:12]
     apps.document("as-op-" + op_id).set(
@@ -70,7 +127,10 @@ def batch(ops, stop_on_error=False, wait=90):
 
 
 def read_outline(include_done=False):
-    """Read the data doc directly (no device needed). Compact text; buckets here are approximate."""
+    """Read the data doc directly (service-account mode, no device needed; buckets here are approximate).
+    In bot-login mode the bot can't read the data doc, so this asks a device for the outline instead."""
+    if _rest():
+        return (send("outline", {"bucket": "Today"}) or {}).get("text", "")
     snap = _apps().document("abidingsteps").get()
     if not snap.exists:
         return "(no data yet)"
