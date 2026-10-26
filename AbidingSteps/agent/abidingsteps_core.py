@@ -841,6 +841,8 @@ def _device_only(name):
 def op_visions(model, a):
     items = [{"id": v["id"], "title": v.get("t", ""), "status": v.get("status", "sense"), "picture": v.get("picture", ""),
               "why": v.get("why", ""), "scripture": v.get("scripture", ""),
+              "sessions": len(v.get("journal") or []),
+              "lastSession": (_dt.datetime.fromtimestamp(max(j.get("at", 0) for j in v["journal"]) / 1000, _dt.timezone.utc).strftime("%Y-%m-%d") if v.get("journal") else None),
               "outcomes": [o["t"] for o in model.outcomes if o.get("toward") == v["id"]]} for v in model.visions]
     return _ok(total=len(items), items=items)
 

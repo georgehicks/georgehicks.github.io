@@ -70,7 +70,7 @@ Call shape: `op` + `args` → `{ok:true, ...}` or `{ok:false, error, candidates?
 
 ## 3. The model in 60 seconds
 
-- **Vision destination** — a long-range direction the user senses from God (years, not weeks). Read-only for you (`visions`); you may link an outcome to one with `update {outcome, toward}`. Never rewrite its picture/why/scripture or status: those are the user's own words.
+- **Vision destination** — a long-range direction the user senses from God (years, not weeks). Read-only for you (`visions`); you may link an outcome to one with `update {outcome, toward}`. Never rewrite its picture/why/scripture or status: those are the user's own words. The prayer journal from their listening sessions is private: `visions` only tells you how many sessions and the last date.
 - **Outcome** — a thing you're moving toward (`type` Deliverable = finishable, Directive = ongoing; the old word `Destination` is retired and still accepted as input — it is stored as Deliverable). Has
   `starred` (important) and `planned` (the day you intend to work on it; today or earlier ⇒ **Today** bucket).
 - **Everything inside an outcome is its notes text.** A line beginning `- ` is an open step, `+ ` a done step,

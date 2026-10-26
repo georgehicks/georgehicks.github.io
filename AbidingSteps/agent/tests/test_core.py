@@ -265,6 +265,8 @@ class VisionLinks(unittest.TestCase):
         self.assertEqual(v["items"][0]["outcomes"], ["Plan retreat"])
         self.assertEqual(v["items"][0]["status"], "praying")
         self.assertNotIn("undo", v)
+        self.assertEqual(v["items"][0]["sessions"], 0)
+        self.assertIsNone(v["items"][0]["lastSession"])
 
     def test_toward_unknown_or_ambiguous_fails_and_null_clears(self):
         core.call("add", {"title": "X"}, store=self.store)
@@ -280,6 +282,18 @@ class VisionLinks(unittest.TestCase):
         r = core.call("update", {"outcome": "X", "toward": "v1"}, store=self.store)
         self.assertTrue(core.call("undo", {"id": r["undo"]}, store=self.store)["ok"])
         self.assertNotIn("toward", core.call("list", {}, store=self.store)["items"][0])
+
+
+class VisionSessions(unittest.TestCase):
+    def test_visions_reports_session_count_and_date_but_not_the_words(self):
+        st = fresh()
+        vs = [{"id": "v1", "t": "A", "status": "held", "journal": [{"id": "j1", "at": 1790000000000, "heard": "private words"}]}]
+        with open(st.path, "w") as f:
+            json.dump({"data": {"outcomes": "[]", "notes": "{}", "visions": json.dumps(vs)}, "_v": 0}, f)
+        it = core.call("visions", {}, store=st)["items"][0]
+        self.assertEqual(it["sessions"], 1)
+        self.assertEqual(it["lastSession"], "2026-09-21")
+        self.assertNotIn("private words", json.dumps(it))
 
 
 if __name__ == "__main__":

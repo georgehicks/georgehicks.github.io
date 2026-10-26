@@ -720,6 +720,27 @@
   .vlinked button { background: none; border: none; color: var(--text-faint); cursor: pointer; font-size: 0.9rem; }
   .vdel { margin-top: 14px; }
   .vision-empty { color: var(--text-dim); font-size: 0.86rem; line-height: 1.55; padding: 18px 4px; }
+  .vsit { margin-top: 12px; }
+  .vjournal { margin-top: 6px; }
+  .vjournal details { border-bottom: 1px solid var(--border); padding: 6px 0; font-size: 0.82rem; }
+  .vjournal summary { cursor: pointer; color: var(--text-dim); }
+  .vjournal .je { margin: 6px 0 2px; color: var(--text); line-height: 1.45; white-space: pre-wrap; }
+  .vjournal .je small { display: block; color: var(--text-faint); }
+  #listenSession { position: fixed; inset: 0; z-index: 240; display: none; overflow-y: auto; padding: 28px 18px 60px;
+    background: radial-gradient(ellipse at 50% 0%, color-mix(in srgb, var(--vision) 12%, #0a0c12) 0%, #080a10 65%); }
+  #listenSession.show { display: block; }
+  .ls-card { max-width: 420px; margin: 0 auto; }
+  .ls-dots { display: flex; gap: 6px; justify-content: center; margin-bottom: 22px; }
+  .ls-dots i { width: 7px; height: 7px; border-radius: 50%; background: var(--border); }
+  .ls-dots i.on { background: var(--vision); }
+  .ls-for { text-align: center; color: var(--text-faint); font-size: 0.78rem; margin-bottom: 6px; }
+  .ls-title { text-align: center; font-size: 1.15rem; line-height: 1.4; color: var(--text); margin: 0 0 8px; font-weight: 600; }
+  .ls-help { text-align: center; color: var(--text-dim); font-size: 0.86rem; line-height: 1.55; margin: 0 4px 16px; }
+  .ls-card textarea { width: 100%; background: var(--bg-elevated); border: 1px solid var(--border); color: var(--text); border-radius: 10px; padding: 10px 12px; font: inherit; font-size: 0.92rem; line-height: 1.5; min-height: 110px; resize: vertical; }
+  .ls-card label.ls-l { display: block; font-size: 0.74rem; color: var(--text-dim); margin: 12px 0 5px; }
+  .ls-check { display: flex; gap: 8px; align-items: center; font-size: 0.82rem; color: var(--text-dim); margin-top: 12px; }
+  .ls-nav { display: flex; justify-content: space-between; align-items: center; margin-top: 20px; gap: 10px; }
+  .ls-nav .go { background: var(--vision); border-color: var(--vision); color: #10131c; }
   .toward-line { display: none; font-size: 0.76rem; color: var(--text-faint); margin: 6px 2px 0; cursor: pointer; }
   .toward-line b { color: var(--vision); font-weight: 500; }
   .toward-line.show { display: block; }
@@ -1546,7 +1567,7 @@
   // No score, nothing counted beyond the usual abide tally. =====
   const BP_HTML = '<div class="bp-ring"></div>' + '<i class="bp-spark"></i>'.repeat(9);
   const microAbide = (() => {
-    let root = null, open = false;
+    let root = null, open = false, after = null;
     const HEART = '<svg viewBox="0 0 64 60" aria-hidden="true"><path d="M32 56C10 40 6 28 6 20a13 13 0 0 1 26-3 13 13 0 0 1 26 3c0 8-4 20-26 36z" fill="#e5383b"/></svg>';
     function build() {
       root = document.createElement('div'); root.id = 'microAbide'; root.setAttribute('role', 'dialog'); root.setAttribute('aria-modal', 'true'); root.setAttribute('aria-label', 'A quiet moment with Jesus');
@@ -1596,8 +1617,9 @@
       setTimeout(() => { root.querySelector('#maStage').classList.add('gone'); root.querySelector('#maRest').classList.add('show'); say('Rest here a moment. Nothing to catch up on.'); }, 2600);
       setTimeout(() => { root.querySelector('#maAmen').hidden = false; root.querySelector('#maAmen').focus(); }, 7000);
     }
-    function show(away) {
+    function show(away, then) {
       if (open) return; if (!root) build();
+      after = typeof then === 'function' ? then : null;
       placed = false; drag = null; hp = { ...home };
       const heart = root.querySelector('#maHeart'); heart.classList.remove('placed', 'glide', 'dragging'); put(heart, hp.x, hp.y);
       root.querySelector('#maStage').classList.remove('gone'); root.querySelector('#maRest').classList.remove('show');
@@ -1609,6 +1631,7 @@
     }
     function close(amen) {
       if (!open) return; open = false; root.classList.remove('in');
+      const cont = after; after = null; if (cont) setTimeout(() => cont(amen === true), 500);
       if (amen === true) { store.set('__local_lastAbideAt', Date.now()); celebrate('abide', null, { x: innerWidth / 2, y: innerHeight * 0.5 }); }
       setTimeout(() => root.classList.remove('show'), 650);
     }
@@ -1621,7 +1644,7 @@
   ['pointerdown', 'keydown', 'wheel', 'touchstart'].forEach(ev => document.addEventListener(ev, () => { lastActive = Date.now(); }, { passive: true, capture: true }));
   function abideBlocked() {
     const a = document.activeElement;
-    return !!(AGENT_MODE || workSeg || microAbide.isOpen() || document.getElementById('mapOverlay').classList.contains('show') || document.querySelector('.modal-overlay.show') || document.getElementById('view-abide').classList.contains('active')
+    return !!(AGENT_MODE || workSeg || microAbide.isOpen() || document.getElementById('listenSession')?.classList.contains('show') || document.getElementById('mapOverlay').classList.contains('show') || document.querySelector('.modal-overlay.show') || document.getElementById('view-abide').classList.contains('active')
       || (a && (a.tagName === 'TEXTAREA' || (a.tagName === 'INPUT' && a.type === 'text') || a.isContentEditable)));
   }
   // lit = not placed yet today; the heart rests dim for the rest of the day once you have
@@ -3701,6 +3724,11 @@ For God alone my soul waits in silence. — Psalm 62:1`;
           + '<label>The picture — what it looks like when you arrive</label><textarea data-f="picture"></textarea>'
           + '<label>Why it matters</label><textarea data-f="why"></textarea>'
           + '<label>Scripture or words you are holding to</label><textarea data-f="scripture"></textarea>'
+          + '<div class="vsit"><button type="button" class="btn" data-act="sit">Sit with God about this</button></div>'
+          + ((v.journal || []).length ? '<div class="vjournal"><label>Sitting with God before</label>' + v.journal.slice().sort((a, b) => b.at - a.at).slice(0, 8).map(j =>
+              '<details><summary>' + escapeHtml(new Date(j.at).toLocaleDateString([], { month: 'short', day: 'numeric', year: 'numeric' })) + (j.heard ? ' — ' + escapeHtml(j.heard.length > 50 ? j.heard.slice(0, 50) + '…' : j.heard) : '') + '</summary>'
+              + [['On my heart', j.noticed], ['What came', j.heard], ['Tested against', j.tested], ['Counsel', j.counsel], ['First step', j.step]].filter(x => x[1]).map(x => '<div class="je"><small>' + x[0] + '</small>' + escapeHtml(x[1]) + '</div>').join('')
+              + '</details>').join('') + '</div>' : '')
           + '<label>Outcomes that serve it</label>'
           + (linked.length ? linked.map(o => '<div class="vlinked"><span>' + escapeHtml(o.t) + '</span><button type="button" data-unlink="' + o.id + '" title="Unlink">✕</button></div>').join('') : '<div class="vfine">None yet.</div>')
           + (free.length ? '<select data-link style="margin-top:8px"><option value="">Link an outcome…</option>' + free.map(o => '<option value="' + o.id + '">' + escapeHtml(o.t) + '</option>').join('') + '</select>' : '')
@@ -3724,6 +3752,7 @@ For God alone my soul waits in silence. — Psalm 62:1`;
       const st = e.target.closest('[data-status]'), un = e.target.closest('[data-unlink]'), act = e.target.closest('[data-act]');
       if (st) { v.status = st.dataset.status; saveVisions(); renderVision(); }
       else if (un) { const o = outcomes.find(x => x.id === un.dataset.unlink); if (o) { o.toward = null; saveOutcomes(); renderToward(); renderVision(); } }
+      else if (act && act.dataset.act === 'sit') { clearTimeout(visionTimer); saveVisions(); listen.begin(v.id); }
       else if (act && act.dataset.act === 'toggle') { visionOpen = visionOpen === v.id ? null : v.id; renderVision(); }
       else if (act && act.dataset.act === 'delete') {
         openConfirmModal({ title: 'Delete this destination?', message: 'Outcomes toward it stay; they just stop pointing at it.', onOk: () => {
@@ -3743,6 +3772,73 @@ For God alone my soul waits in silence. — Psalm 62:1`;
       const o = outcomes.find(x => x.id === e.target.value); if (!o) return;
       o.toward = e.target.closest('.vcard').dataset.vid; saveOutcomes(); renderToward(); renderVision();
     });
+  })();
+
+  // ===== A guided listening session: come to Him (the heart moment), say what is on your heart, ask and be
+  // still, write what came, test it, name one small faithful step. Every word is the person's own — the app
+  // only asks the questions. It is saved as a journal entry on the destination (an append-only list, so two
+  // devices never lose each other's sessions). A half-finished session is kept on this device to pick up. =====
+  const listen = (() => {
+    const STEPS = [
+      { t: 'What is on your heart?', h: 'What has been stirring — a hope, an ache, a burden. Say it plainly, as it is.', f: [['noticed', '']] },
+      { t: 'Ask Him, and be still', h: 'Ask: “Lord, what do You want me to see about this?” Then wait. Don’t hurry to answer for Him.', f: [['heard', 'What came — a word, a picture, a verse, a quiet sense. If nothing came, write that. Silence is allowed.']] },
+      { t: 'Test it', h: 'What you heard is yours to weigh, not to assume. Hold it up to Scripture and to wise, trusted people.', f: [['tested', 'Where does it line up with Scripture — or where does it not?'], ['counsel', 'Who could you share it with, and what do they say?']] },
+      { t: 'One small faithful step', h: 'You don’t need to see the whole way. What is one thing you can do next?', f: [['step', '']], outcome: true },
+      { t: 'Where does it stand now?', h: 'This is yours to say. Nothing is settled just because you sat down.', status: true },
+    ];
+    let root = null, st = null; // st: { vid, i, f:{}, asOutcome, status }
+    const draftKey = '__local_listen';
+    function build() {
+      root = document.createElement('div'); root.id = 'listenSession'; root.setAttribute('role', 'dialog'); root.setAttribute('aria-modal', 'true'); root.setAttribute('aria-label', 'Sitting with God');
+      document.body.appendChild(root);
+      root.addEventListener('input', (e) => { const k = e.target.dataset && e.target.dataset.k; if (k && st) { st.f[k] = e.target.value; keep(); } });
+      root.addEventListener('change', (e) => { if (e.target.id === 'lsAsOutcome' && st) { st.asOutcome = e.target.checked; keep(); } });
+      root.addEventListener('click', (e) => {
+        const b = e.target.closest('[data-go]'); if (!b || !st) return;
+        const g = b.dataset.go;
+        if (g === 'next') { st.i = Math.min(STEPS.length - 1, st.i + 1); draw(); }
+        else if (g === 'back') { st.i = Math.max(0, st.i - 1); draw(); }
+        else if (g === 'later') close();
+        else if (g === 'finish') finish();
+        else if (g === 'status') { st.status = b.dataset.status; draw(); }
+      });
+      document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && root.classList.contains('show') && !microAbide.isOpen()) { e.stopPropagation(); close(); } }, true);
+    }
+    function keep() { store.set(draftKey, st, { quiet: true }); }
+    function draw() {
+      const v = visionById(st.vid), step = STEPS[st.i], last = st.i === STEPS.length - 1;
+      let h = '<div class="ls-card"><div class="ls-dots">' + STEPS.map((_, i) => '<i class="' + (i <= st.i ? 'on' : '') + '"></i>').join('') + '</div>'
+        + '<div class="ls-for">' + escapeHtml(v && v.t ? v.t : 'this') + '</div><h2 class="ls-title">' + step.t + '</h2><div class="ls-help">' + step.h + '</div>';
+      (step.f || []).forEach(([k, label]) => { h += (label ? '<label class="ls-l">' + label + '</label>' : '') + '<textarea data-k="' + k + '"></textarea>'; });
+      if (step.outcome) h += '<label class="ls-check"><input type="checkbox" id="lsAsOutcome"' + (st.asOutcome ? ' checked' : '') + '> Add it to Ahead as an outcome toward this</label>';
+      if (step.status) h += '<div class="vstatus-row" style="justify-content:center">' + VISION_STATUS.map(x => '<span class="chip' + (x[0] === st.status ? ' selected' : '') + '" data-go="status" data-status="' + x[0] + '">' + x[1] + '</span>').join('') + '</div>'
+        + '<div class="vfine" style="text-align:center">' + ((VISION_STATUS.find(x => x[0] === st.status) || [])[2] || '') + '</div>';
+      h += '<div class="ls-nav"><button type="button" class="link-btn" data-go="later">' + (last ? 'Not yet' : 'Come back later') + '</button><span>'
+        + (st.i > 0 ? '<button type="button" class="btn" data-go="back">Back</button> ' : '')
+        + (last ? '<button type="button" class="btn go" data-go="finish">Amen</button>' : '<button type="button" class="btn go" data-go="next">Next</button>') + '</span></div></div>';
+      root.innerHTML = h;
+      root.querySelectorAll('textarea[data-k]').forEach(t => { t.value = st.f[t.dataset.k] || ''; });
+      root.scrollTop = 0; keep();
+    }
+    function open() { if (!root) build(); root.classList.add('show'); draw(); }
+    function close() { if (root) root.classList.remove('show'); }
+    function begin(vid) {
+      const v = visionById(vid); if (!v) return;
+      const d = store.get(draftKey, null);
+      st = d && d.vid === vid ? d : { vid, i: 0, f: {}, asOutcome: true, status: v.status };
+      microAbide.show(false, () => open());   // the heart first, then the questions
+    }
+    function finish() {
+      const v = visionById(st.vid); if (!v) { close(); return; }
+      const f = st.f, entry = { id: newId(), at: Date.now() };
+      ['noticed', 'heard', 'tested', 'counsel', 'step'].forEach(k => { if ((f[k] || '').trim()) entry[k] = f[k].trim(); });
+      if (Object.keys(entry).length > 2) { (v.journal = v.journal || []).push(entry); }
+      v.status = st.status || v.status;
+      if (st.asOutcome && (f.step || '').trim()) { const o = makeOutcome(f.step.trim(), 'Deliverable', null, { toward: v.id }); outcomes.push(o); saveOutcomes(); }
+      saveVisions(); store.set(draftKey, null, { quiet: true }); st = null; close();
+      renderVision(); renderToward(); renderOutcomePicker(); renderAheadList();
+    }
+    return { begin };
   })();
   function applyBudgetSpec(o, spec) {
     if (!spec) { o.budget = null; return; }
@@ -5898,6 +5994,7 @@ For God alone my soul waits in silence. — Psalm 62:1`;
       if (f === 'type') { lv = canonType(lv); rv = canonType(rv); bv = canonType(bv); } // Destination → Deliverable
       let v;
       if (sameJ(lv, rv)) v = lv; else if (sameJ(lv, bv)) v = rv; else if (sameJ(rv, bv)) v = lv;
+      else if (f === 'journal') v = [...new Map([...(lv || []), ...(rv || [])].map(j => [j.id, j])).values()].sort((a, b) => (a.at || 0) - (b.at || 0));
       else if (f === 'milestones') v = mergeById(bv || [], lv || [], rv || [], (mb, ml, mr) => merge3(mb, ml, mr, false));
       else if (f === 'budget' && isObj(lv) && isObj(rv)) v = Object.assign({}, lv, { acc: Math.max(lv.acc || 0, rv.acc || 0) });
       else if (f === 'lastWorked') v = Math.max(lv || 0, rv || 0) || null;
@@ -6356,7 +6453,7 @@ For God alone my soul waits in silence. — Psalm 62:1`;
       // ---------------- reading ----------------
       visions: ['{} — the user\'s Vision destinations (long-range, with God): id, title, status (sense|praying|testing|held|released), picture, why, scripture, and the outcomes serving each. READ-ONLY: these are the user\'s own words and status; to link an outcome use update {outcome, toward}', () => ok({
         total: visions.length,
-        items: visions.map(v => ({ id: v.id, title: v.t, status: v.status, picture: v.picture, why: v.why, scripture: v.scripture, outcomes: outcomes.filter(o => o.toward === v.id).map(o => o.t) })) })],
+        items: visions.map(v => ({ id: v.id, title: v.t, status: v.status, picture: v.picture, why: v.why, scripture: v.scripture, sessions: (v.journal || []).length, lastSession: (v.journal || []).length ? new Date(Math.max(...v.journal.map(j => j.at || 0))).toISOString().slice(0, 10) : null, outcomes: outcomes.filter(o => o.toward === v.id).map(o => o.t) })) })],
       state: ['{} — one-glance overview: counts per bucket, due steps, what is next, timer, sync', () => {
         const tk = todayKeyLocal(), counts = {}; lib.BUCKETS.forEach(b => { counts[b] = 0; });
         let due = 0, starred = 0;

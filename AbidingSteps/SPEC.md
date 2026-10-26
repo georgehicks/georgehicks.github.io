@@ -913,5 +913,19 @@ the idea in *Visioneering* that vision starts as a burden, becomes a picture, an
 - **Agent:** `visions` (read-only: title, status, picture, why, scripture, serving outcomes) and
   `update … toward` (id, title or unique piece of it; null clears). Both in JS and in `abidingsteps_core.py`.
   The agent never writes the picture/why/scripture or the status — those are the person's words.
-- **Not yet (later slices):** burdens capture, the guided listening session, the weekly "which destination did
+- **Not yet (later slices):** burdens capture, the weekly "which destination did
   this week serve?" check, an "unanchored" group in Ahead, Vision as a map root.
+
+### Guided listening session (v133)
+
+"Sit with God about this" on a destination card. The heart moment opens it (`microAbide.show(false, then)` now takes a
+continuation; "Not now" still continues into the session). Then one question at a time, all in the person's own words:
+what is on your heart → ask Him and be still, write what came (silence allowed) → test it (Scripture, counsel) →
+one small faithful step (optionally becomes a Deliverable outcome `toward` this destination) → where it stands now
+(status chips; the person's call). **Amen** saves a journal entry on the destination.
+
+- `journal`: `[{ id, at, noticed?, heard?, tested?, counsel?, step? }]` inside the vision row. It merges as a
+  union by id (`mergeOutcomeObj`), so sessions on two devices never overwrite each other.
+- A half-finished session is kept on this device only (`__local_listen`) and resumed next time ("Come back later").
+- The agent's `visions` op reports only `sessions` (count) and `lastSession` (date) — never the words.
+- The app writes none of the content: it only asks. No agent can add a journal entry.
