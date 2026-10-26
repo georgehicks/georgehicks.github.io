@@ -247,5 +247,40 @@ class ServiceAccount(unittest.TestCase):
         self.assertIn("/projects/proj-x/", s.base)          # project taken from the key file
 
 
+class VisionLinks(unittest.TestCase):
+    def setUp(self):
+        self.store = fresh()
+        vs = [{"id": "v1", "type": "VisionDestination", "t": "A house of prayer", "status": "praying", "picture": "p", "why": "w", "scripture": "s"},
+              {"id": "v2", "type": "VisionDestination", "t": "Healthy family", "status": "held", "picture": "", "why": "", "scripture": ""}]
+        with open(self.store.path, "w") as f:
+            json.dump({"data": {"outcomes": "[]", "notes": "{}", "visions": json.dumps(vs)}, "_v": 0}, f)
+
+    def test_visions_is_read_only_and_lists_linked_outcomes(self):
+        core.call("add", {"title": "Plan retreat"}, store=self.store)
+        r = core.call("update", {"outcome": "Plan retreat", "toward": "house of prayer"}, store=self.store)
+        self.assertTrue(r["ok"], r)
+        self.assertEqual(r["toward"], "A house of prayer")
+        v = core.call("visions", {}, store=self.store)
+        self.assertEqual(v["total"], 2)
+        self.assertEqual(v["items"][0]["outcomes"], ["Plan retreat"])
+        self.assertEqual(v["items"][0]["status"], "praying")
+        self.assertNotIn("undo", v)
+
+    def test_toward_unknown_or_ambiguous_fails_and_null_clears(self):
+        core.call("add", {"title": "X"}, store=self.store)
+        self.assertFalse(core.call("update", {"outcome": "X", "toward": "nonsense"}, store=self.store)["ok"])
+        self.assertFalse(core.call("update", {"outcome": "X", "toward": "h"}, store=self.store)["ok"])   # matches both titles
+        core.call("update", {"outcome": "X", "toward": "v2"}, store=self.store)
+        r = core.call("update", {"outcome": "X", "toward": None}, store=self.store)
+        self.assertTrue(r["ok"])
+        self.assertNotIn("toward", r)
+
+    def test_toward_change_can_be_undone(self):
+        core.call("add", {"title": "X"}, store=self.store)
+        r = core.call("update", {"outcome": "X", "toward": "v1"}, store=self.store)
+        self.assertTrue(core.call("undo", {"id": r["undo"]}, store=self.store)["ok"])
+        self.assertNotIn("toward", core.call("list", {}, store=self.store)["items"][0])
+
+
 if __name__ == "__main__":
     unittest.main()

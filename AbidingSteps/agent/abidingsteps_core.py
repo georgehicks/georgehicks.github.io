@@ -153,12 +153,20 @@ def new_id(prefix):
 class Model:
     """outcomes (list of dicts) + notes (key → text), exactly as the app stores them."""
 
-    def __init__(self, outcomes, notes):
+    def __init__(self, outcomes, notes, vision_loader=None):
         self.outcomes = outcomes
         self.notes = notes
+        self._vision_loader = vision_loader   # Vision destinations live beside the outcomes; read only when needed
+        self._visions = None
         for o in outcomes:
             if o.get("type") == "Destination":   # retired kind → Deliverable
                 o["type"] = "Deliverable"
+
+    @property
+    def visions(self):
+        if self._visions is None:
+            self._visions = self._vision_loader() if self._vision_loader else []
+        return self._visions
 
     # note text ↔ lines
     def key_for(self, o, m=None):
@@ -414,6 +422,10 @@ def row(model, o):
         r["open"] = n
     if o.get("milestones"):
         r["milestones"] = len(o["milestones"])
+    if o.get("toward"):
+        v = next((x for x in model.visions if x.get("id") == o["toward"]), None)
+        if v:
+            r["toward"] = v.get("t", "")
     return r
 
 
@@ -617,6 +629,17 @@ def op_update(model, a):
     if "type" in a and a["type"] and a["type"] not in ("Deliverable", "Destination", "Directive"):
         fail("type must be Deliverable or Directive")
     planned = check_date(a["planned"]) if a.get("planned") else None
+    toward = None
+    if "toward" in a and a["toward"]:
+        q = str(a["toward"]).lower()
+        hits = [v for v in model.visions if v.get("id") == a["toward"] or (v.get("t") or "").lower() == q]
+        part = hits or [v for v in model.visions if q in (v.get("t") or "").lower()]
+        if len(part) != 1:
+            fail("toward matches more than one destination" if part else "no destination matches toward",
+                 {"candidates": [{"id": v["id"], "title": v.get("t", "")} for v in (part or model.visions)]})
+        toward = part[0]["id"]
+    if "toward" in a:
+        o["toward"] = toward
     if a.get("title"):
         o["t"] = str(a["title"]).strip()
     for f in ("starred", "maybe", "completed"):
@@ -815,14 +838,21 @@ def _device_only(name):
     return f
 
 
+def op_visions(model, a):
+    items = [{"id": v["id"], "title": v.get("t", ""), "status": v.get("status", "sense"), "picture": v.get("picture", ""),
+              "why": v.get("why", ""), "scripture": v.get("scripture", ""),
+              "outcomes": [o["t"] for o in model.outcomes if o.get("toward") == v["id"]]} for v in model.visions]
+    return _ok(total=len(items), items=items)
+
+
 OPS = {
-    "state": op_state, "list": op_list, "outline": op_outline, "agenda": op_agenda, "find": op_find,
+    "visions": op_visions, "state": op_state, "list": op_list, "outline": op_outline, "agenda": op_agenda, "find": op_find,
     "add": op_add, "update": op_update, "addStep": op_addStep, "setStep": op_setStep, "editStep": op_editStep,
     "removeStep": op_removeStep, "note": op_note, "setNotes": op_setNotes, "addMilestone": op_addMilestone,
     "updateMilestone": op_updateMilestone, "removeMilestone": op_removeMilestone, "remove": op_remove,
     "clearDone": op_clearDone,
 }
-READ_ONLY = {"state", "list", "outline", "agenda", "find"}
+READ_ONLY = {"visions", "state", "list", "outline", "agenda", "find"}
 
 
 # ------------------------------------------------------------------------------------------------ undo (same record format as the app)
@@ -963,6 +993,9 @@ class FileStore:
         data = d.get("data", {})
         return json.loads(data.get("outcomes") or "[]"), json.loads(data.get("notes") or "{}"), d.get("_v", 0)
 
+    def load_visions(self):
+        return json.loads(self._read().get("data", {}).get("visions") or "[]")
+
     def save(self, outcomes, notes, version):
         d = self._read()
         if d.get("_v", 0) != version:
@@ -1077,6 +1110,11 @@ class RestStore:
         notes = (data.get("notes") or {}).get("stringValue") or "{}"
         return json.loads(out), json.loads(notes), d.get("updateTime")
 
+    def load_visions(self):
+        d = self._http("GET", self.base + "/abidingsteps")
+        data = (((d or {}).get("fields") or {}).get("data") or {}).get("mapValue", {}).get("fields") or {}
+        return json.loads((data.get("visions") or {}).get("stringValue") or "[]")
+
     def save(self, outcomes, notes, version):
         fields = {"data": {"mapValue": {"fields": {"outcomes": _typed(json.dumps(outcomes, ensure_ascii=False)),
                                                    "notes": _typed(json.dumps(notes, ensure_ascii=False))}}},
@@ -1148,7 +1186,7 @@ def _call(op, args, store, retries):
         return {"ok": False, "error": "unknown op", "ops": sorted(list(OPS) + ["undo"])}
     for attempt in range(retries):
         outcomes, notes, version = store.load()
-        model = Model(outcomes, notes)
+        model = Model(outcomes, notes, store.load_visions)
         pre_o, pre_n = _snap_outcomes(model), dict(model.notes)
         try:
             res = fn(model, args)

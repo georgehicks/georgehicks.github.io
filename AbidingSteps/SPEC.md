@@ -893,3 +893,25 @@ can manage outcomes while no device is open; devices merge the change on their n
 `updateTime` precondition (reload + re-apply on conflict). Undo records use the same format as the app (`as-undo-<id>` docs).
 `agent/tests/` replays an operation list against answers recorded from the real app so the port cannot drift silently.
 mergeText now replays local hunks onto the remote text (in-place ticks stay in place, appended lines stay appended).
+
+
+## Vision (v132) — long-range destinations with God
+
+A fourth tab above Ahead's horizons: Vision (years, why) → Ahead (weeks, logistics) → Step (minutes). Inspired by
+the idea in *Visioneering* that vision starts as a burden, becomes a picture, and is received and tested.
+
+- **Data:** `visions` (its own storage key, so it syncs and merges like `outcomes`, by id, field by field):
+  `{ id, type: 'VisionDestination', t, status, picture, why, scripture, created }`.
+  `VisionDestination` is its own code word. The old outcome kind `Destination` is retired (now `Deliverable`),
+  so a vision row can never be mistaken for an outcome.
+- **Status** (the person's own; nothing moves it automatically and agents cannot change it):
+  `sense → praying → testing → held → released`.
+- **Link up:** an outcome carries `toward` = a vision id. Set it from the Vision card ("Link an outcome…"),
+  the map's details panel ("Toward (Vision)"), or the agent (`update {outcome, toward}`). A dangling id
+  (destination deleted on another device) is simply ignored.
+- **Step** shows one quiet line under "Working on …": `toward <destination>` (tap to open it).
+- **Agent:** `visions` (read-only: title, status, picture, why, scripture, serving outcomes) and
+  `update … toward` (id, title or unique piece of it; null clears). Both in JS and in `abidingsteps_core.py`.
+  The agent never writes the picture/why/scripture or the status — those are the person's words.
+- **Not yet (later slices):** burdens capture, the guided listening session, the weekly "which destination did
+  this week serve?" check, an "unanchored" group in Ahead, Vision as a map root.

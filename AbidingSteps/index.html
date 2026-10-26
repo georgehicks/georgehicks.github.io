@@ -24,8 +24,10 @@
     --step: #4fd1c5;
     --ahead: #9db4f8;
     --abide: #8fbf7a;
+    --vision: #e6c36a;
     --accent: var(--step);
   }
+  html[data-mode="vision"] { --accent: var(--vision); }
   html[data-mode="ahead"] { --accent: var(--ahead); }
   html[data-mode="abide"] { --accent: var(--abide); }
 
@@ -697,6 +699,31 @@
   }
   .tab.active { color: var(--accent); }
 
+  /* ===== Vision — long-range destinations with God, above Ahead's horizons ===== */
+  .vision-intro { color: var(--text-dim); font-size: 0.84rem; line-height: 1.5; margin: 2px 0 14px; }
+  .vcard { background: var(--bg-elevated); border: 1px solid var(--border); border-radius: 12px; padding: 12px 14px; margin-bottom: 10px; }
+  .vcard.open { border-color: color-mix(in srgb, var(--vision) 45%, var(--border)); }
+  .vhead { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; cursor: pointer; }
+  .vtitle { font-weight: 600; font-size: 0.98rem; color: var(--text); }
+  .vstatus { font-size: 0.7rem; color: var(--vision); white-space: nowrap; }
+  .vstatus.s-released { color: var(--text-faint); }
+  .vsum { color: var(--text-dim); font-size: 0.82rem; margin-top: 4px; line-height: 1.4; }
+  .vcount { color: var(--text-faint); font-size: 0.72rem; margin-top: 6px; }
+  .vbody { margin-top: 10px; }
+  .vbody label { display: block; font-size: 0.72rem; color: var(--text-dim); margin: 12px 0 4px; }
+  .vbody input[type=text], .vbody textarea, .vbody select { width: 100%; background: var(--bg); border: 1px solid var(--border); color: var(--text); border-radius: 8px; padding: 8px 10px; font: inherit; font-size: 0.86rem; }
+  .vbody textarea { min-height: 70px; resize: vertical; line-height: 1.45; }
+  .vstatus-row { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 4px; }
+  .vstatus-row .chip.selected { background: var(--vision); color: #10131c; border-color: var(--vision); }
+  .vfine { color: var(--text-faint); font-size: 0.74rem; margin-top: 6px; line-height: 1.4; }
+  .vlinked { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 6px 0; border-bottom: 1px solid var(--border); font-size: 0.84rem; }
+  .vlinked button { background: none; border: none; color: var(--text-faint); cursor: pointer; font-size: 0.9rem; }
+  .vdel { margin-top: 14px; }
+  .vision-empty { color: var(--text-dim); font-size: 0.86rem; line-height: 1.55; padding: 18px 4px; }
+  .toward-line { display: none; font-size: 0.76rem; color: var(--text-faint); margin: 6px 2px 0; cursor: pointer; }
+  .toward-line b { color: var(--vision); font-weight: 500; }
+  .toward-line.show { display: block; }
+
   /* ===== Map mode — desktop, keyboard-first mind map of everything in Ahead ===== */
   .map-open-btn { float: right; margin-top: -2px; }
   @media (pointer: coarse), (max-width: 700px) { .map-open-btn { display: none; } }
@@ -864,6 +891,7 @@
           <span>Working on <b id="outcomeSummaryText"></b></span>
           <button class="link-btn" id="changeOutcomeBtn">change</button>
         </div>
+        <div class="toward-line" id="towardLine"></div>
         <div id="outcomeFull">
           <div class="picker-notice" id="pickerNotice" hidden></div>
           <div class="pick-mode" id="pickMode"><span class="chip selected" data-pm="outcome">By outcome</span><span class="chip" data-pm="ctx">By context</span><span class="chip" data-pm="date">By date</span></div>
@@ -947,6 +975,14 @@
       </div>
       <div id="aheadList"></div>
       <button class="fab" title="Add outcome">+</button>
+    </section>
+
+    <!-- ========== VISION (long-range destinations with God) ========== -->
+    <section id="view-vision" class="view">
+      <div class="date-line">Vision</div>
+      <div class="vision-intro">Where is God leading you? Hold it loosely, bring it to Him, test it, and let it make the next step clear. Your own words are what count here.</div>
+      <div id="visionList"></div>
+      <button type="button" class="btn" id="visionAddBtn">+ New destination</button>
     </section>
 
     <!-- ========== SETTINGS ========== -->
@@ -1210,6 +1246,7 @@
   <nav class="tabbar">
     <button class="tab active" data-tab="step">Step</button>
     <button class="tab" data-tab="ahead">Ahead</button>
+    <button class="tab" data-tab="vision">Vision</button>
     <button class="tab" data-tab="settings">Settings</button>
   </nav>
 </div>
@@ -1689,7 +1726,7 @@
     document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
     document.getElementById('view-' + tab).classList.add('active');
     document.querySelectorAll('.tab').forEach(b => b.classList.toggle('active', b.dataset.tab === tab));
-    if (tab === 'step' || tab === 'ahead' || tab === 'abide') {
+    if (tab === 'step' || tab === 'ahead' || tab === 'abide' || tab === 'vision') {
       document.documentElement.setAttribute('data-mode', tab);
     }
     updateMusicBtn();
@@ -1698,6 +1735,7 @@
     if (tab === 'ahead') startAheadIdleWatch(); else stopAheadIdleWatch();
     updateModeTracking();
     if (tab === 'abide') renderTally();
+    if (tab === 'vision') renderVision();
   }
 
   // ===== Abide breath cue — whole scripture verses, paced to soak in, not read fast =====
@@ -3596,6 +3634,116 @@ For God alone my soul waits in silence. — Psalm 62:1`;
   else if (normalizeOutcomes(outcomes)) store.set('outcomes', outcomes, { quiet: true });
   autoStarDueOutcomes();
   function saveOutcomes() { store.set('outcomes', outcomes); }
+
+  // ===== Vision: long-range destinations with God. A separate collection with its own code word
+  // ('VisionDestination') — never mixed up with outcomes, whose finishable kind is Deliverable.
+  // An outcome points up to the destination it serves with `toward` (a vision id). The status is the
+  // person's own: nothing here moves on its own, and no agent changes it. =====
+  const VISION_STATUS = [
+    ['sense', 'A sense', 'Something stirring. Hold it loosely and bring it to God.'],
+    ['praying', 'Praying', 'Asking and listening. There is no rush.'],
+    ['testing', 'Testing', 'Weighing it against Scripture and wise counsel.'],
+    ['held', 'Held', 'Received and carried. Let it make the next step clear.'],
+    ['released', 'Released', 'Handed back to God.'],
+  ];
+  function normalizeVisions(list) {
+    let changed = false;
+    list.forEach(v => {
+      if (v.type !== 'VisionDestination') { v.type = 'VisionDestination'; changed = true; }
+      ['t', 'picture', 'why', 'scripture'].forEach(f => { if (typeof v[f] !== 'string') { v[f] = ''; changed = true; } });
+      if (!VISION_STATUS.some(x => x[0] === v.status)) { v.status = 'sense'; changed = true; }
+      if (!v.created) { v.created = Date.now(); changed = true; }
+    });
+    return changed;
+  }
+  let visions = store.get('visions', null);
+  if (!Array.isArray(visions)) visions = [];
+  else if (normalizeVisions(visions)) store.set('visions', visions, { quiet: true });
+  function saveVisions() { store.set('visions', visions); }
+  function visionById(id) { return id ? visions.find(v => v.id === id) || null : null; }
+  function towardOf(o) { return o ? visionById(o.toward) : null; }
+  function makeVision(t) { return { id: newId(), type: 'VisionDestination', t: t || '', status: 'sense', picture: '', why: '', scripture: '', created: Date.now() }; }
+  function renderToward() {
+    const el = document.getElementById('towardLine'); if (!el) return;
+    const v = towardOf(selectedOutcome());
+    el.classList.toggle('show', !!v);
+    el.innerHTML = v ? 'toward <b>' + escapeHtml(v.t || 'a destination') + '</b>' : '';
+    el.dataset.vid = v ? v.id : '';
+  }
+  document.getElementById('towardLine').addEventListener('click', (e) => {
+    const id = e.currentTarget.dataset.vid; if (!id) return;
+    visionOpen = id; switchTab('vision');
+  });
+  let visionOpen = null, visionTimer = null;
+  function visionSaveSoon() { clearTimeout(visionTimer); visionTimer = setTimeout(saveVisions, 400); }
+  function renderVision() {
+    const list = document.getElementById('visionList'); if (!list) return;
+    if (!visions.length) {
+      list.innerHTML = '<div class="vision-empty">No destinations yet. Start with what is on your heart: where do you sense God leading you, over years rather than weeks? A single line is enough. You can sharpen it as you pray.</div>';
+      return;
+    }
+    const ordered = visions.filter(v => v.status !== 'released').concat(visions.filter(v => v.status === 'released'));
+    list.innerHTML = ordered.map(v => {
+      const st = VISION_STATUS.find(x => x[0] === v.status) || VISION_STATUS[0];
+      const linked = outcomes.filter(o => o.toward === v.id);
+      const open = visionOpen === v.id;
+      let h = '<div class="vcard' + (open ? ' open' : '') + '" data-vid="' + v.id + '">'
+        + '<div class="vhead" data-act="toggle"><span class="vtitle">' + escapeHtml(v.t || 'Untitled destination') + '</span><span class="vstatus s-' + v.status + '">' + st[1] + '</span></div>';
+      if (!open) {
+        if (v.picture) h += '<div class="vsum">' + escapeHtml(v.picture.length > 140 ? v.picture.slice(0, 140) + '…' : v.picture) + '</div>';
+        if (linked.length) h += '<div class="vcount">' + linked.length + ' outcome' + (linked.length === 1 ? '' : 's') + ' toward this</div>';
+      } else {
+        const free = outcomes.filter(o => o.toward !== v.id && !o.completed).sort((a, b) => a.t.localeCompare(b.t));
+        h += '<div class="vbody">'
+          + '<label>Name</label><input type="text" data-f="t" value="' + escapeHtml(v.t) + '" placeholder="Where is God leading?">'
+          + '<label>Where it stands</label><div class="vstatus-row">' + VISION_STATUS.map(x => '<span class="chip' + (x[0] === v.status ? ' selected' : '') + '" data-status="' + x[0] + '">' + x[1] + '</span>').join('') + '</div>'
+          + '<div class="vfine">' + st[2] + ' Only you move this.</div>'
+          + '<label>The picture — what it looks like when you arrive</label><textarea data-f="picture"></textarea>'
+          + '<label>Why it matters</label><textarea data-f="why"></textarea>'
+          + '<label>Scripture or words you are holding to</label><textarea data-f="scripture"></textarea>'
+          + '<label>Outcomes that serve it</label>'
+          + (linked.length ? linked.map(o => '<div class="vlinked"><span>' + escapeHtml(o.t) + '</span><button type="button" data-unlink="' + o.id + '" title="Unlink">✕</button></div>').join('') : '<div class="vfine">None yet.</div>')
+          + (free.length ? '<select data-link style="margin-top:8px"><option value="">Link an outcome…</option>' + free.map(o => '<option value="' + o.id + '">' + escapeHtml(o.t) + '</option>').join('') + '</select>' : '')
+          + '<div class="vdel"><button type="button" class="link-btn" data-act="delete">Delete this destination</button></div>'
+          + '</div>';
+      }
+      return h + '</div>';
+    }).join('');
+    // set text values through the DOM so quotes and newlines survive untouched
+    list.querySelectorAll('.vcard.open textarea[data-f]').forEach(t => { const v = visionById(t.closest('.vcard').dataset.vid); if (v) t.value = v[t.dataset.f] || ''; });
+  }
+  (function wireVision() {
+    const list = document.getElementById('visionList');
+    document.getElementById('visionAddBtn').addEventListener('click', () => {
+      const v = makeVision(''); visions.push(v); saveVisions(); visionOpen = v.id; renderVision();
+      const inp = document.querySelector('#visionList .vcard.open input[data-f="t"]'); if (inp) inp.focus();
+    });
+    list.addEventListener('click', (e) => {
+      const card = e.target.closest('.vcard'); if (!card) return;
+      const v = visionById(card.dataset.vid); if (!v) return;
+      const st = e.target.closest('[data-status]'), un = e.target.closest('[data-unlink]'), act = e.target.closest('[data-act]');
+      if (st) { v.status = st.dataset.status; saveVisions(); renderVision(); }
+      else if (un) { const o = outcomes.find(x => x.id === un.dataset.unlink); if (o) { o.toward = null; saveOutcomes(); renderToward(); renderVision(); } }
+      else if (act && act.dataset.act === 'toggle') { visionOpen = visionOpen === v.id ? null : v.id; renderVision(); }
+      else if (act && act.dataset.act === 'delete') {
+        openConfirmModal({ title: 'Delete this destination?', message: 'Outcomes toward it stay; they just stop pointing at it.', onOk: () => {
+          outcomes.forEach(o => { if (o.toward === v.id) o.toward = null; });
+          visions = visions.filter(x => x.id !== v.id); visionOpen = null; saveOutcomes(); saveVisions(); renderToward(); renderVision();
+        } });
+      }
+    });
+    list.addEventListener('input', (e) => {
+      const f = e.target.dataset && e.target.dataset.f; if (!f) return;
+      const v = visionById(e.target.closest('.vcard').dataset.vid); if (!v) return;
+      v[f] = e.target.value; visionSaveSoon();
+      if (f === 't') { const t = e.target.closest('.vcard').querySelector('.vtitle'); if (t) t.textContent = v.t || 'Untitled destination'; }
+    });
+    list.addEventListener('change', (e) => {
+      if (!e.target.matches('select[data-link]') || !e.target.value) return;
+      const o = outcomes.find(x => x.id === e.target.value); if (!o) return;
+      o.toward = e.target.closest('.vcard').dataset.vid; saveOutcomes(); renderToward(); renderVision();
+    });
+  })();
   function applyBudgetSpec(o, spec) {
     if (!spec) { o.budget = null; return; }
     if (o.budget && o.budget.period === spec.period) { o.budget.target = spec.target; return; }
@@ -3885,6 +4033,7 @@ For God alone my soul waits in silence. — Psalm 62:1`;
   function clearSelection(label, opts) {
     selectedOutcomeId = null; selectedMilestoneId = null; selectedSubOutcome = null;
     document.getElementById('outcomeSummaryText').textContent = '';
+    renderToward();
     document.getElementById('subOutcomeRow').innerHTML = '';
     document.querySelectorAll('#chunkChips .chip').forEach(c => c.classList.add('disabled'));
     returnToIdle(label || 'Pick an outcome above to begin');
@@ -4009,6 +4158,7 @@ For God alone my soul waits in silence. — Psalm 62:1`;
     store.set('__local_selection', { id: o.id, ms: selectedMilestoneId, sub: selectedSubOutcome });
     renderStepBudget();
     updateDoneButton(o);
+    renderToward();
   }
   // after a rename (here or synced from another device), refresh every place the name shows
   function updateSelectionLabels() {
@@ -4016,6 +4166,7 @@ For God alone my soul waits in silence. — Psalm 62:1`;
     if (!o) return;
     const label = selectionLabel(o);
     document.getElementById('outcomeSummaryText').textContent = label;
+    renderToward();
     if (document.getElementById('actionRunning').style.display !== 'none') document.getElementById('actionFocus').textContent = 'Working on ' + label;
     document.getElementById('notesArea').placeholder = 'Notes for ' + label + '…';
     updateDoneButton(o);
@@ -4827,6 +4978,7 @@ For God alone my soul waits in silence. — Psalm 62:1`;
           + f('bucket', 'Bucket', '<select data-f="bucket">' + BUCKETS.map(x => opt(x, x, bucketOf(o))).join('') + '</select>')
           + '<div class="row2">' + f('kind', 'Kind', '<select data-f="kind">' + opt('', 'Inbox (none)', o.type || '') + opt('Deliverable', 'Deliverable', o.type) + opt('Directive', 'Directive', o.type) + '</select>')
           + f('tag', 'Role', '<select data-f="tag">' + opt('', '—', o.tag || '') + ['Roots', 'Resources', 'Reach', 'Reality'].map(x => opt(x, x, o.tag)).join('') + '</select>') + '</div>'
+          + f('toward', 'Toward (Vision)', '<select data-f="toward">' + opt('', '—', o.toward || '') + visions.filter(v => v.status !== 'released' || v.id === o.toward).map(v => opt(v.id, escapeHtml(v.t || 'Untitled destination'), o.toward || '')).join('') + '</select>')
           + f('date', 'Planned for', '<input type="date" data-f="date" value="' + (o.planned || '') + '">')
           + (effInfo(o).step && effInfo(o).date ? '<div class="fine" style="margin:-4px 0 10px">Next up ' + escapeHtml(shortDateLabel(effInfo(o).date)) + ' — a dated step sets it</div>' : '')
           + chk('starred', 'Important ★', o.starred)
@@ -4869,6 +5021,7 @@ For God alone my soul waits in silence. — Psalm 62:1`;
         if (f === 'bucket') mutate(() => moveToBucket(o, v));
         else if (f === 'kind') mutate(() => { o.type = v || null; });
         else if (f === 'tag') mutate(() => { o.tag = v || null; });
+        else if (f === 'toward') { mutate(() => { o.toward = visionById(v) ? v : null; }); renderToward(); }
         else if (f === 'date') mutate(() => { if (v) snoozeOutcome(o, v); else o.planned = null; });
         else if (f === 'starred') mutate(() => { o.starred = v; });
         else if (f === 'maybe') mutate(() => { o.maybe = v; });
@@ -5632,6 +5785,8 @@ For God alone my soul waits in silence. — Psalm 62:1`;
     applySettingsToUI();
     const fresh = store.get('outcomes', null);
     if (Array.isArray(fresh)) { outcomes = fresh; if (normalizeOutcomes(outcomes)) store.set('outcomes', outcomes, { quiet: true }); }
+    const freshV = store.get('visions', null);
+    if (Array.isArray(freshV)) { visions = freshV; if (normalizeVisions(visions)) store.set('visions', visions, { quiet: true }); }
     const notesEl = document.getElementById('notesArea');
     const editingNotes = document.activeElement === notesEl;
     const typed = notesEl.value;
@@ -5647,7 +5802,8 @@ For God alone my soul waits in silence. — Psalm 62:1`;
       renderSubOutcomeRow(sel); updateSelectionLabels();
     }
     checkActiveControl();
-    renderOutcomePicker(); renderAheadList();
+    renderOutcomePicker(); renderAheadList(); renderToward();
+    if (document.getElementById('view-vision').classList.contains('active') && !document.activeElement.closest('#visionList')) renderVision();
     renderTally(); // another device's minutes count toward today too
   }
 
@@ -5761,7 +5917,7 @@ For God alone my soul waits in silence. — Psalm 62:1`;
       if (l === b) { out[k] = r; return; }
       if (r === b) { out[k] = l; return; }
       try {
-        if (k === 'outcomes') out[k] = JSON.stringify(mergeById(jparse(b, []), jparse(l, []), jparse(r, []), mergeOutcomeObj));
+        if (k === 'outcomes' || k === 'visions') out[k] = JSON.stringify(mergeById(jparse(b, []), jparse(l, []), jparse(r, []), mergeOutcomeObj));
         else if (k === 'notes') {
           const bn = jparse(b, {}), ln = jparse(l, {}), rn = jparse(r, {}), o = {};
           new Set([...Object.keys(ln), ...Object.keys(rn)]).forEach(key => {
@@ -6187,7 +6343,7 @@ For God alone my soul waits in silence. — Psalm 62:1`;
       try { const ref = cloudUndoRef(rec.id); if (ref) ref.delete(); } catch (e) {}
     }
     const openCount = (o) => scanSteps(o).length;
-    const row = (o) => { const r = { id: o.id, title: o.t, bucket: lib.bucketOf(o) }; if (o.starred) r.starred = 1; if (o.planned) r.planned = o.planned; if (o.type) r.type = o.type; const n = openCount(o); if (n) r.open = n; if (o.milestones.length) r.milestones = o.milestones.length; return r; };
+    const row = (o) => { const r = { id: o.id, title: o.t, bucket: lib.bucketOf(o) }; { const tv = towardOf(o); if (tv) r.toward = tv.t; } if (o.starred) r.starred = 1; if (o.planned) r.planned = o.planned; if (o.type) r.type = o.type; const n = openCount(o); if (n) r.open = n; if (o.milestones.length) r.milestones = o.milestones.length; return r; };
     function outlineOf(o) {
       const head = '# ' + o.id + ' ' + o.t + ' [' + lib.bucketOf(o) + ']' + (o.starred ? ' ★' : '') + (o.planned ? ' plan:' + o.planned : '') + (o.type ? ' ' + o.type : '');
       const out = [head].concat(noteLines(o.id));
@@ -6198,6 +6354,9 @@ For God alone my soul waits in silence. — Psalm 62:1`;
 
     const ops = {
       // ---------------- reading ----------------
+      visions: ['{} — the user\'s Vision destinations (long-range, with God): id, title, status (sense|praying|testing|held|released), picture, why, scripture, and the outcomes serving each. READ-ONLY: these are the user\'s own words and status; to link an outcome use update {outcome, toward}', () => ok({
+        total: visions.length,
+        items: visions.map(v => ({ id: v.id, title: v.t, status: v.status, picture: v.picture, why: v.why, scripture: v.scripture, outcomes: outcomes.filter(o => o.toward === v.id).map(o => o.t) })) })],
       state: ['{} — one-glance overview: counts per bucket, due steps, what is next, timer, sync', () => {
         const tk = todayKeyLocal(), counts = {}; lib.BUCKETS.forEach(b => { counts[b] = 0; });
         let due = 0, starred = 0;
@@ -6265,7 +6424,17 @@ For God alone my soul waits in silence. — Psalm 62:1`;
         const b = a.bucket ? canonBucket(a.bucket) : null; if (a.bucket && !b) fail('bucket must be one of ' + lib.BUCKETS.join('|'));
         if ('type' in a && a.type && !['Deliverable', 'Destination', 'Directive'].includes(a.type)) fail('type must be Deliverable or Directive');
         const planned = ('planned' in a && a.planned) ? checkDate(a.planned) : null;
+        let toward;
+        if ('toward' in a) {
+          if (a.toward) {
+            const q = String(a.toward).toLowerCase(), hits = visions.filter(v => v.id === a.toward || (v.t || '').toLowerCase() === q);
+            const part = hits.length ? hits : visions.filter(v => (v.t || '').toLowerCase().includes(q));
+            if (part.length !== 1) fail(part.length ? 'toward matches more than one destination' : 'no destination matches toward', { candidates: (part.length ? part : visions).map(v => ({ id: v.id, title: v.t })) });
+            toward = part[0].id;
+          } else toward = null;
+        }
         return mut(() => {
+          if ('toward' in a) o.toward = toward;
           if (a.title) o.t = String(a.title).trim();
           if ('starred' in a) o.starred = !!a.starred; if ('maybe' in a) o.maybe = !!a.maybe; if ('completed' in a) o.completed = !!a.completed;
           if ('type' in a) o.type = canonType(a.type); if ('tag' in a) o.tag = a.tag || null;
