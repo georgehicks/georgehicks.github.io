@@ -221,7 +221,7 @@
   .outcome-chip { background: var(--bg-elevated); border: 1px solid var(--border); color: var(--text-faint); border-radius: 8px; padding: 5px 9px; font-size: 0.74rem; cursor: pointer; display: flex; align-items: center; gap: 5px; white-space: nowrap; flex: 0 0 auto; }
   .outcome-chip.selected { border-color: var(--accent); color: var(--accent); }
   .outcome-chip .type-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--text-faint); }
-  .outcome-chip.destination .type-dot { background: var(--step); }
+  .outcome-chip.deliverable .type-dot { background: var(--step); }
   .outcome-chip.directive .type-dot { background: var(--ahead); }
   .add-chip { border-style: dashed; color: var(--text-faint); }
   .sub-outcome-row { display: flex; flex-direction: column; gap: 7px; margin-top: 9px; }
@@ -1151,7 +1151,7 @@
       <input type="text" id="outcomeModalName" class="modal-input" placeholder="Outcome name">
       <div class="modal-field-label">Kind <span class="optional">— leave unset to keep it in Inbox</span></div>
       <div class="modal-toggle-row">
-        <button type="button" class="modal-toggle-btn" data-type="Destination" title="Somewhere you arrive — it can be finished">Destination</button>
+        <button type="button" class="modal-toggle-btn" data-type="Deliverable" title="Something you finish — it can be marked done">Deliverable</button>
         <button type="button" class="modal-toggle-btn" data-type="Directive" title="A way you keep going — never finished">Directive</button>
       </div>
       <div class="modal-field-label">Role <span class="optional">— optional</span></div>
@@ -1255,7 +1255,7 @@
     <h4>Details panel</h4>
     <div><kbd>i</kbd> jump into the side panel (kind, role, bucket, date, maybe, done, budget) · <kbd>Tab</kbd> between fields · <kbd>Enter</kbd> or <kbd>Esc</kbd> back to the map · <kbd>I</kbd> hide it</div>
     <h4>Other</h4>
-    <div><kbd>d</kbd> flips a step between - and + · <kbd>D</kbd> (Shift+d) clears what's done under the selection — on the top node, everywhere; on the Done bucket it also deletes finished outcomes (<kbd>u</kbd> undoes) · <kbd>y</kbd> cycle Inbox → Destination → Directive · <kbd>s</kbd> star it as important (a separate thing from the day you plan it for: buckets and dates say <i>when</i>, ★ says <i>how much it matters</i>)</div>
+    <div><kbd>d</kbd> flips a step between - and + · <kbd>D</kbd> (Shift+d) clears what's done under the selection — on the top node, everywhere; on the Done bucket it also deletes finished outcomes (<kbd>u</kbd> undoes) · <kbd>y</kbd> cycle Inbox → Deliverable → Directive · <kbd>s</kbd> star it as important (a separate thing from the day you plan it for: buckets and dates say <i>when</i>, ★ says <i>how much it matters</i>)</div>
     <div><kbd>⌫</kbd> delete · <kbd>u</kbd> or <kbd>⌘Z</kbd> undo (no confirm boxes here — undo instead)</div>
   </div>
   <div id="mapWork" role="dialog" aria-label="Work on this"></div>
@@ -3531,8 +3531,11 @@ For God alone my soul waits in silence. — Psalm 62:1`;
   // to render its own separate mock lists, so Ahead edits never reached it — and
   // nothing was saved anywhere, so a restart reset both.) =====
   function newId() { return 'o' + Date.now().toString(36) + Math.random().toString(36).slice(2, 7); }
+  // "Destination" is retired as a kind: it became Deliverable, and Destination now belongs to the Vision layer.
+  // Rows from an older build (another device, the cloud copy, an agent) are converted wherever they show up.
+  function canonType(t) { return t === 'Destination' ? 'Deliverable' : (t || null); }
   function makeOutcome(t, type, tag, extra) {
-    const o = Object.assign({ id: newId(), t, type: type || null, tag: tag || null, budget: null, starred: false, planned: null, completed: false, maybe: false, subs: [], milestones: [], lastWorked: null }, extra);
+    const o = Object.assign({ id: newId(), t, type: canonType(type), tag: tag || null, budget: null, starred: false, planned: null, completed: false, maybe: false, subs: [], milestones: [], lastWorked: null }, extra);
     return o;
   }
   // after the outcome's tree changed under a live selection: drop a removed milestone
@@ -3577,13 +3580,13 @@ For God alone my soul waits in silence. — Psalm 62:1`;
   function seedOutcomes() {
     const yesterday = Date.now() - 864e5;
     return [
-      makeOutcome('AbidingSteps spec', 'Destination', 'Reach', { planned: todayKeyLocal(), subs: ['Data model', 'Screen spec', 'Music settings'] }),
+      makeOutcome('AbidingSteps spec', 'Deliverable', 'Reach', { planned: todayKeyLocal(), subs: ['Data model', 'Screen spec', 'Music settings'] }),
       makeOutcome('Exercise', 'Directive', 'Reality', { planned: todayKeyLocal(), budget: makeBudget(180, 'week') }),
-      makeOutcome('Reply to emails', 'Destination', 'Reality', { lastWorked: yesterday }),
-      makeOutcome('Draft sermon notes', 'Destination', 'Reach', { lastWorked: yesterday }),
-      makeOutcome('File taxes', 'Destination', 'Reality', { budget: makeBudget(120, 'total'), subs: ['Gather receipts', 'Fill forms', 'Submit'] }),
+      makeOutcome('Reply to emails', 'Deliverable', 'Reality', { lastWorked: yesterday }),
+      makeOutcome('Draft sermon notes', 'Deliverable', 'Reach', { lastWorked: yesterday }),
+      makeOutcome('File taxes', 'Deliverable', 'Reality', { budget: makeBudget(120, 'total'), subs: ['Gather receipts', 'Fill forms', 'Submit'] }),
       makeOutcome('Read scripture', 'Directive', 'Roots'),
-      makeOutcome('Call Mom', 'Destination', 'Roots'),
+      makeOutcome('Call Mom', 'Deliverable', 'Roots'),
       makeOutcome('Try journaling', 'Directive', 'Reach', { budget: makeBudget(60, 'week'), maybe: true }),
     ];
   }
@@ -3604,9 +3607,9 @@ For God alone my soul waits in silence. — Psalm 62:1`;
     let changed = false;
     list.forEach(o => {
       if (o.budget && !o.budget.period) { o.budget = makeBudget(o.budget.target, 'week'); changed = true; }
-      // Deliverable was renamed Destination — also catches rows written by an older
-      // build on another device
-      if (o.type === 'Deliverable') { o.type = 'Destination'; changed = true; }
+      // Destination (the finishable kind) is retired — it is Deliverable now; also catches rows
+      // written by an older build on another device
+      if (o.type === 'Destination') { o.type = 'Deliverable'; changed = true; }
       if (!Array.isArray(o.subs)) { o.subs = []; changed = true; }
       if (!Array.isArray(o.milestones)) { o.milestones = []; changed = true; }
       o.milestones.forEach(m => { if (!Array.isArray(m.subs)) { m.subs = []; changed = true; } });
@@ -3902,13 +3905,13 @@ For God alone my soul waits in silence. — Psalm 62:1`;
 
   // "Done" completes whatever you're focused on: the step (its line becomes "+ …" in the notes, which
   // is what the map and Ahead read), else the milestone, else the whole outcome. Steps and milestones
-  // can be finished in any outcome; only Destinations can be finished as a whole.
+  // can be finished in any outcome; only Deliverables can be finished as a whole.
   function updateDoneButton(o) {
     const btn = document.getElementById('markDoneBtn'); if (!btn || !o) return;
     const kind = selectedSubOutcome ? 'step' : (selMilestone(o) ? 'milestone' : 'outcome');
     btn.textContent = kind === 'step' ? '✓ Step done' : kind === 'milestone' ? '✓ Milestone done' : '✓ Done';
     btn.title = kind === 'step' ? 'Mark this step done' : kind === 'milestone' ? 'Mark this milestone done' : 'Mark this outcome complete';
-    btn.style.display = (kind === 'outcome' && o.type !== 'Destination') ? 'none' : '';
+    btn.style.display = (kind === 'outcome' && o.type !== 'Deliverable') ? 'none' : '';
   }
   document.getElementById('markDoneBtn').addEventListener('click', () => {
     const o = selectedOutcome();
@@ -4354,7 +4357,7 @@ For God alone my soul waits in silence. — Psalm 62:1`;
   // filters are time horizons (plus Inbox/Maybe), not role tags — roles are an
   // optional leftover label now, never the spine
   const ROLE_SUBTITLES = {
-    'Inbox': 'Not sorted yet — give each a kind: Destination or Directive',
+    'Inbox': 'Not sorted yet — give each a kind: Deliverable or Directive',
     'Starred': 'Marked important — whenever you plan them',
     'Today': 'Planned for today (or earlier) — drawn into the Step picker',
     'Week': 'Planned within the next 7 days',
@@ -4478,7 +4481,7 @@ For God alone my soul waits in silence. — Psalm 62:1`;
         + '<button class="maybe-toggle' + (o.maybe ? ' active' : '') + '" title="Maybe — trying it on, not committed">?</button>'
         + '<span class="outcome-name' + (o.completed ? ' completed' : '') + '">' + escapeHtml(o.t) + '</span></div>'
         + '<div class="outcome-row-actions">'
-        + (o.type === 'Destination' ? '<button class="done-chip complete-btn' + (o.completed ? ' done' : '') + '" title="Mark complete">' + (o.completed ? '✓ Done' : 'Done') + '</button>' : '')
+        + (o.type === 'Deliverable' ? '<button class="done-chip complete-btn' + (o.completed ? ' done' : '') + '" title="Mark complete">' + (o.completed ? '✓ Done' : 'Done') + '</button>' : '')
         + '<button class="done-chip edit-btn" title="Edit">Edit</button>'
         + '<button class="row-icon-btn delete-btn" title="Delete">×</button>'
         + '</div></div>'
@@ -4643,7 +4646,7 @@ For God alone my soul waits in silence. — Psalm 62:1`;
       else if (b === 'Today') planToday(o);
       else if (b === 'Week') { if (bucketOf(o) !== 'Week') o.planned = addDaysKey(1); }
       else if (b === 'Later') { if (bucketOf(o) !== 'Later') o.planned = addDaysKey(14); }
-      else if (b === 'Open') { o.planned = null; if (!o.type) o.type = 'Destination'; }
+      else if (b === 'Open') { o.planned = null; if (!o.type) o.type = 'Deliverable'; }
       else if (b === 'Maybe') o.maybe = true;
       else if (b === 'Done') { o.completed = true; celebrate('done'); }
       folded.delete('b:' + b);
@@ -4775,7 +4778,7 @@ For God alone my soul waits in silence. — Psalm 62:1`;
         inner = n.kind === 'line' ? ctxHtml(escapeHtml(labelOf(n))) : escapeHtml(labelOf(n));
         if (n.kind === 'bucket') inner += '<span class="ct">' + kidsOf(n).length + '</span>';
         // - open, + closed; plain note lines carry no marker
-        if (n.kind === 'outcome') inner = '<span class="tag mk">' + (n.o.completed ? '+' : '-') + '</span>' + (n.o.starred ? '<span class="star">★</span>' : '') + inner + '<span class="tag typ">' + (n.o.type === 'Destination' ? '◎' : n.o.type === 'Directive' ? '∞' : '') + '</span>';
+        if (n.kind === 'outcome') inner = '<span class="tag mk">' + (n.o.completed ? '+' : '-') + '</span>' + (n.o.starred ? '<span class="star">★</span>' : '') + inner + '<span class="tag typ">' + (n.o.type === 'Deliverable' ? '◎' : n.o.type === 'Directive' ? '∞' : '') + '</span>';
         if (n.kind === 'ms') inner = '<span class="tag mk">' + (n.m.completed ? '+' : '-') + '</span>' + inner;
         if (n.kind === 'line' && n.mark) inner = '<span class="tag mk">' + n.mark + '</span>' + inner;
         if (isFolded) inner += '<span class="fold">▸ ' + n.kids.length + '</span>';
@@ -4822,7 +4825,7 @@ For God alone my soul waits in silence. — Psalm 62:1`;
         return head
           + f('name', 'Name', '<input type="text" data-f="name" value="' + escapeHtml(o.t) + '">')
           + f('bucket', 'Bucket', '<select data-f="bucket">' + BUCKETS.map(x => opt(x, x, bucketOf(o))).join('') + '</select>')
-          + '<div class="row2">' + f('kind', 'Kind', '<select data-f="kind">' + opt('', 'Inbox (none)', o.type || '') + opt('Destination', 'Destination', o.type) + opt('Directive', 'Directive', o.type) + '</select>')
+          + '<div class="row2">' + f('kind', 'Kind', '<select data-f="kind">' + opt('', 'Inbox (none)', o.type || '') + opt('Deliverable', 'Deliverable', o.type) + opt('Directive', 'Directive', o.type) + '</select>')
           + f('tag', 'Role', '<select data-f="tag">' + opt('', '—', o.tag || '') + ['Roots', 'Resources', 'Reach', 'Reality'].map(x => opt(x, x, o.tag)).join('') + '</select>') + '</div>'
           + f('date', 'Planned for', '<input type="date" data-f="date" value="' + (o.planned || '') + '">')
           + (effInfo(o).step && effInfo(o).date ? '<div class="fine" style="margin:-4px 0 10px">Next up ' + escapeHtml(shortDateLabel(effInfo(o).date)) + ' — a dated step sets it</div>' : '')
@@ -5014,7 +5017,7 @@ For God alone my soul waits in silence. — Psalm 62:1`;
           mutate(() => {
             if (t.kind === 'step') toggleStepLine(t.o, t.m, t.sub, false);
             else if (t.kind === 'ms') t.m.completed = true;
-            else if (t.o.type === 'Destination') t.o.completed = true;
+            else if (t.o.type === 'Deliverable') t.o.completed = true;
           });
           celebrate(t.kind === 'step' || t.kind === 'ms' ? 'milestone' : 'done');
           endWork('✓ Done — pick a length to continue');
@@ -5150,7 +5153,7 @@ For God alone my soul waits in silence. — Psalm 62:1`;
     }
     function cycleType(n) {
       if (n.kind !== 'outcome') return;
-      mutate(() => { n.o.type = n.o.type === null ? 'Destination' : n.o.type === 'Destination' ? 'Directive' : null; });
+      mutate(() => { n.o.type = n.o.type === null ? 'Deliverable' : n.o.type === 'Deliverable' ? 'Directive' : null; });
       render();
     }
     function toBucket(n, b) {
@@ -5735,7 +5738,8 @@ For God alone my soul waits in silence. — Psalm 62:1`;
   function mergeOutcomeObj(b, l, r) {
     const bb = b || {}, out = {};
     new Set([...Object.keys(l), ...Object.keys(r)]).forEach(f => {
-      const lv = l[f], rv = r[f], bv = bb[f];
+      let lv = l[f], rv = r[f], bv = bb[f];
+      if (f === 'type') { lv = canonType(lv); rv = canonType(rv); bv = canonType(bv); } // Destination → Deliverable
       let v;
       if (sameJ(lv, rv)) v = lv; else if (sameJ(lv, bv)) v = rv; else if (sameJ(rv, bv)) v = lv;
       else if (f === 'milestones') v = mergeById(bv || [], lv || [], rv || [], (mb, ml, mr) => merge3(mb, ml, mr, false));
@@ -6244,7 +6248,7 @@ For God alone my soul waits in silence. — Psalm 62:1`;
       add: ['{title, bucket?, planned?, starred?, type?, tag?, steps?[], notes?} — new outcome', (a) => {
         if (!a.title || !String(a.title).trim()) fail('title required');
         const b = a.bucket ? canonBucket(a.bucket) : null; if (a.bucket && !b) fail('bucket must be one of ' + lib.BUCKETS.join('|'));
-        if (a.type != null && a.type !== '' && !['Destination', 'Directive'].includes(a.type)) fail('type must be Destination or Directive');
+        if (a.type != null && a.type !== '' && !['Deliverable', 'Destination', 'Directive'].includes(a.type)) fail('type must be Deliverable or Directive');
         const planned = a.planned ? checkDate(a.planned) : null;
         return mut(() => {
           const o = makeOutcome(String(a.title).trim(), a.type || null, a.tag || null, {}); if (a.starred) o.starred = true;
@@ -6259,12 +6263,12 @@ For God alone my soul waits in silence. — Psalm 62:1`;
       update: ['{outcome, title?, starred?, planned?(YYYY-MM-DD|today|tomorrow|weekday|null), bucket?, type?, tag?, maybe?, completed?, budget?:{minutes,per:week|total}|null} — change fields', (a) => {
         const o = findO(a.outcome);
         const b = a.bucket ? canonBucket(a.bucket) : null; if (a.bucket && !b) fail('bucket must be one of ' + lib.BUCKETS.join('|'));
-        if ('type' in a && a.type && !['Destination', 'Directive'].includes(a.type)) fail('type must be Destination or Directive');
+        if ('type' in a && a.type && !['Deliverable', 'Destination', 'Directive'].includes(a.type)) fail('type must be Deliverable or Directive');
         const planned = ('planned' in a && a.planned) ? checkDate(a.planned) : null;
         return mut(() => {
           if (a.title) o.t = String(a.title).trim();
           if ('starred' in a) o.starred = !!a.starred; if ('maybe' in a) o.maybe = !!a.maybe; if ('completed' in a) o.completed = !!a.completed;
-          if ('type' in a) o.type = a.type || null; if ('tag' in a) o.tag = a.tag || null;
+          if ('type' in a) o.type = canonType(a.type); if ('tag' in a) o.tag = a.tag || null;
           if ('planned' in a) { if (!a.planned) o.planned = null; else snoozeOutcome(o, planned); }
           if (b) lib.moveToBucket(o, b);
           if ('budget' in a) applyBudgetSpec(o, a.budget ? { target: +a.budget.minutes, period: a.budget.per === 'total' ? 'total' : 'week' } : null);

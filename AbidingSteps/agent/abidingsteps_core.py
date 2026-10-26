@@ -156,6 +156,9 @@ class Model:
     def __init__(self, outcomes, notes):
         self.outcomes = outcomes
         self.notes = notes
+        for o in outcomes:
+            if o.get("type") == "Destination":   # retired kind → Deliverable
+                o["type"] = "Deliverable"
 
     # note text ↔ lines
     def key_for(self, o, m=None):
@@ -294,7 +297,7 @@ def move_to_bucket(model, o, b):
             o["planned"] = add_days_key(14)
     elif b == "Open":
         o["planned"] = None
-        o["type"] = o.get("type") or "Destination"
+        o["type"] = o.get("type") or "Deliverable"
     elif b == "Maybe":
         o["maybe"] = True
     elif b == "Done":
@@ -308,8 +311,13 @@ def snooze_outcome(o, k):
         o["planned"] = k
 
 
+def canon_type(t):
+    """'Destination' is retired as a kind (it is 'Deliverable' now); old rows and old callers are converted."""
+    return "Deliverable" if t == "Destination" else (t or None)
+
+
 def make_outcome(title, typ=None, tag=None, **extra):
-    o = {"id": new_id("o"), "t": title, "type": typ or None, "tag": tag or None, "budget": None, "starred": False,
+    o = {"id": new_id("o"), "t": title, "type": canon_type(typ), "tag": tag or None, "budget": None, "starred": False,
          "planned": None, "completed": False, "maybe": False, "subs": [], "milestones": [], "lastWorked": None}
     o.update(extra)
     return o
@@ -582,8 +590,8 @@ def op_add(model, a):
     b = canon_bucket(a["bucket"]) if a.get("bucket") else None
     if a.get("bucket") and not b:
         fail("bucket must be one of " + "|".join(BUCKETS))
-    if a.get("type") not in (None, "", "Destination", "Directive"):
-        fail("type must be Destination or Directive")
+    if a.get("type") not in (None, "", "Deliverable", "Destination", "Directive"):
+        fail("type must be Deliverable or Directive")
     planned = check_date(a["planned"]) if a.get("planned") else None
     o = make_outcome(str(a["title"]).strip(), a.get("type"), a.get("tag"))
     if a.get("starred"):
@@ -606,8 +614,8 @@ def op_update(model, a):
     b = canon_bucket(a["bucket"]) if a.get("bucket") else None
     if a.get("bucket") and not b:
         fail("bucket must be one of " + "|".join(BUCKETS))
-    if "type" in a and a["type"] and a["type"] not in ("Destination", "Directive"):
-        fail("type must be Destination or Directive")
+    if "type" in a and a["type"] and a["type"] not in ("Deliverable", "Destination", "Directive"):
+        fail("type must be Deliverable or Directive")
     planned = check_date(a["planned"]) if a.get("planned") else None
     if a.get("title"):
         o["t"] = str(a["title"]).strip()
@@ -615,7 +623,7 @@ def op_update(model, a):
         if f in a:
             o[f] = bool(a[f])
     if "type" in a:
-        o["type"] = a["type"] or None
+        o["type"] = canon_type(a["type"])
     if "tag" in a:
         o["tag"] = a["tag"] or None
     if "planned" in a:

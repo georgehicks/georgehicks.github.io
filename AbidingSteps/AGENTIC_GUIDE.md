@@ -70,7 +70,7 @@ Call shape: `op` + `args` → `{ok:true, ...}` or `{ok:false, error, candidates?
 
 ## 3. The model in 60 seconds
 
-- **Outcome** — a thing you're moving toward (`type` Destination = finishable, Directive = ongoing). Has
+- **Outcome** — a thing you're moving toward (`type` Deliverable = finishable, Directive = ongoing; the old word `Destination` is retired and still accepted as input — it is stored as Deliverable). Has
   `starred` (important) and `planned` (the day you intend to work on it; today or earlier ⇒ **Today** bucket).
 - **Everything inside an outcome is its notes text.** A line beginning `- ` is an open step, `+ ` a done step,
   anything else is a plain note, and a line indented two more spaces than the one above is its child.

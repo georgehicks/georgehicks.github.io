@@ -20,7 +20,7 @@ correction are the working bet instead. See the ADHD-research discussion
 ### Outcome tree (2026-09-30 — supersedes the sketch below where they differ)
 
 ```
-Destination | Directive        ← only two kinds (unset = Inbox, never auto-filed)
+Deliverable | Directive        ← only two kinds (unset = Inbox, never auto-filed)
   └─ 0+ Milestones             ← optional
   └─ Steps                     ← allowed with no milestone
 Milestone
@@ -30,15 +30,20 @@ Milestone
 As stored (`outcomes` key, synced as-is):
 
 ```
-Outcome { id, t, type: 'Destination' | 'Directive' | null, tag: string | null,
+Outcome { id, t, type: 'Deliverable' | 'Directive' | null, tag: string | null,
           budget, today, starredOn, completed, maybe, nextActionDate, lastWorked,
           subs: string[],                      // steps directly on the outcome
           milestones: Milestone[] }
 Milestone { id, t, completed, maybe, nextActionDate, lastWorked, subs: string[] }
 ```
 
-- `Deliverable` was renamed `Destination`; `normalizeOutcomes` migrates old rows
-  (including ones written later by an older build on another device).
+- The finishable kind is `Deliverable`. It was briefly called `Destination`; that word is now **retired**
+  as a stored value and reserved for the Vision layer (long-range destinations with God), so the two can
+  never be confused in code, sync or the agent API. `canonType` / `normalizeOutcomes` / the merge
+  (`mergeOutcomeObj`) / the agent ops (and `canon_type` in `abidingsteps_core.py`) convert any
+  `Destination` that shows up — old rows, a not-yet-updated device, an agent still using the old word —
+  to `Deliverable`. An un-updated device will flip rows back until it updates; the new build always flips
+  them forward again, so they converge.
 - Step / Ahead / Abide are how a chunk is spent, not kinds.
 - Role tags (Roots/Resources/Reach/Reality) are an optional leftover label —
   not required, not a filter. Ahead filters by horizon instead: Inbox (no kind)
