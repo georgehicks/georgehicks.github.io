@@ -913,7 +913,7 @@ the idea in *Visioneering* that vision starts as a burden, becomes a picture, an
 - **Agent:** `visions` (read-only: title, status, picture, why, scripture, serving outcomes) and
   `update … toward` (id, title or unique piece of it; null clears). Both in JS and in `abidingsteps_core.py`.
   The agent never writes the picture/why/scripture or the status — those are the person's words.
-- **Not yet (later slices):** burdens capture, the weekly "which destination did
+- **Not yet (later slices):** the weekly "which destination did
   this week serve?" check, an "unanchored" group in Ahead, Vision as a map root.
 
 ### Guided listening session (v133)
@@ -929,3 +929,18 @@ one small faithful step (optionally becomes a Deliverable outcome `toward` this 
 - A half-finished session is kept on this device only (`__local_listen`) and resumed next time ("Come back later").
 - The agent's `visions` op reports only `sessions` (count) and `lastSession` (date) — never the words.
 - The app writes none of the content: it only asks. No agent can add a journal entry.
+
+### Burdens and the weekly check (v134)
+
+- **Burdens** (`burdens`, `{ id, type: 'Burden', t, at }`): a one-line "On my heart" capture at the top of Vision, for
+  what is stirring before it is a destination. Each can become a destination ("Make it a destination" — starts at
+  *A sense*) or be let go. Private: agents cannot read or write them.
+- **Weekly check** (`reviews`, `{ id: 'w' + Monday, type: 'WeeklyCheck', week, at, note }`): the "This week" strip at
+  the top of Vision opens a page showing the last 7 days of Step time (the existing per-outcome tally,
+  `rangeOutcomeTotals`) grouped by the destination each outcome is `toward`, plus time not tied to any
+  destination, with a quick "toward…" picker to anchor those outcomes. A held or testing destination that got no time
+  gets one gentle line (no score, no streak). One note per week ("What did this week say to you?"); Amen saves it.
+  The strip is highlighted when it has been about a week.
+- Both collections merge by id like outcomes/visions; the weekly id is deterministic so two devices saving the same
+  week merge into one row. Agents get no access to either.
+- Still to come: an "unanchored" group in Ahead, and Vision as a map root.

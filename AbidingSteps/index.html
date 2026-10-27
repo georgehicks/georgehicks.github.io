@@ -720,15 +720,31 @@
   .vlinked button { background: none; border: none; color: var(--text-faint); cursor: pointer; font-size: 0.9rem; }
   .vdel { margin-top: 14px; }
   .vision-empty { color: var(--text-dim); font-size: 0.86rem; line-height: 1.55; padding: 18px 4px; }
+  .vlabel { display: block; font-size: 0.74rem; color: var(--text-dim); margin: 4px 0 6px; }
+  .vweek { display: flex; align-items: center; justify-content: space-between; gap: 10px; background: var(--bg-elevated); border: 1px solid var(--border); border-radius: 12px; padding: 10px 14px; margin-bottom: 14px; font-size: 0.82rem; color: var(--text-dim); }
+  .vweek.due { border-color: color-mix(in srgb, var(--vision) 55%, var(--border)); }
+  .vb-add { display: flex; gap: 8px; }
+  .vb-add input { flex: 1; min-width: 0; background: var(--bg-elevated); border: 1px solid var(--border); color: var(--text); border-radius: 8px; padding: 9px 11px; font: inherit; font-size: 0.88rem; }
+  .vburden { background: var(--bg-elevated); border: 1px solid var(--border); border-radius: 10px; padding: 9px 12px; margin-top: 8px; font-size: 0.88rem; line-height: 1.45; }
+  .vburden .vb-act { display: flex; gap: 14px; margin-top: 6px; }
+  .vburden small { color: var(--text-faint); font-size: 0.7rem; margin-left: 6px; }
+  .wk-row { margin: 10px 0; font-size: 0.86rem; }
+  .wk-row .wk-top { display: flex; justify-content: space-between; gap: 10px; color: var(--text); }
+  .wk-row .wk-top span:last-child { color: var(--text-dim); white-space: nowrap; }
+  .wk-bar { height: 5px; border-radius: 3px; background: var(--border); margin-top: 5px; overflow: hidden; }
+  .wk-bar i { display: block; height: 100%; background: var(--vision); border-radius: 3px; }
+  .wk-quiet { color: var(--text-faint); font-size: 0.78rem; line-height: 1.45; margin-top: 4px; }
+  .wk-un { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin: 8px 0; font-size: 0.84rem; }
+  .wk-un select { max-width: 48%; background: var(--bg); border: 1px solid var(--border); color: var(--text); border-radius: 8px; padding: 6px 8px; font: inherit; font-size: 0.78rem; }
   .vsit { margin-top: 12px; }
   .vjournal { margin-top: 6px; }
   .vjournal details { border-bottom: 1px solid var(--border); padding: 6px 0; font-size: 0.82rem; }
   .vjournal summary { cursor: pointer; color: var(--text-dim); }
   .vjournal .je { margin: 6px 0 2px; color: var(--text); line-height: 1.45; white-space: pre-wrap; }
   .vjournal .je small { display: block; color: var(--text-faint); }
-  #listenSession { position: fixed; inset: 0; z-index: 240; display: none; overflow-y: auto; padding: 28px 18px 60px;
+  #listenSession, #weeklyCheck { position: fixed; inset: 0; z-index: 240; display: none; overflow-y: auto; padding: 28px 18px 60px;
     background: radial-gradient(ellipse at 50% 0%, color-mix(in srgb, var(--vision) 12%, #0a0c12) 0%, #080a10 65%); }
-  #listenSession.show { display: block; }
+  #listenSession.show, #weeklyCheck.show { display: block; }
   .ls-card { max-width: 420px; margin: 0 auto; }
   .ls-dots { display: flex; gap: 6px; justify-content: center; margin-bottom: 22px; }
   .ls-dots i { width: 7px; height: 7px; border-radius: 50%; background: var(--border); }
@@ -1002,6 +1018,13 @@
     <section id="view-vision" class="view">
       <div class="date-line">Vision</div>
       <div class="vision-intro">Where is God leading you? Hold it loosely, bring it to Him, test it, and let it make the next step clear. Your own words are what count here.</div>
+      <div class="vweek" id="vweekStrip"></div>
+      <div class="vburdens">
+        <label class="vlabel" for="burdenInput">On my heart</label>
+        <div class="vb-add"><input type="text" id="burdenInput" placeholder="What is stirring in you? One line, as it comes." autocomplete="off"><button type="button" class="btn" id="burdenAddBtn">Keep</button></div>
+        <div id="burdenList"></div>
+      </div>
+      <div class="vlabel" style="margin-top:18px">Destinations</div>
       <div id="visionList"></div>
       <button type="button" class="btn" id="visionAddBtn">+ New destination</button>
     </section>
@@ -1644,7 +1667,7 @@
   ['pointerdown', 'keydown', 'wheel', 'touchstart'].forEach(ev => document.addEventListener(ev, () => { lastActive = Date.now(); }, { passive: true, capture: true }));
   function abideBlocked() {
     const a = document.activeElement;
-    return !!(AGENT_MODE || workSeg || microAbide.isOpen() || document.getElementById('listenSession')?.classList.contains('show') || document.getElementById('mapOverlay').classList.contains('show') || document.querySelector('.modal-overlay.show') || document.getElementById('view-abide').classList.contains('active')
+    return !!(AGENT_MODE || workSeg || microAbide.isOpen() || document.getElementById('listenSession')?.classList.contains('show') || document.getElementById('weeklyCheck')?.classList.contains('show') || document.getElementById('mapOverlay').classList.contains('show') || document.querySelector('.modal-overlay.show') || document.getElementById('view-abide').classList.contains('active')
       || (a && (a.tagName === 'TEXTAREA' || (a.tagName === 'INPUT' && a.type === 'text') || a.isContentEditable)));
   }
   // lit = not placed yet today; the heart rests dim for the rest of the day once you have
@@ -3683,6 +3706,13 @@ For God alone my soul waits in silence. — Psalm 62:1`;
   if (!Array.isArray(visions)) visions = [];
   else if (normalizeVisions(visions)) store.set('visions', visions, { quiet: true });
   function saveVisions() { store.set('visions', visions); }
+  // burdens: what is stirring, caught as it comes — before it is a destination. Private (no agent access).
+  // reviews: one weekly-check note per week (id = 'w' + that week's Monday), merged by id.
+  let burdens = store.get('burdens', null); if (!Array.isArray(burdens)) burdens = [];
+  let reviews = store.get('reviews', null); if (!Array.isArray(reviews)) reviews = [];
+  function saveBurdens() { store.set('burdens', burdens); }
+  function saveReviews() { store.set('reviews', reviews); }
+  function weekMonday(d) { const x = new Date(d || Date.now()); x.setHours(0, 0, 0, 0); x.setDate(x.getDate() - ((x.getDay() + 6) % 7)); return dayKey(x); }
   function visionById(id) { return id ? visions.find(v => v.id === id) || null : null; }
   function towardOf(o) { return o ? visionById(o.toward) : null; }
   function makeVision(t) { return { id: newId(), type: 'VisionDestination', t: t || '', status: 'sense', picture: '', why: '', scripture: '', created: Date.now() }; }
@@ -3699,10 +3729,27 @@ For God alone my soul waits in silence. — Psalm 62:1`;
   });
   let visionOpen = null, visionTimer = null;
   function visionSaveSoon() { clearTimeout(visionTimer); visionTimer = setTimeout(saveVisions, 400); }
+  function renderBurdens() {
+    const el = document.getElementById('burdenList'); if (!el) return;
+    el.innerHTML = burdens.slice().sort((a, b) => b.at - a.at).map(b => '<div class="vburden" data-bid="' + b.id + '">' + escapeHtml(b.t)
+      + '<small>' + escapeHtml(new Date(b.at).toLocaleDateString([], { month: 'short', day: 'numeric' })) + '</small>'
+      + '<div class="vb-act"><button type="button" class="link-btn" data-bact="make">Make it a destination</button><button type="button" class="link-btn" data-bact="let" style="color:var(--text-faint)">Let it go</button></div></div>').join('');
+  }
+  function renderVisionWeek() {
+    const el = document.getElementById('vweekStrip'); if (!el) return;
+    const done = reviews.filter(r => r.at).sort((a, b) => b.at - a.at)[0];
+    const thisWeek = reviews.some(r => r.week === weekMonday() && r.at);
+    const days = done ? Math.floor((Date.now() - done.at) / 864e5) : null;
+    el.classList.toggle('due', !thisWeek && (days === null || days >= 6));
+    el.innerHTML = '<span>' + (thisWeek ? 'Weekly check done this week.' : done ? 'Weekly check — last ' + (days === 0 ? 'today' : days + ' day' + (days === 1 ? '' : 's') + ' ago') + '.' : 'Weekly check — which destination did your week serve?') + '</span>'
+      + '<button type="button" class="btn" id="weekOpenBtn">' + (thisWeek ? 'Look again' : 'This week') + '</button>';
+    el.querySelector('#weekOpenBtn').addEventListener('click', () => weekly.open());
+  }
   function renderVision() {
+    renderBurdens(); renderVisionWeek();
     const list = document.getElementById('visionList'); if (!list) return;
     if (!visions.length) {
-      list.innerHTML = '<div class="vision-empty">No destinations yet. Start with what is on your heart: where do you sense God leading you, over years rather than weeks? A single line is enough. You can sharpen it as you pray.</div>';
+      list.innerHTML = '<div class="vision-empty">No destinations yet. Catch what is on your heart above as it comes, and turn it into a destination when it has settled. Or start one now: where do you sense God leading you, over years rather than weeks?</div>';
       return;
     }
     const ordered = visions.filter(v => v.status !== 'released').concat(visions.filter(v => v.status === 'released'));
@@ -3772,6 +3819,86 @@ For God alone my soul waits in silence. — Psalm 62:1`;
       const o = outcomes.find(x => x.id === e.target.value); if (!o) return;
       o.toward = e.target.closest('.vcard').dataset.vid; saveOutcomes(); renderToward(); renderVision();
     });
+  })();
+
+  (function wireBurdens() {
+    const inp = document.getElementById('burdenInput');
+    const add = () => { const t = inp.value.trim(); if (!t) return; burdens.push({ id: newId(), type: 'Burden', t, at: Date.now() }); inp.value = ''; saveBurdens(); renderBurdens(); };
+    document.getElementById('burdenAddBtn').addEventListener('click', add);
+    inp.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); add(); } });
+    document.getElementById('burdenList').addEventListener('click', (e) => {
+      const b = e.target.closest('[data-bact]'); if (!b) return;
+      const id = b.closest('.vburden').dataset.bid, bu = burdens.find(x => x.id === id); if (!bu) return;
+      if (b.dataset.bact === 'make') { const v = makeVision(bu.t); visions.push(v); saveVisions(); visionOpen = v.id; }
+      burdens = burdens.filter(x => x.id !== id); saveBurdens(); renderVision();
+    });
+  })();
+
+  // ===== Weekly check: where did the week's time actually go, and what was it for? Time comes from the
+  // per-outcome tally the app already keeps; "toward" links turn it into time per destination. Nothing is
+  // scored — it shows the picture, notes what had no home, and asks what the week said. One note per week. =====
+  const weekly = (() => {
+    let root = null;
+    function build() {
+      root = document.createElement('div'); root.id = 'weeklyCheck'; root.className = 'ls-overlay'; root.setAttribute('role', 'dialog'); root.setAttribute('aria-modal', 'true'); root.setAttribute('aria-label', 'Weekly check');
+      document.body.appendChild(root);
+      root.addEventListener('input', (e) => { if (e.target.id === 'wkNote') { e.target.dataset.dirty = '1'; } });
+      root.addEventListener('change', (e) => {
+        if (!e.target.matches('select[data-anchor]') || !e.target.value) return;
+        const o = outcomes.find(x => x.id === e.target.dataset.anchor); if (!o) return;
+        const note = (root.querySelector('#wkNote') || {}).value; o.toward = e.target.value; saveOutcomes(); renderToward(); draw(note);
+      });
+      root.addEventListener('click', (e) => {
+        const g = e.target.closest('[data-wk]'); if (!g) return;
+        if (g.dataset.wk === 'later') close();
+        else if (g.dataset.wk === 'amen') { save(); close(); renderVisionWeek(); }
+      });
+      document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && root.classList.contains('show')) { e.stopPropagation(); close(); } }, true);
+    }
+    function save() {
+      const note = (root.querySelector('#wkNote').value || '').trim(), wk = weekMonday(), id = 'w' + wk;
+      let r = reviews.find(x => x.id === id);
+      if (!r) { r = { id, type: 'WeeklyCheck', week: wk }; reviews.push(r); }
+      r.note = note; r.at = Date.now(); saveReviews();
+    }
+    function draw(keepNote) {
+      const totals = rangeOutcomeTotals(Date.now() - 6 * 864e5);
+      const live = visions.filter(v => v.status !== 'released');
+      const per = {}, un = [];
+      let unMins = 0, allMins = 0;
+      Object.keys(totals).forEach(id => {
+        const o = outcomes.find(x => x.id === id), m = totals[id]; if (!o || m < 0.5) return;
+        allMins += m; const v = towardOf(o);
+        if (v) per[v.id] = (per[v.id] || 0) + m; else { unMins += m; un.push({ o, m }); }
+      });
+      const max = Math.max(1, ...Object.values(per), unMins);
+      const wk = weekMonday(), cur = reviews.find(x => x.id === 'w' + wk);
+      let h = '<div class="ls-card"><div class="ls-for">Week of ' + escapeHtml(new Date(wk + 'T00:00:00').toLocaleDateString([], { month: 'short', day: 'numeric' })) + '</div>'
+        + '<h2 class="ls-title">What did this week serve?</h2><div class="ls-help">The last seven days of Step time, by the destination each outcome points toward. A picture, not a score.</div>';
+      if (!allMins) h += '<div class="vfine" style="text-align:center">No Step time recorded this week yet.</div>';
+      live.forEach(v => {
+        const m = per[v.id] || 0;
+        h += '<div class="wk-row"><div class="wk-top"><span>' + escapeHtml(v.t || 'Untitled destination') + '</span><span>' + (m ? fmtMins(m) : '—') + '</span></div><div class="wk-bar"><i style="width:' + Math.round(100 * m / max) + '%"></i></div>'
+          + (!m && (v.status === 'held' || v.status === 'testing') ? '<div class="wk-quiet">Nothing went toward this one. Is it still yours to carry, or is something small waiting to be done?</div>' : '') + '</div>';
+      });
+      if (unMins) {
+        h += '<div class="wk-row"><div class="wk-top"><span>Not tied to a destination</span><span>' + fmtMins(unMins) + '</span></div><div class="wk-bar"><i style="width:' + Math.round(100 * unMins / max) + '%;background:var(--text-faint)"></i></div>'
+          + '<div class="wk-quiet">Some of this is just life and logistics. If any of it belongs to a destination, say so:</div>'
+          + un.sort((a, b) => b.m - a.m).slice(0, 5).map(x => '<div class="wk-un"><span>' + escapeHtml(x.o.t) + ' · ' + fmtMins(x.m) + '</span>'
+            + (live.length ? '<select data-anchor="' + x.o.id + '"><option value="">toward…</option>' + live.map(v => '<option value="' + v.id + '">' + escapeHtml(v.t || 'Untitled') + '</option>').join('') + '</select>' : '') + '</div>').join('') + '</div>';
+      }
+      if (!live.length) h += '<div class="wk-quiet" style="text-align:center">No destinations yet — add one in Vision and this will show the time going toward it.</div>';
+      h += '<label class="ls-l">What did this week say to you?</label><textarea id="wkNote" placeholder="A line is enough."></textarea>';
+      const prev = reviews.filter(r => r.at && r.note && r.id !== 'w' + wk).sort((a, b) => b.at - a.at).slice(0, 4);
+      if (prev.length) h += '<div class="vjournal" style="margin-top:14px"><label>Earlier weeks</label>' + prev.map(r => '<details><summary>' + escapeHtml(new Date(r.week + 'T00:00:00').toLocaleDateString([], { month: 'short', day: 'numeric' })) + ' — ' + escapeHtml(r.note.length > 50 ? r.note.slice(0, 50) + '…' : r.note) + '</summary><div class="je">' + escapeHtml(r.note) + '</div></details>').join('') + '</div>';
+      h += '<div class="ls-nav"><button type="button" class="link-btn" data-wk="later">Not now</button><button type="button" class="btn go" data-wk="amen">Amen</button></div></div>';
+      root.innerHTML = h;
+      root.querySelector('#wkNote').value = keepNote != null ? keepNote : ((cur && cur.note) || '');
+      if (keepNote == null) root.scrollTop = 0;
+    }
+    function open() { if (!root) build(); root.classList.add('show'); draw(); }
+    function close() { if (root) root.classList.remove('show'); }
+    return { open };
   })();
 
   // ===== A guided listening session: come to Him (the heart moment), say what is on your heart, ask and be
@@ -5881,6 +6008,8 @@ For God alone my soul waits in silence. — Psalm 62:1`;
     applySettingsToUI();
     const fresh = store.get('outcomes', null);
     if (Array.isArray(fresh)) { outcomes = fresh; if (normalizeOutcomes(outcomes)) store.set('outcomes', outcomes, { quiet: true }); }
+    const freshB = store.get('burdens', null); if (Array.isArray(freshB)) burdens = freshB;
+    const freshR = store.get('reviews', null); if (Array.isArray(freshR)) reviews = freshR;
     const freshV = store.get('visions', null);
     if (Array.isArray(freshV)) { visions = freshV; if (normalizeVisions(visions)) store.set('visions', visions, { quiet: true }); }
     const notesEl = document.getElementById('notesArea');
@@ -6014,7 +6143,7 @@ For God alone my soul waits in silence. — Psalm 62:1`;
       if (l === b) { out[k] = r; return; }
       if (r === b) { out[k] = l; return; }
       try {
-        if (k === 'outcomes' || k === 'visions') out[k] = JSON.stringify(mergeById(jparse(b, []), jparse(l, []), jparse(r, []), mergeOutcomeObj));
+        if (k === 'outcomes' || k === 'visions' || k === 'burdens' || k === 'reviews') out[k] = JSON.stringify(mergeById(jparse(b, []), jparse(l, []), jparse(r, []), mergeOutcomeObj));
         else if (k === 'notes') {
           const bn = jparse(b, {}), ln = jparse(l, {}), rn = jparse(r, {}), o = {};
           new Set([...Object.keys(ln), ...Object.keys(rn)]).forEach(key => {
