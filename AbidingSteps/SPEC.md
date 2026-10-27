@@ -972,3 +972,34 @@ In Map mode, **v** switches the grouping (remembered on this device, `__local_ma
 - A group's key is `v:<visionId>` / `g:unanchored|life|done`; `containerKey(o)` decides where an outcome sits.
 - The bucket (Today/Week/…) and the destination are independent: moving an outcome between destinations never changes
   when it is planned, and vice versa.
+
+## Offerings (v137) — doing things for Jesus, in love with Him
+
+A gentle gamification layer that is deliberately **not** a score: no points, levels, streaks, badges, visible counts,
+timers or loss. It trains the pairing "love → action": the heart-to-Jesus moment comes first, then a short stack of
+small things to give Him.
+
+- **Where:** after the heart moment (`microAbide`), once **Amen** is said, the card turns into an offering card
+  (`offerings` in index.html; `microAbide.setOffering(hook)`). Not after "Not now"; not when a listening session is
+  waiting on the moment (`after` continuation set). Shown one at a time; **Another**, **Just rest**, **×** and Esc
+  always close or skip, and **Capture a thought** (an Inbox outcome) is always on screen — it never holds you.
+- **Stack (≤ 5), in order:** (1) intercession — the next person from **Praying for** (daily people first, then
+  least recently prayed; skipped for a person already prayed for today; if the list is empty the card asks "Who is on
+  your heart?" and takes a name); "Another" on this card offers the next person first. (2) "Pray over" one destination
+  whose status is *Praying* (not already today). (3) the highest-value work, starred first, then planned for today,
+  then toward a Held/Testing destination: **name the next step** for an open outcome with no open step (one line plus
+  Today / Tomorrow / Next week / No date chips → a real `- step >date` line), or **give 5 minutes** to its next
+  undated-or-due step (hands off to Step and starts a 5-minute chunk).
+- **Reward:** the same radiate sparkle plus a quiet "Offered." on **every** offering, including "Another" — no
+  completion pressure. The end card says "That's enough for now. Go in peace."
+- **Praying for** (Vision tab; `people` key, `{ id, type: 'Person', t, note, daily, last, answered, log[] }`): name plus
+  an optional line ("Sarah — her surgery Thursday"), **Every day**, **Answered** (moves to "What God has done" — words
+  and a date, no count), **Pray again**, **Remove**. "On my heart" burdens have a third action, **Keep praying for
+  this**. An optional "something came" note is kept in `log` (union-merged by id); an optional "a way to love them"
+  becomes an outcome. `last`/`prayedAt` merge as the larger value.
+- **Privacy:** people, their notes and the prayer log are never exposed to agents (not in `state`, `visions`, or anywhere).
+- **Ahead:** a **No next step · N** filter chip (open outcomes with nothing open to do), hidden at zero — a working
+  list, not a score. Everything open should have a next step, even a dated one.
+- Later ideas, not built: the quiet "Offerings" link from Step (without the abide), fading the sparkle/verse
+  frequency over weeks (training wheels), a rotating Scripture line after "Offered.", and weekly-check wording
+  ("what did you offer this week, and which felt like love?").

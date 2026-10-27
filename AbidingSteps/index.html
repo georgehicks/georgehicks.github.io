@@ -736,6 +736,27 @@
   .wk-quiet { color: var(--text-faint); font-size: 0.78rem; line-height: 1.45; margin-top: 4px; }
   .wk-un { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin: 8px 0; font-size: 0.84rem; }
   .wk-un select { max-width: 48%; background: var(--bg); border: 1px solid var(--border); color: var(--text); border-radius: 8px; padding: 6px 8px; font: inherit; font-size: 0.78rem; }
+  .vperson .vp-note { color: var(--text-dim); }
+  .vperson .vb-act .on { color: var(--vision); }
+  #microAbide .of-card { display: none; }
+  #microAbide.offering .of-card { display: block; }
+  #microAbide.offering .ma-line, #microAbide.offering .ma-stage, #microAbide.offering .ma-rest, #microAbide.offering .ma-actions { display: none; }
+  .of-card { text-align: center; position: relative; padding-top: 8px; }
+  .of-x { position: absolute; top: -6px; right: -6px; background: none; border: none; color: var(--text-faint); font-size: 1.3rem; cursor: pointer; padding: 6px 10px; }
+  .of-kind { color: var(--text-faint); font-size: 0.74rem; margin-bottom: 8px; }
+  .of-title { font-size: 1.12rem; line-height: 1.45; margin: 0 0 6px; font-weight: 600; }
+  .of-sub { color: var(--text-dim); font-size: 0.84rem; line-height: 1.5; margin-bottom: 14px; }
+  .of-toward { color: var(--vision); font-size: 0.78rem; margin-bottom: 12px; }
+  .of-card input[type=text], .of-card textarea { width: 100%; background: rgba(255,255,255,.05); border: 1px solid var(--border); color: var(--text); border-radius: 10px; padding: 10px 12px; font: inherit; font-size: 0.9rem; }
+  .of-card textarea { min-height: 70px; resize: vertical; text-align: left; }
+  .of-card details { text-align: left; margin: 8px 0; color: var(--text-dim); font-size: 0.8rem; }
+  .of-card details summary { cursor: pointer; text-align: center; }
+  .of-chips { display: flex; gap: 6px; justify-content: center; flex-wrap: wrap; margin: 10px 0; }
+  .of-chips .chip.selected { background: var(--vision); color: #10131c; border-color: var(--vision); }
+  .of-act { display: flex; gap: 10px; justify-content: center; align-items: center; margin-top: 14px; flex-wrap: wrap; }
+  .of-act .go { background: var(--vision); border-color: var(--vision); color: #10131c; }
+  .of-foot { margin-top: 18px; display: flex; justify-content: space-between; align-items: center; gap: 10px; }
+  .of-offered { color: var(--vision); font-size: 1rem; padding: 36px 0; }
   .toward-badge { color: var(--vision); border-color: color-mix(in srgb, var(--vision) 40%, var(--border)); }
   .toward-pick { background: var(--bg); border: 1px solid var(--border); color: var(--text-dim); border-radius: 8px; padding: 3px 6px; font: inherit; font-size: 0.72rem; max-width: 60%; }
   .toward-row { display: flex; align-items: center; gap: 8px; margin: 8px 0; font-size: 0.76rem; color: var(--text-faint); }
@@ -1013,6 +1034,7 @@
         <span class="chip" data-role="Later">Later</span>
         <span class="chip maybe-filter-chip" data-role="Maybe">Maybe</span>
         <span class="chip" data-role="Unanchored" id="unanchoredChip" hidden>Unanchored</span>
+        <span class="chip" data-role="NoStep" id="noStepChip" hidden>No next step</span>
         <span class="chip selected" data-role="All">All</span>
       </div>
       <div class="ahead-subtitle-row">
@@ -1032,6 +1054,12 @@
         <label class="vlabel" for="burdenInput">On my heart</label>
         <div class="vb-add"><input type="text" id="burdenInput" placeholder="What is stirring in you? One line, as it comes." autocomplete="off"><button type="button" class="btn" id="burdenAddBtn">Keep</button></div>
         <div id="burdenList"></div>
+      </div>
+      <div class="vpeople">
+        <label class="vlabel" for="personInput" style="margin-top:16px">Praying for</label>
+        <div class="vb-add"><input type="text" id="personInput" placeholder="A name — and what you’re praying, if you like" autocomplete="off"><button type="button" class="btn" id="personAddBtn">Keep</button></div>
+        <div id="peopleList"></div>
+        <details id="answeredBox" hidden><summary>What God has done</summary><div id="answeredList"></div></details>
       </div>
       <div class="vlabel" style="margin-top:18px">Destinations</div>
       <div id="visionList"></div>
@@ -1601,7 +1629,7 @@
   // No score, nothing counted beyond the usual abide tally. =====
   const BP_HTML = '<div class="bp-ring"></div>' + '<i class="bp-spark"></i>'.repeat(9);
   const microAbide = (() => {
-    let root = null, open = false, after = null;
+    let root = null, open = false, after = null, offerHook = null;
     const HEART = '<svg viewBox="0 0 64 60" aria-hidden="true"><path d="M32 56C10 40 6 28 6 20a13 13 0 0 1 26-3 13 13 0 0 1 26 3c0 8-4 20-26 36z" fill="#e5383b"/></svg>';
     function build() {
       root = document.createElement('div'); root.id = 'microAbide'; root.setAttribute('role', 'dialog'); root.setAttribute('aria-modal', 'true'); root.setAttribute('aria-label', 'A quiet moment with Jesus');
@@ -1614,7 +1642,14 @@
         + '<div class="ma-actions"><button type="button" id="maSkip">Not now</button><button type="button" class="go" id="maAmen" hidden>Amen</button></div></div>';
       document.body.appendChild(root);
       root.querySelector('#maSkip').addEventListener('click', close);
-      root.querySelector('#maAmen').addEventListener('click', () => { close(true); });
+      root.querySelector('#maAmen').addEventListener('click', () => {
+        // after Amen, offer something to give Him — unless a session is waiting on this moment. Always skippable.
+        if (!after && offerHook) {
+          let took = false; try { took = offerHook(root, () => close()); } catch (e) { took = false; }
+          if (took) { store.set('__local_lastAbideAt', Date.now()); celebrate('abide', null, { x: innerWidth / 2, y: innerHeight * 0.3 }); return; }
+        }
+        close(true);
+      });
       document.addEventListener('keydown', (e) => { if (open && e.key === 'Escape') { e.stopPropagation(); close(); } }, true);
       wireHeart();
     }
@@ -1654,7 +1689,7 @@
     function show(away, then) {
       if (open) return; if (!root) build();
       after = typeof then === 'function' ? then : null;
-      placed = false; drag = null; hp = { ...home };
+      placed = false; drag = null; hp = { ...home }; root.classList.remove('offering');
       const heart = root.querySelector('#maHeart'); heart.classList.remove('placed', 'glide', 'dragging'); put(heart, hp.x, hp.y);
       root.querySelector('#maStage').classList.remove('gone'); root.querySelector('#maRest').classList.remove('show');
       root.querySelector('#maHint').textContent = 'Drag your heart to Him'; root.querySelector('#maSkip').hidden = false; root.querySelector('#maAmen').hidden = true;
@@ -1669,7 +1704,7 @@
       if (amen === true) { store.set('__local_lastAbideAt', Date.now()); celebrate('abide', null, { x: innerWidth / 2, y: innerHeight * 0.5 }); }
       setTimeout(() => root.classList.remove('show'), 650);
     }
-    return { show, close, isOpen: () => open };
+    return { show, close, isOpen: () => open, setOffering: (fn) => { offerHook = fn; } };
   })();
   // When to offer it: after `microAbideMins` of no taps or keys while the app is open, or when
   // you open / come back to the app after that long away. Never while a timer is running, in
@@ -3722,6 +3757,13 @@ For God alone my soul waits in silence. — Psalm 62:1`;
   let burdens = store.get('burdens', null); if (!Array.isArray(burdens)) burdens = [];
   let reviews = store.get('reviews', null); if (!Array.isArray(reviews)) reviews = [];
   function saveBurdens() { store.set('burdens', burdens); }
+  // people: who you are praying for (a name, an optional line, "every day", answered). Private — agents never see it.
+  let people = store.get('people', null); if (!Array.isArray(people)) people = [];
+  function savePeople() { store.set('people', people); }
+  function makePerson(raw) {
+    const m = /^(.*?)\s+(?:—|-|:)\s+(.+)$/.exec(String(raw).trim());
+    return { id: newId(), type: 'Person', t: (m ? m[1] : String(raw)).trim(), note: m ? m[2].trim() : '', daily: false, last: 0, answered: 0, created: Date.now() };
+  }
   function saveReviews() { store.set('reviews', reviews); }
   function weekMonday(d) { const x = new Date(d || Date.now()); x.setHours(0, 0, 0, 0); x.setDate(x.getDate() - ((x.getDay() + 6) % 7)); return dayKey(x); }
   function visionById(id) { return id ? visions.find(v => v.id === id) || null : null; }
@@ -3744,7 +3786,17 @@ For God alone my soul waits in silence. — Psalm 62:1`;
     const el = document.getElementById('burdenList'); if (!el) return;
     el.innerHTML = burdens.slice().sort((a, b) => b.at - a.at).map(b => '<div class="vburden" data-bid="' + b.id + '">' + escapeHtml(b.t)
       + '<small>' + escapeHtml(new Date(b.at).toLocaleDateString([], { month: 'short', day: 'numeric' })) + '</small>'
-      + '<div class="vb-act"><button type="button" class="link-btn" data-bact="make">Make it a destination</button><button type="button" class="link-btn" data-bact="let" style="color:var(--text-faint)">Let it go</button></div></div>').join('');
+      + '<div class="vb-act"><button type="button" class="link-btn" data-bact="make">Make it a destination</button><button type="button" class="link-btn" data-bact="pray">Keep praying for this</button><button type="button" class="link-btn" data-bact="let" style="color:var(--text-faint)">Let it go</button></div></div>').join('');
+  }
+  function renderPeople() {
+    const el = document.getElementById('peopleList'); if (!el) return;
+    const live = people.filter(p => !p.answered), done = people.filter(p => p.answered);
+    el.innerHTML = live.map(p => '<div class="vburden vperson" data-pid="' + p.id + '"><b>' + escapeHtml(p.t) + '</b>' + (p.note ? ' <span class="vp-note">— ' + escapeHtml(p.note) + '</span>' : '')
+      + '<div class="vb-act"><button type="button" class="link-btn' + (p.daily ? ' on' : '') + '" data-pact="daily">' + (p.daily ? '✓ Every day' : 'Every day') + '</button>'
+      + '<button type="button" class="link-btn" data-pact="answered">Answered</button><button type="button" class="link-btn" data-pact="remove" style="color:var(--text-faint)">Remove</button></div></div>').join('');
+    const box = document.getElementById('answeredBox'); box.hidden = !done.length;
+    document.getElementById('answeredList').innerHTML = done.sort((a, b) => b.answered - a.answered).map(p => '<div class="vburden vperson" data-pid="' + p.id + '"><b>' + escapeHtml(p.t) + '</b>' + (p.note ? ' <span class="vp-note">— ' + escapeHtml(p.note) + '</span>' : '')
+      + '<small>' + escapeHtml(new Date(p.answered).toLocaleDateString([], { month: 'short', day: 'numeric', year: 'numeric' })) + '</small><div class="vb-act"><button type="button" class="link-btn" data-pact="again">Pray again</button></div></div>').join('');
   }
   function renderVisionWeek() {
     const el = document.getElementById('vweekStrip'); if (!el) return;
@@ -3757,7 +3809,7 @@ For God alone my soul waits in silence. — Psalm 62:1`;
     el.querySelector('#weekOpenBtn').addEventListener('click', () => weekly.open());
   }
   function renderVision() {
-    renderBurdens(); renderVisionWeek();
+    renderBurdens(); renderPeople(); renderVisionWeek();
     const list = document.getElementById('visionList'); if (!list) return;
     if (!visions.length) {
       list.innerHTML = '<div class="vision-empty">No destinations yet. Catch what is on your heart above as it comes, and turn it into a destination when it has settled. Or start one now: where do you sense God leading you, over years rather than weeks?</div>';
@@ -3832,6 +3884,24 @@ For God alone my soul waits in silence. — Psalm 62:1`;
     });
   })();
 
+  (function wirePeople() {
+    const inp = document.getElementById('personInput');
+    const add = () => { const t = inp.value.trim(); if (!t) return; people.push(makePerson(t)); inp.value = ''; savePeople(); renderPeople(); };
+    document.getElementById('personAddBtn').addEventListener('click', add);
+    inp.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); add(); } });
+    const onClick = (e) => {
+      const b = e.target.closest('[data-pact]'); if (!b) return;
+      const p = people.find(x => x.id === b.closest('.vperson').dataset.pid); if (!p) return;
+      const a = b.dataset.pact;
+      if (a === 'daily') p.daily = !p.daily;
+      else if (a === 'answered') p.answered = Date.now();
+      else if (a === 'again') p.answered = 0;
+      else if (a === 'remove') people = people.filter(x => x !== p);
+      savePeople(); renderPeople();
+    };
+    document.getElementById('peopleList').addEventListener('click', onClick);
+    document.getElementById('answeredList').addEventListener('click', onClick);
+  })();
   (function wireBurdens() {
     const inp = document.getElementById('burdenInput');
     const add = () => { const t = inp.value.trim(); if (!t) return; burdens.push({ id: newId(), type: 'Burden', t, at: Date.now() }); inp.value = ''; saveBurdens(); renderBurdens(); };
@@ -3841,6 +3911,7 @@ For God alone my soul waits in silence. — Psalm 62:1`;
       const b = e.target.closest('[data-bact]'); if (!b) return;
       const id = b.closest('.vburden').dataset.bid, bu = burdens.find(x => x.id === id); if (!bu) return;
       if (b.dataset.bact === 'make') { const v = makeVision(bu.t); visions.push(v); saveVisions(); visionOpen = v.id; }
+      else if (b.dataset.bact === 'pray') { people.push(makePerson(bu.t)); savePeople(); }
       burdens = burdens.filter(x => x.id !== id); saveBurdens(); renderVision();
     });
   })();
@@ -3910,6 +3981,111 @@ For God alone my soul waits in silence. — Psalm 62:1`;
     function open() { if (!root) build(); root.classList.add('show'); draw(); }
     function close() { if (root) root.classList.remove('show'); }
     return { open };
+  })();
+
+  // ===== Offerings: after the heart is placed with Jesus and Amen is said, a short, skippable stack of small things to
+  // give Him. One at a time, no counts, no score; it ends ("That's enough for now"). Order: intercession first (love
+  // before logistics), then praying over a destination you are praying about, then the highest-value work — starred
+  // first — as either "name the next step" (an open outcome with nothing to do yet) or "give 5 minutes" to its next
+  // step. Quick capture and "Just rest" are always on screen: nothing here holds you. =====
+  const offerings = (() => {
+    let items = [], idx = 0, rootEl = null, finish = null;
+    const sameDay = (ms) => !!ms && dayKey(new Date(ms)) === dayKey();
+    function stack() {
+      const out = [], tk = todayKeyLocal();
+      if (!people.length) out.push({ k: 'who' });
+      else {
+        const el = people.filter(p => !p.answered && !sameDay(p.last)).sort((a, b) => (b.daily ? 1 : 0) - (a.daily ? 1 : 0) || (a.last || 0) - (b.last || 0));
+        if (el[0]) out.push({ k: 'pray', p: el[0], alts: el.slice(1, 4) });
+      }
+      const pv = visions.find(v => v.status === 'praying' && !sameDay(v.prayedAt));
+      if (pv) out.push({ k: 'prayv', v: pv });
+      const rank = (o) => o.starred ? 0 : isToday(o) ? 1 : (towardOf(o) && ['held', 'testing'].includes(towardOf(o).status)) ? 2 : 3;
+      const work = [];
+      outcomes.forEach((o, i) => {
+        if (o.completed || o.maybe) return;
+        const st = scanSteps(o);
+        if (!st.length) work.push({ k: 'step', o, r: rank(o), i });
+        else if (!workSeg) { const x = st.find(y => !y.date || y.date <= tk); if (x) work.push({ k: 'give', o, x, r: rank(o) + 0.5, i }); }
+      });
+      work.sort((a, b) => a.r - b.r || a.i - b.i);
+      return out.concat(work).slice(0, 5);
+    }
+    const towardLine = (o) => { const v = towardOf(o); return v ? '<div class="of-toward">toward ' + escapeHtml(v.t || 'a destination') + '</div>' : ''; };
+    function body(it) {
+      if (it.k === 'who') return '<div class="of-kind">Intercede</div><h2 class="of-title">Who is on your heart?</h2><div class="of-sub">A name is enough. You can add what you are praying for later.</div>'
+        + '<input type="text" id="ofWho" placeholder="A name — and what you’re praying, if you like" autocomplete="off"><div class="of-act"><button type="button" class="btn go" data-of="addwho">Keep, and pray</button><button type="button" class="link-btn" data-of="next">Another</button></div>';
+      if (it.k === 'pray') return '<div class="of-kind">Intercede</div><h2 class="of-title">Pray for ' + escapeHtml(it.p.t) + '</h2>' + (it.p.note ? '<div class="of-sub">' + escapeHtml(it.p.note) + '</div>' : '<div class="of-sub">Bring them to Jesus, as they are.</div>')
+        + '<details><summary>Something came, or a way to love them</summary><textarea id="ofCame" placeholder="What came, as it came"></textarea><input type="text" id="ofLove" placeholder="A way to love them — becomes a step (text her…)" style="margin-top:8px"></details>'
+        + '<div class="of-act"><button type="button" class="btn go" data-of="prayed">I prayed</button><button type="button" class="link-btn" data-of="next">Another</button></div>';
+      if (it.k === 'prayv') return '<div class="of-kind">Pray over</div><h2 class="of-title">' + escapeHtml(it.v.t || 'This destination') + '</h2><div class="of-sub">' + escapeHtml(it.v.picture ? (it.v.picture.length > 160 ? it.v.picture.slice(0, 160) + '…' : it.v.picture) : 'Ask what He wants you to see, and wait.') + '</div>'
+        + '<div class="of-act"><button type="button" class="btn go" data-of="prayedv">I prayed</button><button type="button" class="link-btn" data-of="next">Another</button></div>';
+      if (it.k === 'step') return '<div class="of-kind">Next step</div><h2 class="of-title">What is the next step for “' + escapeHtml(it.o.t) + '”?</h2>' + towardLine(it.o)
+        + '<input type="text" id="ofStep" placeholder="One small thing" autocomplete="off"><div class="of-chips" id="ofDate"><span class="chip selected" data-d="">No date</span><span class="chip" data-d="today">Today</span><span class="chip" data-d="tomorrow">Tomorrow</span><span class="chip" data-d="week">Next week</span></div>'
+        + '<div class="of-act"><button type="button" class="btn go" data-of="addstep">Add the step</button><button type="button" class="link-btn" data-of="next">Another</button></div>';
+      if (it.k === 'give') return '<div class="of-kind">Give Him five minutes</div><h2 class="of-title">' + escapeHtml(it.x.text.replace(/\s*[@>]\S+/g, '')) + '</h2><div class="of-sub">' + escapeHtml(it.o.t) + '</div>' + towardLine(it.o)
+        + '<div class="of-act"><button type="button" class="btn go" data-of="begin">Begin</button><button type="button" class="link-btn" data-of="next">Another</button></div>';
+      return '';
+    }
+    function draw() {
+      const box = rootEl.querySelector('#maOffer'); const it = items[idx];
+      const foot = '<div class="of-foot"><button type="button" class="link-btn" data-of="capture">Capture a thought</button><button type="button" class="link-btn" data-of="rest">Just rest</button></div>'
+        + '<div id="ofCap" hidden style="margin-top:10px"><input type="text" id="ofCapIn" placeholder="Kept in your Inbox" autocomplete="off"></div>';
+      box.innerHTML = '<button type="button" class="of-x" data-of="rest" aria-label="Close">×</button>'
+        + (it ? body(it) : '<div class="of-title" style="margin:30px 0 6px">That’s enough for now.</div><div class="of-sub">Go in peace.</div><div class="of-act"><button type="button" class="btn go" data-of="rest">Amen</button></div>') + foot;
+      const first = box.querySelector('input[type=text]:not(#ofCapIn)'); if (first) setTimeout(() => { try { first.focus({ preventScroll: true }); } catch (e) {} }, 60);
+    }
+    function offered() {
+      const box = rootEl.querySelector('#maOffer'); box.innerHTML = '<div class="of-offered">Offered.</div>';
+      const r = box.getBoundingClientRect(); try { magic.play('radiate', r.left + r.width / 2, r.top + 40); } catch (e) {}
+      setTimeout(() => { idx++; draw(); }, 1100);
+    }
+    function onClick(e) {
+      const c = e.target.closest('[data-d]'); if (c) { rootEl.querySelectorAll('#ofDate .chip').forEach(x => x.classList.toggle('selected', x === c)); return; }
+      const b = e.target.closest('[data-of]'); if (!b) return;
+      const it = items[idx], a = b.dataset.of, val = (id) => ((rootEl.querySelector(id) || {}).value || '').trim();
+      if (a === 'rest') { finish(); return; }
+      if (a === 'next') { if (it && it.k === 'pray' && it.alts && it.alts.length) items[idx] = { k: 'pray', p: it.alts.shift(), alts: it.alts }; else idx++; draw(); return; }
+      if (a === 'capture') { const cap = rootEl.querySelector('#ofCap'); cap.hidden = !cap.hidden; if (!cap.hidden) rootEl.querySelector('#ofCapIn').focus(); return; }
+      if (a === 'addwho') { const t = val('#ofWho'); if (!t) return; const p = makePerson(t); people.push(p); p.last = Date.now(); savePeople(); offered(); return; }
+      if (a === 'prayed') {
+        it.p.last = Date.now(); const came = val('#ofCame'), love = val('#ofLove');
+        if (came) (it.p.log = it.p.log || []).push({ id: newId(), at: Date.now(), text: came });
+        savePeople();
+        if (love) { const o = makeOutcome(love, 'Deliverable', null, { toward: 'none' }); outcomes.push(o); saveOutcomes(); renderAheadList(); renderOutcomePicker(); }
+        offered(); return;
+      }
+      if (a === 'prayedv') { it.v.prayedAt = Date.now(); saveVisions(); offered(); return; }
+      if (a === 'addstep') {
+        const t = val('#ofStep'); if (!t) return;
+        const d = (rootEl.querySelector('#ofDate .chip.selected') || {}).dataset.d, key = d === 'today' ? todayKeyLocal() : d === 'tomorrow' ? addDaysKey(1) : d === 'week' ? addDaysKey(7) : null;
+        const lines = noteLines(noteKeyFor(it.o, null)); lines.splice(MAPV.lib.endLine(it.o, null), 0, '- ' + absDates(t) + (key ? ' >' + key : ''));
+        writeNoteLines(it.o, null, lines); reconcileAllSteps(); saveOutcomes(); renderAheadList(); renderOutcomePicker(); offered(); return;
+      }
+      if (a === 'begin') {
+        const x = it.x; finish(); switchTab('step');
+        setTimeout(() => { selectOutcome(it.o.id, { ms: x.m && x.m.id, sub: x.sub }); startChunk(5); }, 350); return;
+      }
+    }
+    function onKey(e) {
+      if (e.key !== 'Enter') return;
+      const t = e.target; if (!t || t.tagName !== 'INPUT') return;
+      e.preventDefault();
+      if (t.id === 'ofCapIn') {
+        const v = t.value.trim(); if (!v) return; outcomes.push(makeOutcome(v, null, null)); saveOutcomes(); renderAheadList(); renderOutcomePicker();
+        t.value = ''; t.placeholder = 'Kept ✓ — another?'; return;
+      }
+      const go = rootEl.querySelector('.btn.go[data-of]'); if (go) go.click();
+    }
+    function begin(root, done) {
+      items = stack(); if (!items.length) return false;
+      rootEl = root; finish = done; idx = 0;
+      let box = root.querySelector('#maOffer');
+      if (!box) { box = document.createElement('div'); box.id = 'maOffer'; box.className = 'of-card'; root.querySelector('.ma-card').appendChild(box); box.addEventListener('click', onClick); box.addEventListener('keydown', onKey, true); }
+      root.classList.add('offering'); draw(); return true;
+    }
+    microAbide.setOffering(begin);
+    return { stack };
   })();
 
   // ===== A guided listening session: come to Him (the heart moment), say what is on your heart, ask and be
@@ -4748,6 +4924,7 @@ For God alone my soul waits in silence. — Psalm 62:1`;
     'Week': 'Planned within the next 7 days',
     'Later': 'Planned beyond this week',
     'Maybe': 'Trying these on — no guilt if they don\'t stick',
+    'NoStep': 'Nothing open to do yet — give each one a next step, even a dated one, and it is ready when you are.',
     'Unanchored': 'Not pointing at any destination yet. Some are just life and logistics, and that is fine — tie the ones that belong.',
   };
   document.querySelectorAll('#roleFilterRow .chip').forEach(chip => {
@@ -4764,17 +4941,22 @@ For God alone my soul waits in silence. — Psalm 62:1`;
   const activeRoleFilter = () => ((document.querySelector('#roleFilterRow .chip.selected') || {}).dataset || {}).role;
   // an open outcome pointing at no live destination, and not marked "just life" (toward = 'none')
   function isUnanchored(o) { return !o.completed && !o.maybe && o.toward !== 'none' && !towardOf(o); }
+  function isNoStep(o) { return !o.completed && !o.maybe && scanSteps(o).length === 0; }
   // the Unanchored filter only exists once there is a destination to anchor to; it carries its own count
   function syncUnanchoredChip() {
     const chip = document.getElementById('unanchoredChip'); if (!chip) return;
     const live = visions.some(v => v.status !== 'released'), n = live ? outcomes.filter(isUnanchored).length : 0;
     chip.hidden = !live || !n;
     chip.textContent = 'Unanchored' + (n ? ' · ' + n : '');
-    if (chip.hidden && chip.classList.contains('selected')) {
-      chip.classList.remove('selected');
-      const all = document.querySelector('#roleFilterRow .chip[data-role="All"]'); all.classList.add('selected');
-      document.getElementById('roleSubtitle').textContent = ROLE_SUBTITLES.All || '';
-    }
+    const ns = document.getElementById('noStepChip'), nn = outcomes.filter(isNoStep).length;
+    ns.hidden = !nn; ns.textContent = 'No next step' + (nn ? ' · ' + nn : '');
+    [chip, ns].forEach(c => {
+      if (c.hidden && c.classList.contains('selected')) {
+        c.classList.remove('selected');
+        document.querySelector('#roleFilterRow .chip[data-role="All"]').classList.add('selected');
+        document.getElementById('roleSubtitle').textContent = ROLE_SUBTITLES.All || '';
+      }
+    });
   }
   function towardOptions(o) {
     const cur = o.toward || '';
@@ -4786,6 +4968,7 @@ For God alone my soul waits in silence. — Psalm 62:1`;
     if (o.maybe) return false; // maybe items stay out of the way — only the Maybe filter shows them
     if (role === 'Starred') return !!o.starred;
     if (role === 'Unanchored') return isUnanchored(o);
+    if (role === 'NoStep') return isNoStep(o);
     if (role === 'Inbox') return !o.type;
     if (role === 'Today') return isToday(o);
     const d = snoozedUntil(o), tk = todayKeyLocal(), wk = addDaysKey(7);
@@ -6108,6 +6291,7 @@ For God alone my soul waits in silence. — Psalm 62:1`;
     applySettingsToUI();
     const fresh = store.get('outcomes', null);
     if (Array.isArray(fresh)) { outcomes = fresh; if (normalizeOutcomes(outcomes)) store.set('outcomes', outcomes, { quiet: true }); }
+    const freshP = store.get('people', null); if (Array.isArray(freshP)) people = freshP;
     const freshB = store.get('burdens', null); if (Array.isArray(freshB)) burdens = freshB;
     const freshR = store.get('reviews', null); if (Array.isArray(freshR)) reviews = freshR;
     const freshV = store.get('visions', null);
@@ -6223,10 +6407,12 @@ For God alone my soul waits in silence. — Psalm 62:1`;
       if (f === 'type') { lv = canonType(lv); rv = canonType(rv); bv = canonType(bv); } // Destination → Deliverable
       let v;
       if (sameJ(lv, rv)) v = lv; else if (sameJ(lv, bv)) v = rv; else if (sameJ(rv, bv)) v = lv;
+      else if (f === 'log') v = [...new Map([...(lv || []), ...(rv || [])].map(j => [j.id, j])).values()].sort((a, b) => (a.at || 0) - (b.at || 0));
       else if (f === 'journal') v = [...new Map([...(lv || []), ...(rv || [])].map(j => [j.id, j])).values()].sort((a, b) => (a.at || 0) - (b.at || 0));
       else if (f === 'milestones') v = mergeById(bv || [], lv || [], rv || [], (mb, ml, mr) => merge3(mb, ml, mr, false));
       else if (f === 'budget' && isObj(lv) && isObj(rv)) v = Object.assign({}, lv, { acc: Math.max(lv.acc || 0, rv.acc || 0) });
       else if (f === 'lastWorked') v = Math.max(lv || 0, rv || 0) || null;
+      else if (f === 'last' || f === 'prayedAt') v = Math.max(lv || 0, rv || 0);
       else v = lv;
       if (v !== undefined) out[f] = v;
     });
@@ -6243,7 +6429,7 @@ For God alone my soul waits in silence. — Psalm 62:1`;
       if (l === b) { out[k] = r; return; }
       if (r === b) { out[k] = l; return; }
       try {
-        if (k === 'outcomes' || k === 'visions' || k === 'burdens' || k === 'reviews') out[k] = JSON.stringify(mergeById(jparse(b, []), jparse(l, []), jparse(r, []), mergeOutcomeObj));
+        if (k === 'outcomes' || k === 'visions' || k === 'burdens' || k === 'reviews' || k === 'people') out[k] = JSON.stringify(mergeById(jparse(b, []), jparse(l, []), jparse(r, []), mergeOutcomeObj));
         else if (k === 'notes') {
           const bn = jparse(b, {}), ln = jparse(l, {}), rn = jparse(r, {}), o = {};
           new Set([...Object.keys(ln), ...Object.keys(rn)]).forEach(key => {
