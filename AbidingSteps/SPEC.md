@@ -1000,6 +1000,8 @@ small things to give Him.
 - **Privacy:** people, their notes and the prayer log are never exposed to agents (not in `state`, `visions`, or anywhere).
 - **Ahead:** a **No next step · N** filter chip (open outcomes with nothing open to do), hidden at zero — a working
   list, not a score. Everything open should have a next step, even a dated one.
-- Later ideas, not built: the quiet "Offerings" link from Step (without the abide), fading the sparkle/verse
+- **Offerings link on Step (v138):** a quiet "Offerings" link on the date line opens the same card without the heart moment
+  (`microAbide.offer()`); same stack, same escape hatches. If there is nothing to offer, the link briefly reads "Nothing just now".
+- Later ideas, not built: fading the sparkle/verse
   frequency over weeks (training wheels), a rotating Scripture line after "Offered.", and weekly-check wording
   ("what did you offer this week, and which felt like love?").

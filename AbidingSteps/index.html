@@ -928,6 +928,7 @@
       <div class="week-strip" id="weekStrip"></div>
       <div class="full-date">
         <span id="dateLine"></span>
+        <button type="button" class="link-btn" id="offeringsLink" style="margin-left:auto" title="Something to give Him — no heart moment needed">Offerings</button>
         <button type="button" class="refresh-cal-btn" id="refreshCalBtn" title="Refresh calendar" aria-label="Refresh calendar"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 11a8 8 0 1 0-2.3 5.7"/><path d="M20 4v7h-7"/></svg></button>
       </div>
 
@@ -1686,6 +1687,15 @@
       setTimeout(() => { root.querySelector('#maStage').classList.add('gone'); root.querySelector('#maRest').classList.add('show'); say('Rest here a moment. Nothing to catch up on.'); }, 2600);
       setTimeout(() => { root.querySelector('#maAmen').hidden = false; root.querySelector('#maAmen').focus(); }, 7000);
     }
+    // the offerings card on its own — no heart moment first (the quiet link on Step). Returns false when there is nothing to offer.
+    function offer() {
+      if (open || !offerHook) return false; if (!root) build();
+      after = null; let took = false;
+      try { took = offerHook(root, () => close()); } catch (e) { took = false; }
+      if (!took) return false;
+      root.classList.add('show'); open = true; requestAnimationFrame(() => requestAnimationFrame(() => root.classList.add('in')));
+      return true;
+    }
     function show(away, then) {
       if (open) return; if (!root) build();
       after = typeof then === 'function' ? then : null;
@@ -1704,7 +1714,7 @@
       if (amen === true) { store.set('__local_lastAbideAt', Date.now()); celebrate('abide', null, { x: innerWidth / 2, y: innerHeight * 0.5 }); }
       setTimeout(() => root.classList.remove('show'), 650);
     }
-    return { show, close, isOpen: () => open, setOffering: (fn) => { offerHook = fn; } };
+    return { show, close, isOpen: () => open, setOffering: (fn) => { offerHook = fn; }, offer };
   })();
   // When to offer it: after `microAbideMins` of no taps or keys while the app is open, or when
   // you open / come back to the app after that long away. Never while a timer is running, in
@@ -2945,6 +2955,10 @@ For God alone my soul waits in silence. — Psalm 62:1`;
   // same pull, reachable without a trip to Settings — spins while fetching as the
   // only feedback (subtle by design); the real status text still lands in Settings'
   // icsStatus for whenever someone goes looking for it
+  document.getElementById('offeringsLink').addEventListener('click', (e) => {
+    if (microAbide.offer()) return;
+    const b = e.currentTarget; b.textContent = 'Nothing just now'; setTimeout(() => { b.textContent = 'Offerings'; }, 2200);
+  });
   document.getElementById('refreshCalBtn').addEventListener('click', async (e) => {
     e.currentTarget.classList.add('spinning');
     try { await pullCalendar(); } finally { e.currentTarget.classList.remove('spinning'); }
