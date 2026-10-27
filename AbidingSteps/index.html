@@ -736,6 +736,9 @@
   .wk-quiet { color: var(--text-faint); font-size: 0.78rem; line-height: 1.45; margin-top: 4px; }
   .wk-un { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin: 8px 0; font-size: 0.84rem; }
   .wk-un select { max-width: 48%; background: var(--bg); border: 1px solid var(--border); color: var(--text); border-radius: 8px; padding: 6px 8px; font: inherit; font-size: 0.78rem; }
+  .toward-badge { color: var(--vision); border-color: color-mix(in srgb, var(--vision) 40%, var(--border)); }
+  .toward-pick { background: var(--bg); border: 1px solid var(--border); color: var(--text-dim); border-radius: 8px; padding: 3px 6px; font: inherit; font-size: 0.72rem; max-width: 60%; }
+  .toward-row { display: flex; align-items: center; gap: 8px; margin: 8px 0; font-size: 0.76rem; color: var(--text-faint); }
   .vsit { margin-top: 12px; }
   .vjournal { margin-top: 6px; }
   .vjournal details { border-bottom: 1px solid var(--border); padding: 6px 0; font-size: 0.82rem; }
@@ -1004,6 +1007,7 @@
         <span class="chip" data-role="Week">Week</span>
         <span class="chip" data-role="Later">Later</span>
         <span class="chip maybe-filter-chip" data-role="Maybe">Maybe</span>
+        <span class="chip" data-role="Unanchored" id="unanchoredChip" hidden>Unanchored</span>
         <span class="chip selected" data-role="All">All</span>
       </div>
       <div class="ahead-subtitle-row">
@@ -4737,6 +4741,7 @@ For God alone my soul waits in silence. — Psalm 62:1`;
     'Week': 'Planned within the next 7 days',
     'Later': 'Planned beyond this week',
     'Maybe': 'Trying these on — no guilt if they don\'t stick',
+    'Unanchored': 'Not pointing at any destination yet. Some are just life and logistics, and that is fine — tie the ones that belong.',
   };
   document.querySelectorAll('#roleFilterRow .chip').forEach(chip => {
     chip.addEventListener('click', () => {
@@ -4750,10 +4755,30 @@ For God alone my soul waits in silence. — Psalm 62:1`;
 
   const aheadList = document.getElementById('aheadList');
   const activeRoleFilter = () => ((document.querySelector('#roleFilterRow .chip.selected') || {}).dataset || {}).role;
+  // an open outcome pointing at no live destination, and not marked "just life" (toward = 'none')
+  function isUnanchored(o) { return !o.completed && !o.maybe && o.toward !== 'none' && !towardOf(o); }
+  // the Unanchored filter only exists once there is a destination to anchor to; it carries its own count
+  function syncUnanchoredChip() {
+    const chip = document.getElementById('unanchoredChip'); if (!chip) return;
+    const live = visions.some(v => v.status !== 'released'), n = live ? outcomes.filter(isUnanchored).length : 0;
+    chip.hidden = !live || !n;
+    chip.textContent = 'Unanchored' + (n ? ' · ' + n : '');
+    if (chip.hidden && chip.classList.contains('selected')) {
+      chip.classList.remove('selected');
+      const all = document.querySelector('#roleFilterRow .chip[data-role="All"]'); all.classList.add('selected');
+      document.getElementById('roleSubtitle').textContent = ROLE_SUBTITLES.All || '';
+    }
+  }
+  function towardOptions(o) {
+    const cur = o.toward || '';
+    return '<option value="">toward…</option>' + visions.filter(v => v.status !== 'released' || v.id === cur).map(v => '<option value="' + v.id + '"' + (v.id === cur ? ' selected' : '') + '>' + escapeHtml(v.t || 'Untitled destination') + '</option>').join('')
+      + '<option value="none"' + (cur === 'none' ? ' selected' : '') + '>just life — no destination</option>';
+  }
   function outcomeMatchesFilter(o, role) {
     if (role === 'Maybe') return !!o.maybe;
     if (o.maybe) return false; // maybe items stay out of the way — only the Maybe filter shows them
     if (role === 'Starred') return !!o.starred;
+    if (role === 'Unanchored') return isUnanchored(o);
     if (role === 'Inbox') return !o.type;
     if (role === 'Today') return isToday(o);
     const d = snoozedUntil(o), tk = todayKeyLocal(), wk = addDaysKey(7);
@@ -4830,6 +4855,7 @@ For God alone my soul waits in silence. — Psalm 62:1`;
   const expandedNotesIds = new Set();
   function renderAheadList() {
     autoStarDueOutcomes();
+    syncUnanchoredChip();
     if (activeRoleFilter() === 'Today') {
       const load = todayLoadText();
       document.getElementById('roleSubtitle').textContent = ROLE_SUBTITLES['Today'] + (load ? ' · ' + load : '');
@@ -4862,7 +4888,9 @@ For God alone my soul waits in silence. — Psalm 62:1`;
         + '<div class="outcome-row-meta"><span class="badge">' + (o.type || 'Inbox') + (o.tag ? ' · ' + o.tag : '')
         + ((o.milestones || []).length ? ' · ' + o.milestones.length + ' milestone' + (o.milestones.length === 1 ? '' : 's') : '')
         + (snoozedUntil(o) ? ' · planned ' + escapeHtml(shortDateLabel(snoozedUntil(o))) + (effInfo(o).step ? ' (step)' : '') : '') + '</span>'
-        + ctxUnion(o).map(c => ' <span class="badge ctx-badge">@' + escapeHtml(c) + '</span>').join('') + '</div>';
+        + ctxUnion(o).map(c => ' <span class="badge ctx-badge">@' + escapeHtml(c) + '</span>').join('')
+        + (towardOf(o) ? ' <span class="badge toward-badge">→ ' + escapeHtml(towardOf(o).t || 'a destination') + '</span>' : '')
+        + (role === 'Unanchored' ? ' <select class="toward-pick toward-quick" aria-label="Which destination does this serve?">' + towardOptions(o) + '</select>' : '') + '</div>';
       if (o.budget) {
         const acc = budgetAcc(o), target = o.budget.target;
         const pct = Math.min(100, (acc / target) * 100);
@@ -4875,6 +4903,7 @@ For God alone my soul waits in silence. — Psalm 62:1`;
       html += '<div class="outcome-row-notes"' + (expanded ? '' : ' style="display:none;"') + '>'
         + '<textarea class="outcome-row-notes-input" placeholder="Notes — pulled up when you work this…">' + escapeHtml(notesByKey[o.id] || '') + '</textarea>'
         + renderOutcomeTree(o)
+        + (visions.length && role !== 'Unanchored' ? '<div class="toward-row"><span>Serves</span><select class="toward-pick" aria-label="Which destination does this serve?">' + towardOptions(o) + '</select></div>' : '')
         + (o.completed ? '' : '<div class="snooze-row" title="Plan it for a day">'
           + (isToday(o) ? '' : '<span class="chip" data-snooze="today">Today</span>')
           + snoozeOptions().map(([label, key]) => '<span class="chip' + (o.planned === key ? ' selected' : '') + '" data-snooze="' + key + '">' + label + '</span>').join('')
@@ -4889,7 +4918,7 @@ For God alone my soul waits in silence. — Psalm 62:1`;
       // every change saves and redraws BOTH views, so Step always matches Ahead
       const changed = () => { saveOutcomes(); renderAheadList(); renderOutcomePicker(); };
       row.addEventListener('click', (e) => {
-        if (e.target.closest('button') || e.target.closest('.outcome-row-notes')) return;
+        if (e.target.closest('button') || e.target.closest('select') || e.target.closest('.outcome-row-notes')) return;
         if (expandedNotesIds.has(o.id)) expandedNotesIds.delete(o.id); else expandedNotesIds.add(o.id);
         renderAheadList();
       });
@@ -4898,6 +4927,9 @@ For God alone my soul waits in silence. — Psalm 62:1`;
         const el = e.target.closest('[data-tree]');
         if (el) handleTreeClick(o, el, () => { changed(); if (o.id === selectedOutcomeId) revalidateSelection(); });
       });
+      row.querySelectorAll('select.toward-pick').forEach(sel => sel.addEventListener('change', () => {
+        o.toward = sel.value || null; changed(); renderToward();
+      }));
       row.querySelectorAll('[data-snooze]').forEach(chip => chip.addEventListener('click', () => {
         snoozeOutcome(o, chip.dataset.snooze === 'today' ? null : chip.dataset.snooze); changed();
       }));

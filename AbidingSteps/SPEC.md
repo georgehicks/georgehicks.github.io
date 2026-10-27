@@ -943,4 +943,15 @@ one small faithful step (optionally becomes a Deliverable outcome `toward` this 
   The strip is highlighted when it has been about a week.
 - Both collections merge by id like outcomes/visions; the weekly id is deterministic so two devices saving the same
   week merge into one row. Agents get no access to either.
-- Still to come: an "unanchored" group in Ahead, and Vision as a map root.
+- Still to come: Vision as a map root.
+
+### Unanchored in Ahead (v135)
+
+- A filter chip **Unanchored · N** in Ahead lists open outcomes that point at no live destination. It exists only
+  while there is at least one live (not released) destination and at least one such outcome, so there is nothing to
+  nag about before Vision is in use. When the last one is tied, the chip disappears and Ahead returns to All.
+- Each row in that filter has a "toward…" picker for quick triage. Choosing **just life — no destination** stores
+  `toward: 'none'`, which takes the outcome out of the group for good (a dangling id from a deleted destination is
+  treated as unanchored). In every other filter, a row shows a gold `→ destination` badge when linked, and its
+  expanded area has a "Serves" picker.
+- `isUnanchored(o)`: not completed, not maybe, `toward !== 'none'`, no live destination found for `toward`.
