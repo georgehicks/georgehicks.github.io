@@ -1004,7 +1004,7 @@ small things to give Him.
   (`microAbide.offer()`); same stack, same escape hatches. If there is nothing to offer, the link briefly reads "Nothing just now".
 - **Rewards thin out, and a verse rotates (v139).** After each offering: the quiet "Offered." always, then (by chance) a
   sparkle and a short verse (World English Bible, public domain; 12 lines on doing everything for the Lord, never
-  repeating within the last six; tap to continue, otherwise it moves on after ~3 s). How often is set by how many
+  repeating within the last six; tap, Enter or Space to go on, otherwise it moves on after ~20 s (v140)). How often is set by how many
   *days* you have ever offered (a private per-device tally `offerTally_<device>`, merged like the other tallies, never
   shown): under 14 days sparkle and verse every time; 14–45 days sparkle 2 in 3; 45–90 sparkle 1 in 3, verse 1 in 2;
   after that sparkle 1 in 5, verse 1 in 3. The thinning is intermittent on purpose — the habit moves from the
