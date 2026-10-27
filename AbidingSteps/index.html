@@ -4103,8 +4103,11 @@ For God alone my soul waits in silence. — Psalm 62:1`;
       const plan = rewardPlan(), v = Math.random() < plan.verse ? nextVerse() : null, box = rootEl.querySelector('#maOffer');
       box.innerHTML = '<div class="of-offered">Offered.</div>' + (v ? '<div class="of-verse">“' + escapeHtml(v[0]) + '”<small>' + escapeHtml(v[1]) + '</small></div>' : '');
       if (Math.random() < plan.spark) { const r = box.getBoundingClientRect(); try { magic.play('radiate', r.left + r.width / 2, r.top + 40); } catch (e) {} }
-      const go = () => { clearTimeout(offeredTimer); box.removeEventListener('click', go); idx++; draw(); };
-      box.addEventListener('click', go); offeredTimer = setTimeout(go, v ? 3200 : 1100);
+      const key = (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); go(); } };
+      const go = () => { clearTimeout(offeredTimer); box.removeEventListener('click', go); document.removeEventListener('keydown', key, true); idx++; draw(); };
+      if (v) box.insertAdjacentHTML('beforeend', '<div class="of-sub" style="padding-bottom:6px">Tap to go on</div>');
+      box.addEventListener('click', go); document.addEventListener('keydown', key, true);
+      offeredTimer = setTimeout(go, v ? 20000 : 1100);
     }
     function onClick(e) {
       const c = e.target.closest('[data-d]'); if (c) { rootEl.querySelectorAll('#ofDate .chip').forEach(x => x.classList.toggle('selected', x === c)); return; }
