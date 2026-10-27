@@ -943,7 +943,7 @@ one small faithful step (optionally becomes a Deliverable outcome `toward` this 
   The strip is highlighted when it has been about a week.
 - Both collections merge by id like outcomes/visions; the weekly id is deterministic so two devices saving the same
   week merge into one row. Agents get no access to either.
-- Still to come: Vision as a map root.
+- Vision as a map root: done in v136 (below).
 
 ### Unanchored in Ahead (v135)
 
@@ -955,3 +955,20 @@ one small faithful step (optionally becomes a Deliverable outcome `toward` this 
   treated as unanchored). In every other filter, a row shows a gold `→ destination` badge when linked, and its
   expanded area has a "Serves" picker.
 - `isUnanchored(o)`: not completed, not maybe, `toward !== 'none'`, no live destination found for `toward`.
+
+### Vision as a map root (v136)
+
+In Map mode, **v** switches the grouping (remembered on this device, `__local_mapGroup`):
+
+- **Ahead:** root → buckets → outcomes (unchanged).
+- **Vision:** root "Vision" → one node per destination (live ones first, released last, each with its count and status),
+  then **Unanchored**, **Just life** and **Done** → outcomes → milestones/steps. Everything under an outcome behaves exactly
+  as before (the same builders, step editing, work popup, context filter).
+- **Moving an outcome** between groups changes its `toward` (Unanchored = none, Just life = `'none'`, Done = completed):
+  `Ctrl+↑/↓` (reorders inside a group, hops to the neighbouring one at the edge), `Alt+←/→`, `1`–`7` (the nth group),
+  cut/paste (`x`, `p`) and dragging onto a group or a sibling. `Tab` on a destination adds an outcome toward it; `e`
+  renames the destination; the details panel edits its status, picture and why (Scripture and the listening sessions stay
+  in the Vision tab). Outcome undo (`u`) covers the moves; destination edits are saved straight to `visions`.
+- A group's key is `v:<visionId>` / `g:unanchored|life|done`; `containerKey(o)` decides where an outcome sits.
+- The bucket (Today/Week/…) and the destination are independent: moving an outcome between destinations never changes
+  when it is planned, and vice versa.

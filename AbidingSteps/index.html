@@ -801,6 +801,11 @@
   .mt-box { border: 1px solid var(--border); background: var(--bg-elevated); border-radius: 7px; padding: 3px 10px; font-size: 0.85rem; max-width: 340px; line-height: 1.35; cursor: pointer; white-space: normal; overflow-wrap: anywhere; position: relative; }
   .mt-box.k-root { background: color-mix(in srgb, var(--ahead) 22%, var(--bg-elevated)); border-color: var(--ahead); font-weight: 600; padding: 6px 14px; font-size: 1rem; }
   .mt-box.k-bucket { font-weight: 600; background: var(--bg-raised); }
+  .mt-box.k-vgroup { font-weight: 600; background: var(--bg-raised); }
+  .mt-box.k-vision { font-weight: 600; background: color-mix(in srgb, var(--vision) 13%, var(--bg-raised)); border-color: color-mix(in srgb, var(--vision) 50%, var(--border)); }
+  .mt-box.k-root.vroot { background: color-mix(in srgb, var(--vision) 22%, var(--bg-elevated)); border-color: var(--vision); }
+  .mt-box.k-vgroup .ct, .mt-box.k-vision .ct { color: var(--text-faint); font-weight: 400; margin-left: 6px; }
+  #mapPanel textarea { width: 100%; background: var(--bg); border: 1px solid var(--border); color: var(--text); border-radius: 8px; padding: 6px 8px; font: inherit; font-size: 0.8rem; resize: vertical; }
   .mt-box.k-bucket .ct { color: var(--text-faint); font-weight: 400; margin-left: 6px; }
   .mt-box.k-outcome { border-color: color-mix(in srgb, var(--ahead) 45%, var(--border)); }
   .mt-box.k-ms { border-style: dashed; }
@@ -1303,7 +1308,7 @@
   <div class="map-bar">
     <b>MAP</b>
     <span><kbd>↑↓←→</kbd> move</span><span><kbd>Enter</kbd> next line</span><span><kbd>Tab</kbd> child</span>
-    <span><kbd>e</kbd> edit</span><span><kbd>1</kbd>–<kbd>7</kbd> bucket</span><span><kbd>w</kbd> work</span><span><kbd>@</kbd> filter</span><span><kbd>i</kbd> details</span><span><kbd>?</kbd> all keys</span><span><kbd>Esc</kbd> close</span>
+    <span><kbd>e</kbd> edit</span><span><kbd>1</kbd>–<kbd>7</kbd> bucket</span><span><kbd>v</kbd> by destination</span><span><kbd>w</kbd> work</span><span><kbd>@</kbd> filter</span><span><kbd>i</kbd> details</span><span><kbd>?</kbd> all keys</span><span><kbd>Esc</kbd> close</span>
     <input type="text" class="map-find" id="mapFind" placeholder="Find…" hidden>
     <span class="spacer"></span><span id="mapStatus"></span><span id="mapSync" title="Last cloud sync"></span>
     <span class="map-timer" id="mapTimer" hidden title="Timer running — w to open"></span>
@@ -1319,6 +1324,8 @@
     <h4>Move around</h4>
     <div><kbd>↑</kbd><kbd>↓</kbd> next / previous at this level · <kbd>←</kbd> parent · <kbd>→</kbd> first child (opens it)</div>
     <div><kbd>Space</kbd> fold / unfold · <kbd>a</kbd> fold everything below outcomes / open all · <kbd>/</kbd> find (<kbd>Enter</kbd> next)</div>
+    <h4>Group by destination</h4>
+    <div><kbd>v</kbd> switches the map between <b>Ahead</b> (buckets) and <b>Vision</b>: your destinations, then <b>Unanchored</b>, <b>Just life</b> and <b>Done</b>. In Vision, <kbd>Ctrl</kbd>+<kbd>↑↓</kbd> / <kbd>Alt</kbd>+<kbd>←→</kbd> / <kbd>1</kbd>–<kbd>7</kbd> / dragging move an outcome between them, <kbd>Tab</kbd> on a destination adds an outcome toward it, <kbd>e</kbd> renames it, and the details panel edits its status, picture and why.</div>
     <h4>Type things in</h4>
     <div>An outcome’s (or milestone’s) children are the lines of its notes; indent a line (two spaces) and it becomes a child of the line above. Step and Ahead show only the unindented steps — deeper ones live here.</div>
     <div><b>- </b>lines are open steps, <b>+ </b>lines are done, anything else is a plain note — there’s no separate notes box here.</div>
@@ -5034,7 +5041,20 @@ For God alone my soul waits in silence. — Psalm 62:1`;
     const $ = (id) => document.getElementById(id);
     const overlay = $('mapOverlay'), tree = $('mapTree'), svg = $('mapSvg'), canvas = $('mapCanvas'), scroller = $('mapScroll'), findEl = $('mapFind');
     let sel = 'root', model = null, pending = null, editing = null, cutKey = null, undo = [], hits = [], hitI = 0, toastT = null;
-    const folded = new Set(['b:Done']);
+    const folded = new Set(['b:Done', 'g:done']);
+    // grouping: 'ahead' = root → buckets → outcomes; 'vision' = root → destinations (+ Unanchored / Just life / Done) → outcomes
+    let grouping = store.get('__local_mapGroup', 'ahead') === 'vision' ? 'vision' : 'ahead';
+    const isBoxKind = (n) => n.kind === 'bucket' || n.kind === 'vision' || n.kind === 'vgroup';
+    function containerKey(o) {
+      if (o.completed) return 'g:done';
+      const v = towardOf(o);
+      return v ? 'v:' + v.id : o.toward === 'none' ? 'g:life' : 'g:unanchored';
+    }
+    // put an outcome into a vision-grouping container (a destination, or one of the three plain groups)
+    function applyContainer(o, c) {
+      if (c.kind === 'vgroup' && c.g === 'done') { o.completed = true; celebrate('done'); return; }
+      o.completed = false; o.toward = c.kind === 'vision' ? c.v.id : c.g === 'life' ? 'none' : null;
+    }
     const isOpen = () => overlay.classList.contains('show');
     const toast = (msg) => { const t = $('mapToast'); t.textContent = msg; t.classList.add('show'); clearTimeout(toastT); toastT = setTimeout(() => t.classList.remove('show'), 2200); };
 
@@ -5104,15 +5124,18 @@ For God alone my soul waits in silence. — Psalm 62:1`;
       const nodes = {};
       const mk = (key, kind, parent, extra) => { const n = Object.assign({ key, kind, parent, kids: [] }, extra); nodes[key] = n; if (parent) parent.kids.push(n); return n; };
       const root = mk('root', 'root', null, {});
-      BUCKETS.forEach(b => mk('b:' + b, 'bucket', root, { bucket: b }));
+      if (grouping === 'vision') {
+        visions.filter(v => v.status !== 'released').concat(visions.filter(v => v.status === 'released')).forEach(v => mk('v:' + v.id, 'vision', root, { v }));
+        [['unanchored', 'Unanchored'], ['life', 'Just life'], ['done', 'Done']].forEach(([g, label]) => mk('g:' + g, 'vgroup', root, { g, label }));
+      } else BUCKETS.forEach(b => mk('b:' + b, 'bucket', root, { bucket: b }));
       outcomes.forEach(o => {
-        const on = mk('o:' + o.id, 'outcome', nodes['b:' + bucketOf(o)], { o });
+        const on = mk('o:' + o.id, 'outcome', nodes[grouping === 'vision' ? containerKey(o) : 'b:' + bucketOf(o)], { o });
         addLines(mk, on, o, null);
         o.milestones.forEach(m => addLines(mk, mk('m:' + o.id + ':' + m.id, 'ms', on, { o, m }), o, m));
       });
       return { root, nodes };
     }
-    function labelOf(n) { return n.kind === 'root' ? 'Ahead' : n.kind === 'bucket' ? n.bucket : n.kind === 'outcome' ? n.o.t : n.kind === 'ms' ? n.m.t : n.text; }
+    function labelOf(n) { return n.kind === 'root' ? (grouping === 'vision' ? 'Vision' : 'Ahead') : n.kind === 'bucket' ? n.bucket : n.kind === 'vision' ? (n.v.t || 'Untitled destination') : n.kind === 'vgroup' ? n.label : n.kind === 'outcome' ? n.o.t : n.kind === 'ms' ? n.m.t : n.text; }
     const editText = (n) => n.kind === 'line' ? n.raw.replace(/\s+$/, '') : labelOf(n);
     // ---- context filter: keep only branches holding a matching open step ----
     const ctxBar = $('mapCtx');
@@ -5177,12 +5200,13 @@ For God alone my soul waits in silence. — Psalm 62:1`;
     function boxHtml(n, isFolded) {
       const done = (n.kind === 'outcome' && n.o.completed) || (n.kind === 'ms' && n.m.completed);
       const closed = n.kind === 'line' && n.mark === '+';
-      let cls = 'mt-box k-' + n.kind + (n.kind === 'line' && !n.mark ? ' note' : '') + (closed ? ' done' : '') + (sel === n.key ? ' sel' : '') + (done ? ' done' : '') + (cutKey === n.key ? ' cutting' : '') + (hits.includes(n.key) ? ' hit' : '') + (keep && lineMatches(n) ? ' ctxhit' : '');
+      let cls = 'mt-box k-' + n.kind + (n.kind === 'root' && grouping === 'vision' ? ' vroot' : '') + (n.kind === 'line' && !n.mark ? ' note' : '') + (closed ? ' done' : '') + (sel === n.key ? ' sel' : '') + (done ? ' done' : '') + (cutKey === n.key ? ' cutting' : '') + (hits.includes(n.key) ? ' hit' : '') + (keep && lineMatches(n) ? ' ctxhit' : '');
       let inner;
       if (editing && editing.key === n.key) inner = '<input class="mt-edit" value="' + escapeHtml(editText(n)) + '">';
       else {
         inner = n.kind === 'line' ? ctxHtml(escapeHtml(labelOf(n))) : escapeHtml(labelOf(n));
-        if (n.kind === 'bucket') inner += '<span class="ct">' + kidsOf(n).length + '</span>';
+        if (n.kind === 'bucket' || n.kind === 'vgroup') inner += '<span class="ct">' + kidsOf(n).length + '</span>';
+        if (n.kind === 'vision') inner += '<span class="ct">' + kidsOf(n).length + '</span><span class="tag typ">' + escapeHtml((VISION_STATUS.find(x => x[0] === n.v.status) || [])[1] || '') + '</span>';
         // - open, + closed; plain note lines carry no marker
         if (n.kind === 'outcome') inner = '<span class="tag mk">' + (n.o.completed ? '+' : '-') + '</span>' + (n.o.starred ? '<span class="star">★</span>' : '') + inner + '<span class="tag typ">' + (n.o.type === 'Deliverable' ? '◎' : n.o.type === 'Directive' ? '∞' : '') + '</span>';
         if (n.kind === 'ms') inner = '<span class="tag mk">' + (n.m.completed ? '+' : '-') + '</span>' + inner;
@@ -5248,6 +5272,12 @@ For God alone my soul waits in silence. — Psalm 62:1`;
       if (n.kind === 'ms') return head + f('name', 'Name', '<input type="text" data-f="name" value="' + escapeHtml(n.m.t) + '">') + chk('done', 'Done', n.m.completed);
       if (n.kind === 'line') return head + f('name', n.mark ? 'Step' : 'Note', '<input type="text" data-f="name" value="' + escapeHtml(n.text) + '">')
         + (n.mark ? chk('done', 'Done', n.mark === '+') : '<div class="fine">Start a line with - to make it a step.</div>');
+      if (n.kind === 'vision') return head + f('name', 'Name', '<input type="text" data-f="name" value="' + escapeHtml(n.v.t) + '">')
+        + f('vstatus', 'Where it stands', '<select data-f="vstatus">' + VISION_STATUS.map(x => opt(x[0], x[1], n.v.status)).join('') + '</select>')
+        + f('vpicture', 'Picture — what it looks like when you arrive', '<textarea data-f="vpicture" rows="4">' + escapeHtml(n.v.picture || '') + '</textarea>')
+        + f('vwhy', 'Why it matters', '<textarea data-f="vwhy" rows="3">' + escapeHtml(n.v.why || '') + '</textarea>')
+        + '<div class="fine">' + n.kids.length + ' outcome' + (n.kids.length === 1 ? '' : 's') + ' toward this · Scripture and sitting with God are in the Vision tab.</div>';
+      if (n.kind === 'vgroup') return head + '<div class="fine">' + n.label + ' · ' + n.kids.length + ' outcome' + (n.kids.length === 1 ? '' : 's') + '<br>' + ({ unanchored: 'Not pointing at a destination yet. Move one under a destination with Ctrl+↑/↓ or drag it.', life: 'Marked “just life” — no destination needed.', done: 'Finished outcomes.' })[n.g] + '</div>';
       if (n.kind === 'bucket') return head + '<div class="fine">' + n.bucket + ' · ' + n.kids.length + ' outcome' + (n.kids.length === 1 ? '' : 's') + '<br>Select an outcome to edit its fields.</div>';
       return head + '<div class="fine">Select an outcome, milestone or line to edit its fields.</div>';
     }
@@ -5266,11 +5296,17 @@ For God alone my soul waits in silence. — Psalm 62:1`;
       if (f === 'name') {
         const t = absDates(String(v).trim()); if (!t) { renderPanel(true); return; }
         if (n.kind === 'outcome') mutate(() => { n.o.t = t; });
+        else if (n.kind === 'vision') { n.v.t = t; saveVisions(); render(); }
         else if (n.kind === 'ms') mutate(() => { n.m.t = t; });
         else if (n.kind === 'line') mutate(() => {
           const lines = noteLines(noteKeyFor(n.o, n.m)); lines[n.line] = pad(n.ind) + (n.mark ? n.mark + ' ' : '') + t; writeNoteLines(n.o, n.m, lines);
           if (n.mark && n.ind === 0 && t !== n.text) moveNote(noteKey(n.o, n.m, n.text), noteKey(n.o, n.m, t));
         });
+      } else if (n.kind === 'vision') {
+        if (f === 'vstatus' && VISION_STATUS.some(x => x[0] === v)) n.v.status = v;
+        else if (f === 'vpicture') n.v.picture = String(v);
+        else if (f === 'vwhy') n.v.why = String(v);
+        saveVisions(); render();
       } else if (n.kind === 'outcome') {
         const o = n.o;
         if (f === 'bucket') mutate(() => moveToBucket(o, v));
@@ -5480,13 +5516,13 @@ For God alone my soul waits in silence. — Psalm 62:1`;
       editing = null; sel = 'new'; render();
     }
     function newChild(n) {
-      if (n.kind === 'bucket') startPending('outcome', n, n.kids.length, outcomes.length);
+      if (isBoxKind(n)) startPending('outcome', n, n.kids.length, outcomes.length);
       else if (n.kind === 'outcome') startPending('line', n, lineKids(n).length, endLine(n.o, null), '- ');
       else if (n.kind === 'ms') startPending('line', n, lineKids(n).length, endLine(n.o, n.m), '- ');
       else if (n.kind === 'line') {
         const lines = noteLines(noteKeyFor(n.o, n.m));
         startPending('line', n, n.kids.length, blockEnd(lines, n.line), pad(n.ind + 2) + '- ');
-      } else toast('Pick a bucket first (→)');
+      } else toast(grouping === 'vision' ? 'Pick a destination first (→)' : 'Pick a bucket first (→)');
     }
     function newSibling(n) {
       if (n.kind === 'line') {
@@ -5504,7 +5540,8 @@ For God alone my soul waits in silence. — Psalm 62:1`;
       const parent = model.nodes[p.parentKey]; let newKey = null;
       mutate(() => {
         if (p.kind === 'outcome') {
-          const o = makeOutcome(text, null, null); moveToBucket(o, parent.bucket);
+          const o = makeOutcome(text, null, null);
+          if (parent.kind === 'bucket') moveToBucket(o, parent.bucket); else { moveToBucket(o, 'Open'); applyContainer(o, parent); }
           outcomes.splice(p.dataIndex, 0, o); newKey = 'o:' + o.id;
         } else if (p.kind === 'ms') {
           const m = makeMilestone(text); parent.o.milestones.splice(p.dataIndex, 0, m); newKey = 'm:' + parent.o.id + ':' + m.id;
@@ -5521,7 +5558,7 @@ For God alone my soul waits in silence. — Psalm 62:1`;
       else if (then === 'child') newChild(model.nodes[newKey]);
     }
     function startEdit(n) {
-      if (!['outcome', 'ms', 'line'].includes(n.kind)) { toast('Buckets can’t be renamed'); return; }
+      if (!['outcome', 'ms', 'line', 'vision'].includes(n.kind)) { toast('Buckets can’t be renamed'); return; }
       editing = { key: n.key }; render();
     }
     function commitEdit(text) {
@@ -5531,6 +5568,7 @@ For God alone my soul waits in silence. — Psalm 62:1`;
           const lines = noteLines(noteKeyFor(n.o, n.m)); lines[n.line] = text; writeNoteLines(n.o, n.m, lines);
           const r = STEP_RE.exec(text); if (n.mark && n.ind === 0 && r && r[2] !== n.text && indentOf(text) === 0) moveNote(noteKey(n.o, n.m, n.text), noteKey(n.o, n.m, r[2]));
         });
+        else if (n.kind === 'vision') { n.v.t = text; saveVisions(); }
         else mutate(() => { if (n.kind === 'outcome') n.o.t = text; else n.m.t = text; });
       }
       render();
@@ -5564,7 +5602,19 @@ For God alone my soul waits in silence. — Psalm 62:1`;
       mutate(() => { n.o.type = n.o.type === null ? 'Deliverable' : n.o.type === 'Deliverable' ? 'Directive' : null; });
       render();
     }
+    function toContainer(n, c) {
+      if (n.kind !== 'outcome') { toast('Select an outcome to move it'); return; }
+      if (!c || containerKey(n.o) === c.key) return;
+      mutate(() => applyContainer(n.o, c));
+      folded.delete(c.key); reveal('o:' + n.o.id); sel = 'o:' + n.o.id; render();
+    }
+    function toggleGrouping() {
+      grouping = grouping === 'vision' ? 'ahead' : 'vision'; store.set('__local_mapGroup', grouping);
+      sel = 'root'; pending = null; editing = null; cutKey = null; render();
+      toast(grouping === 'vision' ? 'Grouped by destination — v to go back to buckets' : 'Grouped by bucket');
+    }
     function toBucket(n, b) {
+      if (grouping === 'vision') { toContainer(n, model.root.kids[BUCKETS.indexOf(b)]); return; }
       if (n.kind !== 'outcome') { toast('Select an outcome to move it'); return; }
       if (bucketOf(n.o) === b) return;
       mutate(() => moveToBucket(n.o, b));
@@ -5576,6 +5626,11 @@ For God alone my soul waits in silence. — Psalm 62:1`;
     function moveOutcomeVertical(n, dir) {
       const sibs = n.parent.kids, other = sibs[sibs.indexOf(n) + dir];
       if (other) { mutate(() => swap(outcomes, outcomes.indexOf(n.o), outcomes.indexOf(other.o))); render(); return; }
+      if (grouping === 'vision') {
+        const ks = model.root.kids, c = ks[ks.findIndex(k => k.key === containerKey(n.o)) + dir];
+        if (!c) { toast(dir < 0 ? 'Already at the very top' : 'Already at the very bottom'); return; }
+        toContainer(n, c); return;
+      }
       const to = BUCKETS[BUCKETS.indexOf(bucketOf(n.o)) + dir];
       if (!to) { toast(dir < 0 ? 'Already at the very top' : 'Already at the very bottom'); return; }
       mutate(() => {
@@ -5617,7 +5672,9 @@ For God alone my soul waits in silence. — Psalm 62:1`;
         render();
       } else if (k === 'ArrowLeft' || k === 'ArrowRight') {
         const dir = k === 'ArrowLeft' ? -1 : 1;
-        if (n.kind === 'outcome') {
+        if (n.kind === 'outcome' && grouping === 'vision') {
+          const ks = model.root.kids; toContainer(n, ks[ks.findIndex(k => k.key === containerKey(n.o)) + dir]);
+        } else if (n.kind === 'outcome') {
           const b = BUCKETS[BUCKETS.indexOf(bucketOf(n.o)) + dir]; if (b) toBucket(n, b);
         } else if (n.kind === 'line' && dir > 0) indentLine(n);
         else if (n.kind === 'line' && n.parent.kind === 'line') outdentLine(n);
@@ -5800,6 +5857,16 @@ For God alone my soul waits in silence. — Psalm 62:1`;
         });
         newSel = 'm:' + dest.id + ':' + src.m.id;
       } else {
+        if (grouping === 'vision') {
+          const c = t.kind === 'outcome' ? t.parent : t;
+          if (c.kind !== 'vision' && c.kind !== 'vgroup') { toast('Outcomes go under a destination'); return; }
+          if (t.kind === 'outcome' && t.o === src.o) { cutKey = null; render(); return; }
+          mutate(() => {
+            applyContainer(src.o, c);
+            if (t.kind === 'outcome') { outcomes = outcomes.filter(x => x !== src.o); outcomes.splice(outcomes.indexOf(t.o) + 1, 0, src.o); }
+          });
+          folded.delete(c.key); cutKey = null; sel = src.key; reveal(sel); render(); return;
+        }
         let b;
         if (t.kind === 'bucket') b = t.bucket; else if (t.kind === 'outcome' && t.o !== src.o) b = bucketOf(t.o); else { toast('Outcomes go in a bucket'); return; }
         mutate(() => {
@@ -5814,7 +5881,7 @@ For God alone my soul waits in silence. — Psalm 62:1`;
     // ---- find ----
     function runFind() {
       const q = findEl.value.trim().toLowerCase();
-      hits = q ? Object.values(model.nodes).filter(n => n.kind !== 'root' && n.kind !== 'bucket' && labelOf(n).toLowerCase().includes(q)).map(n => n.key) : [];
+      hits = q ? Object.values(model.nodes).filter(n => n.kind !== 'root' && n.kind !== 'bucket' && n.kind !== 'vgroup' && labelOf(n).toLowerCase().includes(q)).map(n => n.key) : [];
       hitI = 0;
       if (hits.length) { sel = hits[0]; reveal(sel); }
       render();
@@ -5854,7 +5921,7 @@ For God alone my soul waits in silence. — Psalm 62:1`;
         return;
       }
       if (panel.contains(e.target)) { // typing in the side panel — Enter/Esc hand control back to the map
-        if (e.key === 'Escape' || (e.key === 'Enter' && e.target.tagName !== 'SELECT')) { e.preventDefault(); e.target.blur(); }
+        if (e.key === 'Escape' || (e.key === 'Enter' && e.target.tagName !== 'SELECT' && e.target.tagName !== 'TEXTAREA')) { e.preventDefault(); e.target.blur(); }
         return;
       }
       if (e.target.classList && e.target.classList.contains('mt-edit')) {
@@ -5915,6 +5982,7 @@ For God alone my soul waits in silence. — Psalm 62:1`;
       if (k === 'a') { handled(); if (folded.size) folded.clear(); else Object.values(model.nodes).forEach(x => { if (x.kind === 'outcome' && x.kids.length) folded.add(x.key); }); render(); return; }
       if (k === '/') { handled(); findEl.hidden = false; findEl.focus(); return; }
       if (k === '?') { handled(); $('mapHelp').classList.toggle('show'); return; }
+      if (k === 'v') { handled(); toggleGrouping(); return; }
       if (/^[1-7]$/.test(k)) { handled(); toBucket(n, BUCKETS[+k - 1]); return; }
     }
     document.addEventListener('keydown', onKey, true);
