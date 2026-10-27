@@ -1002,6 +1002,12 @@ small things to give Him.
   list, not a score. Everything open should have a next step, even a dated one.
 - **Offerings link on Step (v138):** a quiet "Offerings" link on the date line opens the same card without the heart moment
   (`microAbide.offer()`); same stack, same escape hatches. If there is nothing to offer, the link briefly reads "Nothing just now".
-- Later ideas, not built: fading the sparkle/verse
-  frequency over weeks (training wheels), a rotating Scripture line after "Offered.", and weekly-check wording
-  ("what did you offer this week, and which felt like love?").
+- **Rewards thin out, and a verse rotates (v139).** After each offering: the quiet "Offered." always, then (by chance) a
+  sparkle and a short verse (World English Bible, public domain; 12 lines on doing everything for the Lord, never
+  repeating within the last six; tap to continue, otherwise it moves on after ~3 s). How often is set by how many
+  *days* you have ever offered (a private per-device tally `offerTally_<device>`, merged like the other tallies, never
+  shown): under 14 days sparkle and verse every time; 14–45 days sparkle 2 in 3; 45–90 sparkle 1 in 3, verse 1 in 2;
+  after that sparkle 1 in 5, verse 1 in 3. The thinning is intermittent on purpose — the habit moves from the
+  celebration to the connection — and the heart moment is untouched. Settings → **After an offering**: *Thin out as it
+  becomes habit* (default), *Always full*, or *Words only* (verse, no sparkle).
+- Later ideas, not built: a weekly-check line asking which offering felt like love.

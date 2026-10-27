@@ -756,7 +756,9 @@
   .of-act { display: flex; gap: 10px; justify-content: center; align-items: center; margin-top: 14px; flex-wrap: wrap; }
   .of-act .go { background: var(--vision); border-color: var(--vision); color: #10131c; }
   .of-foot { margin-top: 18px; display: flex; justify-content: space-between; align-items: center; gap: 10px; }
-  .of-offered { color: var(--vision); font-size: 1rem; padding: 36px 0; }
+  .of-offered { color: var(--vision); font-size: 1rem; padding: 36px 0 12px; }
+  .of-verse { color: var(--text-dim); font-size: 0.88rem; line-height: 1.6; padding: 0 8px 28px; font-style: italic; }
+  .of-verse small { display: block; margin-top: 6px; font-style: normal; color: var(--text-faint); font-size: 0.74rem; }
   .toward-badge { color: var(--vision); border-color: color-mix(in srgb, var(--vision) 40%, var(--border)); }
   .toward-pick { background: var(--bg); border: 1px solid var(--border); color: var(--text-dim); border-radius: 8px; padding: 3px 6px; font: inherit; font-size: 0.72rem; max-width: 60%; }
   .toward-row { display: flex; align-items: center; gap: 8px; margin: 8px 0; font-size: 0.76rem; color: var(--text-faint); }
@@ -1117,6 +1119,8 @@
         <div class="settings-row"><span>Glow on your next step</span><input type="checkbox" id="glowToggle"></div>
         <div class="settings-row"><span>Offer a quiet Abide moment (a heart placed with Jesus) after being idle</span>
           <select id="microAbideSelect"><option value="0">Never</option><option value="5">5 min</option><option value="10">10 min</option><option value="15">15 min</option><option value="30">30 min</option><option value="60">1 hour</option><option value="120">2 hours</option></select></div>
+        <div class="settings-row"><span>After an offering: the sparkle and verse</span>
+          <select id="offerRewardSelect"><option value="fade">Thin out as it becomes habit</option><option value="full">Always full</option><option value="quiet">Words only</option></select></div>
         <button class="btn" id="microAbidePreview" style="width:100%; margin-top:4px;">Preview it now</button>
         <div class="settings-row" style="display:block;"><span id="tallyLine" style="color:var(--text-dim);font-size:0.82rem;"></span></div>
       </div>
@@ -1433,6 +1437,7 @@
     musicVolume: 40, // percent of device volume — background music should sit under your thinking, not over it
     icsUrls: '', icsProxy: '',
     syncIdleMin: 2, // cloud push waits this many idle minutes after your last change (0 = only the Sync now button)
+    offerReward: 'fade', // after an offering: 'fade' (sparkle and verse thin out with practice), 'full', or 'quiet' (words only)
     microAbideMins: 15, // offer a quiet Abide moment after this many idle minutes (or this long away from the app); 0 = never
     glow: true, // a magical glow on the next step (only while celebrations are on)
     celebrate: false, // opt-in layer of tiny moments; never changes behavior
@@ -1817,6 +1822,7 @@
     if (settings.celebrate) celebrate('start');
     updateMagic();
   });
+  document.getElementById('offerRewardSelect').addEventListener('change', (e) => { settings.offerReward = e.target.value; saveSettings(); });
   document.getElementById('microAbideSelect').addEventListener('change', (e) => { settings.microAbideMins = parseInt(e.target.value, 10) || 0; saveSettings(); });
   document.getElementById('microAbidePreview').addEventListener('click', () => microAbide.show(true));
   document.getElementById('heartBtn').addEventListener('click', () => microAbide.show());
@@ -4025,6 +4031,48 @@ For God alone my soul waits in silence. — Psalm 62:1`;
       work.sort((a, b) => a.r - b.r || a.i - b.i);
       return out.concat(work).slice(0, 5);
     }
+    // ---- the reward, and how it thins. Private and never shown: the days you have offered (per device, merged like the
+    // tallies) set how often the sparkle and the verse appear — full while it is new, then intermittent, so the habit moves
+    // from the celebration to the connection. The quiet "Offered." always stays, and the heart moment is untouched. ----
+    const OFFER_TALLY_KEY = 'offerTally_' + deviceId();
+    function recordOffering() {
+      const t = store.get(OFFER_TALLY_KEY, {}) || {}, d = dayKey(); t[d] = (t[d] || 0) + 1;
+      const ks = Object.keys(t).sort(); while (ks.length > 400) delete t[ks.shift()];
+      store.set(OFFER_TALLY_KEY, t);
+    }
+    function offerDays() {
+      const days = new Set();
+      try { for (let i = 0; i < localStorage.length; i++) { const k = localStorage.key(i); if (k && k.startsWith(STORE_PREFIX + 'offerTally_')) Object.keys(store.get(k.slice(STORE_PREFIX.length), {}) || {}).forEach(d => days.add(d)); } } catch (e) {}
+      return days.size;
+    }
+    function rewardPlan() {
+      const mode = settings.offerReward || 'fade';
+      if (mode === 'full') return { spark: 1, verse: 1 };
+      if (mode === 'quiet') return { spark: 0, verse: 1 };
+      const n = offerDays();
+      return n < 14 ? { spark: 1, verse: 1 } : n < 45 ? { spark: 0.67, verse: 1 } : n < 90 ? { spark: 0.34, verse: 0.5 } : { spark: 0.2, verse: 0.34 };
+    }
+    // World English Bible (public domain), short lines about doing everything for Him
+    const VERSES = [
+      ['Whatever you do, work heartily, as for the Lord, and not for men.', 'Colossians 3:23'],
+      ['Whatever you do in word or in deed, do all in the name of the Lord Jesus, giving thanks to God the Father through him.', 'Colossians 3:17'],
+      ['Whether therefore you eat, or drink, or whatever you do, do all to the glory of God.', '1 Corinthians 10:31'],
+      ['Inasmuch as you did it to one of the least of these my brothers, you did it to me.', 'Matthew 25:40'],
+      ['Faith working through love.', 'Galatians 5:6'],
+      ['We love him, because he first loved us.', '1 John 4:19'],
+      ['If you love me, keep my commandments.', 'John 14:15'],
+      ['Your labor is not in vain in the Lord.', '1 Corinthians 15:58'],
+      ['With good will doing service, as to the Lord, and not to men.', 'Ephesians 6:7'],
+      ['Establish the work of our hands for us.', 'Psalm 90:17'],
+      ['Commit your works to Yahweh, and your plans shall be established.', 'Proverbs 16:3'],
+      ['You shall love the Lord your God with all your heart, with all your soul, with all your mind, and with all your strength.', 'Mark 12:30'],
+    ];
+    function nextVerse() {
+      const seen = store.get('__local_verseSeen', []) || [], pool = VERSES.map((_, i) => i).filter(i => !seen.includes(i));
+      const i = (pool.length ? pool : VERSES.map((_, k) => k))[Math.floor(Math.random() * (pool.length || VERSES.length))];
+      store.set('__local_verseSeen', seen.concat(i).slice(-Math.floor(VERSES.length / 2)));
+      return VERSES[i];
+    }
     const towardLine = (o) => { const v = towardOf(o); return v ? '<div class="of-toward">toward ' + escapeHtml(v.t || 'a destination') + '</div>' : ''; };
     function body(it) {
       if (it.k === 'who') return '<div class="of-kind">Intercede</div><h2 class="of-title">Who is on your heart?</h2><div class="of-sub">A name is enough. You can add what you are praying for later.</div>'
@@ -4049,10 +4097,14 @@ For God alone my soul waits in silence. — Psalm 62:1`;
         + (it ? body(it) : '<div class="of-title" style="margin:30px 0 6px">That’s enough for now.</div><div class="of-sub">Go in peace.</div><div class="of-act"><button type="button" class="btn go" data-of="rest">Amen</button></div>') + foot;
       const first = box.querySelector('input[type=text]:not(#ofCapIn)'); if (first) setTimeout(() => { try { first.focus({ preventScroll: true }); } catch (e) {} }, 60);
     }
+    let offeredTimer = null;
     function offered() {
-      const box = rootEl.querySelector('#maOffer'); box.innerHTML = '<div class="of-offered">Offered.</div>';
-      const r = box.getBoundingClientRect(); try { magic.play('radiate', r.left + r.width / 2, r.top + 40); } catch (e) {}
-      setTimeout(() => { idx++; draw(); }, 1100);
+      recordOffering();
+      const plan = rewardPlan(), v = Math.random() < plan.verse ? nextVerse() : null, box = rootEl.querySelector('#maOffer');
+      box.innerHTML = '<div class="of-offered">Offered.</div>' + (v ? '<div class="of-verse">“' + escapeHtml(v[0]) + '”<small>' + escapeHtml(v[1]) + '</small></div>' : '');
+      if (Math.random() < plan.spark) { const r = box.getBoundingClientRect(); try { magic.play('radiate', r.left + r.width / 2, r.top + 40); } catch (e) {} }
+      const go = () => { clearTimeout(offeredTimer); box.removeEventListener('click', go); idx++; draw(); };
+      box.addEventListener('click', go); offeredTimer = setTimeout(go, v ? 3200 : 1100);
     }
     function onClick(e) {
       const c = e.target.closest('[data-d]'); if (c) { rootEl.querySelectorAll('#ofDate .chip').forEach(x => x.classList.toggle('selected', x === c)); return; }
@@ -4092,7 +4144,7 @@ For God alone my soul waits in silence. — Psalm 62:1`;
       const go = rootEl.querySelector('.btn.go[data-of]'); if (go) go.click();
     }
     function begin(root, done) {
-      items = stack(); if (!items.length) return false;
+      clearTimeout(offeredTimer); items = stack(); if (!items.length) return false;
       rootEl = root; finish = done; idx = 0;
       let box = root.querySelector('#maOffer');
       if (!box) { box = document.createElement('div'); box.id = 'maOffer'; box.className = 'of-card'; root.querySelector('.ma-card').appendChild(box); box.addEventListener('click', onClick); box.addEventListener('keydown', onKey, true); }
@@ -6258,7 +6310,7 @@ For God alone my soul waits in silence. — Psalm 62:1`;
     autoOverrunEnabled = !!settings.autoOverrun; setChk('autoOverrunToggle', autoOverrunEnabled);
     bumpMinutes = settings.bumpMinutes; setVal('bumpLengthInput', bumpMinutes); updateContinueLabel();
     setVal('weekResetSelect', settings.weekReset); setVal('syncIdleSelect', String(settings.syncIdleMin));
-    setChk('celebrateToggle', !!settings.celebrate); setChk('glowToggle', settings.glow !== false); setVal('microAbideSelect', String(settings.microAbideMins)); renderTallies(); updateMagic();
+    setChk('celebrateToggle', !!settings.celebrate); setChk('glowToggle', settings.glow !== false); setVal('microAbideSelect', String(settings.microAbideMins)); setVal('offerRewardSelect', settings.offerReward || 'fade'); renderTallies(); updateMagic();
     voiceNotesEnabled = settings.voiceNotes !== false; setChk('voiceNotesToggle', voiceNotesEnabled); updateMicBtnVisibility();
     setVal('icsUrls', settings.icsUrls); setVal('icsProxy', settings.icsProxy);
     ['step', 'ahead', 'abide'].forEach(m => {
@@ -6453,7 +6505,7 @@ For God alone my soul waits in silence. — Psalm 62:1`;
             else o[key] = mergeText(bv == null ? '' : bv, lv, rv);
           });
           out[k] = JSON.stringify(o);
-        } else out[k] = JSON.stringify(merge3(jparse(b, undefined), jparse(l, undefined), jparse(r, undefined), /^(tallies|tally_|outcomeTally_)/.test(k)));
+        } else out[k] = JSON.stringify(merge3(jparse(b, undefined), jparse(l, undefined), jparse(r, undefined), /^(tallies|tally_|outcomeTally_|offerTally_)/.test(k)));
       } catch (e) { out[k] = l; }
     });
     return out;
