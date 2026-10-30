@@ -1,0 +1,581 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>What Do You Really Want? — A Journey with Jesus</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --deep: #0f1c2e;
+  --mid: #1a3a5c;
+  --accent: #c9a227;
+  --gold: #e8d5a3;
+  --light: #f7f4ef;
+  --card: #ffffff;
+  --text: #1e2a3a;
+  --muted: #5a6a7a;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: 'Inter', system-ui, sans-serif;
+  background: linear-gradient(180deg, var(--deep) 0%, #162840 40%, var(--light) 100%);
+  color: var(--text);
+  line-height: 1.6;
+  min-height: 100vh;
+}
+.hero {
+  text-align: center;
+  padding: 5rem 1.5rem 4rem;
+  color: white;
+  position: relative;
+  overflow: hidden;
+}
+.hero::before {
+  content: '';
+  position: absolute;
+  top: -50%; left: -50%;
+  width: 200%; height: 200%;
+  background: radial-gradient(circle at 30% 20%, rgba(201,162,39,0.15) 0%, transparent 50%),
+              radial-gradient(circle at 70% 80%, rgba(26,58,92,0.4) 0%, transparent 40%);
+  z-index: 0;
+}
+.hero-content { position: relative; z-index: 1; max-width: 800px; margin: 0 auto; }
+.hero h1 {
+  font-family: 'Playfair Display', serif;
+  font-size: clamp(2.4rem, 6vw, 4.2rem);
+  font-weight: 700;
+  letter-spacing: -0.5px;
+  margin-bottom: 0.5rem;
+  background: linear-gradient(135deg, #fff 30%, var(--gold) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+.hero .subtitle {
+  font-size: 1.15rem;
+  opacity: 0.9;
+  font-weight: 300;
+  max-width: 560px;
+  margin: 1rem auto 0;
+}
+.journey {
+  max-width: 980px;
+  margin: 0 auto;
+  padding: 2rem 1.5rem 5rem;
+}
+.stage {
+  display: grid;
+  grid-template-columns: 80px 1fr;
+  gap: 1.5rem;
+  margin-bottom: 2.5rem;
+  position: relative;
+}
+.stage::before {
+  content: '';
+  position: absolute;
+  left: 39px;
+  top: 70px;
+  bottom: -2.5rem;
+  width: 2px;
+  background: linear-gradient(to bottom, var(--accent), transparent);
+  z-index: 0;
+}
+.stage:last-child::before { display: none; }
+.marker {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  background: var(--mid);
+  color: var(--gold);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: 'Playfair Display', serif;
+  font-size: 1.6rem;
+  font-weight: 700;
+  border: 3px solid var(--accent);
+  position: relative;
+  z-index: 1;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+}
+.card {
+  background: var(--card);
+  border-radius: 16px;
+  padding: 1.75rem 2rem;
+  box-shadow: 0 8px 30px rgba(15,28,46,0.08);
+  border-left: 4px solid var(--accent);
+}
+.card h2 {
+  font-family: 'Playfair Display', serif;
+  font-size: 1.55rem;
+  color: var(--deep);
+  margin-bottom: 0.75rem;
+}
+.card h3 {
+  font-size: 1.05rem;
+  font-weight: 600;
+  color: var(--mid);
+  margin: 1.25rem 0 0.5rem;
+}
+.verse {
+  background: #f8f4ea;
+  border-left: 3px solid var(--accent);
+  padding: 0.9rem 1.1rem;
+  margin: 0.75rem 0;
+  border-radius: 0 8px 8px 0;
+  font-style: italic;
+  color: var(--deep);
+  font-size: 0.98rem;
+}
+.verse .ref {
+  display: inline-block;
+  font-style: normal;
+  font-weight: 600;
+  font-size: 0.85rem;
+  color: var(--accent);
+  margin-top: 0.3rem;
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.verse .ref:hover { color: var(--mid); }
+.ref-link {
+  color: var(--accent);
+  font-weight: 600;
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+.ref-link:hover { color: var(--mid); }
+ul { margin: 0.5rem 0 0.5rem 1.2rem; }
+li { margin-bottom: 0.4rem; }
+.connections {
+  background: var(--deep);
+  color: white;
+  border-radius: 16px;
+  padding: 2rem;
+  margin-top: 1rem;
+}
+.connections h2 { color: var(--gold); font-family: 'Playfair Display', serif; }
+.connection-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 1.25rem;
+  margin-top: 1.25rem;
+}
+.conn-card {
+  background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(201,162,39,0.3);
+  border-radius: 12px;
+  padding: 1.25rem;
+}
+.conn-card h4 { color: var(--gold); font-size: 1rem; margin-bottom: 0.4rem; }
+.footer {
+  text-align: center;
+  padding: 3rem 1.5rem;
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+.tag {
+  display: inline-block;
+  background: var(--accent);
+  color: var(--deep);
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 0.25rem 0.6rem;
+  border-radius: 20px;
+  margin-bottom: 0.5rem;
+  letter-spacing: 0.5px;
+}
+
+/* Modal for full Berean text */
+.modal {
+  display: none;
+  position: fixed;
+  z-index: 1000;
+  left: 0; top: 0;
+  width: 100%; height: 100%;
+  background: rgba(15, 28, 46, 0.75);
+  backdrop-filter: blur(4px);
+  align-items: center;
+  justify-content: center;
+}
+.modal.open { display: flex; }
+.modal-content {
+  background: #fff;
+  max-width: 680px;
+  width: 90%;
+  max-height: 85vh;
+  overflow-y: auto;
+  border-radius: 16px;
+  padding: 2rem 2.25rem;
+  position: relative;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+}
+.modal-content h3 {
+  font-family: 'Playfair Display', serif;
+  color: var(--deep);
+  margin-bottom: 0.5rem;
+  font-size: 1.4rem;
+}
+.modal-content .bsb-label {
+  font-size: 0.75rem;
+  color: var(--accent);
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  margin-bottom: 1rem;
+}
+.modal-content .full-text {
+  font-size: 1.05rem;
+  line-height: 1.7;
+  color: var(--text);
+  white-space: pre-wrap;
+}
+.gk {
+  color: var(--accent);
+  font-weight: 600;
+  cursor: pointer;
+  border-bottom: 1px dotted var(--accent);
+  position: relative;
+}
+.gk:hover { color: var(--mid); border-bottom-color: var(--mid); }
+.greek-card {
+  position: fixed;
+  z-index: 1100;
+  background: #fff;
+  border: 1px solid var(--accent);
+  border-radius: 10px;
+  padding: 0.85rem 1rem;
+  box-shadow: 0 8px 28px rgba(15,28,46,0.18);
+  max-width: 280px;
+  font-size: 0.9rem;
+  display: none;
+  pointer-events: auto;
+}
+.greek-card.show { display: block; }
+.greek-card .g {
+  font-family: 'Times New Roman', serif;
+  font-size: 1.2rem;
+  color: var(--deep);
+  font-weight: 700;
+  margin-bottom: 0.15rem;
+}
+.greek-card .t {
+  color: var(--accent);
+  font-weight: 600;
+  font-size: 0.82rem;
+  margin-bottom: 0.25rem;
+}
+.greek-card .m { color: var(--text); line-height: 1.45; }
+.close-btn {
+  position: absolute;
+  top: 1rem; right: 1.25rem;
+  background: none;
+  border: none;
+  font-size: 1.8rem;
+  color: var(--muted);
+  cursor: pointer;
+  line-height: 1;
+}
+.close-btn:hover { color: var(--deep); }
+@media (max-width: 640px) {
+  .stage { grid-template-columns: 60px 1fr; gap: 1rem; }
+  .marker { width: 60px; height: 60px; font-size: 1.3rem; }
+  .stage::before { left: 29px; }
+  .card { padding: 1.25rem 1.25rem; }
+  .modal-content { padding: 1.5rem; }
+}
+</style>
+</head>
+<body>
+
+<div class="hero">
+  <div class="hero-content">
+    <div class="tag">BANDO JOURNEY</div>
+    <h1>What Do You Really Want?</h1>
+    <p class="subtitle">Jesus surfaces the true desire. Abiding in the Son both shapes the want and opens the way to receive it. Asking is the fruit of remaining in Him.</p>
+    <p style="margin-top:1rem; font-size:0.9rem; opacity:0.75;">Click any reference for the full Berean text. Inside the text, gold underlined words open an inline card with the key Greek or Hebrew.</p>
+  </div>
+</div>
+
+<div class="journey">
+
+  <div class="stage">
+    <div class="marker">1</div>
+    <div class="card">
+      <h2>Jesus Asks the Question</h2>
+      <p>He does not assume. He surfaces the real want so it can be named and brought to Him.</p>
+      <div class="verse">“What do you want?”<span class="ref" onclick="openPassage('john138')">John 1:38 — First words of Jesus in John. The disciples answer by asking where He abides.</span></div>
+      <div class="verse">“Do you want to get well?”<span class="ref" onclick="openPassage('john56')">John 5:6 — To the man at Bethesda after 38 years.</span></div>
+      <div class="verse">“What do you want Me to do for you?”<span class="ref" onclick="openPassage('mark1051')">Mark 10:51 — Bartimaeus: “let me see again.” He receives sight and follows.</span></div>
+      <h3>The Contrast</h3>
+      <p>Same question to those seeking seats of honor (<span class="ref-link" onclick="openPassage('mark1036')">Mark 10:35–40</span>). They do not know what they are asking. One want leads to following the Son; the other does not.</p>
+    </div>
+  </div>
+
+  <div class="stage">
+    <div class="marker">2</div>
+    <div class="card">
+      <h2>How Asking Works</h2>
+      <p>The promise is real. The condition is remaining in the Son so His words form the wish.</p>
+      <div class="verse">“If you remain in Me and My words remain in you, ask whatever you wish, and it will be done for you.”<span class="ref" onclick="openPassage('john157')">John 15:7</span></div>
+      <ul>
+        <li><span class="ref-link" onclick="openPassage('john1413')">John 14:13–14</span>; <span class="ref-link" onclick="openPassage('john1623')">John 16:23–24</span> — Ask in My name… that your joy may be complete.</li>
+        <li><span class="ref-link" onclick="openPassage('john410')">John 4:10</span> — “If you knew the gift of God… you would have asked Him, and He would have given you living water.”</li>
+        <li><span class="ref-link" onclick="openPassage('matt77')">Matt 7:7–11</span> — Ask, seek, knock. The Father gives good gifts.</li>
+        <li><span class="ref-link" onclick="openPassage('matt633')">Matt 6:33</span> — Seek first the kingdom and His righteousness.</li>
+        <li><span class="ref-link" onclick="openPassage('ps37')">Psalm 37:4</span> — Delight yourself in the LORD, and He will give you the desires of your heart.</li>
+        <li><span class="ref-link" onclick="openPassage('james42')">James 4:2–3</span> — You do not have because you do not ask. You ask wrongly, to spend it on your passions.</li>
+      </ul>
+      <p style="margin-top:1rem;"><strong>The pattern:</strong> real want → bring it to the Son → abide so His words reshape it → ask in His name → receive and follow.</p>
+    </div>
+  </div>
+
+  <div class="stage">
+    <div class="marker">3</div>
+    <div class="card">
+      <h2>Come and See / Jump In</h2>
+      <p>In a fallen world, desires are disordered by default. The Kingdom grows here as men learn to want what the Son gives and then receive it from Him.</p>
+      <ul>
+        <li>Name the actual want (not the polished version).</li>
+        <li>Stay with Jesus long enough for His words to touch the want.</li>
+        <li>Ask, then do the next thing He gives — like Bartimaeus, follow on the road.</li>
+        <li>Abiding is the connected way of life with Father, Son, and Spirit.</li>
+      </ul>
+      <div class="verse">Jesus is the way, the truth, and the life. Abiding in Him is remaining in the Vine so the life of the Vine flows.<span class="ref" onclick="openPassage('john146')">John 14:6 · John 15</span></div>
+    </div>
+  </div>
+
+  <div class="stage">
+    <div class="marker">✦</div>
+    <div class="card connections">
+      <h2>Surprising Connections</h2>
+      <p style="opacity:0.9; margin-bottom:0.5rem;">Desire in Scripture points forward to Christ — the One who satisfies every true thirst and hunger. Click references to read the full texts.</p>
+      <div class="connection-grid">
+        <div class="conn-card">
+          <h4>Thirst & Living Water</h4>
+          <p><span class="ref-link" onclick="openPassage('isa551')">Isa 55:1</span> “Come, everyone who thirsts…” → <span class="ref-link" onclick="openPassage('john410')">John 4:10</span>, 14; <span class="ref-link" onclick="openPassage('john737')">John 7:37–38</span>; Rev 22:17. The well and the wilderness thirst both point to the Son who is the water.</p>
+        </div>
+        <div class="conn-card">
+          <h4>Bread That Satisfies</h4>
+          <p><span class="ref-link" onclick="openPassage('john635')">John 6:35</span> “I am the bread of life…” Echoes the manna and Isa 55’s warning against spending on what is not bread.</p>
+        </div>
+        <div class="conn-card">
+          <h4>Water from the Rock</h4>
+          <p>Ex 17 / Num 20 — the struck rock yields water. <span class="ref-link" onclick="openPassage('1cor104')">1 Cor 10:4</span> “that Rock was Christ.” Desire answered by the struck Son.</p>
+        </div>
+        <div class="conn-card">
+          <h4>Seeking Leads to Abiding</h4>
+          <p><span class="ref-link" onclick="openPassage('john138')">John 1:38–39</span> — the opening question ends with the disciples staying with Him. Desire is meant to become remaining.</p>
+        </div>
+        <div class="conn-card">
+          <h4>Sure Mercies of David</h4>
+          <p><span class="ref-link" onclick="openPassage('isa553')">Isa 55:3</span> fulfilled in the risen Christ (Acts 13:34). The invitation to come and drink is the invitation into the covenant kept in the Son.</p>
+        </div>
+        <div class="conn-card">
+          <h4>The Bride’s Longing</h4>
+          <p>Song of Songs — the soul seeking the Beloved. The heart’s deepest want is for the One who is the Bridegroom.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<div class="footer">
+  <p>Awaken to more life through a transformational relationship with Jesus.<br>CONNECTION · come and see · jump in<br><small>Texts: Berean Standard Bible (public domain)</small></p>
+</div>
+
+<!-- Modal -->
+<div id="passageModal" class="modal" onclick="closeIfBackdrop(event)">
+  <div class="modal-content">
+    <button class="close-btn" onclick="closePassage()">&times;</button>
+    <h3 id="modalTitle"></h3>
+    <div class="bsb-label">BEREAN STANDARD BIBLE</div>
+    <div id="modalText" class="full-text"></div>
+  </div>
+</div>
+<div id="greekCard" class="greek-card"></div>
+
+<script>
+const passages = {
+  john138: {
+    title: "John 1:38–39",
+    text: `38 Jesus turned and saw them following. “What do you <span class="gk" data-g="ζητεῖτε" data-t="zēteite (ζητέω)" data-m="you seek / you want — to seek, search for, desire (Strong’s 2212). First words of Jesus in John.">want</span>?” He asked.
+
+They said to Him, “Rabbi” (which means Teacher), “where are You <span class="gk" data-g="μένεις" data-t="meneis (μένω)" data-m="you are staying / remaining (Strong’s 3306). The disciples’ answer points toward abiding.">staying</span>?”
+
+39 “Come and see,” He replied. So they went and saw where He was staying, and spent that day with Him. It was about the tenth hour.`
+  },
+  john56: {
+    title: "John 5:5–9",
+    text: `5 One man there had been an invalid for thirty-eight years.
+6 When Jesus saw him lying there and realized that he had spent a long time in this condition, He asked him, “Do you <span class="gk" data-g="Θέλεις" data-t="Theleis (θέλω)" data-m="Do you want / do you wish — to will, desire, purpose (Strong’s 2309).">want</span> to get <span class="gk" data-g="ὑγιὴς γενέσθαι" data-t="hygiēs genesthai" data-m="to become well / healthy — ὑγιής (sound, whole) + γίνομαι (to become).">well</span>?”
+
+7 “Sir,” the invalid replied, “I have no one to help me into the pool when the water is stirred. While I am on my way, someone else goes in before me.”
+
+8 Then Jesus told him, “Get up, pick up your mat, and walk.”
+9 Immediately the man was made well, and he picked up his mat and began to walk.
+
+Now this happened on the Sabbath day.`
+  },
+  mark1051: {
+    title: "Mark 10:46–52",
+    text: `46 Next, they came to Jericho. And as Jesus and His disciples were leaving Jericho with a large crowd, a blind beggar named Bartimaeus, the son of Timaeus, was sitting beside the road.
+47 When he heard that it was Jesus of Nazareth, he began to cry out, “Jesus, Son of David, have mercy on me!”
+48 Many people admonished him to be silent, but he cried out all the louder, “Son of David, have mercy on me!”
+49 Jesus stopped and said, “Call him.”
+So they called the blind man. “Take courage!” they said. “Get up! He is calling for you.”
+50 Throwing off his cloak, Bartimaeus jumped up and came to Jesus.
+51 “What do you <span class="gk" data-g="θέλεις" data-t="theleis (θέλω)" data-m="do you want / do you wish (Strong’s 2309). Same root as in John 5:6.">want</span> Me to do for you?” Jesus asked.
+“Rabboni,” said the blind man, “let me <span class="gk" data-g="ἀναβλέψω" data-t="anablepsō (ἀναβλέπω)" data-m="that I may see again / recover sight (Strong’s 308).">see again</span>.”
+52 “Go,” said Jesus, “your faith has healed you.” And immediately he received his sight and followed Jesus along the road.`
+  },
+  mark1036: {
+    title: "Mark 10:35–40",
+    text: `35 Then James and John, the sons of Zebedee, came to Jesus and declared, “Teacher, we want You to do for us whatever we ask.”
+36 “What do you want Me to do for you?” He inquired.
+37 They answered, “Grant that one of us may sit at Your right hand and the other at Your left in Your glory.”
+38 “You do not know what you are asking,” Jesus replied. “Can you drink the cup I will drink, or be baptized with the baptism I will undergo?”
+39 “We can,” they answered.
+“You will drink the cup that I drink,” Jesus said, “and you will be baptized with the baptism that I undergo.
+40 But to sit at My right or left is not Mine to grant. These seats belong to those for whom they have been prepared.”`
+  },
+  john157: {
+    title: "John 15:7",
+    text: `7 If you <span class="gk" data-g="μείνητε" data-t="meinēte (μένω)" data-m="you remain — to stay, abide, dwell (Strong’s 3306).">remain</span> in Me and My <span class="gk" data-g="ῥήματά" data-t="rhēmata (ῥῆμα)" data-m="words / sayings / utterances (Strong’s 4487).">words</span> <span class="gk" data-g="μείνῃ" data-t="meinē (μένω)" data-m="remain — same abiding verb.">remain</span> in you, <span class="gk" data-g="αἰτήσασθε" data-t="aitēsasthe (αἰτέω)" data-m="ask (middle voice) — to ask, request (Strong’s 154).">ask</span> whatever you <span class="gk" data-g="θέλητε" data-t="thelēte (θέλω)" data-m="wish / will (Strong’s 2309).">wish</span>, and it will be done for you.
+8 This is to My Father’s glory, that you bear much fruit, proving yourselves to be My disciples.`
+  },
+  john1413: {
+    title: "John 14:13–14",
+    text: `13 And I will do whatever you ask in My name, so that the Father may be glorified in the Son.
+14 If you ask Me for anything in My name, I will do it.`
+  },
+  john1623: {
+    title: "John 16:23–24",
+    text: `23 In that day you will no longer ask Me anything. Truly, truly, I tell you, whatever you ask the Father in My name, He will give you.
+24 Until now you have not asked for anything in My name. Ask and you will receive, so that your joy may be complete.`
+  },
+  john410: {
+    title: "John 4:10",
+    text: `10 Jesus answered, “If you <span class="gk" data-g="ᾔδεις" data-t="ēdeis (οἶδα)" data-m="you knew — perfect knowledge of the gift and the Giver.">knew</span> the gift of God and who is asking you for a drink, you would have <span class="gk" data-g="αἰτεῖν" data-t="aitein (αἰτέω)" data-m="asked — the same asking verb as in John 15:7.">asked</span> Him, and He would have given you <span class="gk" data-g="ὕδωρ ζῶν" data-t="hydōr zōn" data-m="living water — the water that is alive / gives life.">living water</span>.”`
+  },
+  matt77: {
+    title: "Matthew 7:7–11",
+    text: `7 <span class="gk" data-g="Αἰτεῖτε" data-t="Aiteite (αἰτέω)" data-m="Ask (imperative) — Strong’s 154.">Ask</span>, and it will be given to you; <span class="gk" data-g="ζητεῖτε" data-t="zēteite (ζητέω)" data-m="seek — same verb as John 1:38 (Strong’s 2212).">seek</span>, and you will find; <span class="gk" data-g="κρούετε" data-t="krouete (κρούω)" data-m="knock — Strong’s 2925.">knock</span>, and the door will be opened to you.
+8 For everyone who asks receives; he who seeks finds; and to him who knocks, the door will be opened.
+9 Which of you, if his son asks for bread, will give him a stone?
+10 Or if he asks for a fish, will give him a snake?
+11 So if you who are evil know how to give good gifts to your children, how much more will your Father in heaven give good things to those who ask Him!`
+  },
+  matt633: {
+    title: "Matthew 6:33",
+    text: `33 But seek first the kingdom of God and His righteousness, and all these things will be added unto you.`
+  },
+  ps37: {
+    title: "Psalm 37:4",
+    text: `4 <span class="gk" data-g="וְהִתְעַנַּג" data-t="wəhiṯʿannaḡ (עָנַג)" data-m="Delight yourself (Hithpael) — to take exquisite delight, luxuriate, be soft/pliable toward (Strong’s H6026). Reflexive: cause yourself to delight in the LORD.">Delight</span> yourself in the LORD, and He will give you the <span class="gk" data-g="מִשְׁאֲלֹת" data-t="mišʾălōṯ (מִשְׁאָלָה)" data-m="desires / petitions / requests (from שָׁאַל, to ask) — Strong’s H4862. What the heart asks of God.">desires</span> of your heart.`
+  },
+  james42: {
+    title: "James 4:2–3",
+    text: `2 You crave what you do not have; you kill and covet, but are unable to obtain it. You quarrel and fight. You do not have, because you do not ask.
+3 And when you do ask, you do not receive, because you ask with wrong motives, that you may squander it on your pleasures.`
+  },
+  john146: {
+    title: "John 14:6",
+    text: `6 Jesus answered, “I am the way and the truth and the life. No one comes to the Father except through Me.”`
+  },
+  isa551: {
+    title: "Isaiah 55:1",
+    text: `1 Come, everyone who thirsts, come to the waters; and you who have no money, come, buy, and eat! Come, buy wine and milk without money and without price.`
+  },
+  john737: {
+    title: "John 7:37–38",
+    text: `37 On the last and greatest day of the feast, Jesus stood up and called out in a loud voice, “If anyone is thirsty, let him come to Me and drink.
+38 Whoever believes in Me, as the Scripture has said: ‘Streams of living water will flow from within him.’”`
+  },
+  john635: {
+    title: "John 6:35",
+    text: `35 Jesus answered, “I am the bread of life. Whoever comes to Me will never hunger, and whoever believes in Me will never thirst.”`
+  },
+  "1cor104": {
+    title: "1 Corinthians 10:4",
+    text: `4 and drank the same spiritual drink; for they drank from the spiritual rock that accompanied them, and that rock was Christ.`
+  },
+  isa553: {
+    title: "Isaiah 55:3",
+    text: `3 Incline your ear and come to Me; listen, so that your soul may live. I will make an everlasting <span class="gk" data-g="בְּרִית" data-t="bərîṯ" data-m="covenant — Strong’s H1285.">covenant</span> with you, My loving devotion <span class="gk" data-g="חַסְדֵי" data-t="ḥasdê (חֶסֶד)" data-m="sure mercies / covenant kindnesses (Strong’s H2617) promised to David.">promised to David</span>.`
+  }
+};
+
+function openPassage(id) {
+  const p = passages[id];
+  if (!p) return;
+  document.getElementById('modalTitle').textContent = p.title;
+  document.getElementById('modalText').innerHTML = p.text;
+  hideGreekCard();
+  document.getElementById('passageModal').classList.add('open');
+  document.body.style.overflow = 'hidden';
+  bindGreekSpans();
+}
+
+function bindGreekSpans() {
+  document.querySelectorAll('#modalText .gk').forEach(span => {
+    span.onclick = (e) => {
+      e.stopPropagation();
+      showGreekCard(span);
+    };
+  });
+}
+
+function showGreekCard(span) {
+  const card = document.getElementById('greekCard');
+  card.innerHTML = `<div class="g">${span.dataset.g}</div><div class="t">${span.dataset.t}</div><div class="m">${span.dataset.m}</div>`;
+  const rect = span.getBoundingClientRect();
+  let left = rect.left;
+  let top = rect.bottom + 6;
+  if (left + 280 > window.innerWidth) left = window.innerWidth - 290;
+  if (top + 120 > window.innerHeight) top = rect.top - 130;
+  card.style.left = left + 'px';
+  card.style.top = top + 'px';
+  card.classList.add('show');
+}
+
+function hideGreekCard() {
+  document.getElementById('greekCard').classList.remove('show');
+}
+
+function closePassage() {
+  document.getElementById('passageModal').classList.remove('open');
+  document.body.style.overflow = '';
+  hideGreekCard();
+}
+
+function closeIfBackdrop(e) {
+  if (e.target.id === 'passageModal') closePassage();
+}
+
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') { closePassage(); hideGreekCard(); }
+});
+document.addEventListener('click', e => {
+  if (!e.target.closest('.greek-card') && !e.target.closest('.gk')) hideGreekCard();
+});
+
+function closePassage() {
+  document.getElementById('passageModal').classList.remove('open');
+  document.body.style.overflow = '';
+}
+
+function closeIfBackdrop(e) {
+  if (e.target.id === 'passageModal') closePassage();
+}
+
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') closePassage();
+});
+</script>
+
+</body>
+</html>

@@ -1,0 +1,584 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Completeness vs. “If Only” — BANDO Journey</title>
+<style>
+:root {
+  --deep: #0f1c2e;
+  --mid: #1e3a5f;
+  --accent: #c9a227;
+  --gold: #e8d5a3;
+  --text: #2c3e50;
+  --muted: #6b7c8a;
+  --bg: #f7f4ef;
+  --card: #ffffff;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: Georgia, 'Times New Roman', serif;
+  background: var(--bg);
+  color: var(--text);
+  line-height: 1.6;
+}
+.hero {
+  background: linear-gradient(135deg, var(--deep) 0%, var(--mid) 100%);
+  color: #fff;
+  padding: 4rem 1.5rem 3rem;
+  text-align: center;
+}
+.hero .tag {
+  font-family: system-ui, -apple-system, sans-serif;
+  letter-spacing: 2px;
+  font-size: 0.75rem;
+  color: var(--gold);
+  margin-bottom: 0.75rem;
+  font-weight: 600;
+}
+.hero h1 {
+  font-family: Georgia, serif;
+  font-size: clamp(2rem, 5vw, 3.2rem);
+  font-weight: 700;
+  line-height: 1.15;
+  margin-bottom: 1rem;
+}
+.hero .subtitle {
+  font-size: 1.1rem;
+  max-width: 640px;
+  margin: 0 auto;
+  opacity: 0.92;
+  font-weight: 300;
+}
+.hero .note {
+  margin-top: 1.25rem;
+  font-size: 0.85rem;
+  opacity: 0.75;
+  font-family: system-ui, -apple-system, sans-serif;
+}
+.journey {
+  max-width: 860px;
+  margin: 0 auto;
+  padding: 2.5rem 1.25rem 4rem;
+}
+.stage {
+  display: grid;
+  grid-template-columns: 70px 1fr;
+  gap: 1.25rem;
+  margin-bottom: 2rem;
+  position: relative;
+}
+.stage::before {
+  content: '';
+  position: absolute;
+  left: 34px;
+  top: 70px;
+  bottom: -2rem;
+  width: 2px;
+  background: linear-gradient(to bottom, var(--accent), transparent);
+}
+.stage:last-child::before { display: none; }
+.marker {
+  width: 70px;
+  height: 70px;
+  border-radius: 50%;
+  background: var(--deep);
+  color: var(--gold);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: Georgia, serif;
+  font-size: 1.5rem;
+  font-weight: 700;
+  flex-shrink: 0;
+  z-index: 1;
+}
+.card {
+  background: var(--card);
+  border-radius: 14px;
+  padding: 1.6rem 1.75rem;
+  box-shadow: 0 4px 20px rgba(15,28,46,0.06);
+  border: 1px solid rgba(201,162,39,0.15);
+}
+.card h2 {
+  font-family: Georgia, serif;
+  color: var(--deep);
+  font-size: 1.45rem;
+  margin-bottom: 0.5rem;
+}
+.card h3 {
+  font-size: 1rem;
+  color: var(--mid);
+  margin: 1rem 0 0.4rem;
+  font-family: system-ui, -apple-system, sans-serif;
+}
+.card p { margin-bottom: 0.6rem; }
+.card ul { margin: 0.5rem 0 0.75rem 1.2rem; }
+.card li { margin-bottom: 0.35rem; }
+.verse {
+  background: #f8f4ea;
+  border-left: 3px solid var(--accent);
+  padding: 0.7rem 1rem;
+  margin: 0.75rem 0;
+  font-style: italic;
+  border-radius: 0 8px 8px 0;
+}
+.ref, .ref-link {
+  color: var(--accent);
+  font-weight: 600;
+  cursor: pointer;
+  font-style: normal;
+  font-size: 0.9rem;
+  font-family: system-ui, -apple-system, sans-serif;
+  border-bottom: 1px dotted var(--accent);
+}
+.ref:hover, .ref-link:hover { color: var(--mid); }
+.connections { background: linear-gradient(135deg, #f8f4ea, #fff); }
+.connection-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+  margin-top: 0.75rem;
+}
+.conn-card {
+  background: #fff;
+  padding: 1rem;
+  border-radius: 10px;
+  border: 1px solid rgba(201,162,39,0.2);
+}
+.conn-card h4 {
+  color: var(--deep);
+  font-size: 0.95rem;
+  margin-bottom: 0.35rem;
+  font-family: system-ui, -apple-system, sans-serif;
+}
+.conn-card p { font-size: 0.9rem; margin: 0; }
+.modal {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(15,28,46,0.65);
+  z-index: 1000;
+  backdrop-filter: blur(4px);
+  align-items: center;
+  justify-content: center;
+}
+.modal.open { display: flex; }
+.modal-content {
+  background: #fff;
+  max-width: 680px;
+  width: 90%;
+  max-height: 85vh;
+  overflow-y: auto;
+  border-radius: 16px;
+  padding: 2rem 2.25rem;
+  position: relative;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+}
+.modal-content h3 {
+  font-family: Georgia, serif;
+  color: var(--deep);
+  margin-bottom: 0.5rem;
+  font-size: 1.4rem;
+}
+.modal-content .bsb-label {
+  font-size: 0.75rem;
+  color: var(--accent);
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  margin-bottom: 1rem;
+  font-family: system-ui, -apple-system, sans-serif;
+}
+.modal-content .full-text {
+  font-size: 1.05rem;
+  line-height: 1.7;
+  color: var(--text);
+  white-space: pre-wrap;
+}
+.gk {
+  color: var(--accent);
+  font-weight: 600;
+  cursor: pointer;
+  border-bottom: 1px dotted var(--accent);
+  position: relative;
+}
+.gk:hover { color: var(--mid); border-bottom-color: var(--mid); }
+.greek-card {
+  position: fixed;
+  z-index: 1100;
+  background: #fff;
+  border: 1px solid var(--accent);
+  border-radius: 10px;
+  padding: 0.85rem 1rem;
+  box-shadow: 0 8px 28px rgba(15,28,46,0.18);
+  max-width: 280px;
+  font-size: 0.9rem;
+  display: none;
+  pointer-events: auto;
+}
+.greek-card.show { display: block; }
+.greek-card .g {
+  font-family: 'Times New Roman', serif;
+  font-size: 1.2rem;
+  color: var(--deep);
+  font-weight: 700;
+  margin-bottom: 0.15rem;
+}
+.greek-card .t {
+  color: var(--accent);
+  font-weight: 600;
+  font-size: 0.82rem;
+  margin-bottom: 0.25rem;
+}
+.greek-card .m { color: var(--text); line-height: 1.45; }
+.close-btn {
+  position: absolute;
+  top: 1rem; right: 1.25rem;
+  background: none;
+  border: none;
+  font-size: 1.8rem;
+  color: var(--muted);
+  cursor: pointer;
+  line-height: 1;
+}
+.close-btn:hover { color: var(--deep); }
+@media (max-width: 640px) {
+  .stage { grid-template-columns: 56px 1fr; gap: 0.9rem; }
+  .marker { width: 56px; height: 56px; font-size: 1.2rem; }
+  .stage::before { left: 27px; }
+  .card { padding: 1.25rem; }
+  .connection-grid { grid-template-columns: 1fr; }
+  .modal-content { padding: 1.5rem; }
+}
+</style>
+</head>
+<body>
+
+<div class="hero">
+  <div class="tag">BANDO JOURNEY</div>
+  <h1>Completeness vs. “If Only”</h1>
+  <p class="subtitle">Be perfect as your heavenly Father is perfect. Completeness is not assembled from improved circumstances. It is received by remaining in the Son.</p>
+  <p class="note">Click any reference for the full Berean text. Gold underlined words open an inline card with the key Greek or Hebrew.</p>
+</div>
+
+<div class="journey">
+
+  <div class="stage">
+    <div class="marker">1</div>
+    <div class="card">
+      <h2>The “If Only” That Promises Wholeness</h2>
+      <p>Jesus surfaces the true want. Many of us answer with a condition: if only this person, circumstance, or achievement were better, then I would be whole.</p>
+      <div class="verse">“What do you want?”<span class="ref" onclick="openPassage('john138')">John 1:38</span></div>
+      <div class="verse">“Do you want to get well?”<span class="ref" onclick="openPassage('john56')">John 5:6</span></div>
+      <p>The “if only” treats something in the fallen world as the missing piece. Scripture shows this path does not complete us.</p>
+    </div>
+  </div>
+
+  <div class="stage">
+    <div class="marker">2</div>
+    <div class="card">
+      <h2>What “Perfect” Means</h2>
+      <p>Not sinless performance. Completeness, maturity, the end for which we exist — love that is whole like the Father’s.</p>
+      <div class="verse">“Be perfect, therefore, as your heavenly Father is perfect.”<span class="ref" onclick="openPassage('matt548')">Matt 5:48</span></div>
+      <p>Context is love of enemies (<span class="ref-link" onclick="openPassage('matt543')">Matt 5:43–48</span>). Parallel: “Be merciful, just as your Father is merciful” (<span class="ref-link" onclick="openPassage('luke636')">Luke 6:36</span>).</p>
+      <h3>Same Word Family</h3>
+      <ul>
+        <li><span class="ref-link" onclick="openPassage('james14')">James 1:4</span> — that you may be mature and complete, lacking nothing.</li>
+        <li><span class="ref-link" onclick="openPassage('eph413')">Eph 4:13</span> — to the measure of the stature of the fullness of Christ.</li>
+        <li><span class="ref-link" onclick="openPassage('1john418')">1 John 4:12, 17–18</span> — love made complete; perfect love casts out fear.</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="stage">
+    <div class="marker">3</div>
+    <div class="card">
+      <h2>The Counterfeit Path Named</h2>
+      <p>Those who treat something else as the completing piece walk away or remain unsatisfied.</p>
+      <div class="verse">“What do I still lack?” — then he went away sorrowful.<span class="ref" onclick="openPassage('mark1017')">Mark 10:17–22</span></div>
+      <div class="verse">“If you knew the gift of God… you would have asked Him, and He would have given you living water.”<span class="ref" onclick="openPassage('john410')">John 4:10</span></div>
+      <p>Bartimaeus names the real want and follows (<span class="ref-link" onclick="openPassage('mark1051')">Mark 10:51</span>). The rich man does not.</p>
+    </div>
+  </div>
+
+  <div class="stage">
+    <div class="marker">3b</div>
+    <div class="card" style="background:#fffaf3; border:1px solid rgba(201,162,39,0.35);">
+      <h2>Naming What We Treat as the Missing Piece</h2>
+      <p>Two lists. Not to analyze, but to speak. What is the actual “if only” for you right now? And what is a real lack that is still not the thing that makes you whole?</p>
+
+      <h3>Common Counterfeits</h3>
+      <p style="font-size:0.95rem; color:var(--muted); margin-bottom:0.5rem;">Things we quietly believe would complete us if they were finally better.</p>
+      <ul>
+        <li>If only this relationship were right…</li>
+        <li>If only I had the position, the recognition, the success…</li>
+        <li>If only my body / health were fixed…</li>
+        <li>If only I had enough money or security…</li>
+        <li>If only I were understood or approved…</li>
+        <li>If only the past were different…</li>
+        <li>If only I felt peaceful / confident / free…</li>
+      </ul>
+
+      <h3>Common Legitimate Lackings</h3>
+      <p style="font-size:0.95rem; color:var(--muted); margin-bottom:0.5rem;">Real needs. Good to name. Still not the source of completeness.</p>
+      <ul>
+        <li>Rest and margin</li>
+        <li>Healing in body or relationships</li>
+        <li>Daily provision and work that matters</li>
+        <li>True friendship and belonging</li>
+        <li>Clarity about the next step</li>
+        <li>Freedom from a particular fear or habit</li>
+        <li>Strength to keep going when the load is heavy</li>
+      </ul>
+
+      <p style="margin-top:1rem; font-style:italic;">Jesus already asked the question. The invitation is to answer it out loud: “What do you really want?” Then stay with Him long enough for His words to touch the want.</p>
+    </div>
+  </div>
+
+  <div class="stage">
+    <div class="marker">4</div>
+    <div class="card">
+      <h2>Completeness Already in the Son</h2>
+      <p>Wholeness is received, not assembled. It is the life of the Vine flowing because we remain.</p>
+      <div class="verse">“In Him you have been made complete.”<span class="ref" onclick="openPassage('col210')">Col 2:10</span></div>
+      <div class="verse">“It is finished.”<span class="ref" onclick="openPassage('john1930')">John 19:30</span></div>
+      <div class="verse">“If you remain in Me and My words remain in you, ask whatever you wish…”<span class="ref" onclick="openPassage('john157')">John 15:7</span></div>
+      <p>Abiding is the connected way of life with Father, Son, and Spirit. The desire itself is reshaped as His words abide in us.</p>
+    </div>
+  </div>
+
+  <div class="stage">
+    <div class="marker">5</div>
+    <div class="card">
+      <h2>In This Fallen World</h2>
+      <p>Completeness does not wait for every “if only” to be resolved. It is available now by coming to the Son and remaining in Him while the Kingdom grows here.</p>
+      <ul>
+        <li>Name the actual want (not the polished “if only”).</li>
+        <li>Bring it to Jesus and stay long enough for His words to touch it.</li>
+        <li>Ask from the place of remaining, not from the place of lack that must be fixed first.</li>
+        <li>Do the next thing He gives — like Bartimaeus, follow on the road.</li>
+      </ul>
+      <div class="verse">Jesus is the way, the truth, and the life. Abiding in Him is remaining in the Vine so the life of the Vine flows.<span class="ref" onclick="openPassage('john146')">John 14:6 · John 15</span></div>
+    </div>
+  </div>
+
+  <div class="stage">
+    <div class="marker">✦</div>
+    <div class="card connections">
+      <h2>Surprising Connections</h2>
+      <p style="opacity:0.9; margin-bottom:0.5rem;">Completeness in Scripture points forward to Christ — the One who satisfies every true thirst and finishes the work.</p>
+      <div class="connection-grid">
+        <div class="conn-card">
+          <h4>Thirst Answered by the Struck Son</h4>
+          <p>Ex 17 / Num 20 — the rock yields water. <span class="ref-link" onclick="openPassage('1cor104')">1 Cor 10:4</span> “that Rock was Christ.” Wholeness is not a better well; it is the Son.</p>
+        </div>
+        <div class="conn-card">
+          <h4>Come, Everyone Who Thirsts</h4>
+          <p><span class="ref-link" onclick="openPassage('isa551')">Isa 55:1</span> → John 4, John 7:37–38. The invitation is into the everlasting covenant (<span class="ref-link" onclick="openPassage('isa553')">Isa 55:3</span>).</p>
+        </div>
+        <div class="conn-card">
+          <h4>Delight First</h4>
+          <p><span class="ref-link" onclick="openPassage('ps37')">Psalm 37:4</span> — delight in the LORD and He gives the desires of the heart. The delight reshapes the want.</p>
+        </div>
+        <div class="conn-card">
+          <h4>Perfect Love Casts Out Fear</h4>
+          <p><span class="ref-link" onclick="openPassage('1john418')">1 John 4:18</span> — the fear that we are not yet whole is driven out as the Father’s love is known and remains.</p>
+        </div>
+        <div class="conn-card">
+          <h4>Come to Me</h4>
+          <p><span class="ref-link" onclick="openPassage('matt1128')">Matt 11:28–30</span> — rest for the soul is already offered. Completeness does not wait for the load to disappear first.</p>
+        </div>
+        <div class="conn-card">
+          <h4>It Is Finished</h4>
+          <p><span class="ref-link" onclick="openPassage('john1930')">John 19:30</span> — τετέλεσται. The same root as τέλειος. The work of completeness is already accomplished in the Son.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<div id="passageModal" class="modal" onclick="closeIfBackdrop(event)">
+  <div class="modal-content">
+    <button class="close-btn" onclick="closePassage()">&times;</button>
+    <h3 id="modalTitle"></h3>
+    <div class="bsb-label">BEREAN STANDARD BIBLE</div>
+    <div id="modalText" class="full-text"></div>
+  </div>
+</div>
+<div id="greekCard" class="greek-card"></div>
+
+<script>
+const passages = {
+  john138: {
+    title: "John 1:38–39",
+    text: `38 Jesus turned and saw them following. “What do you <span class="gk" data-g="ζητεῖτε" data-t="zēteite (ζητέω)" data-m="you seek / you want — to seek, search for, desire (Strong’s 2212).">want</span>?” He asked.
+
+They said to Him, “Rabbi” (which means Teacher), “where are You staying?”
+
+39 “Come and see,” He replied. So they went and saw where He was staying, and spent that day with Him. It was about the tenth hour.`
+  },
+  john56: {
+    title: "John 5:5–9",
+    text: `5 One man there had been an invalid for thirty-eight years.
+6 When Jesus saw him lying there and realized that he had spent a long time in this condition, He asked him, “Do you <span class="gk" data-g="Θέλεις" data-t="Theleis (θέλω)" data-m="Do you want / do you wish — to will, desire, purpose (Strong’s 2309).">want</span> to get well?”
+
+7 “Sir,” the invalid replied, “I have no one to help me into the pool when the water is stirred. While I am on my way, someone else goes in before me.”
+
+8 Then Jesus told him, “Get up, pick up your mat, and walk.”
+9 Immediately the man was made well, and he picked up his mat and began to walk.
+
+Now this happened on the Sabbath day.`
+  },
+  matt548: {
+    title: "Matthew 5:48",
+    text: `48 Be <span class="gk" data-g="τέλειοι" data-t="teleioi (τέλειος)" data-m="complete, mature, whole — having reached its end or purpose (Strong’s 5046). From τέλος (end, goal). Not flawless moral performance.">perfect</span>, therefore, as your heavenly Father is <span class="gk" data-g="τέλειός" data-t="teleios" data-m="perfect / complete. The Father is the standard of undivided love.">perfect</span>.`
+  },
+  matt543: {
+    title: "Matthew 5:43–48",
+    text: `43 You have heard that it was said, ‘Love your neighbor’ and ‘Hate your enemy.’
+44 But I tell you, love your enemies and pray for those who persecute you,
+45 that you may be sons of your Father in heaven. He causes His sun to rise on the evil and the good, and sends rain on the righteous and the unrighteous.
+46 If you love those who love you, what reward will you get? Do not even tax collectors do the same?
+47 And if you greet only your brothers, what are you doing more than others? Do not even Gentiles do the same?
+48 Be perfect, therefore, as your heavenly Father is perfect.`
+  },
+  luke636: {
+    title: "Luke 6:36",
+    text: `36 Be merciful, just as your Father is merciful.`
+  },
+  james14: {
+    title: "James 1:2–4",
+    text: `2 Consider it pure joy, my brothers, when you encounter trials of many kinds,
+3 because you know that the testing of your faith develops perseverance.
+4 Allow perseverance to finish its work, so that you may be mature and <span class="gk" data-g="τέλειοι" data-t="teleioi (τέλειος)" data-m="complete / mature — same word as Matt 5:48 (Strong’s 5046).">complete</span>, not lacking anything.`
+  },
+  eph413: {
+    title: "Ephesians 4:13",
+    text: `13 until we all reach unity in the faith and in the knowledge of the Son of God, as we mature to the full measure of the stature of Christ.`
+  },
+  '1john418': {
+    title: "1 John 4:12, 17–18",
+    text: `12 No one has ever seen God; but if we love one another, God remains in us, and His love is perfected in us.
+
+17 In this way, love has been perfected among us, so that we may have confidence on the day of judgment; for in this world we are just like Him.
+18 There is no fear in love, but <span class="gk" data-g="τελεία" data-t="teleia (τέλειος)" data-m="perfect / complete love (Strong’s 5046).">perfect</span> love casts out fear, because fear involves punishment. The one who fears has not been perfected in love.`
+  },
+  mark1017: {
+    title: "Mark 10:17–22",
+    text: `17 As Jesus started on His way, a man ran up and knelt before Him. “Good Teacher,” he asked, “what must I do to inherit eternal life?”
+18 “Why do you call Me good?” Jesus replied. “No one is good except God alone.
+19 You know the commandments: ‘Do not murder, do not commit adultery, do not steal, do not bear false witness, do not cheat others, honor your father and mother.’”
+20 “Teacher,” he replied, “all these I have kept from my youth.”
+21 Jesus looked at him, loved him, and said to him, “There is one thing you lack: Go, sell everything you own and give to the poor, and you will have treasure in heaven. Then come, follow Me.”
+22 But the man was saddened by these words and went away in sorrow, because he had great wealth.`
+  },
+  john410: {
+    title: "John 4:10",
+    text: `10 Jesus answered, “If you knew the gift of God and who is asking you for a drink, you would have asked Him, and He would have given you living water.”`
+  },
+  mark1051: {
+    title: "Mark 10:51–52",
+    text: `51 “What do you want Me to do for you?” Jesus asked.
+“Rabboni,” said the blind man, “let me see again.”
+52 “Go,” said Jesus, “your faith has healed you.” And immediately he received his sight and followed Jesus along the road.`
+  },
+  col210: {
+    title: "Colossians 2:9–10",
+    text: `9 For in Christ all the fullness of the Deity dwells in bodily form.
+10 And you have been made <span class="gk" data-g="πεπληρωμένοι" data-t="peplērōmenoi (πληρόω)" data-m="complete / filled (perfect passive participle) — Strong’s 4137. Already accomplished in Him.">complete</span> in Christ, who is the head over every ruler and authority.`
+  },
+  john1930: {
+    title: "John 19:30",
+    text: `30 When Jesus had received the sour wine, He said, “<span class="gk" data-g="τετέλεσται" data-t="tetelestai (τελέω)" data-m="It is finished / completed (perfect tense) — Strong’s 5055. Same root as τέλειος. The work is done.">It is finished</span>.” And bowing His head, He yielded up His spirit.`
+  },
+  john157: {
+    title: "John 15:7",
+    text: `7 If you remain in Me and My words remain in you, ask whatever you wish, and it will be done for you.
+8 This is to My Father’s glory, that you bear much fruit, proving yourselves to be My disciples.`
+  },
+  john146: {
+    title: "John 14:6",
+    text: `6 Jesus answered, “I am the way and the truth and the life. No one comes to the Father except through Me.”`
+  },
+  '1cor104': {
+    title: "1 Corinthians 10:4",
+    text: `4 and drank the same spiritual drink; for they drank from the spiritual rock that accompanied them, and that rock was Christ.`
+  },
+  isa551: {
+    title: "Isaiah 55:1",
+    text: `1 Come, everyone who thirsts, come to the waters; and you who have no money, come, buy, and eat! Come, buy wine and milk without money and without price.`
+  },
+  isa553: {
+    title: "Isaiah 55:3",
+    text: `3 Incline your ear and come to Me; listen, so that your soul may live. I will make an everlasting covenant with you, My loving devotion promised to David.`
+  },
+  ps37: {
+    title: "Psalm 37:4",
+    text: `4 Delight yourself in the LORD, and He will give you the desires of your heart.`
+  },
+  matt1128: {
+    title: "Matthew 11:28–30",
+    text: `28 Come to Me, all you who are weary and burdened, and I will give you <span class="gk" data-g="ἀναπαύσω" data-t="anapausō (ἀναπαύω)" data-m="I will give rest / cause to rest (Strong’s 373). Soul-rest, not merely physical relief.">rest</span>.
+29 Take My <span class="gk" data-g="ζυγόν" data-t="zygon (ζυγός)" data-m="yoke (Strong’s 2218). The wooden beam joining two animals to pull together; also a rabbi’s teaching/way of life that a disciple takes on.">yoke</span> upon you and learn from Me; for I am gentle and humble in heart, and you will find rest for your souls.
+30 For My yoke is <span class="gk" data-g="χρηστὸς" data-t="chrēstos" data-m="easy / kind / good / fitting (Strong’s 5543). A yoke that fits and does not crush.">easy</span> and My burden is <span class="gk" data-g="ἐλαφρόν" data-t="elaphron (ἐλαφρός)" data-m="light (Strong’s 1645). Not heavy like the burdens the scribes laid on people (Matt 23:4).">light</span>.`
+  }
+};
+
+function openPassage(id) {
+  const p = passages[id];
+  if (!p) return;
+  document.getElementById('modalTitle').textContent = p.title;
+  document.getElementById('modalText').innerHTML = p.text;
+  hideGreekCard();
+  document.getElementById('passageModal').classList.add('open');
+  document.body.style.overflow = 'hidden';
+  bindGreekSpans();
+}
+
+function bindGreekSpans() {
+  document.querySelectorAll('#modalText .gk').forEach(span => {
+    span.onclick = (e) => {
+      e.stopPropagation();
+      showGreekCard(span);
+    };
+  });
+}
+
+function showGreekCard(span) {
+  const card = document.getElementById('greekCard');
+  card.innerHTML = `<div class="g">${span.dataset.g}</div><div class="t">${span.dataset.t}</div><div class="m">${span.dataset.m}</div>`;
+  const rect = span.getBoundingClientRect();
+  let left = rect.left;
+  let top = rect.bottom + 6;
+  if (left + 280 > window.innerWidth) left = window.innerWidth - 290;
+  if (top + 120 > window.innerHeight) top = rect.top - 130;
+  card.style.left = left + 'px';
+  card.style.top = top + 'px';
+  card.classList.add('show');
+}
+
+function hideGreekCard() {
+  document.getElementById('greekCard').classList.remove('show');
+}
+
+function closePassage() {
+  document.getElementById('passageModal').classList.remove('open');
+  document.body.style.overflow = '';
+  hideGreekCard();
+}
+
+function closeIfBackdrop(e) {
+  if (e.target.id === 'passageModal') closePassage();
+}
+
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') { closePassage(); hideGreekCard(); }
+});
+document.addEventListener('click', e => {
+  if (!e.target.closest('.greek-card') && !e.target.closest('.gk')) hideGreekCard();
+});
+</script>
+
+</body>
+</html>
