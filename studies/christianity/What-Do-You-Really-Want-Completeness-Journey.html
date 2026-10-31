@@ -265,6 +265,21 @@ details .inner { padding: 0.9rem 1rem 1rem; }
   .connection-grid { grid-template-columns: 1fr; }
   .modal-content { padding: 1.4rem; }
 }
+.table-wrap { margin: 0.8rem 0 0.4rem; overflow-x: auto; }
+.table-wrap table { width: 100%; border-collapse: collapse; font-size: 0.92rem; }
+.table-wrap th { background: var(--deep); color: var(--gold); text-align: left; padding: 0.6rem 0.7rem; font-family: system-ui, -apple-system, sans-serif; font-weight: 600; font-size: 0.78rem; letter-spacing: 0.3px; }
+.table-wrap td { padding: 0.65rem 0.7rem; border-bottom: 1px solid rgba(201,162,39,0.18); vertical-align: top; }
+.table-wrap tr:nth-child(even) td { background: #fbf9f4; }
+.table-wrap .lacking { font-weight: 600; color: var(--deep); }
+.table-wrap .sound { color: var(--muted); font-style: italic; font-size: 0.88rem; }
+.table-wrap .provider { color: var(--mid); font-weight: 600; }
+.table-wrap .note { font-size: 0.84rem; }
+.table-note { font-size: 0.86rem; color: var(--muted); font-style: italic; margin-top: 0.5rem; }
+@media (max-width: 640px) {
+  .table-wrap th { display: none; }
+  .table-wrap td { display: block; border: none; border-bottom: 1px solid rgba(201,162,39,0.15); padding: 0.45rem 0.3rem; }
+  .table-wrap td::before { content: attr(data-label); font-family: system-ui, -apple-system, sans-serif; font-size: 0.7rem; font-weight: 600; color: var(--accent); display: block; margin-bottom: 0.1rem; }
+}
 </style>
 </head>
 <body>
@@ -315,36 +330,96 @@ details .inner { padding: 0.9rem 1rem 1rem; }
     <div class="marker">3</div>
     <div class="card">
       <h2>The Lacking to Completeness</h2>
-      <p>We often answer Jesus’ question with a condition: if only this were better, then I would be whole. That is the counterfeit path. There are also real lacks that are good to name — they still do not complete us.</p>
+      <p>We often answer Jesus’ question with a condition: if only this were better, then I would be whole. That is the counterfeit path. There are also real lacks that are good to name — they still do not complete us. Every lack has a Provider.</p>
       <div class="verse">“What do I still lack?” — then he went away sorrowful.<span class="ref" onclick="openPassage('mark1017')">Mark 10:17–22</span></div>
       <div class="verse">“If you knew the gift of God… you would have asked Him…”<span class="ref" onclick="openPassage('john410')">John 4:10</span></div>
-      <details>
-        <summary>Common counterfeits and legitimate lackings</summary>
-        <div class="inner">
-          <h3>Common Counterfeits</h3>
-          <p style="font-size:0.92rem; color:var(--muted);">Things we quietly believe would complete us.</p>
-          <ul>
-            <li>If only this relationship were right…</li>
-            <li>If only I had the position, recognition, success…</li>
-            <li>If only my body / health were fixed…</li>
-            <li>If only I had enough money or security…</li>
-            <li>If only I were understood or approved…</li>
-            <li>If only the past were different…</li>
-            <li>If only I felt peaceful / confident / free…</li>
-          </ul>
-          <h3>Common Legitimate Lackings</h3>
-          <p style="font-size:0.92rem; color:var(--muted);">Real needs. Good to name. Still not the source of completeness.</p>
-          <ul>
-            <li>Rest and margin</li>
-            <li>Healing in body or relationships</li>
-            <li>Daily provision and work that matters</li>
-            <li>True friendship and belonging</li>
-            <li>Clarity about the next step</li>
-            <li>Freedom from a particular fear or habit</li>
-            <li>Strength to keep going when the load is heavy</li>
-          </ul>
-        </div>
-      </details>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Lacking</th>
+              <th>What it often sounds like</th>
+              <th>The Provider</th>
+              <th>Scripture</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td class="lacking" data-label="Lacking">Poverty of spirit</td>
+              <td class="sound" data-label="Sounds like">“I have nothing to bring”</td>
+              <td class="provider" data-label="Provider">The Father who already knows</td>
+              <td class="note" data-label="Scripture">Matt 5:3</td>
+            </tr>
+            <tr>
+              <td class="lacking" data-label="Lacking">Grief / mourning</td>
+              <td class="sound" data-label="Sounds like">“If only the loss weren’t real”</td>
+              <td class="provider" data-label="Provider">The One who wept</td>
+              <td class="note" data-label="Scripture">Matt 5:4 · John 11:35</td>
+            </tr>
+            <tr>
+              <td class="lacking" data-label="Lacking">Meekness / lack of power</td>
+              <td class="sound" data-label="Sounds like">“If only I had control”</td>
+              <td class="provider" data-label="Provider">The gentle King</td>
+              <td class="note" data-label="Scripture">Matt 5:5 · Matt 11:29</td>
+            </tr>
+            <tr>
+              <td class="lacking" data-label="Lacking">Hunger for righteousness</td>
+              <td class="sound" data-label="Sounds like">“If only I were whole”</td>
+              <td class="provider" data-label="Provider">The One who satisfies</td>
+              <td class="note" data-label="Scripture">Matt 5:6</td>
+            </tr>
+            <tr>
+              <td class="lacking" data-label="Lacking">Sickness / body</td>
+              <td class="sound" data-label="Sounds like">“If only this were fixed”</td>
+              <td class="provider" data-label="Provider">The Healer</td>
+              <td class="note" data-label="Scripture">John 5:6 · ὑγιής</td>
+            </tr>
+            <tr>
+              <td class="lacking" data-label="Lacking">Loneliness</td>
+              <td class="sound" data-label="Sounds like">“If only someone stayed”</td>
+              <td class="provider" data-label="Provider">Immanuel / the One who abides</td>
+              <td class="note" data-label="Scripture">John 1:38 · μένω</td>
+            </tr>
+            <tr>
+              <td class="lacking" data-label="Lacking">Lostness / no direction</td>
+              <td class="sound" data-label="Sounds like">“If only I knew the next step”</td>
+              <td class="provider" data-label="Provider">The Way, the Good Shepherd</td>
+              <td class="note" data-label="Scripture">John 14:6 · John 10:11</td>
+            </tr>
+            <tr>
+              <td class="lacking" data-label="Lacking">Fear</td>
+              <td class="sound" data-label="Sounds like">“If only I felt safe”</td>
+              <td class="provider" data-label="Provider">Perfect love</td>
+              <td class="note" data-label="Scripture">1 John 4:18 · τελεία</td>
+            </tr>
+            <tr>
+              <td class="lacking" data-label="Lacking">Guilt / shame</td>
+              <td class="sound" data-label="Sounds like">“If only the past were gone”</td>
+              <td class="provider" data-label="Provider">The Lamb</td>
+              <td class="note" data-label="Scripture">John 1:29 · 1 John 1:9</td>
+            </tr>
+            <tr>
+              <td class="lacking" data-label="Lacking">Weariness / heavy load</td>
+              <td class="sound" data-label="Sounds like">“If only the weight lifted”</td>
+              <td class="provider" data-label="Provider">The easy yoke</td>
+              <td class="note" data-label="Scripture">Matt 11:28–30 · ζυγός</td>
+            </tr>
+            <tr>
+              <td class="lacking" data-label="Lacking">Injustice / unfairness</td>
+              <td class="sound" data-label="Sounds like">“If only it were made right”</td>
+              <td class="provider" data-label="Provider">The Judge who repays</td>
+              <td class="note" data-label="Scripture">Rom 12:19 · Luke 18:7–8</td>
+            </tr>
+            <tr>
+              <td class="lacking" data-label="Lacking">Death / ending</td>
+              <td class="sound" data-label="Sounds like">“If only it didn’t end”</td>
+              <td class="provider" data-label="Provider">The Resurrection and the Life</td>
+              <td class="note" data-label="Scripture">John 11:25</td>
+            </tr>
+          </tbody>
+        </table>
+        <p class="table-note">Beatitudes shape the first four rows. The rest are ordinary lacks He meets without requiring the Beatitude posture first. Counterfeit says “fix this and then I’ll be whole.” Jesus says “bring the lack to Me.”</p>
+      </div>
     </div>
   </div>
 
