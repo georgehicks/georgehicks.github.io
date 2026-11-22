@@ -3,9 +3,9 @@
 (function () {
   'use strict';
   var C = window.MannaContent, T = window.MannaText, PL = window.MannaPlaces, E = window.MannaEngine, A = window.MannaArt, G = window.MannaGames;
-  var VERSION = 'v4';
+  var VERSION = 'v5';
   var V = window.MannaVoice;
-  var KEY = 'manna.state', SKEY = 'manna.session';
+  var KEY = 'manna.state', SKEY = 'manna.session', PKEY = 'manna.paused';
 
   // ---------- helpers ----------
   function $(id) { return document.getElementById(id); }
@@ -52,7 +52,14 @@
       var b = el('button', 'chip' + (S.mins === n ? ' on' : ''), n + ' min'); b.type = 'button';
       b.onclick = function () { S.mins = n; save(); renderHome(); }; nc.appendChild(b);
     });
-    $('goBtn').textContent = 'Scroll ' + S.mins + ' minutes';
+    $('goBtn').textContent = (paused ? 'Start a new ' : 'Scroll ') + S.mins + (paused ? '-minute scroll' : ' minutes');
+    var pc = $('pausedCard');
+    if (paused) {
+      var what = paused.sess.cats.length ? paused.sess.cats.map(catLabel).join(', ') : 'a mix of everything';
+      pc.hidden = false;
+      pc.innerHTML = '<div class="small">Your scroll is paused · ' + esc(what) + '</div><div class="serif" style="font-size:1.25rem;margin:.2rem 0 .7rem">' + fmt(Math.ceil(paused.left / 1000)) + ' left</div><div class="row"><button class="btn primary" id="resumeBtn">Resume</button><button class="btn ghost" id="dropBtn">Let it go</button></div><div class="small" style="margin-top:.6rem">Starting a new one below replaces it.</div>';
+      $('resumeBtn').onclick = resume; $('dropBtn').onclick = function () { dropPaused(); renderHome(); };
+    } else { pc.hidden = true; pc.innerHTML = ''; }
     var cc = $('catChips'); cc.innerHTML = '';
     C.CATS.forEach(function (c) {
       var on = S.cats.indexOf(c.id) >= 0, b = el('button', 'chip' + (on ? ' on' : ''), esc(c.label)); b.type = 'button';
@@ -128,10 +135,13 @@
   $('resetSeen').onclick = function () { S.seen = {}; save(); };
 
   // ---------- session ----------
+  var paused = null;
+  try { var pj = JSON.parse(localStorage.getItem(PKEY) || 'null'); if (pj && pj.sess && Date.now() - pj.at < 6 * 3600000) paused = pj; else if (pj) localStorage.removeItem(PKEY); } catch (e) {}
+  function dropPaused() { paused = null; try { localStorage.removeItem(PKEY); } catch (e) {} }
   var sess = null, tickT = 0, observer = null, banner = null, cardsN = 0, lastCat = null, closed = false, landing = false, gameH = null;
 
   function startSession(o) {
-    var now = Date.now();
+    dropPaused(); var now = Date.now();
     sess = { start: now, end: now + S.mins * 60000, mins: S.mins, cats: o.cats || [], mood: S.mood, ext: false, keptNow: [] };
     try { localStorage.setItem(SKEY, JSON.stringify(sess)); } catch (e) {}
     openFeed();
@@ -175,27 +185,59 @@
   }
   document.addEventListener('visibilitychange', function () { if (!document.hidden && sess) tick(); });
   // ---------- going back, the menu, refresh ----------
-  function leave() {
+  function teardown() {
     clearInterval(tickT); tickT = 0; if (banner) { banner.remove(); banner = null; }
     if (V) V.stop(); if (gameH) { gameH.stop(); gameH = null; }
-    sess = null; try { localStorage.removeItem(SKEY); } catch (e) {}
     $('layer').innerHTML = ''; if (observer) observer.disconnect(); $('feed').innerHTML = ''; $('dim').style.opacity = 0;
-    renderHome(); show('homeScreen');
   }
-  function askLeave() { ask('Leave the scroll and go back to the start?', 'Leave', leave, 'Keep scrolling'); }
+  // Step out without losing the sitting: the clock stops, and you can pick something else, then resume or start fresh.
+  function pause() {
+    if (!sess || landing) return;
+    paused = { sess: sess, left: Math.max(60000, sess.end - Date.now()), total: sess.end - sess.start, at: Date.now() };
+    try { localStorage.setItem(PKEY, JSON.stringify(paused)); localStorage.removeItem(SKEY); } catch (e) {}
+    sess = null; teardown(); renderHome(); show('homeScreen');
+  }
+  function resume() {
+    if (!paused) return; var p = paused; dropPaused();
+    sess = p.sess; sess.end = Date.now() + p.left; sess.start = sess.end - p.total;
+    try { localStorage.setItem(SKEY, JSON.stringify(sess)); } catch (e) {}
+    openFeed();
+  }
+  // Change what the scroll is made of, without pausing: the card you are on stays, what comes after is rebuilt.
+  function changeWhat() {
+    var sh = el('div', 'sheet'), box = el('div', '', '<p class="serif" style="font-size:1.15rem;margin:.2rem 0 .8rem">What do you want to scroll through?</p><div class="chips" id="cwChips"></div><p class="small" style="margin:.7rem 0 0">Leave all unselected for a mix of everything. The time keeps running.</p><button class="btn primary" id="cwGo" style="text-align:center">Change it</button><button class="btn ghost" id="cwX" style="text-align:center">Never mind</button>');
+    sh.appendChild(box); $('layer').appendChild(sh);
+    var pick = sess.cats.slice(), cw = box.querySelector('#cwChips');
+    function draw() {
+      cw.innerHTML = '';
+      C.CATS.forEach(function (c) {
+        var b = el('button', 'chip' + (pick.indexOf(c.id) >= 0 ? ' on' : ''), esc(c.label)); b.type = 'button';
+        b.onclick = function () { var i = pick.indexOf(c.id); if (i >= 0) pick.splice(i, 1); else pick.push(c.id); draw(); }; cw.appendChild(b);
+      });
+    }
+    draw();
+    box.querySelector('#cwX').onclick = function () { sh.remove(); };
+    box.querySelector('#cwGo').onclick = function () {
+      sh.remove(); sess.cats = pick; try { localStorage.setItem(SKEY, JSON.stringify(sess)); } catch (e) {}
+      var f = $('feed'), cur = currentCard(); if (V) { V.stop(); resetListen(); }
+      if (cur) { while (cur.nextElementSibling) { var x = cur.nextElementSibling; observer.unobserve(x); x.remove(); } }
+      lastCat = null; closed = false; addCards(3);
+      var nx = cur && cur.nextElementSibling; if (nx) setTimeout(function () { step(1); }, 150);
+    };
+  }
   function currentCard() { var f = $('feed'); return f.children[Math.round(f.scrollTop / Math.max(1, f.clientHeight))] || null; }
   function refreshCard() {
     var c = currentCard(); if (!c || !c.dataset.cat) return; if (V) { V.stop(); resetListen(); }
     var n = makeCard(); observer.unobserve(c); c.replaceWith(n); observer.observe(n);
   }
   function openMenu() {
-    var sh = el('div', 'sheet'), box = el('div', '', '<button class="btn" data-a="new">↻  Replace this card</button><button class="btn" data-a="land">Land now</button><button class="btn" data-a="leave">‹  Back to the start</button><button class="btn ghost" data-a="x">Keep scrolling</button>');
+    var sh = el('div', 'sheet'), box = el('div', '', '<button class="btn" data-a="new">↻  Replace this card</button><button class="btn" data-a="what">Change what I\'m scrolling</button><button class="btn" data-a="leave">‹  Pause and pick something else</button><button class="btn" data-a="land">Land now</button><button class="btn ghost" data-a="x">Keep scrolling</button>');
     sh.appendChild(box); $('layer').appendChild(sh);
     sh.onclick = function (e) { if (e.target === sh) sh.remove(); };
-    box.onclick = function (e) { var b = e.target.closest('button'); if (!b) return; var k = b.dataset.a; sh.remove(); if (k === 'new') refreshCard(); else if (k === 'land') land(); else if (k === 'leave') askLeave(); };
+    box.onclick = function (e) { var b = e.target.closest('button'); if (!b) return; var k = b.dataset.a; sh.remove(); if (k === 'new') refreshCard(); else if (k === 'land') land(); else if (k === 'leave') pause(); else if (k === 'what') changeWhat(); };
   }
-  $('backBtn').onclick = askLeave; $('menuBtn').onclick = openMenu;
-  window.addEventListener('popstate', function () { if (!$('feedScreen').hidden && sess) { try { history.pushState({ manna: 1 }, ''); } catch (e) {} if (!$('layer').children.length) askLeave(); } });
+  $('backBtn').onclick = pause; $('menuBtn').onclick = openMenu;
+  window.addEventListener('popstate', function () { if (!$('feedScreen').hidden && sess) { try { history.pushState({ manna: 1 }, ''); } catch (e) {} if (!$('layer').children.length) pause(); } });
   function reloadApp() {
     var done = function () { location.reload(); };
     try {

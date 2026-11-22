@@ -158,6 +158,8 @@
   .navbtns button { width:2.4rem; height:2.4rem; background:rgba(255,255,255,.08); }
   .landbtn { min-width:44px; font-size:1.1rem; padding:.35rem .9rem; }
   .iconbtn { position:absolute; right:1rem; top:calc(var(--top) + .8rem); width:44px; height:44px; border-radius:50%; border:none; background:transparent; color:var(--ink-faint); font-size:1.3rem; }
+  .pausedcard { margin:0 0 1.2rem; border:1px solid var(--gold); border-radius:14px; padding:.9rem 1rem; background:var(--surface-2); }
+  .pausedcard .row { display:flex; gap:.6rem; } .pausedcard .row .btn { flex:1; }
   details.tune { margin-top:1rem; border:1px solid var(--border); border-radius:14px; padding:.2rem 1rem .9rem; background:var(--surface); }
   details.tune summary { position:relative; cursor:pointer; padding:.8rem 1.6rem .2rem 0; color:var(--ink-muted); list-style:none; }
   details.tune summary::-webkit-details-marker { display:none; }
@@ -211,6 +213,8 @@
   <div class="scroll">
     <button class="iconbtn" id="reloadBtn" aria-label="Reload and update the app" title="Reload and update">↻</button>
     <div class="brand"><h1>Manna</h1><p>enough for tonight</p></div>
+
+    <div id="pausedCard" class="pausedcard" hidden></div>
 
     <div class="label">How long</div>
     <div class="chips" id="minChips"></div>
