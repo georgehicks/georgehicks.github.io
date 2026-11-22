@@ -186,25 +186,41 @@
 
   /* landing */
   #landScreen { background:radial-gradient(ellipse at 50% 35%, #1c2250 0%, #0a0c1c 75%); align-items:center; justify-content:center; text-align:center; padding:calc(var(--top) + 1rem) 1.4rem calc(var(--bot) + 1.5rem); }
-  /* the breathing orb: a luminous disc and halo that swell on the in-breath (4s) and settle on the out-breath (6s), with trailing rings and drifting motes */
-  .breathe { position:relative; width:17rem; height:17rem; margin:1.2rem auto .4rem; display:flex; align-items:center; justify-content:center; --ease:cubic-bezier(.45,.05,.35,1); }
-  .breathe > * { position:absolute; left:0; top:0; right:0; bottom:0; margin:auto; border-radius:50%; pointer-events:none; }
-  .bhalo { background:radial-gradient(circle, rgba(242,200,121,.5) 0%, rgba(242,200,121,.16) 38%, transparent 66%); transform:scale(.55); opacity:.5; transition:transform 4.6s var(--ease), opacity 4.6s var(--ease); }
-  .bring { border:1px solid rgba(242,200,121,.55); box-shadow:0 0 18px rgba(242,200,121,.18), inset 0 0 18px rgba(242,200,121,.1); transform:scale(.5); opacity:0; transition:transform 4s var(--ease), opacity 4s var(--ease); }
-  .bring.r1 { inset:20%; } .bring.r2 { inset:12%; transition-delay:.22s; } .bring.r3 { inset:5%; transition-delay:.45s; }
-  .bdisc { width:46%; height:46%; background:radial-gradient(circle at 50% 40%, #fff3cf 0%, #F7D88F 38%, #F2C879 62%, rgba(242,200,121,.55) 100%); box-shadow:0 0 44px rgba(242,200,121,.45), 0 0 110px rgba(242,200,121,.22); transform:scale(.6); opacity:.92; transition:transform 4s var(--ease), box-shadow 4s var(--ease); }
-  .bdisc::after { content:""; position:absolute; left:22%; top:14%; width:34%; height:26%; border-radius:50%; background:radial-gradient(circle, rgba(255,255,255,.65), transparent 70%); }
-  .bmotes { transform:scale(.55); opacity:.6; transition:transform 4.4s var(--ease), opacity 4.4s var(--ease); }
-  .bmotes .spin { position:absolute; inset:0; animation:bspin 80s linear infinite; }
-  .bmotes i { position:absolute; left:50%; top:50%; width:4px; height:4px; margin:-2px; border-radius:50%; background:#ffe9b0; box-shadow:0 0 8px rgba(255,233,176,.9); transform:rotate(var(--a)) translateY(calc(var(--d) * -1)); animation:btwinkle 3.4s ease-in-out infinite; animation-delay:var(--t); }
-  @keyframes bspin { to { transform:rotate(360deg); } }
-  @keyframes btwinkle { 0%,100% { opacity:.15; } 50% { opacity:.95; } }
-  .breathe.in .bhalo { transform:scale(1.08); opacity:1; }
-  .breathe.in .bring.r1 { transform:scale(1.02); opacity:.7; } .breathe.in .bring.r2 { transform:scale(1.02); opacity:.45; } .breathe.in .bring.r3 { transform:scale(1.02); opacity:.26; }
-  .breathe.in .bdisc { transform:scale(1.5); box-shadow:0 0 70px rgba(242,200,121,.6), 0 0 150px rgba(242,200,121,.3); }
-  .breathe.in .bmotes { transform:scale(1.12); opacity:1; }
-  .breathe.out .bhalo, .breathe.out .bring, .breathe.out .bdisc, .breathe.out .bmotes { transition-duration:6s; }
-  .breathe.out .bhalo { transition-duration:6.6s; } .breathe.out .bmotes { transition-duration:6.4s; }
+  /* the breathing bloom (from AbidingSteps): petals that spiral out and in, a cross and a heart at full bloom, then a ring of light and drifting embers.
+     One 10-second breath: 4s in to full bloom, 6s out. Starts when the first in-breath starts (the .bgo class). */
+  .breathe { position:relative; width:200px; height:200px; margin:2.6rem auto 2.4rem; transform:scale(1.2); }
+  .breath-bloom { position:relative; width:200px; height:200px; margin:0 auto; transform:scale(.15) rotate(180deg); }
+  .breathe.bgo .breath-bloom { animation:bloom-spin 10s cubic-bezier(0.5,0,0.5,1) infinite; }
+  @keyframes bloom-spin { 0%,100% { transform:scale(.15) rotate(180deg); } 40% { transform:scale(1) rotate(0deg); } }
+  .petal { position:absolute; top:50%; left:50%; width:70px; height:70px; margin:-35px 0 0 -35px; border-radius:50%; mix-blend-mode:screen; opacity:.62; background:#F2C879; transform:rotate(calc(var(--i) * 45deg)) translateY(0); }
+  .petal:nth-child(even) { background:#fbe3b0; }
+  .breathe.bgo .petal { animation:petal-spread 10s ease-in-out infinite; }
+  @keyframes petal-spread { 0%,100% { transform:rotate(calc(var(--i) * 45deg)) translateY(0); } 40% { transform:rotate(calc(var(--i) * 45deg)) translateY(-58px); } }
+  .breath-cross { position:absolute; top:100px; left:50%; width:22px; height:32px; margin:-16px 0 0 -11px; z-index:2; opacity:0; }
+  .breathe.bgo .breath-cross { animation:cross-reveal 10s ease-in-out infinite; }
+  .cross-v, .cross-h { position:absolute; background:#fff; border-radius:1.5px; box-shadow:0 0 6px rgba(255,255,255,.85); }
+  .cross-v { top:0; bottom:0; left:50%; width:3px; margin-left:-1.5px; } .cross-h { left:0; right:0; top:9px; height:3px; margin-top:-1.5px; }
+  .breath-cross::before { content:''; position:absolute; left:50%; top:9px; width:38px; height:38px; margin:-19px 0 0 -19px; border-radius:50%; pointer-events:none; background:radial-gradient(circle,rgba(229,56,59,.5) 0,rgba(229,56,59,.18) 45%,rgba(229,56,59,0) 70%); will-change:transform; }
+  .breath-cross::after { content:''; position:absolute; left:50%; top:9px; width:15px; height:14px; margin:-6.5px 0 0 -7.5px; will-change:transform;
+    background:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 60'><path d='M32 56C10 40 6 28 6 20a13 13 0 0 1 26-3 13 13 0 0 1 26 3c0 8-4 20-26 36z' fill='%23e5383b'/></svg>") center / contain no-repeat; }
+  .breathe.bgo .breath-cross::before, .breathe.bgo .breath-cross::after { animation:bp-beat 10s ease-in-out infinite; }
+  @keyframes bp-beat { 0%,32% { transform:scale(1); } 42% { transform:scale(1.38); } 58% { transform:scale(1.08); } 68%,100% { transform:scale(1); } }
+  @keyframes cross-reveal { 0%,15%,65%,100% { opacity:0; } 40% { opacity:.9; } }
+  .bp-ring { position:absolute; top:100px; left:50%; width:120px; height:120px; margin:-60px 0 0 -60px; border-radius:50%; pointer-events:none; z-index:3; opacity:0;
+    background:radial-gradient(circle,rgba(255,236,170,0) 0,rgba(255,236,170,0) 16%,rgba(255,226,140,.55) 30%,rgba(255,200,90,.2) 52%,rgba(255,200,90,0) 70%); will-change:transform,opacity; }
+  .breathe.bgo .bp-ring { animation:bp-ring-move 10s cubic-bezier(.25,.5,.4,1) infinite, bp-ring-fade 10s linear infinite; }
+  @keyframes bp-ring-move { 0%,40% { transform:scale(.4); } 95%,100% { transform:scale(3.1); } }
+  @keyframes bp-ring-fade { 0%,40% { opacity:0; } 46% { opacity:.95; } 68% { opacity:.4; } 95%,100% { opacity:0; } }
+  .bp-spark { position:absolute; z-index:3; top:100px; left:50%; width:var(--s,7px); height:var(--s,7px); margin:calc(var(--s,7px) / -2); pointer-events:none; opacity:0; border-radius:50%;
+    background:radial-gradient(circle,rgba(255,252,236,1) 0,rgba(255,226,140,.75) 32%,rgba(255,200,90,0) 70%); will-change:transform,opacity; animation-delay:var(--d,0s); }
+  .breathe.bgo .bp-spark { animation:bp-ember-move 10s cubic-bezier(.25,.5,.4,1) infinite, bp-ember-fade 10s linear infinite; animation-delay:var(--d,0s); }
+  .bp-spark:nth-of-type(1) { --ex:112px; --ey:40px; --s:7px; --d:0s; } .bp-spark:nth-of-type(2) { --ex:74px; --ey:63px; --s:5px; --d:.45s; }
+  .bp-spark:nth-of-type(3) { --ex:-29px; --ey:128px; --s:9px; --d:.2s; } .bp-spark:nth-of-type(4) { --ex:-60px; --ey:87px; --s:6px; --d:.7s; }
+  .bp-spark:nth-of-type(5) { --ex:-124px; --ey:8px; --s:8px; --d:.1s; } .bp-spark:nth-of-type(6) { --ex:-90px; --ey:-27px; --s:5px; --d:.55s; }
+  .bp-spark:nth-of-type(7) { --ex:-40px; --ey:-131px; --s:9px; --d:.3s; } .bp-spark:nth-of-type(8) { --ex:19px; --ey:-107px; --s:6px; --d:.8s; }
+  .bp-spark:nth-of-type(9) { --ex:111px; --ey:-49px; --s:7px; --d:.4s; }
+  @keyframes bp-ember-move { 0%,40% { transform:translate3d(0,0,0) scale(.5); } 100% { transform:translate3d(var(--ex),var(--ey),0) scale(.9); } }
+  @keyframes bp-ember-fade { 0%,40% { opacity:0; } 49% { opacity:.95; } 100% { opacity:0; } }
   .land .word { font-family:var(--serif); font-size:1.7rem; min-height:2.4rem; color:#fff3d2; text-shadow:0 0 22px rgba(242,200,121,.55); animation:bword 1.6s ease-out both; }
   @keyframes bword { from { opacity:0; transform:translateY(6px); } to { opacity:1; transform:none; } }
   .land h2 { font-size:1.6rem; margin-bottom:.6rem; } .land p { color:var(--ink-muted); max-width:24rem; margin:.4rem auto; }
@@ -273,10 +289,9 @@
   <div id="landA">
     <p class="small" id="landLine"></p>
     <div class="breathe" id="breathe">
-      <div class="bhalo"></div>
-      <div class="bring r1"></div><div class="bring r2"></div><div class="bring r3"></div>
-      <div class="bmotes"><div class="spin"><i style="--a:0deg;--d:5.2rem;--t:-0.0s"></i><i style="--a:37deg;--d:5.5rem;--t:-0.7s"></i><i style="--a:60deg;--d:5.8rem;--t:-1.4s"></i><i style="--a:97deg;--d:6.1rem;--t:-2.1s"></i><i style="--a:120deg;--d:6.4rem;--t:-2.8s"></i><i style="--a:157deg;--d:6.7rem;--t:-0.1s"></i><i style="--a:180deg;--d:5.3rem;--t:-0.8s"></i><i style="--a:217deg;--d:5.6rem;--t:-1.5s"></i><i style="--a:240deg;--d:5.9rem;--t:-2.2s"></i><i style="--a:277deg;--d:6.2rem;--t:-2.9s"></i><i style="--a:300deg;--d:6.5rem;--t:-0.2s"></i><i style="--a:337deg;--d:6.8rem;--t:-0.9s"></i></div></div>
-      <div class="bdisc"></div>
+      <div class="breath-bloom"><div class="petal" style="--i:0"></div><div class="petal" style="--i:1"></div><div class="petal" style="--i:2"></div><div class="petal" style="--i:3"></div><div class="petal" style="--i:4"></div><div class="petal" style="--i:5"></div><div class="petal" style="--i:6"></div><div class="petal" style="--i:7"></div></div>
+      <div class="breath-cross"><span class="cross-v"></span><span class="cross-h"></span></div>
+      <div class="bp-ring"></div><i class="bp-spark"></i><i class="bp-spark"></i><i class="bp-spark"></i><i class="bp-spark"></i><i class="bp-spark"></i><i class="bp-spark"></i><i class="bp-spark"></i><i class="bp-spark"></i><i class="bp-spark"></i>
     </div>
     <div class="word" id="bword">Jesus</div>
     <p class="small" id="bcount"></p>
@@ -352,6 +367,7 @@
 <script src="engine.js"></script>
 <script src="art.js"></script>
 <script src="games.js"></script>
+<script src="treasuring.js"></script>
 <script src="voice.js"></script>
 <script src="app.js"></script>
 <script>
