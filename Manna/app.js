@@ -3,7 +3,7 @@
 (function () {
   'use strict';
   var C = window.MannaContent, T = window.MannaText, PL = window.MannaPlaces, E = window.MannaEngine, A = window.MannaArt, G = window.MannaGames;
-  var VERSION = 'v3';
+  var VERSION = 'v4';
   var V = window.MannaVoice;
   var KEY = 'manna.state', SKEY = 'manna.session';
 
@@ -59,9 +59,9 @@
       b.onclick = function () { var i = S.cats.indexOf(c.id); if (i >= 0) S.cats.splice(i, 1); else S.cats.push(c.id); save(); renderHome(); }; cc.appendChild(b);
     });
     $('mixNote').textContent = S.cats.length ? '· only what you picked' : '· tap to pick, or leave blank for a mix of everything';
+    var mm = C.MOODS.filter(function (m) { return m.id === S.mood; })[0], bits = []; if (mm) bits.push(mm.label); bits.push(S.cats.length ? S.cats.map(catLabel).join(', ') : 'a mix of everything');
+    $('tuneSum').textContent = 'Tune tonight · ' + bits.join(' · ');
     $('keptCount').textContent = S.kept.length ? S.kept.length + ' saved' : 'Nothing yet';
-    var lv = E.SKILLS.map(function (k) { return S.math[k].lvl; }), avg = lv.reduce(function (a, b) { return a + b; }, 0) / lv.length;
-    $('mathNote').textContent = S.math.add.n + S.math.mul.n + S.math.sub.n + S.math.div.n ? (avg < 2.5 ? 'Building a base' : avg < 4 ? 'Getting steadier' : 'Strong and quick') : 'Starting out';
     var cut = Date.now() - 7 * 86400000, nights = {};
     S.log.forEach(function (l) { if (l.landed && l.t > cut) nights[l.d] = 1; });
     $('foot').textContent = VERSION;
@@ -137,7 +137,7 @@
     openFeed();
   }
   function openFeed() {
-    show('feedScreen'); var feed = $('feed'); feed.innerHTML = ''; feed.scrollTop = 0; cardsN = 0; lastCat = null; closed = false;
+    show('feedScreen'); try { history.pushState({ manna: 1 }, ''); } catch (e) {} var feed = $('feed'); feed.innerHTML = ''; feed.scrollTop = 0; cardsN = 0; lastCat = null; closed = false;
     if (banner) { banner.remove(); banner = null; }
     if (observer) observer.disconnect();
     observer = new IntersectionObserver(function (es) {
@@ -154,8 +154,8 @@
       });
     }, { root: feed, threshold: [0.6] });
     addCards(4);
-    var first = feed.firstChild; if (first) { first.appendChild(el('div', 'hint', DESKTOP ? 'Scroll, or press ↓ or Space' : 'Swipe up ↑')); }
-    feed.addEventListener('pointerdown', function () { var h = feed.querySelector('.hint'); if (h) h.remove(); }, { once: true });
+    var first = feed.firstChild; if (first && !S.hintSeen) { first.appendChild(el('div', 'hint', DESKTOP ? 'Scroll, or press ↓ or Space' : 'Swipe up ↑')); }
+    feed.addEventListener('pointerdown', function () { var h = feed.querySelector('.hint'); if (h) h.remove(); S.hintSeen = true; save(); }, { once: true });
     clearInterval(tickT); tickT = setInterval(tick, 1000); tick();
   }
   function progress() { if (!sess) return 0; var p = Math.max(0, Math.min(1, (Date.now() - sess.start) / (sess.end - sess.start))); return sess.ext ? Math.max(p, 0.95) : p; }
@@ -174,7 +174,36 @@
     var x = banner.querySelector('[data-x]'); if (x) x.onclick = function () { sess.ext = true; sess.end = Date.now() + 3 * 60000; try { localStorage.setItem(SKEY, JSON.stringify(sess)); } catch (e) {} banner.remove(); banner = null; tick(); };
   }
   document.addEventListener('visibilitychange', function () { if (!document.hidden && sess) tick(); });
-  $('landNow').onclick = function () { ask('Land now?', 'Land', land, 'Keep scrolling'); };
+  // ---------- going back, the menu, refresh ----------
+  function leave() {
+    clearInterval(tickT); tickT = 0; if (banner) { banner.remove(); banner = null; }
+    if (V) V.stop(); if (gameH) { gameH.stop(); gameH = null; }
+    sess = null; try { localStorage.removeItem(SKEY); } catch (e) {}
+    $('layer').innerHTML = ''; if (observer) observer.disconnect(); $('feed').innerHTML = ''; $('dim').style.opacity = 0;
+    renderHome(); show('homeScreen');
+  }
+  function askLeave() { ask('Leave the scroll and go back to the start?', 'Leave', leave, 'Keep scrolling'); }
+  function currentCard() { var f = $('feed'); return f.children[Math.round(f.scrollTop / Math.max(1, f.clientHeight))] || null; }
+  function refreshCard() {
+    var c = currentCard(); if (!c || !c.dataset.cat) return; if (V) { V.stop(); resetListen(); }
+    var n = makeCard(); observer.unobserve(c); c.replaceWith(n); observer.observe(n);
+  }
+  function openMenu() {
+    var sh = el('div', 'sheet'), box = el('div', '', '<button class="btn" data-a="new">↻  Replace this card</button><button class="btn" data-a="land">Land now</button><button class="btn" data-a="leave">‹  Back to the start</button><button class="btn ghost" data-a="x">Keep scrolling</button>');
+    sh.appendChild(box); $('layer').appendChild(sh);
+    sh.onclick = function (e) { if (e.target === sh) sh.remove(); };
+    box.onclick = function (e) { var b = e.target.closest('button'); if (!b) return; var k = b.dataset.a; sh.remove(); if (k === 'new') refreshCard(); else if (k === 'land') land(); else if (k === 'leave') askLeave(); };
+  }
+  $('backBtn').onclick = askLeave; $('menuBtn').onclick = openMenu;
+  window.addEventListener('popstate', function () { if (!$('feedScreen').hidden && sess) { try { history.pushState({ manna: 1 }, ''); } catch (e) {} if (!$('layer').children.length) askLeave(); } });
+  function reloadApp() {
+    var done = function () { location.reload(); };
+    try {
+      navigator.serviceWorker.getRegistrations().then(function (rs) { return Promise.all(rs.map(function (r) { return r.update().catch(function () {}); })); })
+        .then(function () { return caches.keys(); }).then(function (ks) { return Promise.all(ks.filter(function (k) { return k.indexOf('manna-') === 0; }).map(function (k) { return caches.delete(k); })); }).then(done, done);
+    } catch (e) { done(); }
+  }
+  $('reloadBtn').onclick = reloadApp; $('updateBtn').onclick = reloadApp;
 
   // ---------- feed building ----------
   function chooseCat() {

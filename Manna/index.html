@@ -152,6 +152,21 @@
     .timeup { left:50%; right:auto; width:464px; transform:translateX(-50%); animation:none; }
     .overlay { left:50%; right:auto; width:480px; transform:translateX(-50%); }
   }
+  /* decluttered */
+  .card .cat { display:none; }
+  .heart { width:2.6rem; height:2.6rem; font-size:1.15rem; background:rgba(255,255,255,.08); }
+  .navbtns button { width:2.4rem; height:2.4rem; background:rgba(255,255,255,.08); }
+  .landbtn { min-width:44px; font-size:1.1rem; padding:.35rem .9rem; }
+  .iconbtn { position:absolute; right:1rem; top:calc(var(--top) + .8rem); width:44px; height:44px; border-radius:50%; border:none; background:transparent; color:var(--ink-faint); font-size:1.3rem; }
+  details.tune { margin-top:1rem; border:1px solid var(--border); border-radius:14px; padding:.2rem 1rem .9rem; background:var(--surface); }
+  details.tune summary { position:relative; cursor:pointer; padding:.8rem 1.6rem .2rem 0; color:var(--ink-muted); list-style:none; }
+  details.tune summary::-webkit-details-marker { display:none; }
+  details.tune summary::after { content:"▾"; position:absolute; right:0; top:.8rem; color:var(--ink-faint); } details.tune[open] summary::after { content:"▴"; }
+  .tiles { grid-template-columns:1fr 1fr; }
+  .tile.want { grid-column:1 / -1; }
+  .linkrow { display:flex; justify-content:center; align-items:center; gap:.4rem; margin-top:.8rem; color:var(--ink-faint); }
+  .linkrow button { background:none; border:none; color:var(--ink-muted); padding:.6rem .5rem; min-height:44px; font-size:.95rem; text-decoration:underline; text-decoration-color:var(--ink-faint); }
+  .sheet .btn { display:block; width:100%; margin-top:.55rem; text-align:left; }
   /* dim layer, timer states */
   #feedScreen { transition:opacity 1s ease; } #feedScreen.fadeout { opacity:0; }
   .photo img.fadein { opacity:0; transition:opacity .8s; } .photo img.fadein.on { opacity:1; }
@@ -194,36 +209,38 @@
 <!-- HOME -->
 <section class="screen" id="homeScreen">
   <div class="scroll">
+    <button class="iconbtn" id="reloadBtn" aria-label="Reload and update the app" title="Reload and update">↻</button>
     <div class="brand"><h1>Manna</h1><p>enough for tonight</p></div>
-
-    <div class="label">What are you reaching for? <span class="small" style="text-transform:none;letter-spacing:0">(optional)</span></div>
-    <div class="chips" id="moodChips"></div>
 
     <div class="label">How long</div>
     <div class="chips" id="minChips"></div>
-
     <button class="btn primary go" id="goBtn">Scroll 15 minutes</button>
 
-    <div class="label">Choose what to scroll <span class="small" style="text-transform:none;letter-spacing:0" id="mixNote"></span></div>
-    <div class="chips" id="catChips"></div>
+    <details class="tune" id="tune">
+      <summary id="tuneSum">Tune tonight</summary>
+      <div class="label" style="margin-top:1rem">What are you reaching for? <span class="small" style="text-transform:none;letter-spacing:0">(optional)</span></div>
+      <div class="chips" id="moodChips"></div>
+      <div class="label">Choose what to scroll <span class="small" style="text-transform:none;letter-spacing:0" id="mixNote"></span></div>
+      <div class="chips" id="catChips"></div>
+    </details>
 
     <div class="tiles">
       <button class="tile want" id="wantTile"><b>What I Want</b><span>See the pull. Choose the way. Hold it open-handed.</span></button>
       <button class="tile" id="keptTile"><b>Kept</b><span id="keptCount">Nothing yet</span></button>
-      <button class="tile" id="mineTile"><b>Add your own</b><span>Paste passages you love</span></button>
-      <button class="tile" id="mathTile"><b>Math levels</b><span id="mathNote">Starting out</span></button>
-      <button class="tile" id="setTile"><b>Settings</b><span>Dimming, input, reset</span></button>
+      <button class="tile" id="setTile"><b>Settings</b><span>Voice, dimming, update</span></button>
     </div>
-    <p class="small" style="text-align:center;margin-top:1.6rem" id="foot"></p>
+    <div class="linkrow"><button id="mineTile">Add your own</button><span>·</span><button id="mathTile">Math levels</button></div>
+    <p class="small" style="text-align:center;margin-top:1.2rem" id="foot"></p>
   </div>
 </section>
 
 <!-- FEED -->
 <section class="screen" id="feedScreen" hidden>
   <div class="topbar">
-    <button class="landbtn" id="landNow">Land now</button>
+    <button class="landbtn" id="backBtn" aria-label="Back to home">‹</button>
     <div class="track" id="track"><div class="fill" id="fill"></div><div class="orb" id="orb"></div></div>
     <div class="left" id="left">15:00</div>
+    <button class="landbtn" id="menuBtn" aria-label="Menu">⋯</button>
   </div>
   <div class="feed" id="feed"></div>
   <div class="navbtns" id="navbtns"><button id="navUp" aria-label="Previous card">▲</button><button id="navDown" aria-label="Next card">▼</button></div>
@@ -290,6 +307,8 @@
     <div class="chips" id="photoChips"></div>
     <div class="label">Your own pictures</div>
     <p class="small">Put images in the <b>art</b> folder next to this app and list them in <b>art/manifest.json</b> (for example <code>["a.jpg","b.jpg"]</code>). Scripture cards will use them. Pictures made in Grok work well.</p>
+    <div class="label">App</div>
+    <button class="btn" id="updateBtn">Reload and update the app</button>
     <div class="label">Start over</div>
     <button class="btn" id="resetMath">Reset math levels</button>
     <button class="btn" id="resetSeen" style="margin-left:.4rem">Forget what I've seen</button>
