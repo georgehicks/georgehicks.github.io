@@ -1,0 +1,14 @@
+{
+  "name": "Manna",
+  "short_name": "Manna",
+  "description": "Enough for tonight: a bounded, beautiful scroll that eases down into rest with God.",
+  "start_url": "./index.html",
+  "scope": "./",
+  "id": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#0E1120",
+  "theme_color": "#0E1120",
+  "categories": ["lifestyle"],
+  "icons": [{ "src": "icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }]
+}
