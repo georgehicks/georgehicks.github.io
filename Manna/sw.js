@@ -1,4 +1,4 @@
-const CACHE = 'manna-v6';
+const CACHE = 'manna-v7';
 const ASSETS = ['./', './index.html', './app.js', './engine.js', './content.js', './text.js', './places.js', './art.js', './games.js', './voice.js', './voice-worker.js', './manifest.json', './icon.svg', './icon-180.png', './icon-192.png', './icon-512.png'];
 
 self.addEventListener('install', e => {
