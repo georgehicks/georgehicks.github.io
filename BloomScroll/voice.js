@@ -40,15 +40,34 @@
   function fail(msg) { state = 'error'; waiters.splice(0).forEach(function (w) { w.rej(new Error(msg || 'The voice could not load.')); }); }
   function reset() { if (worker) { worker.terminate(); worker = null; } state = 'off'; busy = false; qHigh = []; qLow = []; inflight = {}; pending = {}; }
 
-  function unlock() { if (!ctx) ctx = new (root.AudioContext || root.webkitAudioContext)(); if (ctx.state === 'suspended') ctx.resume(); }
+  // iOS only lets audio start from inside a tap, so this is called from every tap/click in the app (see app.js). It creates the
+  // context, resumes it and plays one silent sample, which marks the page as allowed to play for the rest of the visit.
+  function unlock() {
+    if (!supported()) return;
+    try {
+      if (!ctx) ctx = new (root.AudioContext || root.webkitAudioContext)();
+      if (ctx.state !== 'running') ctx.resume();
+      if (!unlock.done) { var b = ctx.createBuffer(1, 1, 22050), s = ctx.createBufferSource(); s.buffer = b; s.connect(ctx.destination); s.start(0); unlock.done = true; }
+    } catch (e) {}
+  }
+  function sleep(ms) { return new Promise(function (r) { setTimeout(r, ms); }); }
 
-  // First sentence alone (so speech starts sooner), the rest merged into chunks of up to ~230 characters.
+  // First sentence alone (so speech starts sooner), then short chunks (~110 characters, broken at sentence ends, or at ; : , inside a long
+  // sentence). The model makes speech a little slower than real time, so short chunks keep the gap between them small.
+  var MAXC = 110;
+  function splitLong(x) {
+    if (x.length <= MAXC) return [x];
+    var parts = x.match(/[^;:,—]+[;:,—]?\s*/g) || [x], out = [], acc = '';
+    parts.forEach(function (p) { if (acc && (acc + p).length > MAXC) { out.push(acc.trim()); acc = p; } else acc += p; });
+    if (acc.trim()) out.push(acc.trim());
+    return out;
+  }
   function chunks(text) {
     var s = String(text).replace(/\s+/g, ' ').trim().match(/[^.!?…]+[.!?…]+["”’')\]]*|[^.!?…]+$/g) || [String(text)], out = [], acc = '';
     if (!s.length) return out;
     out.push(s.shift().trim());
-    s.forEach(function (x) { if ((acc + x).length > 230 && acc) { out.push(acc.trim()); acc = x; } else acc += x; });
-    if (acc.trim()) out.push(acc.trim());
+    s.forEach(function (x) { x = x.trim(); if (!x) return; if (acc && (acc + ' ' + x).length > MAXC) { splitLong(acc).forEach(function (y) { out.push(y); }); acc = x; } else acc = acc ? acc + ' ' + x : x; });
+    if (acc) splitLong(acc).forEach(function (y) { out.push(y); });
     return out.filter(Boolean);
   }
 
@@ -80,7 +99,11 @@
     worker.postMessage({ type: 'gen', id: id, text: it.text, voice: it.voice });
   }
 
-  function play(m, job) {
+  async function play(m, job) {
+    if (!ctx) unlock();
+    if (ctx.state !== 'running') { try { await Promise.race([ctx.resume(), sleep(700)]); } catch (e) {} }
+    if (job.stopped) return;
+    if (ctx.state !== 'running') throw new Error('blocked');
     return new Promise(function (res) {
       var buf = ctx.createBuffer(1, m.data.length, m.rate); buf.copyToChannel(m.data, 0);
       var src = ctx.createBufferSource(); src.buffer = buf; src.connect(ctx.destination); job.src = src; src.onended = res; src.start();
@@ -111,5 +134,5 @@
   function stop() { if (cur) { cur.stopped = true; try { if (cur.src) cur.src.stop(); } catch (e) {} cur = null; } }
   function speaking() { return !!cur; }
 
-  root.MannaVoice = { supported: supported, status: status, list: list, start: start, speak: speak, prefetch: prefetch, stop: stop, speaking: speaking, reset: reset, chunks: chunks };
+  root.MannaVoice = { supported: supported, status: status, list: list, start: start, unlock: unlock, speak: speak, prefetch: prefetch, stop: stop, speaking: speaking, reset: reset, chunks: chunks };
 })(typeof window !== 'undefined' ? window : globalThis);

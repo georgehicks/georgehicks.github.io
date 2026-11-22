@@ -3,7 +3,7 @@
 (function () {
   'use strict';
   var C = window.MannaContent, T = window.MannaText, PL = window.MannaPlaces, E = window.MannaEngine, A = window.MannaArt, G = window.MannaGames;
-  var VERSION = 'v16';
+  var VERSION = 'v17';
   var V = window.MannaVoice;
   var KEY = 'manna.state', SKEY = 'manna.session', PKEY = 'manna.paused';
 
@@ -154,9 +154,13 @@
       es.forEach(function (en) {
         if (en.isIntersecting && en.intersectionRatio > 0.6) {
           var c = en.target; if (c._show && !c._shown) { c._shown = true; c._show(); }
-          if (V && (V.speaking() || true)) { V.stop(); resetListen(); }
-          if (S.autoRead && V && V.status() === 'ready' && c._say) sayCard(c, c.querySelector('.listen'));
-          if (S.autoRead && V && V.status() === 'ready') { var nx = c.nextElementSibling; if (nx && nx._say) V.prefetch(nx._say, S.voice); }
+          if (V) { V.stop(); resetListen(); }
+          curCard = c;
+          if (V && V.status() === 'ready') {
+            if (c._say) V.prefetch(c._say, S.voice);                       // so a tap on this card is answered at once
+            if (S.autoRead && c._say) sayCard(c, c.querySelector('.listen'));
+            if (S.autoRead) { var nx = c.nextElementSibling; if (nx && nx._say) V.prefetch(nx._say, S.voice); }
+          } else autoLoad();
           var all = feed.children, idx = [].indexOf.call(all, c);
           if (idx >= all.length - 3) addCards(3);
           var h = c.querySelector('.hint'); if (idx > 0) { var h0 = feed.querySelector('.hint'); if (h0) h0.remove(); }
@@ -286,6 +290,16 @@
   }
   function actionsOf(card) { var w = card.querySelector('.actions'); if (!w) { w = el('div', 'actions'); card.appendChild(w); } return w; }
   // ---------- read aloud (Kokoro voice, opt-in) ----------
+  // The voice lives in a worker that is gone after every reload, so with "Read each card aloud" on and the voice downloaded earlier,
+  // load it in the background as the feed opens, then read the card you are on.
+  var curCard = null, loadingVoice = false;
+  function autoLoad() {
+    if (!V || !V.supported() || !S.voiceInstalled || !S.autoRead || V.status() !== 'off' || loadingVoice) return;
+    loadingVoice = true;
+    V.start().then(function () { loadingVoice = false; if (curCard && curCard.isConnected && V.status() === 'ready') { if (S.autoRead && curCard._say) sayCard(curCard, curCard.querySelector('.listen')); } }).catch(function () { loadingVoice = false; V.reset(); });
+  }
+  // iOS lets audio start only from inside a tap, so every tap wakes the audio context ahead of time.
+  ['click', 'touchend', 'pointerup', 'keydown'].forEach(function (t) { document.addEventListener(t, function () { if (V) V.unlock(); }, true); });
   var GLYPH = { idle: '🔊', thinking: '…', playing: '■' };
   function setBtn(b, st) { if (!b) return; b.dataset.state = st; b.textContent = GLYPH[st]; }
   function resetListen() { [].forEach.call(document.querySelectorAll('.listen'), function (b) { setBtn(b, 'idle'); }); }
@@ -303,11 +317,11 @@
       return go();
     }
     setBtn(b, 'thinking');
-    V.speak(card._say, S.voice, function (st) { if (st === 'playing') setBtn(b, 'playing'); else if (st === 'thinking') setBtn(b, 'thinking'); else setBtn(b, 'idle'); });
+    V.speak(card._say, S.voice, function (st) { if (st === 'playing') setBtn(b, 'playing'); else if (st === 'thinking') setBtn(b, 'thinking'); else setBtn(b, 'idle'); if (st === 'error' && b && b._tapped) note('Sound is blocked. Tap the speaker once more.'); });
   }
   function addListen(card) {
     var b = el('button', 'heart listen', GLYPH.idle); b.type = 'button'; b.setAttribute('aria-label', 'Read aloud'); b.dataset.state = 'idle';
-    b.onclick = function () { if (b.dataset.state === 'playing' || b.dataset.state === 'thinking') { V.stop(); setBtn(b, 'idle'); } else sayCard(card, b); };
+    b.onclick = function () { b._tapped = true; if (b.dataset.state === 'playing' || b.dataset.state === 'thinking') { V.stop(); setBtn(b, 'idle'); } else sayCard(card, b); };
     actionsOf(card).appendChild(b);
   }
 
