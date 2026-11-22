@@ -88,7 +88,7 @@
     { h: 'One photon', t: 'Under the right conditions, a rod cell in your eye can respond to a single photon of light. You were made to see in near-darkness.', ref: 'Psalm 139:23-24' },
     { h: 'A hundred thousand', t: 'Your heart beats about a hundred thousand times a day — a few billion times in a long life — and nobody asks it to.', ref: 'Psalm 127:2' },
     { h: 'The washing of the brain', t: 'Research (first in mice, with growing evidence in people) suggests the brain clears waste more actively in deep sleep through a fluid system around its blood vessels. Sleep is not downtime; it is work.', ref: 'Psalm 4:8' },
-    { h: 'Evening light', t: 'Bright, blue-rich light late in the evening can delay the body\'s melatonin and push sleep later. This is why Manna warms and dims as you scroll.', ref: 'Psalm 127:2' },
+    { h: 'Evening light', t: 'Bright, blue-rich light late in the evening can delay the body\'s melatonin and push sleep later. This is why Bloom Scroll warms and dims as you scroll.', ref: 'Psalm 127:2' },
     { h: 'Ice floats', t: 'Almost every liquid gets denser as it freezes. Water does the opposite below four degrees Celsius, so ice floats and lakes freeze from the top, leaving life underneath. A small oddity that everything depends on.', ref: 'Genesis 1:1' },
     { h: 'The first generation', t: 'The monarch butterfly that flies south over thousands of miles is not the one that flew north in spring. It is a great-grandchild, finding a forest it has never seen.' },
     { h: 'Pole to pole', t: 'The Arctic tern breeds near the Arctic and spends the other half of the year around Antarctica, a round trip that can be tens of thousands of kilometres. It sees more daylight than any other animal.' },

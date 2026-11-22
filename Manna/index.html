@@ -6,8 +6,8 @@
 <meta name="theme-color" content="#0E1120" />
 <meta name="apple-mobile-web-app-capable" content="yes" />
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-<meta name="apple-mobile-web-app-title" content="Manna" />
-<title>Manna</title>
+<meta name="apple-mobile-web-app-title" content="Bloom Scroll" />
+<title>Bloom Scroll</title>
 <link rel="manifest" href="manifest.json" />
 <link rel="icon" href="icon.svg" type="image/svg+xml" />
 <link rel="apple-touch-icon" href="icon.svg" />
@@ -186,10 +186,27 @@
 
   /* landing */
   #landScreen { background:radial-gradient(ellipse at 50% 35%, #1c2250 0%, #0a0c1c 75%); align-items:center; justify-content:center; text-align:center; padding:calc(var(--top) + 1rem) 1.4rem calc(var(--bot) + 1.5rem); }
-  .breathe { position:relative; width:15rem; height:15rem; margin:1.4rem auto; display:flex; align-items:center; justify-content:center; }
-  .breathe .ring { position:absolute; inset:0; border-radius:50%; background:radial-gradient(circle, rgba(242,200,121,.55), rgba(242,200,121,.06) 70%); transform:scale(.45); transition:transform 4s ease-in-out; }
-  .breathe.in .ring { transform:scale(1); transition-duration:4s; } .breathe.out .ring { transform:scale(.45); transition-duration:6s; }
-  .breathe .word { position:relative; font-family:var(--serif); font-size:1.5rem; color:#fff; text-shadow:0 2px 10px rgba(0,0,0,.5); }
+  /* the breathing orb: a luminous disc and halo that swell on the in-breath (4s) and settle on the out-breath (6s), with trailing rings and drifting motes */
+  .breathe { position:relative; width:17rem; height:17rem; margin:1.2rem auto .4rem; display:flex; align-items:center; justify-content:center; --ease:cubic-bezier(.45,.05,.35,1); }
+  .breathe > * { position:absolute; left:0; top:0; right:0; bottom:0; margin:auto; border-radius:50%; pointer-events:none; }
+  .bhalo { background:radial-gradient(circle, rgba(242,200,121,.5) 0%, rgba(242,200,121,.16) 38%, transparent 66%); transform:scale(.55); opacity:.5; transition:transform 4.6s var(--ease), opacity 4.6s var(--ease); }
+  .bring { border:1px solid rgba(242,200,121,.55); box-shadow:0 0 18px rgba(242,200,121,.18), inset 0 0 18px rgba(242,200,121,.1); transform:scale(.5); opacity:0; transition:transform 4s var(--ease), opacity 4s var(--ease); }
+  .bring.r1 { inset:20%; } .bring.r2 { inset:12%; transition-delay:.22s; } .bring.r3 { inset:5%; transition-delay:.45s; }
+  .bdisc { width:46%; height:46%; background:radial-gradient(circle at 50% 40%, #fff3cf 0%, #F7D88F 38%, #F2C879 62%, rgba(242,200,121,.55) 100%); box-shadow:0 0 44px rgba(242,200,121,.45), 0 0 110px rgba(242,200,121,.22); transform:scale(.6); opacity:.92; transition:transform 4s var(--ease), box-shadow 4s var(--ease); }
+  .bdisc::after { content:""; position:absolute; left:22%; top:14%; width:34%; height:26%; border-radius:50%; background:radial-gradient(circle, rgba(255,255,255,.65), transparent 70%); }
+  .bmotes { transform:scale(.55); opacity:.6; transition:transform 4.4s var(--ease), opacity 4.4s var(--ease); }
+  .bmotes .spin { position:absolute; inset:0; animation:bspin 80s linear infinite; }
+  .bmotes i { position:absolute; left:50%; top:50%; width:4px; height:4px; margin:-2px; border-radius:50%; background:#ffe9b0; box-shadow:0 0 8px rgba(255,233,176,.9); transform:rotate(var(--a)) translateY(calc(var(--d) * -1)); animation:btwinkle 3.4s ease-in-out infinite; animation-delay:var(--t); }
+  @keyframes bspin { to { transform:rotate(360deg); } }
+  @keyframes btwinkle { 0%,100% { opacity:.15; } 50% { opacity:.95; } }
+  .breathe.in .bhalo { transform:scale(1.08); opacity:1; }
+  .breathe.in .bring.r1 { transform:scale(1.02); opacity:.7; } .breathe.in .bring.r2 { transform:scale(1.02); opacity:.45; } .breathe.in .bring.r3 { transform:scale(1.02); opacity:.26; }
+  .breathe.in .bdisc { transform:scale(1.5); box-shadow:0 0 70px rgba(242,200,121,.6), 0 0 150px rgba(242,200,121,.3); }
+  .breathe.in .bmotes { transform:scale(1.12); opacity:1; }
+  .breathe.out .bhalo, .breathe.out .bring, .breathe.out .bdisc, .breathe.out .bmotes { transition-duration:6s; }
+  .breathe.out .bhalo { transition-duration:6.6s; } .breathe.out .bmotes { transition-duration:6.4s; }
+  .land .word { font-family:var(--serif); font-size:1.7rem; min-height:2.4rem; color:#fff3d2; text-shadow:0 0 22px rgba(242,200,121,.55); animation:bword 1.6s ease-out both; }
+  @keyframes bword { from { opacity:0; transform:translateY(6px); } to { opacity:1; transform:none; } }
   .land h2 { font-size:1.6rem; margin-bottom:.6rem; } .land p { color:var(--ink-muted); max-width:24rem; margin:.4rem auto; }
   .carry { text-align:left; max-width:26rem; margin:1rem auto 0; } .carry .it { padding:.7rem .9rem; border-left:3px solid var(--gold); background:rgba(242,200,121,.07); border-radius:0 12px 12px 0; margin:.5rem 0; font-family:var(--serif); font-size:1rem; }
   .landbtns { display:flex; flex-direction:column; gap:.6rem; width:min(24rem,100%); margin:1.2rem auto 0; }
@@ -213,7 +230,7 @@
 <section class="screen" id="homeScreen">
   <div class="scroll">
     <button class="iconbtn" id="reloadBtn" aria-label="Reload and update the app" title="Reload and update">↻</button>
-    <div class="brand"><img src="icon.svg" alt="" width="96" height="96"><h1>Manna</h1><p>enough for tonight</p></div>
+    <div class="brand"><img src="icon.svg" alt="" width="96" height="96"><h1>Bloom Scroll</h1><p>enough for tonight</p></div>
 
     <div id="pausedCard" class="pausedcard" hidden></div>
 
@@ -255,7 +272,13 @@
 <section class="screen land" id="landScreen" hidden>
   <div id="landA">
     <p class="small" id="landLine"></p>
-    <div class="breathe" id="breathe"><div class="ring"></div><div class="word" id="bword">Jesus</div></div>
+    <div class="breathe" id="breathe">
+      <div class="bhalo"></div>
+      <div class="bring r1"></div><div class="bring r2"></div><div class="bring r3"></div>
+      <div class="bmotes"><div class="spin"><i style="--a:0deg;--d:5.2rem;--t:-0.0s"></i><i style="--a:37deg;--d:5.5rem;--t:-0.7s"></i><i style="--a:60deg;--d:5.8rem;--t:-1.4s"></i><i style="--a:97deg;--d:6.1rem;--t:-2.1s"></i><i style="--a:120deg;--d:6.4rem;--t:-2.8s"></i><i style="--a:157deg;--d:6.7rem;--t:-0.1s"></i><i style="--a:180deg;--d:5.3rem;--t:-0.8s"></i><i style="--a:217deg;--d:5.6rem;--t:-1.5s"></i><i style="--a:240deg;--d:5.9rem;--t:-2.2s"></i><i style="--a:277deg;--d:6.2rem;--t:-2.9s"></i><i style="--a:300deg;--d:6.5rem;--t:-0.2s"></i><i style="--a:337deg;--d:6.8rem;--t:-0.9s"></i></div></div>
+      <div class="bdisc"></div>
+    </div>
+    <div class="word" id="bword">Jesus</div>
     <p class="small" id="bcount"></p>
     <button class="btn ghost small" id="skipBreath" style="margin-top:.5rem">I'm ready</button>
   </div>
@@ -291,7 +314,7 @@
 
 <!-- MATH LEVELS -->
 <section class="screen" id="mathScreen" hidden>
-  <div class="scroll"><button class="back" data-back>‹ Back</button><h2>Mental math</h2><p class="small">Manna keeps going where you are weakest and raises the level as you get quick. Nothing here is scored against you.</p><div id="mathList"></div></div>
+  <div class="scroll"><button class="back" data-back>‹ Back</button><h2>Mental math</h2><p class="small">Bloom Scroll keeps going where you are weakest and raises the level as you get quick. Nothing here is scored against you.</p><div id="mathList"></div></div>
 </section>
 
 <!-- SETTINGS -->

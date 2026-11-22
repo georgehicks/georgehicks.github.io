@@ -1,9 +1,9 @@
-/* Manna — app. The home screen, the scroll (a bounded feed with a visible timer and a descent toward stillness), the cards,
+/* Bloom Scroll (Manna) — app. The home screen, the scroll (a bounded feed with a visible timer and a descent toward stillness), the cards,
    What I Want, and the landing. Storage prefix: "manna.". No network except optional photo hot-links. */
 (function () {
   'use strict';
   var C = window.MannaContent, T = window.MannaText, PL = window.MannaPlaces, E = window.MannaEngine, A = window.MannaArt, G = window.MannaGames;
-  var VERSION = 'v10';
+  var VERSION = 'v11';
   var V = window.MannaVoice;
   var KEY = 'manna.state', SKEY = 'manna.session', PKEY = 'manna.paused';
 
@@ -513,10 +513,11 @@
     $('landLine').textContent = mood ? mood.land : 'Time to put it down. He is here.';
     $('landA').hidden = false; $('landB').hidden = true; $('skipBreath').hidden = true; show('landScreen'); landKept = s ? s.keptNow : [];
     var cyc = 6, i = 0, ring = $('breathe'), word = $('bword'), cnt = $('bcount'); clearBreath();
-    function inhale() { if (i >= cyc) return landB(); if (i >= 1) $('skipBreath').hidden = false; ring.className = 'breathe in'; word.textContent = C.BREATH.in[i % C.BREATH.in.length]; cnt.textContent = 'Breath ' + (i + 1) + ' of ' + cyc; breathTimers.push(setTimeout(exhale, 4000)); }
-    function exhale() { ring.className = 'breathe out'; word.textContent = C.BREATH.out[i % C.BREATH.out.length]; i++; breathTimers.push(setTimeout(inhale, 6000)); }
+    function inhale() { if (i >= cyc) return landB(); if (i >= 1) $('skipBreath').hidden = false; ring.className = 'breathe in'; word.textContent = C.BREATH.in[i % C.BREATH.in.length]; wordIn(word); cnt.textContent = 'Breath ' + (i + 1) + ' of ' + cyc; breathTimers.push(setTimeout(exhale, 4000)); }
+    function exhale() { ring.className = 'breathe out'; word.textContent = C.BREATH.out[i % C.BREATH.out.length]; wordIn(word); i++; breathTimers.push(setTimeout(inhale, 6000)); }
     ring.className = 'breathe'; breathTimers.push(setTimeout(inhale, 900));
   }
+  function wordIn(w) { w.style.animation = 'none'; void w.offsetWidth; w.style.animation = ''; }
   var landKept = [];
   function landB() {
     clearBreath(); $('landA').hidden = true; $('landB').hidden = false;
