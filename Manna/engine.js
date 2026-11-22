@@ -146,9 +146,11 @@
   }
 
   // Which skill next: weight toward weaker ones (low accuracy, low level), but never starve the strong ones.
+  var CORE = ['add', 'sub', 'mul', 'div'];
+  function unlocked(state, k) { return CORE.indexOf(k) >= 0 || (state.add.lvl >= 3 && state.sub.lvl >= 3 && state.mul.lvl >= 3); }
   function nextSkill(state, rng, last) {
     var w = {};
-    SKILLS.forEach(function (k) {
+    SKILLS.filter(function (k) { return unlocked(state, k); }).forEach(function (k) {
       var s = state[k];
       w[k] = 0.6 + (1 - s.acc) * 1.4 + (MAXLVL[k] - s.lvl) / MAXLVL[k];
       if (k === last) w[k] *= 0.25;

@@ -1,5 +1,5 @@
-const CACHE = 'manna-v1';
-const ASSETS = ['./', './index.html', './app.js', './engine.js', './content.js', './text.js', './places.js', './art.js', './games.js', './manifest.json', './icon.svg'];
+const CACHE = 'manna-v3';
+const ASSETS = ['./', './index.html', './app.js', './engine.js', './content.js', './text.js', './places.js', './art.js', './games.js', './voice.js', './voice-worker.js', './manifest.json', './icon.svg'];
 
 self.addEventListener('install', e => {
   e.waitUntil(caches.open(CACHE).then(c => c.addAll(ASSETS.map(u => new Request(u, { cache: 'reload' })))));
