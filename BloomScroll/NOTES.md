@@ -1,4 +1,4 @@
-# Bloom Scroll (folder: Manna) — build notes
+# Bloom Scroll — build notes (folder: BloomScroll, was Manna; storage keys still start "manna.")
 
 "Enough for tonight." A bounded evening scroll that replaces doomscrolling: you choose how long, it eases from playful to still, and
 it lands in breathing and the presence of God (hand-off to **Treasuring** and **AbidingSteps**). The name is provisional and lives in
@@ -30,7 +30,7 @@ it lands in breathing and the presence of God (hand-off to **Treasuring** and **
 
 ## Files
 `index.html` (shell + CSS) · `app.js` (screens, feed, cards, landing) · `engine.js` (descent weights, adaptive math; tested) · `content.js` (hand-written cards)
-· `text.js`, `places.js` (generated data) · `art.js` · `games.js` (Star Watch, Hold the Pass, Treasuring, Lights) · `sw.js` (CACHE `manna-vN`) · `tests.html`/`tests.js`.
+· `text.js`, `places.js` (generated data) · `art.js` · `games.js` (Star Watch, Hold the Pass, Treasuring, Lights) · `sw.js` (CACHE `bloomscroll-vN`) · `tests.html`/`tests.js`.
 Version bump = `CACHE` in `sw.js` and `VERSION` in `app.js`.
 
 ## Mental math

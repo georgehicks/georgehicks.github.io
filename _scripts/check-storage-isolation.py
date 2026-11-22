@@ -33,6 +33,7 @@ NAMESPACES = {
     "Vox": ["vox-"],
     "Charisma": ["charisma-"],
     "Abide": ["abide-"],
+    "BloomScroll": ["manna."],
 }
 FIREBASE_ALLOWED = {"AbidingSteps", "FocusFlowFireBase"}
 SKIP_DIRS = {".git", "node_modules", "reference", "_scripts", "illustrations", "studies"}

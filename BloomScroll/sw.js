@@ -1,4 +1,4 @@
-const CACHE = 'manna-v13';
+const CACHE = 'bloomscroll-v14';
 const ASSETS = ['./', './index.html', './app.js', './engine.js', './content.js', './text.js', './places.js', './art.js', './games.js', './treasuring.js', './voice.js', './voice-worker.js', './manifest.json', './icon.svg'];
 
 self.addEventListener('install', e => {
@@ -7,7 +7,7 @@ self.addEventListener('install', e => {
 });
 
 self.addEventListener('activate', e => {
-  e.waitUntil(caches.keys().then(keys => Promise.all(keys.filter(k => k.startsWith('manna-') && k !== CACHE).map(k => caches.delete(k)))));
+  e.waitUntil(caches.keys().then(keys => Promise.all(keys.filter(k => k.startsWith('bloomscroll-') && k !== CACHE).map(k => caches.delete(k)))));
   self.clients.claim();
 });
 

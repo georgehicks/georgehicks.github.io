@@ -3,7 +3,7 @@
 (function () {
   'use strict';
   var C = window.MannaContent, T = window.MannaText, PL = window.MannaPlaces, E = window.MannaEngine, A = window.MannaArt, G = window.MannaGames;
-  var VERSION = 'v13';
+  var VERSION = 'v14';
   var V = window.MannaVoice;
   var KEY = 'manna.state', SKEY = 'manna.session', PKEY = 'manna.paused';
 
@@ -242,7 +242,7 @@
     var done = function () { location.reload(); };
     try {
       navigator.serviceWorker.getRegistrations().then(function (rs) { return Promise.all(rs.map(function (r) { return r.update().catch(function () {}); })); })
-        .then(function () { return caches.keys(); }).then(function (ks) { return Promise.all(ks.filter(function (k) { return k.indexOf('manna-') === 0; }).map(function (k) { return caches.delete(k); })); }).then(done, done);
+        .then(function () { return caches.keys(); }).then(function (ks) { return Promise.all(ks.filter(function (k) { return k.indexOf('bloomscroll-') === 0; }).map(function (k) { return caches.delete(k); })); }).then(done, done);
     } catch (e) { done(); }
   }
   $('reloadBtn').onclick = reloadApp; $('updateBtn').onclick = reloadApp;
