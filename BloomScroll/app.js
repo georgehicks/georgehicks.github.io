@@ -3,7 +3,7 @@
 (function () {
   'use strict';
   var C = window.MannaContent, T = window.MannaText, PL = window.MannaPlaces, E = window.MannaEngine, A = window.MannaArt, G = window.MannaGames;
-  var VERSION = 'v22';
+  var VERSION = 'v23';
   var V = window.MannaVoice, R = window.MannaRelease;
   var KEY = 'manna.state', SKEY = 'manna.session', PKEY = 'manna.paused';
 
@@ -89,7 +89,7 @@
   $('mathTile').onclick = function () { renderMath(); show('mathScreen'); };
   $('setTile').onclick = function () { renderSettings(); show('setScreen'); };
   // The games, straight from the home screen (no need to wait for one to turn up in the scroll).
-  var GICON = { starwatch: '🚀', pass: '🏰', lights: '💡', checkers: '♟️', mines: '💣', sudoku: '🔢', solitaire: '🃏', papertoss: '🗑️', treasuring: '💛' };
+  var GICON = { starwatch: '🚀', pass: '🏰', lights: '💡', checkers: '♟️', mines: '💣', sudoku: '🔢', solitaire: '🃏', papertoss: '🗑️', rally: '🎾', blast: '💥', putt: '⛳', treasuring: '💛' };
   G.list.forEach(function (g) { var b = el('button', 'gtile', '<i>' + (GICON[g.id] || '🎮') + '</i><span>' + esc(g.title) + '</span>'); b.type = 'button'; b.onclick = function () { openGame(g, true); }; $('gameGrid').appendChild(b); });
 
   function renderKept() {

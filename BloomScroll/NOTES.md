@@ -62,7 +62,7 @@ Downloads are tracked per engine in `S.voiceDl`. If the gpu voice fails to load 
 Audio must start inside a tap on iOS: `V.unlock()` runs on every click/touchend/pointerup/keydown. Auto-read loads the voice in the background when the feed opens.
 
 ## Games (v20)
-Nine games, all opened through `gamekit.js` (`MannaKit.run`): an Easy / Normal / Hard picker first (last choice remembered in `manna.glevel`, bests in `manna.gbest`), then a strip above the board (level ▾, status, New game).
+Twelve games (v23), all opened through `gamekit.js` (`MannaKit.run`): an Easy / Normal / Hard picker first (last choice remembered in `manna.glevel`, bests in `manna.gbest`), then a strip above the board (level ▾, status, New game).
 A game is `{ id, title, blurb, levels:{easy,normal,hard}, make(level, host, api) }`; `MannaGames.reg(def)` wraps one for the feed; each file pushes its own into `MannaGames.list`.
 - `games.js`: Star Watch (power-ups, UFO, drag-relative control), Hold the Pass (3 towers, upgrade/sell, wave types, ×2 speed), Lights (hints via GF(2) solver, undo, par)
 - `games-board.js`: Checkers (forced captures, multi-jump, alpha-beta AI: depth 1+random / 4 / time-limited 9), Minesweeper (hold to flag, chording, free mistake on easy), Sudoku (unique-solution generator in 10 ms slices, next puzzle prefetched, notes, hints)
@@ -76,3 +76,10 @@ No game-over screens: it rests and begins again. Tested in the desktop pane only
 - **Wind-down** (`windDown('sleep'|'break', mins)` in app.js): fade → breaths (6 for sleep, 2 for a break) → guided hand-over (`MannaRelease.guided`: People, Cares, Gripping for sleep; Gripping only for a break; each skippable; Settings → "At wind-down" can turn it off) → sleep: the night verse and a dark Goodnight screen; break: the sitting is paused and a quiet countdown waits (+5, "Back to it" resumes).
 - **Game time**: a game opened from Home starts a countdown (the Home "How long" chips) shown in the game bar and in a Home card; it ends with the same time-up choices (Wind down for sleep / +3 minutes / Take a break). ☾ in the game bar and ⋯ in the scroll offer the same. Not saved across an app close.
 - No links out of the app any more (the Treasuring and AbidingSteps buttons on the landing are gone).
+
+## Games, round two (v23)
+- Minesweeper redrawn: raised tiles that sink and ripple open (BFS delay), glowing numbers, planted flag and bomb SVGs, a shock-ring when a mine is found, a golden glow on a win, HUD pills for flags and time.
+- Hold the Pass redrawn: dusk valley painted once into an offscreen canvas (grass plots, sand road with cobbles, enemy gate, keep), towers with turning barrels/crystals/cannons and level glow, walking slimes with eyes and hit flash, trails, burst rings, coin pops, fireflies, a red flash when one gets through, pill HUD.
+- New: `rally.js` Rally (tennis: pseudo-3D court, ball is launched to a chosen landing spot and bounces once, hit with the racket edge to place it, CPU speed/error/aim by level, first to 5/7/9), `blast.js` Blast Maze (Bomberman-style: pillars, crates, chain bombs, power-ups for range/bombs/speed, slimes that hunt on harder levels, D-pad plus Bomb button, arrow keys and Space on a computer), `putt.js` Putt (mini golf, a generated and path-checked course every hole: walls, bumpers, sand, water, a windmill on Hard; pull back anywhere to shoot; guide: whole path / short / none).
+- Tested in the desktop pane only: all 12 games open at all three levels without errors, Rally/Blast/Putt/Pass driven by bots on a fake frame clock. Touch feel (D-pad, racket slide, pull-back) is untested on the iPhone.
+- Preview testing: the plain Python server can leave the pane running stale scripts; a throwaway `Cache-Control: no-store` server fixes that.
