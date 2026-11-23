@@ -3,7 +3,7 @@
 (function () {
   'use strict';
   var C = window.MannaContent, T = window.MannaText, PL = window.MannaPlaces, E = window.MannaEngine, A = window.MannaArt, G = window.MannaGames;
-  var VERSION = 'v18';
+  var VERSION = 'v19';
   var V = window.MannaVoice;
   var KEY = 'manna.state', SKEY = 'manna.session', PKEY = 'manna.paused';
 
@@ -128,7 +128,7 @@
     var st = $('voiceStatus'), bt = $('voiceBtn'), vc = $('voiceChips'), ac = $('autoChips'), ec = $('engineChips');
     if (!V || !V.supported()) { st.textContent = 'Not supported in this browser.'; bt.hidden = true; return; }
     var ready = vready();
-    st.textContent = ready ? 'Ready. Works offline.' : dl() ? 'Downloaded earlier. It loads the first time you listen.' : 'Not downloaded yet (about ' + mb() + ' MB, once, best on Wi-Fi).';
+    st.textContent = ready ? 'Ready. Works offline.' + (V.speed() ? ' On this phone: ' + V.speed().toFixed(1) + '× real time' + (V.speed() < 1.1 ? ' (too slow to keep up).' : '.') : '') : dl() ? 'Downloaded earlier. It loads the first time you listen.' : 'Not downloaded yet (about ' + mb() + ' MB, once, best on Wi-Fi).';
     bt.hidden = ready; bt.textContent = dl() ? 'Load the voice now' : 'Download the voice';
     bt.onclick = function () { installVoice(function (t) { bt.textContent = t || (dl() ? 'Load the voice now' : 'Download the voice'); }, renderVoice); };
     ec.innerHTML = ''; ec.style.display = V.gpu().ok ? '' : 'none';

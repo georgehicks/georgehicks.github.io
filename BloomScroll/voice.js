@@ -4,7 +4,7 @@
 (function (root) {
   'use strict';
   var worker = null, ctx = null, state = 'off', voices = [], pending = {}, nid = 1, cur = null, progressCb = null, loaded = {}, waiters = [];
-  var qHigh = [], qLow = [], busy = false, inflight = {}, cache = {}, order = [], gpuInfo = null, engineLoaded = null, fast = false;
+  var qHigh = [], qLow = [], busy = false, inflight = {}, cache = {}, order = [], gpuInfo = null, engineLoaded = null, fast = false, lastSpeed = 0;
 
   function supported() { return !!(root.Worker && (root.AudioContext || root.webkitAudioContext)); }
   function status() { return state; }                  // off | loading | ready | error
@@ -18,6 +18,7 @@
     return root.navigator.gpu.requestAdapter().then(function (a) { return gpuInfo = a ? { ok: true, f16: !!(a.features && a.features.has('shader-f16')) } : none; }, function () { return gpuInfo = none; });
   }
   function gpu() { return gpuInfo || { ok: false, f16: false }; }
+  function speed() { return lastSpeed; }   // how many seconds of speech were made per second of waiting, last chunk, on this device
   function engine() { return state === 'off' ? null : engineLoaded; }
 
   // engine: 'gpu' (graphics chip, fast) or 'cpu' (processor, small download, slower than real time on most phones).
@@ -107,11 +108,13 @@
     if (busy || state !== 'ready') return;
     var it = qHigh.shift() || qLow.shift(); if (!it) return;
     if (it.jobs.length && it.jobs.every(function (j) { return j.stopped; })) { delete inflight[it.k]; it.rej(new Error('stopped')); return pump(); }
-    busy = true; var id = nid++;
+    busy = true; var id = nid++, t0 = Date.now(), wd;
     pending[id] = {
-      res: function (m) { busy = false; store(it.k, m); delete inflight[it.k]; it.res(m); pump(); },
-      rej: function (e) { busy = false; delete inflight[it.k]; it.rej(e); pump(); }
+      res: function (m) { clearTimeout(wd); busy = false; if (m.data && m.rate) lastSpeed = (m.data.length / m.rate) / Math.max(0.05, (Date.now() - t0) / 1000); store(it.k, m); delete inflight[it.k]; it.res(m); pump(); },
+      rej: function (e) { clearTimeout(wd); busy = false; delete inflight[it.k]; it.rej(e); pump(); }
     };
+    // A graphics-chip run that never answers must not hang the speaker: after 60 s give up so the app can switch voices.
+    wd = setTimeout(function () { if (pending[id]) { var p = pending[id]; delete pending[id]; p.rej(new Error('timeout')); } }, 60000);
     worker.postMessage({ type: 'gen', id: id, text: it.text, voice: it.voice });
   }
 
@@ -150,5 +153,5 @@
   function stop() { if (cur) { cur.stopped = true; try { if (cur.src) cur.src.stop(); } catch (e) {} cur = null; } }
   function speaking() { return !!cur; }
 
-  root.MannaVoice = { supported: supported, status: status, list: list, start: start, detect: detect, gpu: gpu, engine: engine, unlock: unlock, speak: speak, prefetch: prefetch, stop: stop, speaking: speaking, reset: reset, chunks: chunks };
+  root.MannaVoice = { supported: supported, status: status, list: list, start: start, detect: detect, speed: speed, gpu: gpu, engine: engine, unlock: unlock, speak: speak, prefetch: prefetch, stop: stop, speaking: speaking, reset: reset, chunks: chunks };
 })(typeof window !== 'undefined' ? window : globalThis);
