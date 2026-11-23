@@ -53,3 +53,10 @@ bedtime: **Time of Day → Open Bloom Scroll**.
 ## Treasuring game and the breathing bloom (v13)
 - `treasuring.js` is a DOM copy of the real Treasuring app's stage (cloud, Jesus disc, heart, one slow drop at a time, bowl-shaped dock), with **five buckets** instead of seven: Release, Thanks, Intercede, Hold, Lies. Same short prayers, same rules as Treasuring (Intercede only for a person; a person or a thanks is never a lie; Hold just says its line and keeps the drop). Lists, fears, lies and truths are copied from `../Treasure/content.js`; there is no score. Not wired to Treasuring's saved data.
 - The landing breath is the AbidingSteps petal bloom (`.breath-bloom`, 8 petals that spiral out and in, cross and heart at full bloom, ring and embers), retimed to one 10-second breath (4s in, 6s out) so it stays in step with the words. It starts on the first in-breath (`.bgo`).
+
+## Voice engine (v17–v18)
+Kokoro runs in `voice-worker.js`. Two engines: **gpu** (WebGPU, fp16 if the adapter has `shader-f16` else fp32; ~165 / ~330 MB) and **cpu** (wasm q8, ~90 MB).
+Measured on a desktop: cpu 0.7x real time, webgpu ~6.8x. The cpu voice cannot keep up with itself, which is why it pauses between chunks.
+`MannaVoice.detect()` finds out whether a GPU adapter exists; the app defaults to gpu when it does, and the settings show an engine chip row.
+Downloads are tracked per engine in `S.voiceDl`. If the gpu voice fails to load or generate (untested on iPhone), `gpuFailed()` switches to cpu and says so.
+Audio must start inside a tap on iOS: `V.unlock()` runs on every click/touchend/pointerup/keydown. Auto-read loads the voice in the background when the feed opens.

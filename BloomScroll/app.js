@@ -3,7 +3,7 @@
 (function () {
   'use strict';
   var C = window.MannaContent, T = window.MannaText, PL = window.MannaPlaces, E = window.MannaEngine, A = window.MannaArt, G = window.MannaGames;
-  var VERSION = 'v17';
+  var VERSION = 'v18';
   var V = window.MannaVoice;
   var KEY = 'manna.state', SKEY = 'manna.session', PKEY = 'manna.paused';
 
@@ -18,8 +18,9 @@
   function catLabel(id) { var c = C.CATS.filter(function (x) { return x.id === id; })[0]; return c ? c.label : id; }
 
   // ---------- state ----------
-  var S = { mins: 15, cats: [], mood: null, kept: [], mine: [], math: E.newMath(), seen: {}, log: [], dim: 0.38, mathInput: 'pad', photos: true, voice: 'am_adam', autoRead: false, voiceInstalled: false };
+  var S = { mins: 15, cats: [], mood: null, kept: [], mine: [], math: E.newMath(), seen: {}, log: [], dim: 0.38, mathInput: 'pad', photos: true, voice: 'am_adam', autoRead: false, voiceInstalled: false, voiceDl: null, voiceEngine: 'gpu' };
   try { var raw = JSON.parse(localStorage.getItem(KEY) || 'null'); if (raw) { for (var k in raw) S[k] = raw[k]; } } catch (e) {}
+  if (!S.voiceDl) S.voiceDl = { cpu: !!S.voiceInstalled };   // downloads are tracked per engine (the graphics-chip model is a different file)
   E.SKILLS.forEach(function (k) { if (!S.math[k]) S.math[k] = E.newMath()[k]; });
   function save() { try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) {} }
 
@@ -117,13 +118,21 @@
     var pc = $('photoChips'); pc.innerHTML = '';
     [[true, 'Show photos'], [false, 'Drawn art only']].forEach(function (o) { var b = el('button', 'chip' + (S.photos === o[0] ? ' on' : ''), o[1]); b.type = 'button'; b.onclick = function () { S.photos = o[0]; save(); renderSettings(); }; pc.appendChild(b); });
   }
+  // Voice engine: 'gpu' runs the model on the graphics chip (about ten times faster, bigger download), 'cpu' on the processor (small, slower than real time).
+  function engine() { return S.voiceEngine !== 'cpu' && V && V.gpu().ok ? 'gpu' : 'cpu'; }
+  function dl() { return !!(S.voiceDl && S.voiceDl[engine()]); }
+  function mb() { return engine() === 'gpu' ? (V.gpu().f16 ? 165 : 330) : 90; }
+  if (V) V.detect().then(function () { if ($('voiceChips')) renderVoice(); });
+  function vready() { return !!V && V.status() === 'ready' && V.engine() === engine(); }
   function renderVoice() {
-    var st = $('voiceStatus'), bt = $('voiceBtn'), vc = $('voiceChips'), ac = $('autoChips');
+    var st = $('voiceStatus'), bt = $('voiceBtn'), vc = $('voiceChips'), ac = $('autoChips'), ec = $('engineChips');
     if (!V || !V.supported()) { st.textContent = 'Not supported in this browser.'; bt.hidden = true; return; }
-    var ready = V.status() === 'ready';
-    st.textContent = ready ? 'Ready. Works offline.' : S.voiceInstalled ? 'Downloaded earlier. It loads the first time you listen.' : 'Not downloaded yet (about 90 MB, once, best on Wi-Fi).';
-    bt.hidden = ready; bt.textContent = S.voiceInstalled ? 'Load the voice now' : 'Download the voice';
-    bt.onclick = function () { installVoice(function (t) { bt.textContent = t || (S.voiceInstalled ? 'Load the voice now' : 'Download the voice'); }, renderVoice); };
+    var ready = vready();
+    st.textContent = ready ? 'Ready. Works offline.' : dl() ? 'Downloaded earlier. It loads the first time you listen.' : 'Not downloaded yet (about ' + mb() + ' MB, once, best on Wi-Fi).';
+    bt.hidden = ready; bt.textContent = dl() ? 'Load the voice now' : 'Download the voice';
+    bt.onclick = function () { installVoice(function (t) { bt.textContent = t || (dl() ? 'Load the voice now' : 'Download the voice'); }, renderVoice); };
+    ec.innerHTML = ''; ec.style.display = V.gpu().ok ? '' : 'none';
+    [['gpu', 'Fast (graphics chip)'], ['cpu', 'Standard (small)']].forEach(function (o) { var b = el('button', 'chip' + (engine() === o[0] ? ' on' : ''), o[1]); b.type = 'button'; b.onclick = function () { S.voiceEngine = o[0]; save(); V.stop(); resetListen(); renderVoice(); }; ec.appendChild(b); });
     vc.innerHTML = '';
     var list = ready && V.list().length ? V.list() : [{ id: 'am_adam', name: 'Adam' }];
     list.forEach(function (v) { var b = el('button', 'chip' + (S.voice === v.id ? ' on' : ''), esc(v.name || v.id)); b.type = 'button'; b.onclick = function () { S.voice = v.id; save(); renderVoice(); if (ready) V.speak('Be still, and know that I am God.', S.voice); }; vc.appendChild(b); });
@@ -156,7 +165,7 @@
           var c = en.target; if (c._show && !c._shown) { c._shown = true; c._show(); }
           if (V) { V.stop(); resetListen(); }
           curCard = c;
-          if (V && V.status() === 'ready') {
+          if (vready()) {
             if (c._say) V.prefetch(c._say, S.voice);                       // so a tap on this card is answered at once
             if (S.autoRead && c._say) sayCard(c, c.querySelector('.listen'));
             if (S.autoRead) { var nx = c.nextElementSibling; if (nx && nx._say) V.prefetch(nx._say, S.voice); }
@@ -294,9 +303,9 @@
   // load it in the background as the feed opens, then read the card you are on.
   var curCard = null, loadingVoice = false;
   function autoLoad() {
-    if (!V || !V.supported() || !S.voiceInstalled || !S.autoRead || V.status() !== 'off' || loadingVoice) return;
+    if (!V || !V.supported() || !dl() || !S.autoRead || vready() || V.status() === 'loading' || loadingVoice) return;
     loadingVoice = true;
-    V.start().then(function () { loadingVoice = false; if (curCard && curCard.isConnected && V.status() === 'ready') { if (S.autoRead && curCard._say) sayCard(curCard, curCard.querySelector('.listen')); } }).catch(function () { loadingVoice = false; V.reset(); });
+    V.start(null, engine()).then(function () { loadingVoice = false; if (curCard && curCard.isConnected && vready()) { if (S.autoRead && curCard._say) sayCard(curCard, curCard.querySelector('.listen')); } }).catch(function () { loadingVoice = false; V.reset(); gpuFailed(); });
   }
   // iOS lets audio start only from inside a tap, so every tap wakes the audio context ahead of time.
   ['click', 'touchend', 'pointerup', 'keydown'].forEach(function (t) { document.addEventListener(t, function () { if (V) V.unlock(); }, true); });
@@ -304,20 +313,27 @@
   function setBtn(b, st) { if (!b) return; b.dataset.state = st; b.textContent = GLYPH[st]; }
   function resetListen() { [].forEach.call(document.querySelectorAll('.listen'), function (b) { setBtn(b, 'idle'); }); }
   function note(text) { var sh = el('div', 'sheet', '<div><p class="serif" style="font-size:1.1rem;margin:.2rem 0 1rem">' + esc(text) + '</p><button class="btn primary" style="width:100%">OK</button></div>'); sh.querySelector('button').onclick = function () { sh.remove(); }; $('layer').appendChild(sh); }
+  // If the graphics-chip voice will not start on this device, go back to the standard voice and say so. True when it did that.
+  function gpuFailed() {
+    if (engine() !== 'gpu') return false;
+    S.voiceEngine = 'cpu'; save(); V.reset(); renderVoice();
+    note('The fast voice could not start on this phone, so I switched to the standard voice. Tap the speaker again to download it (about 90 MB).');
+    return true;
+  }
   function installVoice(label, done) {
     function prog(p) { if (label) label(Math.round(p * 100) + '%'); }
     if (label) label('…');
-    return V.start(prog).then(function () { S.voiceInstalled = true; save(); if (label) label(null); if (done) done(); }).catch(function (e) { if (label) label(null); V.reset(); note('The voice could not load. Check your connection and try again.'); });
+    return V.start(prog, engine()).then(function () { S.voiceDl[engine()] = true; save(); if (label) label(null); if (done) done(); }).catch(function (e) { if (label) label(null); V.reset(); if (!gpuFailed()) note('The voice could not load. Check your connection and try again.'); });
   }
   function sayCard(card, b) {
     if (!V.supported()) return note('This browser cannot play the voice.');
-    if (V.status() !== 'ready') {
+    if (!vready()) {
       var go = function () { installVoice(function (t) { if (b) { if (t) b.textContent = t; else setBtn(b, 'idle'); } }, function () { sayCard(card, b); }); };
-      if (!S.voiceInstalled) return ask('Hear it read aloud in a natural voice? The voice downloads once (about 90 MB — best on Wi-Fi), then works offline. Nothing you read leaves your phone.', 'Download', go, 'Not now');
+      if (!dl()) return ask('Hear it read aloud in a natural voice? The voice downloads once (about ' + mb() + ' MB — best on Wi-Fi), then works offline. Nothing you read leaves your phone.', 'Download', go, 'Not now');
       return go();
     }
     setBtn(b, 'thinking');
-    V.speak(card._say, S.voice, function (st) { if (st === 'playing') setBtn(b, 'playing'); else if (st === 'thinking') setBtn(b, 'thinking'); else setBtn(b, 'idle'); if (st === 'error' && b && b._tapped) note('Sound is blocked. Tap the speaker once more.'); });
+    V.speak(card._say, S.voice, function (st) { if (st === 'playing') setBtn(b, 'playing'); else if (st === 'thinking') setBtn(b, 'thinking'); else setBtn(b, 'idle'); if (st === 'blocked' && b && b._tapped) note('Sound is blocked. Tap the speaker once more.'); if (st === 'error') gpuFailed(); });
   }
   function addListen(card) {
     var b = el('button', 'heart listen', GLYPH.idle); b.type = 'button'; b.setAttribute('aria-label', 'Read aloud'); b.dataset.state = 'idle';

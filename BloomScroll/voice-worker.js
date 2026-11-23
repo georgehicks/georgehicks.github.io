@@ -6,10 +6,13 @@ import { KokoroTTS } from 'https://cdn.jsdelivr.net/npm/kokoro-js@1.2.1/+esm';
 const MODEL = 'onnx-community/Kokoro-82M-v1.0-ONNX';
 let tts = null, loading = null, lastPost = 0;
 
-async function load() {
+// opt = { device: 'webgpu' | 'wasm', dtype: 'fp16' | 'fp32' | 'q8' } from the main thread. WebGPU (the graphics chip) is roughly ten times
+// faster than wasm (the processor) for this model; wasm q8 is the small, works-everywhere fallback.
+async function load(opt) {
   if (tts) return tts;
+  opt = opt || {};
   if (!loading) loading = KokoroTTS.from_pretrained(MODEL, {
-    dtype: 'q8', device: 'wasm',
+    dtype: opt.dtype || 'q8', device: opt.device || 'wasm',
     progress_callback: p => { if (p && p.status === 'progress') { const n = performance.now(); if (n - lastPost > 250 || p.loaded === p.total) { lastPost = n; postMessage({ type: 'progress', file: p.file, loaded: p.loaded, total: p.total }); } } }
   }).then(t => { tts = t; return t; });
   return loading;
@@ -19,11 +22,11 @@ self.onmessage = async e => {
   const m = e.data;
   try {
     if (m.type === 'load') {
-      const t = await load();
+      const t = await load({ device: m.device, dtype: m.dtype });
       const v = t.voices || {};
       postMessage({ type: 'ready', voices: Object.keys(v).map(id => ({ id, name: v[id].name, lang: v[id].language, gender: v[id].gender })) });
     } else if (m.type === 'gen') {
-      const t = await load();
+      const t = await load({});
       const a = await t.generate(m.text, { voice: m.voice });
       const data = new Float32Array(a.audio);
       postMessage({ type: 'audio', id: m.id, data, rate: a.sampling_rate }, [data.buffer]);

@@ -4,13 +4,27 @@
 (function (root) {
   'use strict';
   var worker = null, ctx = null, state = 'off', voices = [], pending = {}, nid = 1, cur = null, progressCb = null, loaded = {}, waiters = [];
-  var qHigh = [], qLow = [], busy = false, inflight = {}, cache = {}, order = [];
+  var qHigh = [], qLow = [], busy = false, inflight = {}, cache = {}, order = [], gpuInfo = null, engineLoaded = null, fast = false;
 
   function supported() { return !!(root.Worker && (root.AudioContext || root.webkitAudioContext)); }
   function status() { return state; }                  // off | loading | ready | error
   function list() { return voices; }
 
-  function start(onProgress) {
+  // Can this device run the model on its graphics chip? Resolves { ok, f16 }. Call once at startup.
+  function detect() {
+    if (gpuInfo) return Promise.resolve(gpuInfo);
+    var none = { ok: false, f16: false };
+    if (!root.navigator || !root.navigator.gpu) return Promise.resolve(gpuInfo = none);
+    return root.navigator.gpu.requestAdapter().then(function (a) { return gpuInfo = a ? { ok: true, f16: !!(a.features && a.features.has('shader-f16')) } : none; }, function () { return gpuInfo = none; });
+  }
+  function gpu() { return gpuInfo || { ok: false, f16: false }; }
+  function engine() { return state === 'off' ? null : engineLoaded; }
+
+  // engine: 'gpu' (graphics chip, fast) or 'cpu' (processor, small download, slower than real time on most phones).
+  function start(onProgress, eng) {
+    eng = eng === 'gpu' && gpu().ok ? 'gpu' : 'cpu';
+    if (state !== 'off' && engineLoaded !== eng) reset();
+    engineLoaded = eng; fast = eng === 'gpu';
     progressCb = onProgress || progressCb;
     if (state === 'ready') return Promise.resolve();
     return new Promise(function (res, rej) {
@@ -34,7 +48,8 @@
           if (m.id && pending[m.id]) { var q = pending[m.id]; delete pending[m.id]; q.rej(new Error(m.message)); } else fail(m.message);
         }
       };
-      worker.postMessage({ type: 'load' });
+      loaded = {};
+      worker.postMessage({ type: 'load', device: fast ? 'webgpu' : 'wasm', dtype: fast ? (gpu().f16 ? 'fp16' : 'fp32') : 'q8' });
     });
   }
   function fail(msg) { state = 'error'; waiters.splice(0).forEach(function (w) { w.rej(new Error(msg || 'The voice could not load.')); }); }
@@ -54,11 +69,12 @@
 
   // First sentence alone (so speech starts sooner), then short chunks (~110 characters, broken at sentence ends, or at ; : , inside a long
   // sentence). The model makes speech a little slower than real time, so short chunks keep the gap between them small.
-  var MAXC = 110;
+  var MAXC = 110;   // 230 once the graphics chip is doing the work (fast enough that longer chunks, which sound smoother, cost nothing)
+  function maxc() { return fast ? 230 : MAXC; }
   function splitLong(x) {
-    if (x.length <= MAXC) return [x];
+    if (x.length <= maxc()) return [x];
     var parts = x.match(/[^;:,—]+[;:,—]?\s*/g) || [x], out = [], acc = '';
-    parts.forEach(function (p) { if (acc && (acc + p).length > MAXC) { out.push(acc.trim()); acc = p; } else acc += p; });
+    parts.forEach(function (p) { if (acc && (acc + p).length > maxc()) { out.push(acc.trim()); acc = p; } else acc += p; });
     if (acc.trim()) out.push(acc.trim());
     return out;
   }
@@ -66,7 +82,7 @@
     var s = String(text).replace(/\s+/g, ' ').trim().match(/[^.!?…]+[.!?…]+["”’')\]]*|[^.!?…]+$/g) || [String(text)], out = [], acc = '';
     if (!s.length) return out;
     out.push(s.shift().trim());
-    s.forEach(function (x) { x = x.trim(); if (!x) return; if (acc && (acc + ' ' + x).length > MAXC) { splitLong(acc).forEach(function (y) { out.push(y); }); acc = x; } else acc = acc ? acc + ' ' + x : x; });
+    s.forEach(function (x) { x = x.trim(); if (!x) return; if (acc && (acc + ' ' + x).length > maxc()) { splitLong(acc).forEach(function (y) { out.push(y); }); acc = x; } else acc = acc ? acc + ' ' + x : x; });
     if (acc) splitLong(acc).forEach(function (y) { out.push(y); });
     return out.filter(Boolean);
   }
@@ -125,7 +141,7 @@
           if (i + 1 < ps.length && onState) onState('thinking');
         }
         if (!job.stopped) { cur = null; if (onState) onState('done'); }
-      } catch (e) { if (!job.stopped) { cur = null; if (onState) onState('error'); } }
+      } catch (e) { if (!job.stopped) { cur = null; if (onState) onState(e && e.message === 'blocked' ? 'blocked' : 'error'); } }
     })();
     return job;
   }
@@ -134,5 +150,5 @@
   function stop() { if (cur) { cur.stopped = true; try { if (cur.src) cur.src.stop(); } catch (e) {} cur = null; } }
   function speaking() { return !!cur; }
 
-  root.MannaVoice = { supported: supported, status: status, list: list, start: start, unlock: unlock, speak: speak, prefetch: prefetch, stop: stop, speaking: speaking, reset: reset, chunks: chunks };
+  root.MannaVoice = { supported: supported, status: status, list: list, start: start, detect: detect, gpu: gpu, engine: engine, unlock: unlock, speak: speak, prefetch: prefetch, stop: stop, speaking: speaking, reset: reset, chunks: chunks };
 })(typeof window !== 'undefined' ? window : globalThis);
