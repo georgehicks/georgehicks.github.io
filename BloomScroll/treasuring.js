@@ -205,5 +205,11 @@
       peek: function () { return { state: state, item: item, spoken: spokenEl.querySelector('.s1').textContent, sub: spokenEl.querySelector('.s2').textContent, G: G }; } };
   }
 
-  root.MannaGames.list.push({ id: 'treasuring', title: 'Treasuring', blurb: 'Place your heart with Jesus, catch what drops, and give it to Him. A small copy of the Treasuring app, with five buckets.', start: start });
+  function make(level, host, api) {
+    PACE = { easy: 24000, normal: 17000, hard: 11000 }[level] || 17000;   // how long a card takes to fall to the buckets
+    var h = start(host); api.status('Give each one to Him');
+    return { stop: function () { h.stop(); }, restart: function () { h.stop(); h = start(host); }, peek: function () { return h.peek(); } };
+  }
+  root.MannaGames.list.push(root.MannaGames.reg({ id: 'treasuring', title: 'Treasuring', blurb: 'Place your heart with Jesus, catch what drops, and give it to Him. A small copy of the Treasuring app, with five buckets.', make: make,
+    levels: { easy: 'Cards fall slowly — plenty of time to think.', normal: 'The pace of the real app.', hard: 'Cards fall quickly. Trust your first prayer.' } }));
 })(typeof window !== 'undefined' ? window : globalThis);

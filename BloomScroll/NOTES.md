@@ -60,3 +60,13 @@ Measured on a desktop: cpu 0.7x real time, webgpu ~6.8x. The cpu voice cannot ke
 `MannaVoice.detect()` finds out whether a GPU adapter exists; the app defaults to gpu when it does, and the settings show an engine chip row.
 Downloads are tracked per engine in `S.voiceDl`. If the gpu voice fails to load or generate (untested on iPhone), `gpuFailed()` switches to cpu and says so.
 Audio must start inside a tap on iOS: `V.unlock()` runs on every click/touchend/pointerup/keydown. Auto-read loads the voice in the background when the feed opens.
+
+## Games (v20)
+Nine games, all opened through `gamekit.js` (`MannaKit.run`): an Easy / Normal / Hard picker first (last choice remembered in `manna.glevel`, bests in `manna.gbest`), then a strip above the board (level ▾, status, New game).
+A game is `{ id, title, blurb, levels:{easy,normal,hard}, make(level, host, api) }`; `MannaGames.reg(def)` wraps one for the feed; each file pushes its own into `MannaGames.list`.
+- `games.js`: Star Watch (power-ups, UFO, drag-relative control), Hold the Pass (3 towers, upgrade/sell, wave types, ×2 speed), Lights (hints via GF(2) solver, undo, par)
+- `games-board.js`: Checkers (forced captures, multi-jump, alpha-beta AI: depth 1+random / 4 / time-limited 9), Minesweeper (hold to flag, chording, free mistake on easy), Sudoku (unique-solution generator in 10 ms slices, next puzzle prefetched, notes, hints)
+- `games-cards.js`: Solitaire (Klondike, tap-to-send or drag; draw 1 / draw 1 / draw 3; undo and hints on the easier levels)
+- `papertoss.js`: Paper Toss (office; slingshot throw; pedestal fans re-randomised every throw, placed on the likely arc; gusting / sweeping on harder levels)
+- `treasuring.js`: level sets the fall time (24 / 17 / 11 s)
+No game-over screens: it rests and begins again. Tested in the desktop pane only; rAF there is throttled, so physics was checked with a fake frame clock. iPhone untested.

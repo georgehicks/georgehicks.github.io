@@ -1,0 +1,425 @@
+/* Bloom Scroll — Checkers, Minesweeper, Sudoku. Touch first: big targets, no keyboard, nothing that needs a right-click. */
+(function (root) {
+  'use strict';
+  var K = root.MannaKit, G = root.MannaGames, el = K.el;
+
+  function fmtT(s) { var m = Math.floor(s / 60), x = s % 60; return m + ':' + (x < 10 ? '0' : '') + x; }
+
+  // =====================================================================================================================
+  // Checkers (English draughts, 8×8). You are gold and move up. Captures are required; multiple jumps are one turn; kings move both ways.
+  // =====================================================================================================================
+  function checkers(level, host, api) {
+    K.css('checkers', '' +
+      '.ck-wrap{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:.6rem}' +
+      '.ck-board{display:grid;grid-template-columns:repeat(8,1fr);border-radius:10px;overflow:hidden;box-shadow:0 6px 24px rgba(0,0,0,.5);border:3px solid #2b3252}' +
+      '.ck-sq{position:relative;border:none;padding:0;background:#394066;display:flex;align-items:center;justify-content:center}.ck-sq.d{background:#1b2036}' +
+      '.ck-sq.dst::after{content:"";width:34%;height:34%;border-radius:50%;background:rgba(155,232,181,.85);position:absolute}' +
+      '.ck-sq.last{box-shadow:inset 0 0 0 3px rgba(242,200,121,.45)}.ck-sq.sel{box-shadow:inset 0 0 0 3px var(--sage,#9BE8B5)}' +
+      '.ck-p{width:78%;height:78%;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:1.05em;line-height:1;box-shadow:0 3px 0 rgba(0,0,0,.45),inset 0 2px 3px rgba(255,255,255,.35)}' +
+      '.ck-p.h{background:radial-gradient(circle at 35% 30%,#ffe9b0,#e0a94c);color:#5a3d06}.ck-p.a{background:radial-gradient(circle at 35% 30%,#e9788a,#8b2b44);color:#ffd6dc}' +
+      '.ck-p.can{animation:ckpulse 1.4s ease-in-out infinite}@keyframes ckpulse{50%{transform:scale(1.08);filter:brightness(1.18)}}');
+    var depth = { easy: 1, normal: 4, hard: 9 }[level], rnd = { easy: 0.4, normal: 0.06, hard: 0 }[level], tms = { easy: 100, normal: 250, hard: 750 }[level];
+    var wrap = el('div', 'ck-wrap'), boardEl = el('div', 'ck-board'), bar = el('div', 'kit-bar'); host.appendChild(wrap); wrap.appendChild(boardEl); wrap.appendChild(bar);
+    var hr = host.getBoundingClientRect(), S = Math.floor(Math.min(hr.width - 16, hr.height - 84) / 8), alive = true;
+    boardEl.style.width = boardEl.style.height = (S * 8 + 6) + 'px'; boardEl.style.fontSize = (S * 0.5) + 'px';
+    var b, turn, sel, cands, prog, work, last, busy, hist, quiet, over, timer = 0;
+
+    function dirsFor(p) { var fw = p > 0 ? -1 : 1, d = [[fw, -1], [fw, 1]]; if (Math.abs(p) === 2) d.push([-fw, -1], [-fw, 1]); return d; }
+    function jump(bd, idx, p, steps, out) {
+      var r = Math.floor(idx / 8), c = idx % 8, found = false;
+      dirsFor(p).forEach(function (d) {
+        var mr = r + d[0], mc = c + d[1], lr = r + 2 * d[0], lc = c + 2 * d[1];
+        if (lr < 0 || lr > 7 || lc < 0 || lc > 7) return;
+        var m = bd[mr * 8 + mc]; if (!m || (m > 0) === (p > 0) || bd[lr * 8 + lc]) return;
+        found = true; var nb = bd.slice(), to = lr * 8 + lc, cap = mr * 8 + mc; nb[idx] = 0; nb[cap] = 0;
+        var pro = (p === 1 && lr === 0) || (p === -1 && lr === 7), np = pro ? p * 2 : p; nb[to] = np;
+        var ns = steps.concat([{ f: idx, t: to, c: cap }]);
+        if (pro) out.push({ steps: ns, board: nb }); else { var n0 = out.length; jump(nb, to, np, ns, out); if (out.length === n0) out.push({ steps: ns, board: nb }); }
+      });
+      return found;
+    }
+    function seqs(bd, side) {
+      var caps = [], moves = [];
+      for (var i = 0; i < 64; i++) {
+        var p = bd[i]; if (!p || (p > 0) !== (side > 0)) continue;
+        jump(bd, i, p, [], caps);
+        var r = Math.floor(i / 8), c = i % 8;
+        dirsFor(p).forEach(function (d) { var y = r + d[0], x = c + d[1]; if (y < 0 || y > 7 || x < 0 || x > 7 || bd[y * 8 + x]) return; var nb = bd.slice(), to = y * 8 + x; nb[i] = 0; var pro = (p === 1 && y === 0) || (p === -1 && y === 7); nb[to] = pro ? p * 2 : p; moves.push({ steps: [{ f: i, t: to, c: -1 }], board: nb }); });
+      }
+      return caps.length ? caps : moves;
+    }
+    function evalB(bd, side) {
+      var s = 0;
+      for (var i = 0; i < 64; i++) {
+        var p = bd[i]; if (!p) continue; var r = Math.floor(i / 8), c = i % 8, v;
+        if (Math.abs(p) === 2) v = 175 + (3.5 - Math.abs(c - 3.5)) * 1.5; else { var adv = p > 0 ? 7 - r : r; v = 100 + adv * 4 + (adv === 0 ? 8 : 0) + (3.5 - Math.abs(c - 3.5)) * 1.2; }
+        s += p > 0 ? v : -v;
+      }
+      return side > 0 ? s : -s;
+    }
+    var deadline = 0, aborted = false;
+    function nega(bd, side, d, al, be) {
+      if (Date.now() > deadline) { aborted = true; return 0; }
+      var ms = seqs(bd, side); if (!ms.length) return -100000 - d;
+      if (d <= 0) return evalB(bd, side);
+      var best = -1e9; for (var i = 0; i < ms.length; i++) { var v = -nega(ms[i].board, -side, d - 1, -be, -al); if (aborted) return 0; if (v > best) best = v; if (best > al) al = best; if (al >= be) break; }
+      return best;
+    }
+    function aiMove() {
+      var ms = K.shuffle(seqs(b, -1)); if (!ms.length) return null;
+      if (Math.random() < rnd) return ms[0];
+      var chosen = ms[0], t0 = Date.now(); deadline = t0 + tms * 3;
+      for (var d = 1; d <= depth; d++) {
+        deadline = t0 + tms; aborted = false; var bestV = -1e9, bm = null;
+        for (var i = 0; i < ms.length; i++) { var v = -nega(ms[i].board, 1, d - 1, -1e9, 1e9); if (aborted) break; if (v > bestV) { bestV = v; bm = ms[i]; } }
+        if (aborted || !bm) break; chosen = bm; if (bestV > 50000 || Date.now() - t0 > tms) break;
+      }
+      return chosen;
+    }
+
+    function newGame() {
+      b = new Array(64).fill(0);
+      for (var r = 0; r < 8; r++) for (var c = 0; c < 8; c++) if ((r + c) % 2) { if (r < 3) b[r * 8 + c] = -1; else if (r > 4) b[r * 8 + c] = 1; }
+      turn = 1; sel = null; cands = null; prog = 0; work = null; last = {}; busy = false; hist = []; quiet = 0; over = false; draw(); status();
+    }
+    function status() { api.status(over ? '' : busy ? 'Thinking…' : (seqs(b, 1)[0] && seqs(b, 1)[0].steps[0].c >= 0 ? 'Your move — you must capture' : 'Your move')); }
+    function cur() { return work || b; }
+    function draw() {
+      boardEl.innerHTML = ''; var show = cur(), mine = (!busy && !over && !cands) ? seqs(b, 1) : [], movable = {}, forced = mine.length && mine[0].steps[0].c >= 0;
+      mine.forEach(function (m) { movable[m.steps[0].f] = 1; });
+      var dst = {}; if (cands) cands.forEach(function (m) { dst[m.steps[prog].t] = 1; });
+      for (var r = 0; r < 8; r++) for (var c = 0; c < 8; c++) {
+        var i = r * 8 + c, sq = el('button', 'ck-sq' + ((r + c) % 2 ? ' d' : '') + (dst[i] ? ' dst' : '') + (last[i] ? ' last' : '') + (sel === i ? ' sel' : '')); sq.type = 'button'; sq.style.width = sq.style.height = S + 'px';
+        var p = show[i]; if (p) { var pc = el('div', 'ck-p ' + (p > 0 ? 'h' : 'a') + (p > 0 && movable[i] && (forced || level === 'easy') ? ' can' : ''), Math.abs(p) === 2 ? '♛' : ''); sq.appendChild(pc); }
+        (function (ii) { sq.addEventListener('click', function () { tap(ii); }); })(i);
+        boardEl.appendChild(sq);
+      }
+      bar.innerHTML = ''; if (level !== 'hard') { var ub = K.btn('', 'Undo', undo); ub.disabled = !hist.length || busy || !!cands; bar.appendChild(ub); }
+    }
+    function undo() { if (!hist.length || busy) return; b = hist.pop(); cands = null; sel = null; work = null; last = {}; over = false; draw(); status(); }
+    function tap(i) {
+      if (busy || over) return;
+      if (cands) {
+        var ok = cands.filter(function (m) { return m.steps[prog].t === i; });
+        if (ok.length) { step(ok); return; }
+        if (prog === 0) { cands = null; sel = null; work = null; draw(); if (b[i] > 0) tap(i); }
+        return;
+      }
+      if (b[i] <= 0) return;
+      var mine = seqs(b, 1), mc = mine.filter(function (m) { return m.steps[0].f === i; });
+      if (!mc.length) { api.say(mine[0] && mine[0].steps[0].c >= 0 ? 'A capture is required' : 'That piece cannot move', 1100); return; }
+      sel = i; cands = mc; prog = 0; work = null; draw();
+    }
+    function step(ok) {
+      var s = ok[0].steps[prog]; cands = ok; work = (work || b).slice(); var p = work[s.f]; work[s.f] = 0; if (s.c >= 0) work[s.c] = 0;
+      var tr = Math.floor(s.t / 8); if ((p === 1 && tr === 0) || (p === -1 && tr === 7)) p *= 2; work[s.t] = p;
+      var done = ok.filter(function (m) { return m.steps.length === prog + 1; });
+      if (done.length) { hist.push(b); var m = done[0]; var l = {}; m.steps.forEach(function (x) { l[x.f] = 1; l[x.t] = 1; }); finish(m, l); return; }
+      prog++; sel = s.t; draw();
+    }
+    function finish(m, l) {
+      var capped = m.steps[0].c >= 0, wasMan = Math.abs(b[m.steps[0].f]) === 1; b = m.board; last = l; sel = null; cands = null; work = null; prog = 0; quiet = (capped || wasMan) ? 0 : quiet + 1;
+      turn = -1; draw();
+      if (!seqs(b, -1).length) { over = true; draw(); api.status('You won'); api.say('You won — well played', 2600); api.setBest((api.best() || 0) + 1); return; }
+      if (quiet >= 40) { over = true; api.status('A quiet draw'); api.say('A quiet draw', 2200); return; }
+      busy = true; status();
+      timer = setTimeout(function () {
+        if (!alive) return; var am = aiMove(); if (!am) { busy = false; over = true; draw(); api.say('You won', 2400); return; }
+        var cap = am.steps[0].c >= 0, man = Math.abs(b[am.steps[0].f]) === 1, l2 = {}; am.steps.forEach(function (x) { l2[x.f] = 1; l2[x.t] = 1; });
+        b = am.board; last = l2; quiet = (cap || man) ? 0 : quiet + 1; busy = false; turn = 1; draw();
+        if (!seqs(b, 1).length) { over = true; api.status('Not this time'); api.say('Not this time — again?', 2600); return; }
+        if (quiet >= 40) { over = true; api.say('A quiet draw', 2200); return; }
+        status();
+      }, 420);
+    }
+    newGame();
+    return { stop: function () { alive = false; clearTimeout(timer); }, restart: function () { clearTimeout(timer); newGame(); } };
+  }
+
+  // =====================================================================================================================
+  // Minesweeper. Tap to dig; hold to flag (or switch to Flag mode). Tap a number with enough flags around it to open the rest. First dig is always safe.
+  // =====================================================================================================================
+  function mines(level, host, api) {
+    K.css('mines', '' +
+      '.ms-wrap{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:.5rem}' +
+      '.ms-board{display:grid;gap:2px;padding:3px;background:#0e1120;border-radius:10px}' +
+      '.ms-c{border:none;padding:0;border-radius:5px;background:#2b3252;color:var(--ink);font-weight:700;font-family:var(--sans);display:flex;align-items:center;justify-content:center;touch-action:manipulation}' +
+      '.ms-c.o{background:#161b30}.ms-c.f{background:#3a3050}.ms-c.x{background:#7a2a3e}.ms-c.m{background:#5a2335}' +
+      '.ms-c.n1{color:#8fd3ff}.ms-c.n2{color:#9be8b5}.ms-c.n3{color:#f08a9a}.ms-c.n4{color:#c9a6ff}.ms-c.n5{color:#f2c879}.ms-c.n6{color:#7be0d6}.ms-c.n7{color:#fff}.ms-c.n8{color:#aaa}');
+    var P = { easy: { cols: 8, rows: 8, m: 8, mercy: 1 }, normal: { cols: 9, rows: 12, m: 18, mercy: 0 }, hard: { cols: 10, rows: 15, m: 32, mercy: 0 } }[level];
+    var wrap = el('div', 'ms-wrap'), boardEl = el('div', 'ms-board'), bar = el('div', 'kit-bar'); host.appendChild(wrap); wrap.appendChild(boardEl); wrap.appendChild(bar);
+    var hr = host.getBoundingClientRect(), cs = Math.floor(Math.min((hr.width - 20) / P.cols, (hr.height - 90) / P.rows)) - 2; cs = Math.max(24, Math.min(46, cs));
+    boardEl.style.gridTemplateColumns = 'repeat(' + P.cols + ',' + cs + 'px)'; boardEl.style.fontSize = (cs * 0.55) + 'px';
+    var cells, started, over, flagMode, mercy, t0, tick = 0, alive = true, opened, cellEl = [], holdT = 0, held = false;
+    function nb(i) { var r = Math.floor(i / P.cols), c = i % P.cols, o = []; for (var dr = -1; dr <= 1; dr++) for (var dc = -1; dc <= 1; dc++) { if (!dr && !dc) continue; var y = r + dr, x = c + dc; if (y >= 0 && x >= 0 && y < P.rows && x < P.cols) o.push(y * P.cols + x); } return o; }
+    function newGame() {
+      clearInterval(tick); cells = []; for (var i = 0; i < P.cols * P.rows; i++) cells.push({ m: false, o: false, f: false, n: 0 }); started = false; over = false; flagMode = false; mercy = P.mercy; opened = 0; t0 = 0; build(); updateStatus(); drawBar();
+    }
+    function build() {
+      boardEl.innerHTML = ''; cellEl = [];
+      cells.forEach(function (c, i) {
+        var b = el('button', 'ms-c'); b.type = 'button'; b.style.width = b.style.height = cs + 'px';
+        b.addEventListener('pointerdown', function () { held = false; clearTimeout(holdT); holdT = setTimeout(function () { held = true; if (navigator.vibrate) try { navigator.vibrate(15); } catch (e) {} toggleFlag(i); }, 420); });
+        ['pointerup', 'pointerleave', 'pointercancel'].forEach(function (ev) { b.addEventListener(ev, function () { clearTimeout(holdT); }); });
+        b.addEventListener('click', function () { if (held) { held = false; return; } flagMode ? toggleFlag(i) : dig(i); });
+        b.addEventListener('contextmenu', function (e) { e.preventDefault(); });
+        boardEl.appendChild(b); cellEl.push(b);
+      });
+    }
+    function paint(i) {
+      var c = cells[i], b = cellEl[i]; b.className = 'ms-c' + (c.o ? ' o' + (c.n ? ' n' + c.n : '') : '') + (c.f && !c.o ? ' f' : '') + (c.x ? ' x' : '');
+      b.textContent = c.o ? (c.m ? '✹' : c.n || '') : c.f ? '⚑' : (over && c.m ? '✹' : '');
+      if (over && c.m && !c.o && !c.f) b.classList.add('m');
+    }
+    function place(first) {
+      var ban = {}; ban[first] = 1; if (level !== 'hard') nb(first).forEach(function (j) { ban[j] = 1; });
+      var pool = []; for (var i = 0; i < cells.length; i++) if (!ban[i]) pool.push(i); K.shuffle(pool); for (i = 0; i < P.m; i++) cells[pool[i]].m = true;
+      cells.forEach(function (c, i) { c.n = nb(i).filter(function (j) { return cells[j].m; }).length; });
+    }
+    function flags() { return cells.filter(function (c) { return c.f && !c.o; }).length; }
+    function updateStatus() { api.status('⚑ ' + (P.m - flags()) + (t0 ? ' · ' + fmtT(Math.floor((Date.now() - t0) / 1000)) : '') + (mercy ? ' · one free mistake' : '')); }
+    function drawBar() { bar.innerHTML = ''; bar.appendChild(K.btn(!flagMode ? 'on' : '', 'Dig', function () { flagMode = false; drawBar(); })); bar.appendChild(K.btn(flagMode ? 'on' : '', 'Flag', function () { flagMode = true; drawBar(); })); }
+    function toggleFlag(i) { if (over) return; var c = cells[i]; if (c.o) { chord(i); return; } c.f = !c.f; paint(i); updateStatus(); }
+    function open(i) {
+      var stack = [i];
+      while (stack.length) {
+        var j = stack.pop(), c = cells[j]; if (c.o || c.f) continue; c.o = true; opened++; paint(j);
+        if (c.n === 0 && !c.m) nb(j).forEach(function (k) { if (!cells[k].o) stack.push(k); });
+      }
+    }
+    function chord(i) {
+      var c = cells[i]; if (!c.o || !c.n) return; var ns = nb(i), fl = ns.filter(function (k) { return cells[k].f; }).length; if (fl !== c.n) return;
+      ns.forEach(function (k) { if (!cells[k].f && !cells[k].o) dig(k, true); });
+    }
+    function dig(i, fromChord) {
+      if (over) return; var c = cells[i];
+      if (c.o) { if (!fromChord) chord(i); return; } if (c.f) return;
+      if (!started) { started = true; place(i); t0 = Date.now(); tick = setInterval(function () { if (alive && !over) updateStatus(); }, 1000); }
+      if (c.m) {
+        if (mercy > 0) { mercy--; c.f = true; paint(i); api.say('A free mistake — flagged for you', 1400); updateStatus(); return; }
+        lose(i); return;
+      }
+      open(i); updateStatus(); if (opened === cells.length - P.m) win();
+    }
+    function lose(i) { over = true; clearInterval(tick); cells[i].x = true; cells.forEach(function (c, j) { paint(j); }); api.say('That one had a mine — again?', 2200); }
+    function win() {
+      over = true; clearInterval(tick); var sec = Math.max(1, Math.floor((Date.now() - t0) / 1000)); cells.forEach(function (c, j) { if (c.m && !c.f) { c.f = true; paint(j); } });
+      api.setBest(sec, true); api.status('Cleared in ' + fmtT(sec)); api.say('Cleared — ' + fmtT(sec), 2600);
+    }
+    newGame();
+    return { stop: function () { alive = false; clearInterval(tick); clearTimeout(holdT); }, restart: newGame };
+  }
+
+  // =====================================================================================================================
+  // Sudoku. Always a single solution. Easy marks your mistakes and gives unlimited hints; normal marks clashes; hard marks nothing.
+  // =====================================================================================================================
+  function sudoku(level, host, api) {
+    K.css('sudoku', '' +
+      '.sd-wrap{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:.55rem}' +
+      '.sd-board{display:grid;grid-template-columns:repeat(9,1fr);border:2px solid #7a83a6;border-radius:6px;overflow:hidden;background:#0e1120}' +
+      '.sd-c{position:relative;border:none;padding:0;background:#161b30;color:var(--ink);font-family:var(--serif);display:flex;align-items:center;justify-content:center;border-right:1px solid #2b3252;border-bottom:1px solid #2b3252}' +
+      '.sd-c.br{border-right:2px solid #7a83a6}.sd-c.bb{border-bottom:2px solid #7a83a6}' +
+      '.sd-c.g{color:var(--ink)}.sd-c.u{color:var(--sky)}.sd-c.peer{background:#1d2340}.sd-c.same{background:#2d3560}.sd-c.sel{background:#3a4478;box-shadow:inset 0 0 0 2px var(--gold)}' +
+      '.sd-c.bad{color:var(--rose);background:#3a1e2e}.sd-c .nt{display:grid;grid-template-columns:repeat(3,1fr);width:100%;height:100%;font-family:var(--sans);color:var(--ink-muted);line-height:1}' +
+      '.sd-c .nt i{font-style:normal;display:flex;align-items:center;justify-content:center}' +
+      '.sd-pad{display:grid;grid-template-columns:repeat(9,1fr);gap:4px;width:100%}.sd-pad button{min-height:46px;border:none;border-radius:9px;background:#232a48;color:var(--ink);font-size:1.25rem;font-family:var(--serif)}.sd-pad button.dim{opacity:.25}' +
+      '.sd-pad button:active{background:#3a4478}');
+    var clues = { easy: 40, normal: 32, hard: 26 }[level], hints0 = { easy: 99, normal: 3, hard: 1 }[level];
+    var wrap = el('div', 'sd-wrap'), boardEl = el('div', 'sd-board'), pad = el('div', 'sd-pad'), bar = el('div', 'kit-bar'); host.appendChild(wrap); wrap.appendChild(boardEl); wrap.appendChild(pad); wrap.appendChild(bar);
+    var hr = host.getBoundingClientRect(), S = Math.floor(Math.min(hr.width - 24, hr.height - 190) / 9), alive = true, tick = 0;
+    boardEl.style.width = boardEl.style.height = (S * 9 + 4) + 'px'; pad.style.width = (S * 9 + 4) + 'px'; boardEl.style.fontSize = (S * 0.62) + 'px';
+    var sol, giv, val, notes, selI, noteMode, hints, t0, over, cellEl = [];
+
+    function count(g, limit) {
+      var rows = new Array(9).fill(0), cols = new Array(9).fill(0), bx = new Array(9).fill(0), n = 0, i;
+      for (i = 0; i < 81; i++) if (g[i]) { var m = 1 << g[i]; rows[Math.floor(i / 9)] |= m; cols[i % 9] |= m; bx[Math.floor(i / 27) * 3 + Math.floor((i % 9) / 3)] |= m; }
+      function rec() {
+        var best = -1, bc = 10, bm = 0;
+        for (var k = 0; k < 81; k++) if (!g[k]) { var r = Math.floor(k / 9), c = k % 9, b = Math.floor(r / 3) * 3 + Math.floor(c / 3), used = rows[r] | cols[c] | bx[b], free = 0, cnt = 0; for (var d = 1; d <= 9; d++) if (!(used & (1 << d))) { free |= 1 << d; cnt++; } if (cnt < bc) { bc = cnt; best = k; bm = free; if (cnt <= 1) break; } }
+        if (best < 0) { n++; return; } if (bc === 0) return;
+        var r2 = Math.floor(best / 9), c2 = best % 9, b2 = Math.floor(r2 / 3) * 3 + Math.floor(c2 / 3);
+        for (var d2 = 1; d2 <= 9 && n < limit; d2++) if (bm & (1 << d2)) { g[best] = d2; rows[r2] |= 1 << d2; cols[c2] |= 1 << d2; bx[b2] |= 1 << d2; rec(); g[best] = 0; rows[r2] &= ~(1 << d2); cols[c2] &= ~(1 << d2); bx[b2] &= ~(1 << d2); }
+      }
+      rec(); return n;
+    }
+    // Builds a full grid, then removes numbers one at a time while the puzzle still has exactly one solution. Done in small slices so the phone never freezes.
+    var genT = 0, prepared = null;
+    function generate(cb) {
+      var base = 3, side = 9, pat = function (r, c) { return (base * (r % base) + Math.floor(r / base) + c) % side; };
+      function sh(a) { return K.shuffle(a.slice()); }
+      var rb = sh([0, 1, 2]), cb2 = sh([0, 1, 2]), rows = [], cols = [], nums = sh([1, 2, 3, 4, 5, 6, 7, 8, 9]);
+      rb.forEach(function (g) { sh([0, 1, 2]).forEach(function (r) { rows.push(g * base + r); }); }); cb2.forEach(function (g) { sh([0, 1, 2]).forEach(function (c) { cols.push(g * base + c); }); });
+      var full = []; rows.forEach(function (r) { cols.forEach(function (c) { full.push(nums[pat(r, c)]); }); });
+      var puz = full.slice(), order = K.shuffle(Array.apply(null, { length: 81 }).map(Function.call, Number)), left = 81, k = 0;
+      function chunk() {
+        if (!alive) return; var t = performance.now();
+        while (k < order.length && left > clues && performance.now() - t < 10) { var i = order[k++], keep = puz[i]; puz[i] = 0; if (count(puz.slice(), 2) !== 1) puz[i] = keep; else left--; }
+        if (k < order.length && left > clues) genT = setTimeout(chunk, 6); else cb({ full: full, puz: puz });
+      }
+      chunk();
+    }
+    function show(g) {
+      sol = g.full; giv = g.puz.map(function (x) { return !!x; }); val = g.puz.slice(); notes = val.map(function () { return 0; });
+      selI = -1; noteMode = false; hints = hints0; over = false; t0 = Date.now(); build(); refresh();
+      clearInterval(tick); tick = setInterval(function () { if (alive && !over) api.status(fmtT(Math.floor((Date.now() - t0) / 1000))); }, 1000);
+      if (!prepared) generate(function (p) { prepared = p; });   // quietly get the next one ready
+    }
+    function newGame() {
+      clearInterval(tick); clearTimeout(genT);
+      if (prepared) { var p = prepared; prepared = null; show(p); return; }
+      boardEl.innerHTML = ''; pad.innerHTML = ''; bar.innerHTML = ''; api.status('Preparing a puzzle…'); generate(show);
+    }
+    function build() {
+      boardEl.innerHTML = ''; cellEl = [];
+      cells.forEach(function (c, i) {
+        var b = el('button', 'ms-c'); b.type = 'button'; b.style.width = b.style.height = cs + 'px';
+        b.addEventListener('pointerdown', function () { held = false; clearTimeout(holdT); holdT = setTimeout(function () { held = true; if (navigator.vibrate) try { navigator.vibrate(15); } catch (e) {} toggleFlag(i); }, 420); });
+        ['pointerup', 'pointerleave', 'pointercancel'].forEach(function (ev) { b.addEventListener(ev, function () { clearTimeout(holdT); }); });
+        b.addEventListener('click', function () { if (held) { held = false; return; } flagMode ? toggleFlag(i) : dig(i); });
+        b.addEventListener('contextmenu', function (e) { e.preventDefault(); });
+        boardEl.appendChild(b); cellEl.push(b);
+      });
+    }
+    function paint(i) {
+      var c = cells[i], b = cellEl[i]; b.className = 'ms-c' + (c.o ? ' o' + (c.n ? ' n' + c.n : '') : '') + (c.f && !c.o ? ' f' : '') + (c.x ? ' x' : '');
+      b.textContent = c.o ? (c.m ? '✹' : c.n || '') : c.f ? '⚑' : (over && c.m ? '✹' : '');
+      if (over && c.m && !c.o && !c.f) b.classList.add('m');
+    }
+    function place(first) {
+      var ban = {}; ban[first] = 1; if (level !== 'hard') nb(first).forEach(function (j) { ban[j] = 1; });
+      var pool = []; for (var i = 0; i < cells.length; i++) if (!ban[i]) pool.push(i); K.shuffle(pool); for (i = 0; i < P.m; i++) cells[pool[i]].m = true;
+      cells.forEach(function (c, i) { c.n = nb(i).filter(function (j) { return cells[j].m; }).length; });
+    }
+    function flags() { return cells.filter(function (c) { return c.f && !c.o; }).length; }
+    function updateStatus() { api.status('⚑ ' + (P.m - flags()) + (t0 ? ' · ' + fmtT(Math.floor((Date.now() - t0) / 1000)) : '') + (mercy ? ' · one free mistake' : '')); }
+    function drawBar() { bar.innerHTML = ''; bar.appendChild(K.btn(!flagMode ? 'on' : '', 'Dig', function () { flagMode = false; drawBar(); })); bar.appendChild(K.btn(flagMode ? 'on' : '', 'Flag', function () { flagMode = true; drawBar(); })); }
+    function toggleFlag(i) { if (over) return; var c = cells[i]; if (c.o) { chord(i); return; } c.f = !c.f; paint(i); updateStatus(); }
+    function open(i) {
+      var stack = [i];
+      while (stack.length) {
+        var j = stack.pop(), c = cells[j]; if (c.o || c.f) continue; c.o = true; opened++; paint(j);
+        if (c.n === 0 && !c.m) nb(j).forEach(function (k) { if (!cells[k].o) stack.push(k); });
+      }
+    }
+    function chord(i) {
+      var c = cells[i]; if (!c.o || !c.n) return; var ns = nb(i), fl = ns.filter(function (k) { return cells[k].f; }).length; if (fl !== c.n) return;
+      ns.forEach(function (k) { if (!cells[k].f && !cells[k].o) dig(k, true); });
+    }
+    function dig(i, fromChord) {
+      if (over) return; var c = cells[i];
+      if (c.o) { if (!fromChord) chord(i); return; } if (c.f) return;
+      if (!started) { started = true; place(i); t0 = Date.now(); tick = setInterval(function () { if (alive && !over) updateStatus(); }, 1000); }
+      if (c.m) {
+        if (mercy > 0) { mercy--; c.f = true; paint(i); api.say('A free mistake — flagged for you', 1400); updateStatus(); return; }
+        lose(i); return;
+      }
+      open(i); updateStatus(); if (opened === cells.length - P.m) win();
+    }
+    function lose(i) { over = true; clearInterval(tick); cells[i].x = true; cells.forEach(function (c, j) { paint(j); }); api.say('That one had a mine — again?', 2200); }
+    function win() {
+      over = true; clearInterval(tick); var sec = Math.max(1, Math.floor((Date.now() - t0) / 1000)); cells.forEach(function (c, j) { if (c.m && !c.f) { c.f = true; paint(j); } });
+      api.setBest(sec, true); api.status('Cleared in ' + fmtT(sec)); api.say('Cleared — ' + fmtT(sec), 2600);
+    }
+    newGame();
+    return { stop: function () { alive = false; clearInterval(tick); clearTimeout(holdT); }, restart: newGame };
+  }
+
+  // =====================================================================================================================
+  // Sudoku. Always a single solution. Easy marks your mistakes and gives unlimited hints; normal marks clashes; hard marks nothing.
+  // =====================================================================================================================
+  function sudoku(level, host, api) {
+    K.css('sudoku', '' +
+      '.sd-wrap{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:.55rem}' +
+      '.sd-board{display:grid;grid-template-columns:repeat(9,1fr);border:2px solid #7a83a6;border-radius:6px;overflow:hidden;background:#0e1120}' +
+      '.sd-c{position:relative;border:none;padding:0;background:#161b30;color:var(--ink);font-family:var(--serif);display:flex;align-items:center;justify-content:center;border-right:1px solid #2b3252;border-bottom:1px solid #2b3252}' +
+      '.sd-c.br{border-right:2px solid #7a83a6}.sd-c.bb{border-bottom:2px solid #7a83a6}' +
+      '.sd-c.g{color:var(--ink)}.sd-c.u{color:var(--sky)}.sd-c.peer{background:#1d2340}.sd-c.same{background:#2d3560}.sd-c.sel{background:#3a4478;box-shadow:inset 0 0 0 2px var(--gold)}' +
+      '.sd-c.bad{color:var(--rose);background:#3a1e2e}.sd-c .nt{display:grid;grid-template-columns:repeat(3,1fr);width:100%;height:100%;font-family:var(--sans);color:var(--ink-muted);line-height:1}' +
+      '.sd-c .nt i{font-style:normal;display:flex;align-items:center;justify-content:center}' +
+      '.sd-pad{display:grid;grid-template-columns:repeat(9,1fr);gap:4px;width:100%}.sd-pad button{min-height:46px;border:none;border-radius:9px;background:#232a48;color:var(--ink);font-size:1.25rem;font-family:var(--serif)}.sd-pad button.dim{opacity:.25}' +
+      '.sd-pad button:active{background:#3a4478}');
+    var clues = { easy: 40, normal: 32, hard: 26 }[level], hints0 = { easy: 99, normal: 3, hard: 1 }[level];
+    var wrap = el('div', 'sd-wrap'), boardEl = el('div', 'sd-board'), pad = el('div', 'sd-pad'), bar = el('div', 'kit-bar'); host.appendChild(wrap); wrap.appendChild(boardEl); wrap.appendChild(pad); wrap.appendChild(bar);
+    var hr = host.getBoundingClientRect(), S = Math.floor(Math.min(hr.width - 24, hr.height - 190) / 9), alive = true, tick = 0;
+    boardEl.style.width = boardEl.style.height = (S * 9 + 4) + 'px'; pad.style.width = (S * 9 + 4) + 'px'; boardEl.style.fontSize = (S * 0.62) + 'px';
+    var sol, giv, val, notes, selI, noteMode, hints, t0, over, cellEl = [];
+
+    function count(g, limit) {
+      var rows = new Array(9).fill(0), cols = new Array(9).fill(0), bx = new Array(9).fill(0), n = 0, i;
+      for (i = 0; i < 81; i++) if (g[i]) { var m = 1 << g[i]; rows[Math.floor(i / 9)] |= m; cols[i % 9] |= m; bx[Math.floor(i / 27) * 3 + Math.floor((i % 9) / 3)] |= m; }
+      function rec() {
+        var best = -1, bc = 10, bm = 0;
+        for (var k = 0; k < 81; k++) if (!g[k]) { var r = Math.floor(k / 9), c = k % 9, b = Math.floor(r / 3) * 3 + Math.floor(c / 3), used = rows[r] | cols[c] | bx[b], free = 0, cnt = 0; for (var d = 1; d <= 9; d++) if (!(used & (1 << d))) { free |= 1 << d; cnt++; } if (cnt < bc) { bc = cnt; best = k; bm = free; if (cnt <= 1) break; } }
+        if (best < 0) { n++; return; } if (bc === 0) return;
+        var r2 = Math.floor(best / 9), c2 = best % 9, b2 = Math.floor(r2 / 3) * 3 + Math.floor(c2 / 3);
+        for (var d2 = 1; d2 <= 9 && n < limit; d2++) if (bm & (1 << d2)) { g[best] = d2; rows[r2] |= 1 << d2; cols[c2] |= 1 << d2; bx[b2] |= 1 << d2; rec(); g[best] = 0; rows[r2] &= ~(1 << d2); cols[c2] &= ~(1 << d2); bx[b2] &= ~(1 << d2); }
+      }
+      rec(); return n;
+    }
+    function generate() {
+      var base = 3, side = 9, pat = function (r, c) { return (base * (r % base) + Math.floor(r / base) + c) % side; };
+      function sh(a) { return K.shuffle(a.slice()); }
+      var rb = sh([0, 1, 2]), cb = sh([0, 1, 2]), rows = [], cols = [], nums = sh([1, 2, 3, 4, 5, 6, 7, 8, 9]);
+      rb.forEach(function (g) { sh([0, 1, 2]).forEach(function (r) { rows.push(g * base + r); }); }); cb.forEach(function (g) { sh([0, 1, 2]).forEach(function (c) { cols.push(g * base + c); }); });
+      var full = []; rows.forEach(function (r) { cols.forEach(function (c) { full.push(nums[pat(r, c)]); }); });
+      var puz = full.slice(), order = K.shuffle(Array.apply(null, { length: 81 }).map(Function.call, Number)), left = 81;
+      for (var k = 0; k < order.length && left > clues; k++) { var i = order[k], keep = puz[i]; puz[i] = 0; if (count(puz.slice(), 2) !== 1) puz[i] = keep; else left--; }
+      return { full: full, puz: puz };
+    }
+    function newGame() {
+      clearInterval(tick); var g = generate(); sol = g.full; giv = g.puz.map(function (x) { return !!x; }); val = g.puz.slice(); notes = val.map(function () { return 0; });
+      selI = -1; noteMode = false; hints = hints0; over = false; t0 = Date.now(); build(); refresh();
+      tick = setInterval(function () { if (alive && !over) api.status(fmtT(Math.floor((Date.now() - t0) / 1000))); }, 1000);
+    }
+    function build() {
+      boardEl.innerHTML = ''; cellEl = [];
+      for (var i = 0; i < 81; i++) {
+        var c = i % 9, r = Math.floor(i / 9), b = el('button', 'sd-c' + (c % 3 === 2 && c < 8 ? ' br' : '') + (r % 3 === 2 && r < 8 ? ' bb' : '')); b.type = 'button'; b.style.width = b.style.height = S + 'px';
+        (function (ii) { b.addEventListener('click', function () { if (over) return; selI = ii; refresh(); }); })(i); boardEl.appendChild(b); cellEl.push(b);
+      }
+      pad.innerHTML = ''; for (var d = 1; d <= 9; d++) (function (dd) { var pb = K.btn('', String(dd), function () { enter(dd); }); pb.dataset.d = dd; pad.appendChild(pb); })(d);
+    }
+    function peers(a, b) { return a !== b && (Math.floor(a / 9) === Math.floor(b / 9) || a % 9 === b % 9 || (Math.floor(a / 27) === Math.floor(b / 27) && Math.floor((a % 9) / 3) === Math.floor((b % 9) / 3))); }
+    function clash(i) { if (!val[i]) return false; for (var j = 0; j < 81; j++) if (peers(i, j) && val[j] === val[i]) return true; return false; }
+    function refresh() {
+      var sv = selI >= 0 ? val[selI] : 0, done = {}; for (var d = 1; d <= 9; d++) done[d] = 0; val.forEach(function (v, i) { if (v && v === sol[i]) done[v]++; });
+      for (var i = 0; i < 81; i++) {
+        var b = cellEl[i], v = val[i], cls = 'sd-c' + (cellEl[i].className.indexOf(' br') >= 0 ? ' br' : '') + (cellEl[i].className.indexOf(' bb') >= 0 ? ' bb' : '');
+        cls += giv[i] ? ' g' : ' u'; if (selI >= 0) { if (i === selI) cls += ' sel'; else if (sv && v === sv) cls += ' same'; else if (peers(i, selI)) cls += ' peer'; }
+        if (!giv[i] && v && ((level === 'easy' && v !== sol[i]) || (level !== 'hard' && clash(i)))) cls += ' bad';
+        b.className = cls;
+        if (v) b.textContent = v; else if (notes[i]) { var h = '<div class="nt" style="font-size:' + (S * 0.24) + 'px">'; for (var n = 1; n <= 9; n++) h += '<i>' + (notes[i] & (1 << n) ? n : '') + '</i>'; b.innerHTML = h + '</div>'; } else b.textContent = '';
+      }
+      [].forEach.call(pad.children, function (pb) { pb.classList.toggle('dim', done[pb.dataset.d] >= 9); });
+      bar.innerHTML = '';
+      bar.appendChild(K.btn(noteMode ? 'on' : '', 'Notes', function () { noteMode = !noteMode; refresh(); }));
+      bar.appendChild(K.btn('', 'Erase', function () { if (selI >= 0 && !giv[selI] && !over) { val[selI] = 0; notes[selI] = 0; refresh(); } }));
+      var hb = K.btn('', hints > 50 ? 'Hint' : 'Hint (' + hints + ')', hint); hb.disabled = hints <= 0 || over; bar.appendChild(hb);
+      if (level !== 'easy') bar.appendChild(K.btn('', 'Check', check));
+    }
+    function enter(d) {
+      if (over || selI < 0 || giv[selI]) { if (selI < 0) api.say('Tap a square first', 1000); return; }
+      if (noteMode) { if (val[selI]) return; notes[selI] ^= (1 << d); refresh(); return; }
+      val[selI] = val[selI] === d ? 0 : d; notes[selI] = 0;
+      if (val[selI]) for (var j = 0; j < 81; j++) if (peers(selI, j)) notes[j] &= ~(1 << d);
+      refresh(); if (val.every(function (v, i) { return v === sol[i]; })) win();
+    }
+    function hint() {
+      if (hints <= 0 || over) return; var wrong = -1, i;
+      var target = selI >= 0 && !giv[selI] && val[selI] !== sol[selI] ? selI : -1;
+      if (target < 0) for (i = 0; i < 81; i++) if (!giv[i] && val[i] !== sol[i]) { target = i; if (!val[i]) break; }
+      if (target < 0) return; hints--; selI = target; val[target] = sol[target]; notes[target] = 0; giv[target] = true; refresh(); if (val.every(function (v, k) { return v === sol[k]; })) win();
+    }
+    function check() { if (over) return; var bad = 0; val.forEach(function (v, i) { if (v && v !== sol[i]) bad++; }); api.say(bad ? bad + (bad === 1 ? ' square is' : ' squares are') + ' off' : 'All correct so far', 1700); }
+    function win() { over = true; clearInterval(tick); var sec = Math.max(1, Math.floor((Date.now() - t0) / 1000)); api.setBest(sec, true); api.status('Solved in ' + fmtT(sec)); api.say('Solved — ' + fmtT(sec), 2600); selI = -1; refresh(); }
+    newGame();
+    return { stop: function () { alive = false; clearTimeout(genT); clearInterval(tick); }, restart: newGame };
+  }
+
+  G.list.push(G.reg({ id: 'checkers', title: 'Checkers', blurb: 'You are gold, moving up. Captures are required; kings go both ways.', make: checkers,
+    levels: { easy: 'A gentle opponent, hints glow, undo allowed.', normal: 'A thoughtful opponent, undo allowed.', hard: 'A sharp opponent that looks far ahead. No undo.' }, bestLabel: function (b) { return b + ' won'; } }));
+  G.list.push(G.reg({ id: 'mines', title: 'Minesweeper', blurb: 'Tap to dig, hold to flag. Numbers count the mines around them.', make: mines,
+    levels: { easy: '8×8, 8 mines, and one free mistake.', normal: '9×12, 18 mines.', hard: '10×15, 32 mines. First dig is safe, nothing else is.' }, bestLabel: function (b) { return fmtT(b); } }));
+  G.list.push(G.reg({ id: 'sudoku', title: 'Sudoku', blurb: 'Fill every row, column and box with 1 to 9. One solution only.', make: sudoku,
+    levels: { easy: 'Many starting numbers, mistakes shown, unlimited hints.', normal: 'Fewer numbers, clashes shown, three hints.', hard: 'Few numbers, nothing shown, one hint.' }, bestLabel: function (b) { return fmtT(b); } }));
+})(typeof window !== 'undefined' ? window : globalThis);
