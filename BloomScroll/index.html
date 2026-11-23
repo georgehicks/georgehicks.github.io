@@ -51,6 +51,10 @@
   .brand p { margin:.2rem 0 0; color:var(--ink-muted); font-family:var(--serif); font-style:italic; }
   .go { width:100%; padding:1.15rem; font-size:1.25rem; border-radius:18px; margin-top:.6rem; box-shadow:0 8px 30px rgba(242,200,121,.18); }
   .tiles { display:grid; grid-template-columns:1fr 1fr; gap:.7rem; margin-top:1.3rem; }
+  .gamegrid { display:grid; grid-template-columns:repeat(3,1fr); gap:.6rem; margin-bottom:.4rem; }
+  .gtile { display:flex; flex-direction:column; align-items:center; justify-content:center; gap:.2rem; min-height:78px; padding:.55rem .3rem; border-radius:14px; background:var(--surface); border:1px solid var(--border); color:var(--ink); font-size:.85rem; text-align:center; }
+  .gtile i { font-style:normal; font-size:1.55rem; line-height:1; }
+  .gtile:active { background:var(--surface-2); border-color:var(--gold); }
   .tile { text-align:left; padding:.95rem 1rem; border-radius:16px; background:var(--surface); border:1px solid var(--border); }
   .tile b { display:block; font-family:var(--serif); font-weight:normal; font-size:1.1rem; }
   .tile span { color:var(--ink-muted); font-size:.85rem; }
@@ -267,6 +271,8 @@
       <button class="tile" id="keptTile"><b>Kept</b><span id="keptCount">Nothing yet</span></button>
       <button class="tile" id="setTile"><b>Settings</b><span>Voice, dimming, update</span></button>
     </div>
+    <div class="label">Play a game</div>
+    <div class="gamegrid" id="gameGrid"></div>
     <div class="linkrow"><button id="mineTile">Add your own</button><span>·</span><button id="mathTile">Math levels</button></div>
     <p class="small" style="text-align:center;margin-top:1.2rem" id="foot"></p>
   </div>

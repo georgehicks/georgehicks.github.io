@@ -3,7 +3,7 @@
 (function () {
   'use strict';
   var C = window.MannaContent, T = window.MannaText, PL = window.MannaPlaces, E = window.MannaEngine, A = window.MannaArt, G = window.MannaGames;
-  var VERSION = 'v20';
+  var VERSION = 'v21';
   var V = window.MannaVoice;
   var KEY = 'manna.state', SKEY = 'manna.session', PKEY = 'manna.paused';
 
@@ -80,6 +80,9 @@
   $('mineTile').onclick = function () { renderMine(); show('mineScreen'); };
   $('mathTile').onclick = function () { renderMath(); show('mathScreen'); };
   $('setTile').onclick = function () { renderSettings(); show('setScreen'); };
+  // The games, straight from the home screen (no need to wait for one to turn up in the scroll).
+  var GICON = { starwatch: '🚀', pass: '🏰', lights: '💡', checkers: '♟️', mines: '💣', sudoku: '🔢', solitaire: '🃏', papertoss: '🗑️', treasuring: '💛' };
+  G.list.forEach(function (g) { var b = el('button', 'gtile', '<i>' + (GICON[g.id] || '🎮') + '</i><span>' + esc(g.title) + '</span>'); b.type = 'button'; b.onclick = function () { openGame(g, true); }; $('gameGrid').appendChild(b); });
 
   function renderKept() {
     var l = $('keptList'); l.innerHTML = '';
@@ -434,9 +437,9 @@
     var d = el('div', 'gamecard', '<div class="head">' + esc(g.title) + '</div><div class="mid">' + esc(g.blurb) + '</div>'), b = el('button', 'btn primary', 'Play'); b.type = 'button'; b.style.marginTop = '1.6rem'; b.style.width = '70%';
     b.onclick = function () { openGame(g); }; d.appendChild(b); card.appendChild(d); return null;
   };
-  function openGame(g) {
+  function openGame(g, home) {
     if (V) { V.stop(); resetListen(); }
-    var ov = el('div', 'overlay', '<div class="bar"><button class="back" data-x>‹ Back to the scroll</button><span class="small">' + esc(g.title) + ' · <span id="gameLeft"></span></span></div><div class="stagebox"></div>'); $('layer').appendChild(ov);
+    var ov = el('div', 'overlay', '<div class="bar"><button class="back" data-x>' + (home ? '‹ Home' : '‹ Back to the scroll') + '</button><span class="small">' + esc(g.title) + (home ? '' : ' · <span id="gameLeft"></span>') + '</span></div><div class="stagebox"></div>'); $('layer').appendChild(ov);
     var box = ov.querySelector('.stagebox'), h = g.start(box); gameH = h;
     ov.querySelector('[data-x]').onclick = function () { h.stop(); gameH = null; ov.remove(); };
   }
