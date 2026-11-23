@@ -142,6 +142,8 @@
     '.rel-chips{display:flex;flex-wrap:wrap;gap:.45rem;margin:.5rem 0}' +
     '.rel-chip{min-height:42px;border:1px solid var(--border,#2B3252);background:rgba(23,27,46,.8);color:var(--ink-muted,#A2A9BE);border-radius:999px;padding:.3rem .95rem;font-size:.95rem;text-align:left}.rel-chip.on{border-color:var(--c);color:var(--ink,#EDE8DC);background:var(--surface-2,#1F2440)}.rel-chip.have{opacity:.45}' +
     '.rel-own{display:flex;gap:.5rem;margin:.4rem 0}.rel-own input{flex:1;margin:0 !important;font-size:16px}.rel-own button{border:none;border-radius:12px;background:linear-gradient(180deg,#f6d38e,#e8b85c);color:#241a06;font-weight:600;padding:0 1.1rem}' +
+    '.rel-sit{max-width:27rem;margin:0 auto;padding:1.2rem .3rem 1rem;text-align:center;animation:relIn 1.4s ease both}.rel-sitt{font-size:.85rem;color:var(--ink-faint,#7A83A6);letter-spacing:.06em;margin-bottom:1.1rem}' +
+    '.rel-sitv{font-family:var(--serif,Georgia,serif);font-size:1.28rem;line-height:1.6;color:#fbe3b0;margin:0 0 1.5rem}.rel-sitv small{display:block;font-family:var(--sans,sans-serif);font-style:normal;font-size:.8rem;color:var(--ink-muted,#A2A9BE);margin-top:.5rem}.rel-sitl{display:block;font-family:var(--sans,sans-serif);font-size:.74rem;letter-spacing:.12em;text-transform:uppercase;color:#E9788A;margin-bottom:.35rem}' +
     '.rel-card{padding:.85rem 1rem;border:1px solid var(--border,#2B3252);border-radius:14px;background:rgba(23,27,46,.75);margin:.55rem 0;text-align:left;width:100%;display:block}' +
     '.rel-card b{font-family:var(--serif,Georgia,serif);font-weight:normal;font-size:1.08rem}.rel-card .m{color:var(--ink-muted,#A2A9BE);font-size:.82rem;margin-top:.1rem}' +
     '.rel-beads{display:flex;gap:.28rem;align-items:center;margin-top:.45rem;min-height:14px;flex-wrap:wrap}.rel-beads i{display:block;border-radius:50%;background:var(--c);opacity:.85}' +
@@ -162,7 +164,7 @@
     root_.innerHTML = '<div class="rel-top"></div><div class="rel-sky"><div class="rel-ring"></div>' + HEART + '<div class="rel-said"></div></div><div class="rel-tabs"></div><div class="rel-body"></div><div class="rel-bar"></div>';
     var top = root_.querySelector('.rel-top'), sky = root_.querySelector('.rel-sky'), tabs = root_.querySelector('.rel-tabs'), body = root_.querySelector('.rel-body'), bar = root_.querySelector('.rel-bar');
     var heart = sky.querySelector('.rel-heart'), ring = sky.querySelector('.rel-ring'), said = sky.querySelector('.rel-said');
-    var verseHtml = '';
+    var verseHtml = '', sitting = null;
 
     function selIds() { return Object.keys(sel).filter(function (k) { return sel[k]; }); }
     function clearSel() { sel = {}; }
@@ -182,7 +184,7 @@
       tabs.innerHTML = ''; tabs.hidden = !!guided || kinds.length < 2; if (tabs.hidden) return;
       kinds.forEach(function (k) {
         var n = live(k).length, b = el('button', 'rel-tab k-' + k + (k === kind ? ' on' : ''), KIND[k].tab + (n ? '<small>' + n + '</small>' : '')); b.type = 'button';
-        b.onclick = function () { if (busy) return; kind = k; clearSel(); verseHtml = ''; draw(); }; tabs.appendChild(b);
+        b.onclick = function () { if (busy) return; kind = k; clearSel(); verseHtml = ''; sitting = null; said.classList.remove('on'); draw(); }; tabs.appendChild(b);
       });
     }
     function groups(list) {
@@ -194,7 +196,14 @@
     function orbHtml(it) { return esc(it.n) + (tonight(it) ? '<i class="dot" title="Handed over tonight"></i>' : ''); }
     function orbClass(it) { return 'rel-orb k-' + it.k + (sel[it.id] ? ' sel' + (it.k === 'g' ? ' t' + grip : '') : ''); }
 
+    // After giving: the verse(s) stay as long as you like. Nothing moves on until you say Amen.
+    function drawSit() {
+      var h = '<div class="rel-sit"><div class="rel-sitt">Stay here as long as you like.</div>';
+      sitting.v.forEach(function (e) { h += '<div class="rel-sitv">' + (e.label ? '<span class="rel-sitl">' + esc(e.label) + '</span>' : '') + esc(e.text) + '<small>' + esc(e.ref) + ' · Berean Standard Bible</small></div>'; });
+      body.innerHTML = h + '</div>'; body.scrollTop = 0;
+    }
     function drawBody() {
+      if (sitting) return drawSit();
       var list = live(kind), gd = guided && GUIDE[guided] && GUIDE[guided][kind];
       var h = '<div class="rel-h">' + esc(gd ? gd.h : KIND[kind].ask) + '</div>';
       h += verseHtml ? verseHtml : '<div class="rel-sub">' + esc(gd ? gd.s : KIND[kind].sub) + '</div>';
@@ -221,9 +230,11 @@
       });
     }
 
+    function amen() { sitting = null; said.classList.remove('on'); if (guided) next(); else draw(); }
     function drawBar() {
       var ids = selIds(), n = ids.length, gd = guided;
       bar.innerHTML = ''; bar.className = 'rel-bar k-' + kind;
+      if (sitting) { var ab2 = el('button', 'rel-give', 'Amen'); ab2.type = 'button'; ab2.onclick = amen; var r0 = el('div', 'rel-row'); r0.appendChild(ab2); bar.appendChild(r0); return; }
       if (kind === 'g') {
         var seg = el('div', 'rel-seg', '<span>How tight?</span>');
         [1, 2, 3].forEach(function (g) { var b = el('button', g === grip ? 'on' : '', LOOSE[g]); b.type = 'button'; b.onclick = function () { grip = g; drawBar(); [].forEach.call(body.querySelectorAll('.rel-orb.sel'), function (x) { x.className = orbClass(get(x.dataset.id)); }); }; seg.appendChild(b); });
@@ -270,15 +281,13 @@
       setTimeout(function () {
         give(ids, kd === 'g' ? gripNow : 0); gaveAny = true;
         said.textContent = KIND[kd].said; said.classList.add('on');
-        var v = names.length === 1 ? verseFor(names[0]) : (names.map(verseFor).filter(Boolean)[0] || null);
-        verseHtml = v ? '<div class="rel-verse">' + esc(v.text) + '<small>' + esc(v.ref) + ' · Berean Standard Bible</small></div>' : '';
-        clearSel(); busy = false; draw();
-        if (guided) { clearTimeout(adv); adv = setTimeout(function () { said.classList.remove('on'); next(); }, 3400); }
-        else setTimeout(function () { said.classList.remove('on'); }, 3000);
+        var seen = {}, vs = []; names.forEach(function (it) { var v = verseFor(it); if (v && !seen[v.ref] && vs.length < 3) { seen[v.ref] = 1; vs.push({ ref: v.ref, text: v.text, label: kd === 'g' && names.length > 1 ? it.n : '' }); } });
+        clearSel(); busy = false; verseHtml = ''; sitting = vs.length ? { v: vs } : null; draw();
+        if (!sitting) { if (guided) { adv = setTimeout(function () { said.classList.remove('on'); next(); }, 2500); } else setTimeout(function () { said.classList.remove('on'); }, 3000); }
       }, last + 250);
     }
 
-    function next() { clearTimeout(adv); if (busy) return; if (step < kinds.length - 1) { step++; kind = kinds[step]; clearSel(); verseHtml = ''; said.classList.remove('on'); preselect(); draw(); } else finish(); }
+    function next() { clearTimeout(adv); if (busy) return; sitting = null; if (step < kinds.length - 1) { step++; kind = kinds[step]; clearSel(); verseHtml = ''; said.classList.remove('on'); preselect(); draw(); } else finish(); }
     function finish() { clearTimeout(adv); clearInterval(holdT); if (o.onDone) o.onDone(gaveAny); }
     function preselect() { if (guided === 'sleep' && kind === 'p') live('p').forEach(function (i) { sel[i.id] = true; }); }
 

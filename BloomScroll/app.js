@@ -3,8 +3,8 @@
 (function () {
   'use strict';
   var C = window.MannaContent, T = window.MannaText, PL = window.MannaPlaces, E = window.MannaEngine, A = window.MannaArt, G = window.MannaGames;
-  var VERSION = 'v23';
-  var V = window.MannaVoice, R = window.MannaRelease;
+  var VERSION = 'v24';
+  var V = window.MannaVoice, R = window.MannaRelease, Mu = window.MannaMusic;
   var KEY = 'manna.state', SKEY = 'manna.session', PKEY = 'manna.paused';
 
   // ---------- helpers ----------
@@ -18,7 +18,7 @@
   function catLabel(id) { var c = C.CATS.filter(function (x) { return x.id === id; })[0]; return c ? c.label : id; }
 
   // ---------- state ----------
-  var S = { mins: 15, cats: [], mood: null, kept: [], mine: [], math: E.newMath(), seen: {}, log: [], dim: 0.38, mathInput: 'pad', photos: true, voice: 'am_adam', autoRead: false, voiceInstalled: false, voiceDl: null, voiceEngine: 'gpu', relGuide: true };
+  var S = { mins: 15, cats: [], mood: null, kept: [], mine: [], math: E.newMath(), seen: {}, log: [], dim: 0.38, mathInput: 'pad', photos: true, voice: 'am_adam', autoRead: false, voiceInstalled: false, voiceDl: null, voiceEngine: 'gpu', relGuide: true, music: true };
   try { var raw = JSON.parse(localStorage.getItem(KEY) || 'null'); if (raw) { for (var k in raw) S[k] = raw[k]; } } catch (e) {}
   if (!S.voiceDl) S.voiceDl = { cpu: !!S.voiceInstalled };   // downloads are tracked per engine (the graphics-chip model is a different file)
   E.SKILLS.forEach(function (k) { if (!S.math[k]) S.math[k] = E.newMath()[k]; });
@@ -89,7 +89,7 @@
   $('mathTile').onclick = function () { renderMath(); show('mathScreen'); };
   $('setTile').onclick = function () { renderSettings(); show('setScreen'); };
   // The games, straight from the home screen (no need to wait for one to turn up in the scroll).
-  var GICON = { starwatch: '🚀', pass: '🏰', lights: '💡', checkers: '♟️', mines: '💣', sudoku: '🔢', solitaire: '🃏', papertoss: '🗑️', rally: '🎾', blast: '💥', putt: '⛳', treasuring: '💛' };
+  var GICON = { starwatch: '🚀', pass: '🏰', lights: '💡', checkers: '♟️', mines: '💣', sudoku: '🔢', solitaire: '🃏', papertoss: '🗑️', rally: '🎾', blast: '💥', putt: '⛳', mathcmd: '☄️', tfe: '🟨', bricks: '🧱', connect4: '🔴', treasuring: '💛' };
   G.list.forEach(function (g) { var b = el('button', 'gtile', '<i>' + (GICON[g.id] || '🎮') + '</i><span>' + esc(g.title) + '</span>'); b.type = 'button'; b.onclick = function () { openGame(g, true); }; $('gameGrid').appendChild(b); });
 
   function renderKept() {
@@ -128,7 +128,9 @@
     renderVoice();
     var rc = $('relChips'); rc.innerHTML = '';
     [[true, 'Hand it over'], [false, 'Just breathe']].forEach(function (o) { var b = el('button', 'chip' + ((S.relGuide !== false) === o[0] ? ' on' : ''), o[1]); b.type = 'button'; b.onclick = function () { S.relGuide = o[0]; save(); renderSettings(); }; rc.appendChild(b); });
-    var pc = $('photoChips'); pc.innerHTML = '';
+    var mc2 = $('musicChips'); mc2.innerHTML = '';
+    [[true, 'Music on'], [false, 'Music off']].forEach(function (o) { var b = el('button', 'chip' + (S.music !== false === o[0] ? ' on' : ''), o[1]); b.type = 'button'; b.onclick = function () { S.music = o[0]; save(); if (!o[0] && Mu) Mu.fadeOut(0.5); renderSettings(); }; mc2.appendChild(b); });
+    var pc = $('photoChips');
     [[true, 'Show photos'], [false, 'Drawn art only']].forEach(function (o) { var b = el('button', 'chip' + (S.photos === o[0] ? ' on' : ''), o[1]); b.type = 'button'; b.onclick = function () { S.photos = o[0]; save(); renderSettings(); }; pc.appendChild(b); });
   }
   // Voice engine: 'gpu' runs the model on the graphics chip (about ten times faster, bigger download), 'cpu' on the processor (small, slower than real time).
@@ -176,7 +178,7 @@
   }
   function endGameSession() {
     if (banner) { banner.remove(); banner = null; }
-    sess = null; clearInterval(tickT); tickT = 0; $('dim').style.opacity = 0; renderHome();
+    sess = null; clearInterval(tickT); tickT = 0; $('dim').style.opacity = 0; if (Mu) Mu.fadeOut(1.5); renderHome();
   }
   function openFeed() {
     show('feedScreen'); try { history.pushState({ manna: 1 }, ''); } catch (e) {} var feed = $('feed'); feed.innerHTML = ''; feed.scrollTop = 0; cardsN = 0; lastCat = null; closed = false;
@@ -209,7 +211,7 @@
     if (!sess) return; var now = Date.now(), p = progress(), rem = Math.max(0, Math.ceil((sess.end - now) / 1000));
     $('fill').style.width = (p * 100) + '%'; $('orb').style.left = (p * 100) + '%'; $('left').textContent = fmt(rem);
     $('orb').style.background = p < 0.38 ? '#ffe9b0' : p < 0.74 ? '#f6b38a' : '#b9b6ff';
-    $('dim').style.opacity = E.dimAt(p, S.dim); $('feedScreen').style.setProperty('--p', p.toFixed(3)); var gl = $('gameLeft'); if (gl) gl.textContent = fmt(rem) + ' left'; var gcl = $('gcLeft'); if (gcl) gcl.textContent = fmt(rem) + ' left';
+    $('dim').style.opacity = E.dimAt(p, S.dim); if (Mu && Mu.playing()) Mu.setLevel(1 - 0.65 * p); $('feedScreen').style.setProperty('--p', p.toFixed(3)); var gl = $('gameLeft'); if (gl) gl.textContent = fmt(rem) + ' left'; var gcl = $('gcLeft'); if (gcl) gcl.textContent = fmt(rem) + ' left';
     if (now >= sess.end && !banner) showTimeUp();
     if (banner && now >= sess.end + 45000) windDown('sleep');
   }
@@ -224,7 +226,7 @@
   // ---------- going back, the menu, refresh ----------
   function teardown() {
     clearInterval(tickT); tickT = 0; if (banner) { banner.remove(); banner = null; }
-    if (V) V.stop(); if (gameH) { gameH.stop(); gameH = null; }
+    if (Mu) Mu.fadeOut(1); if (V) V.stop(); if (gameH) { gameH.stop(); gameH = null; }
     $('layer').innerHTML = ''; if (observer) observer.disconnect(); $('feed').innerHTML = ''; $('dim').style.opacity = 0;
   }
   // Step out without losing the sitting: the clock stops, and you can pick something else, then resume or start fresh.
@@ -462,9 +464,12 @@
   function openGame(g, home) {
     if (V) { V.stop(); resetListen(); }
     if (home && !sess) startGameSession();     // games from Home run on a countdown too
-    var ov = el('div', 'overlay', '<div class="bar"><button class="back" data-x>' + (home ? '‹ Home' : '‹ Back to the scroll') + '</button><span class="small">' + esc(g.title) + (sess ? ' · <span id="gameLeft"></span>' : '') + '</span><button class="back" data-moon aria-label="Wind down or take a break" style="font-size:1.2rem">☾</button></div><div class="stagebox"></div>'); $('layer').appendChild(ov);
+    var ov = el('div', 'overlay', '<div class="bar"><button class="back" data-x>' + (home ? '‹ Home' : '‹ Back to the scroll') + '</button><span class="small">' + esc(g.title) + (sess ? ' · <span id="gameLeft"></span>' : '') + '</span><span><button class="back" data-snd aria-label="Music on or off" style="font-size:1.2rem">♪</button><button class="back" data-moon aria-label="Wind down or take a break" style="font-size:1.2rem">☾</button></span></div><div class="stagebox"></div>'); $('layer').appendChild(ov);
     var box = ov.querySelector('.stagebox'), h = g.start(box); gameH = h; tick();
-    ov.querySelector('[data-x]').onclick = function () { h.stop(); gameH = null; ov.remove(); if (home) renderHome(); };
+    var snd = ov.querySelector('[data-snd]'); function paintSnd() { snd.textContent = S.music ? '♪' : '♪̸'; snd.style.opacity = S.music ? 1 : 0.45; }
+    if (Mu && S.music) { Mu.start(); tick(); } paintSnd();
+    snd.onclick = function () { S.music = !S.music; save(); paintSnd(); if (!Mu) return; if (S.music) Mu.start(); else Mu.fadeOut(0.8); };
+    ov.querySelector('[data-x]').onclick = function () { h.stop(); gameH = null; ov.remove(); if (Mu) Mu.fadeOut(1.5); if (home) renderHome(); };
     ov.querySelector('[data-moon]').onclick = windMenu;
   }
   function windMenu() {
@@ -565,7 +570,7 @@
   function land() { windDown('sleep'); }
   function windDown(kind, mins) {
     if (landing || wind) return;
-    landing = true; wind = kind; brk = { mins: mins || 10 };
+    landing = true; wind = kind; brk = { mins: mins || 10 }; if (Mu) Mu.fadeOut(5);
     if (banner) { banner.remove(); banner = null; }
     document.body.classList.add('fadeout');
     setTimeout(doLand, 1100);
@@ -651,5 +656,5 @@
     if (ss && ss.kind !== 'games' && Date.now() < ss.end + 45000 && Date.now() - ss.start < 4 * 3600000) { sess = ss; openFeed(); }
     else if (ss) localStorage.removeItem(SKEY);
   } catch (e) {}
-  window.Manna = { S: S, E: E, startSession: startSession, land: land, windDown: windDown, peek: function () { return { sess: sess, wind: wind, paused: paused, brk: brk }; } };
+  window.Manna = { S: S, E: E, save: save, startSession: startSession, land: land, windDown: windDown, peek: function () { return { sess: sess, wind: wind, paused: paused, brk: brk }; } };
 })();

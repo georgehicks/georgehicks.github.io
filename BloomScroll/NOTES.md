@@ -62,7 +62,7 @@ Downloads are tracked per engine in `S.voiceDl`. If the gpu voice fails to load 
 Audio must start inside a tap on iOS: `V.unlock()` runs on every click/touchend/pointerup/keydown. Auto-read loads the voice in the background when the feed opens.
 
 ## Games (v20)
-Twelve games (v23), all opened through `gamekit.js` (`MannaKit.run`): an Easy / Normal / Hard picker first (last choice remembered in `manna.glevel`, bests in `manna.gbest`), then a strip above the board (level ▾, status, New game).
+Sixteen games (v24), all opened through `gamekit.js` (`MannaKit.run`): an Easy / Normal / Hard picker first (last choice remembered in `manna.glevel`, bests in `manna.gbest`), then a strip above the board (level ▾, status, New game).
 A game is `{ id, title, blurb, levels:{easy,normal,hard}, make(level, host, api) }`; `MannaGames.reg(def)` wraps one for the feed; each file pushes its own into `MannaGames.list`.
 - `games.js`: Star Watch (power-ups, UFO, drag-relative control), Hold the Pass (3 towers, upgrade/sell, wave types, ×2 speed), Lights (hints via GF(2) solver, undo, par)
 - `games-board.js`: Checkers (forced captures, multi-jump, alpha-beta AI: depth 1+random / 4 / time-limited 9), Minesweeper (hold to flag, chording, free mistake on easy), Sudoku (unique-solution generator in 10 ms slices, next puzzle prefetched, notes, hints)
@@ -83,3 +83,10 @@ No game-over screens: it rests and begins again. Tested in the desktop pane only
 - New: `rally.js` Rally (tennis: pseudo-3D court, ball is launched to a chosen landing spot and bounces once, hit with the racket edge to place it, CPU speed/error/aim by level, first to 5/7/9), `blast.js` Blast Maze (Bomberman-style: pillars, crates, chain bombs, power-ups for range/bombs/speed, slimes that hunt on harder levels, D-pad plus Bomb button, arrow keys and Space on a computer), `putt.js` Putt (mini golf, a generated and path-checked course every hole: walls, bumpers, sand, water, a windmill on Hard; pull back anywhere to shoot; guide: whole path / short / none).
 - Tested in the desktop pane only: all 12 games open at all three levels without errors, Rally/Blast/Putt/Pass driven by bots on a fake frame clock. Touch feel (D-pad, racket slide, pull-back) is untested on the iPhone.
 - Preview testing: the plain Python server can leave the pane running stale scripts; a throwaway `Cache-Control: no-store` server fixes that.
+
+## v24: music, Math Command, more games, a longer pause after release
+- `music.js` (`MannaMusic`): soft endless generative soundtrack (slow pads, a low note, bell notes, long reverb) made live with Web Audio, no files; or the tracks listed in `audio/manifest.json` (your own, e.g. from Suno), looped. Starts when a game opens (a tap), volume follows the countdown down (`1 - 0.65 * progress`), fades out on leaving the game or wind-down (5 s). Settings → Game music on/off, plus a ♪ toggle in the game bar. iPhone: ringer switch must be on for Web Audio. Checked offline: steady, peak about 0.2, no clipping; sound itself unheard in the pane.
+- `mathcmd.js` Math Command: asteroids carry answers, the tray buttons are formulas; tap the formula that makes a falling number and a missile flies to it; a formula matching nothing fizzles. Problems come from the adaptive engine and grade it (so Math levels move). Cities are lives; no game over.
+- `games-extra.js`: 2048 (swipe; 5×5 + unlimited undo / 4×4 + 3 undos / 4×4 harder, no undo), Bricks (drag paddle; gifts: wider, slower, three balls; 2-hit bricks on Hard), Four in a Row (alpha-beta, iterative deepening within 100/250/800 ms).
+- Blast Maze controls are now a floating drag stick (drag anywhere to walk, the stick follows your finger) and tap anywhere to bomb (or tap with a second finger); no buttons to look at. Arrow keys + Space still work.
+- Hand it over: after giving, the verse(s) stay on screen with "Stay here as long as you like" until you tap Amen (nothing auto-advances); several grips show a verse each.

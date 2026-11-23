@@ -11,14 +11,9 @@
       normal: { lives: 3, en: 4, soft: 0.5, espd: 2.0, chase: 0.25, fuse: 2.1, spd: 4.9, pu: 0.3 },
       hard: { lives: 2, en: 5, soft: 0.58, espd: 2.5, chase: 0.55, fuse: 1.9, spd: 4.6, pu: 0.22 }
     }[level];
-    K.css('blast', '.bl-ctl{position:absolute;left:0;right:0;bottom:0;height:170px;display:flex;align-items:center;justify-content:space-between;padding:0 1.1rem calc(var(--bot,0px) + .3rem);z-index:2}' +
-      '.bl-pad{display:grid;grid-template-columns:repeat(3,58px);grid-template-rows:repeat(3,58px);gap:4px}' +
-      '.bl-pad button,.bl-bomb{border:1px solid #2b3252;background:linear-gradient(160deg,#252c4d,#171b2e);color:#c6cbe0;border-radius:16px;font-size:1.4rem;touch-action:none;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;box-shadow:0 4px 12px rgba(0,0,0,.4)}' +
-      '.bl-pad button.on,.bl-bomb:active{background:linear-gradient(160deg,#3a4478,#232a48);border-color:#F2C879}' +
-      '.bl-bomb{width:104px;height:104px;border-radius:50%;font-size:1.05rem;font-weight:700;color:#ffe9b0;background:radial-gradient(circle at 35% 30%,#d9603a,#8d2a22 70%);border-color:#f2a07a;margin-right:.2rem}');
-    var c = K.canvas(host), W = c.W, H = c.H, ctx = c.ctx, areaH = H - 172, T = Math.floor(Math.min(W / COLS, (areaH - 36) / ROWS));
-    var ox = Math.floor((W - T * COLS) / 2), oy = Math.max(34, Math.floor((areaH - T * ROWS) / 2) + 12);
-    var grid, bombs, flames, pups, enemies, parts, pl, stage, clock = 0, st, stT, msg, msgT, alive = true, held = [], lastBomb = 0, shake = 0, kills;
+    var c = K.canvas(host), W = c.W, H = c.H, ctx = c.ctx, areaH = H - 40, T = Math.floor(Math.min(W / COLS, (areaH - 36) / ROWS));
+    var ox = Math.floor((W - T * COLS) / 2), oy = Math.max(40, Math.floor((H - T * ROWS) * 0.3));
+    var hintT = 6, grid, bombs, flames, pups, enemies, parts, pl, stage, clock = 0, st, stT, msg, msgT, alive = true, held = [], lastBomb = 0, shake = 0, kills;
     function cell(c0, r0) { return { c: c0, r: r0 }; }
     function blockedFor(c0, r0, isPlayer) {
       if (c0 < 0 || r0 < 0 || c0 >= COLS || r0 >= ROWS || grid[r0][c0]) return true;
@@ -88,7 +83,7 @@
     }
 
     function update(dt) {
-      clock += dt; shake = Math.max(0, shake - dt); msgT = Math.max(0, msgT - dt); pl.inv = Math.max(0, pl.inv - dt);
+      clock += dt; hintT = Math.max(0, hintT - dt * 0.4); shake = Math.max(0, shake - dt); msgT = Math.max(0, msgT - dt); pl.inv = Math.max(0, pl.inv - dt);
       parts.forEach(function (q) { q.t -= dt; q.x += q.vx * dt; q.y += q.vy * dt; q.vy += 140 * dt; }); parts = parts.filter(function (q) { return q.t > 0; });
       if (st === 'rest') { stT -= dt; if (stT <= 0) newGame(); return; }
       if (st === 'clear') { stT -= dt; if (stT <= 0) { stage++; api.setBest(stage); genMap(); st = 'play'; msg = 'Stage ' + stage; msgT = 1.4; status(); } return; }
@@ -134,6 +129,8 @@
       // HUD
       var hx = ox; ctx.textAlign = 'center'; pillText(hx, 6, 74, 'Stage ' + stage); for (var i = 0; i < Math.min(pl.lives, 8); i++) { ctx.font = '16px sans-serif'; ctx.fillStyle = '#e5383b'; ctx.fillText('♥', ox + COLS * T - 14 - i * 18, 24); }
       pillText(ox + 84, 6, 70, '💣' + pl.maxB + ' 🔥' + pl.range); pillText(ox + 164, 6, 66, '👾 ' + enemies.length);
+      if (steer) { ctx.strokeStyle = 'rgba(255,255,255,.22)'; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(steer.ax, steer.ay, 34, 0, 7); ctx.stroke(); ctx.fillStyle = 'rgba(242,200,121,.35)'; ctx.beginPath(); ctx.arc(steer.x, steer.y, 14, 0, 7); ctx.fill(); }
+      else if (hintT > 0) { ctx.textAlign = 'center'; ctx.font = '14px -apple-system,sans-serif'; ctx.fillStyle = 'rgba(225,230,245,' + Math.min(0.85, hintT) + ')'; ctx.fillText('Drag anywhere to walk · tap to drop a bomb', W / 2, oy + T * ROWS + 30); }
       if (msgT > 0) { ctx.textAlign = 'center'; ctx.font = '22px Georgia,serif'; ctx.lineWidth = 5; ctx.strokeStyle = 'rgba(5,8,16,' + Math.min(0.85, msgT) + ')'; ctx.strokeText(msg, W / 2, oy + T * ROWS * 0.5); ctx.fillStyle = 'rgba(250,244,226,' + Math.min(1, msgT * 1.5) + ')'; ctx.fillText(msg, W / 2, oy + T * ROWS * 0.5); }
     }
     function hero() {
@@ -153,29 +150,37 @@
       ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.arc(x - T * 0.12, y + T * 0.02, T * 0.08, 0, 7); ctx.arc(x + T * 0.12, y + T * 0.02, T * 0.08, 0, 7); ctx.fill(); ctx.fillStyle = '#1b1426'; var ex = e.dir.x * T * 0.03, ey = e.dir.y * T * 0.03; ctx.beginPath(); ctx.arc(x - T * 0.12 + ex, y + T * 0.03 + ey, T * 0.04, 0, 7); ctx.arc(x + T * 0.12 + ex, y + T * 0.03 + ey, T * 0.04, 0, 7); ctx.fill();
     }
 
-    // ---- controls ----
-    var ctl = K.el('div', 'bl-ctl'), pad = K.el('div', 'bl-pad'), bb = K.btn('bl-bomb', '💣<br>Bomb'); ctl.appendChild(pad); ctl.appendChild(bb); host.appendChild(ctl);
-    var spots = { '0,1': [{ x: 0, y: -1 }, '▲'], '1,0': [{ x: -1, y: 0 }, '◀'], '1,2': [{ x: 1, y: 0 }, '▶'], '2,1': [{ x: 0, y: 1 }, '▼'] };
-    for (var rr_ = 0; rr_ < 3; rr_++) for (var cc_ = 0; cc_ < 3; cc_++) {
-      var sp = spots[rr_ + ',' + cc_]; if (!sp) { pad.appendChild(K.el('span')); continue; }
-      (function (d, glyph) {
-        var b = K.btn('', glyph); b.type = 'button';
-        function down(e) { e.preventDefault(); held = held.filter(function (h) { return h !== d; }); held.push(d); b.classList.add('on'); try { b.setPointerCapture(e.pointerId); } catch (x) {} }
-        function up() { held = held.filter(function (h) { return h !== d; }); b.classList.remove('on'); }
-        b.addEventListener('pointerdown', down); b.addEventListener('pointerup', up); b.addEventListener('pointercancel', up); b.addEventListener('lostpointercapture', up); b.addEventListener('contextmenu', function (e) { e.preventDefault(); });
-        pad.appendChild(b);
-      })(sp[0], sp[1]);
+    // ---- controls: you watch the maze, not buttons ----
+    // Put a finger down anywhere and drag to walk (a floating stick: it follows your finger, so you can change direction without lifting).
+    // A quick tap anywhere drops a bomb, and so does tapping with a second finger while the first keeps walking.
+    var steer = null, ptrs = {};
+    c.cv.style.touchAction = 'none';
+    function steerDir() {
+      if (!steer) return null; var dx = steer.x - steer.ax, dy = steer.y - steer.ay, m = Math.hypot(dx, dy); if (m < 12) return null;
+      if (m > 34) { steer.ax = steer.x - dx / m * 34; steer.ay = steer.y - dy / m * 34; dx = steer.x - steer.ax; dy = steer.y - steer.ay; }
+      return Math.abs(dx) > Math.abs(dy) ? (dx > 0 ? DIRS[0] : DIRS[1]) : (dy > 0 ? DIRS[2] : DIRS[3]);
     }
-    bb.addEventListener('pointerdown', function (e) { e.preventDefault(); placeBomb(); }); bb.addEventListener('contextmenu', function (e) { e.preventDefault(); });
+    var keyHeld = [], stick = null;
+    function refresh() { held = keyHeld.slice(); if (stick) held.push(stick); }
+    function setSteer() { stick = steerDir(); refresh(); }
+    function pxy(e) { var r = c.cv.getBoundingClientRect(); return { x: e.clientX - r.left, y: e.clientY - r.top }; }
+    c.cv.addEventListener('pointerdown', function (e) {
+      e.preventDefault(); var p = pxy(e); try { c.cv.setPointerCapture(e.pointerId); } catch (x) {}
+      if (steer) { placeBomb(); return; }                                              // a second finger = bomb
+      steer = { id: e.pointerId, ax: p.x, ay: p.y, x: p.x, y: p.y, t: Date.now(), moved: 0 }; hintT = 0;
+    });
+    c.cv.addEventListener('pointermove', function (e) { if (!steer || e.pointerId !== steer.id) return; var p = pxy(e); steer.moved = Math.max(steer.moved, Math.hypot(p.x - steer.x, p.y - steer.y)); steer.x = p.x; steer.y = p.y; setSteer(); });
+    function lift(e) { if (!steer || e.pointerId !== steer.id) return; var tap = e.type === 'pointerup' && Date.now() - steer.t < 260 && Math.hypot(steer.x - steer.ax, steer.y - steer.ay) < 14 && steer.moved < 14; steer = null; setSteer(); if (tap) placeBomb(); }
+    c.cv.addEventListener('pointerup', lift); c.cv.addEventListener('pointercancel', lift); c.cv.addEventListener('contextmenu', function (e) { e.preventDefault(); });
     var KEYS = { ArrowUp: DIRS[3], ArrowDown: DIRS[2], ArrowLeft: DIRS[1], ArrowRight: DIRS[0], w: DIRS[3], s: DIRS[2], a: DIRS[1], d: DIRS[0] };
-    function kd(e) { var d = KEYS[e.key]; if (d) { e.preventDefault(); held = held.filter(function (h) { return h !== d; }); held.push(d); } else if (e.key === ' ' || e.key === 'Enter') { e.preventDefault(); placeBomb(); } }
-    function ku(e) { var d = KEYS[e.key]; if (d) held = held.filter(function (h) { return h !== d; }); }
+    function kd(e) { var d = KEYS[e.key]; if (d) { e.preventDefault(); keyHeld = keyHeld.filter(function (h) { return h !== d; }); keyHeld.push(d); refresh(); } else if (e.key === ' ' || e.key === 'Enter') { e.preventDefault(); placeBomb(); } }
+    function ku(e) { var d = KEYS[e.key]; if (d) { keyHeld = keyHeld.filter(function (h) { return h !== d; }); refresh(); } }
     document.addEventListener('keydown', kd); document.addEventListener('keyup', ku);
     newGame();
     var stop = K.loop(function (dt) { if (alive) { update(dt); draw(); } });
     return { stop: function () { alive = false; stop(); document.removeEventListener('keydown', kd); document.removeEventListener('keyup', ku); }, restart: newGame, peek: function () { return { st: st, stage: stage, pl: pl, enemies: enemies, bombs: bombs, flames: flames, grid: grid, held: held, placeBomb: placeBomb, setHeld: function (a) { held = a; }, pups: pups, T: T }; } };
   }
 
-  G.list.push(G.reg({ id: 'blast', title: 'Blast Maze', blurb: 'Drop bombs to clear a path through the crates, grab power-ups, and blow up the slimes. Mind your own blast.', make: blast,
+  G.list.push(G.reg({ id: 'blast', title: 'Blast Maze', blurb: 'Drag anywhere to walk, tap to drop a bomb. Clear the crates, grab power-ups, blow up the slimes. Mind your own blast.', make: blast,
     levels: { easy: 'Five lives, three slow slimes, a long fuse, and plenty of power-ups.', normal: 'Three lives, four slimes that sometimes come looking for you.', hard: 'Two lives, five quick slimes that hunt you, a short fuse.' }, bestLabel: function (b) { return 'stage ' + b; } }));
 })(typeof window !== 'undefined' ? window : globalThis);
