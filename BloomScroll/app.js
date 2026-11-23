@@ -3,7 +3,7 @@
 (function () {
   'use strict';
   var C = window.MannaContent, T = window.MannaText, PL = window.MannaPlaces, E = window.MannaEngine, A = window.MannaArt, G = window.MannaGames;
-  var VERSION = 'v24';
+  var VERSION = 'v25';
   var V = window.MannaVoice, R = window.MannaRelease, Mu = window.MannaMusic;
   var KEY = 'manna.state', SKEY = 'manna.session', PKEY = 'manna.paused';
 
@@ -466,9 +466,9 @@
     if (home && !sess) startGameSession();     // games from Home run on a countdown too
     var ov = el('div', 'overlay', '<div class="bar"><button class="back" data-x>' + (home ? '‹ Home' : '‹ Back to the scroll') + '</button><span class="small">' + esc(g.title) + (sess ? ' · <span id="gameLeft"></span>' : '') + '</span><span><button class="back" data-snd aria-label="Music on or off" style="font-size:1.2rem">♪</button><button class="back" data-moon aria-label="Wind down or take a break" style="font-size:1.2rem">☾</button></span></div><div class="stagebox"></div>'); $('layer').appendChild(ov);
     var box = ov.querySelector('.stagebox'), h = g.start(box); gameH = h; tick();
-    var snd = ov.querySelector('[data-snd]'); function paintSnd() { snd.textContent = S.music ? '♪' : '♪̸'; snd.style.opacity = S.music ? 1 : 0.45; }
-    if (Mu && S.music) { Mu.start(); tick(); } paintSnd();
-    snd.onclick = function () { S.music = !S.music; save(); paintSnd(); if (!Mu) return; if (S.music) Mu.start(); else Mu.fadeOut(0.8); };
+    var mood = { starwatch: 1, pass: 1, blast: 1, rally: 1, bricks: 1, mathcmd: 1 }[g.id] ? 'play' : 'calm', snd = ov.querySelector('[data-snd]'); function paintSnd() { snd.textContent = S.music ? '♪' : '♪̸'; snd.style.opacity = S.music ? 1 : 0.45; }
+    if (Mu && S.music) { Mu.start(mood); tick(); } paintSnd();
+    snd.onclick = function () { S.music = !S.music; save(); paintSnd(); if (!Mu) return; if (S.music) Mu.start(mood); else Mu.fadeOut(0.8); };
     ov.querySelector('[data-x]').onclick = function () { h.stop(); gameH = null; ov.remove(); if (Mu) Mu.fadeOut(1.5); if (home) renderHome(); };
     ov.querySelector('[data-moon]').onclick = windMenu;
   }
