@@ -175,7 +175,7 @@
   .linkrow button { background:none; border:none; color:var(--ink-muted); padding:.6rem .5rem; min-height:44px; font-size:.95rem; text-decoration:underline; text-decoration-color:var(--ink-faint); }
   .sheet .btn { display:block; width:100%; margin-top:.55rem; text-align:left; }
   /* dim layer, timer states */
-  #feedScreen { transition:opacity 1s ease; } #feedScreen.fadeout { opacity:0; }
+  #feedScreen { transition:opacity 1s ease; } body.fadeout #feedScreen, body.fadeout #homeScreen, body.fadeout #layer { opacity:0; transition:opacity 1s ease; }
   .photo img.fadein { opacity:0; transition:opacity .8s; } .photo img.fadein.on { opacity:1; }
   .photo, .card .bg { filter:brightness(calc(1 - var(--p, 0) * .3)) saturate(calc(1 - var(--p, 0) * .25)); }
   .photo svg { width:100%; height:100%; display:block; }
@@ -231,6 +231,11 @@
   .carry { text-align:left; max-width:26rem; margin:1rem auto 0; } .carry .it { padding:.7rem .9rem; border-left:3px solid var(--gold); background:rgba(242,200,121,.07); border-radius:0 12px 12px 0; margin:.5rem 0; font-family:var(--serif); font-size:1rem; }
   .landbtns { display:flex; flex-direction:column; gap:.6rem; width:min(24rem,100%); margin:1.2rem auto 0; }
   .rest { position:fixed; inset:0; z-index:50; background:#000; display:flex; align-items:center; justify-content:center; text-align:center; padding:2rem; color:#8a8f9c; font-family:var(--serif); font-size:1.25rem; line-height:1.6; }
+  .rest-in { animation:restFade 120s linear forwards; max-width:24rem; } .rest-v { margin-top:1.4rem; font-size:1.05rem; font-style:italic; color:#767b88; } .rest-v span { font-style:normal; font-size:.8rem; opacity:.7; }
+  @keyframes restFade { 0%,12% { opacity:1; } 100% { opacity:.07; } }
+  .kclock { font-family:var(--serif); font-size:4.2rem; color:#fff3d2; text-shadow:0 0 28px rgba(242,200,121,.5); margin:1.2rem 0 .4rem; font-variant-numeric:tabular-nums; }
+  #landK.over .kclock { color:var(--gold); animation:bob 2.4s ease-in-out infinite; }
+  .tile.relt { grid-column:1 / -1; background:linear-gradient(135deg, #2b2518, #1a2036); border-color:#6b5a30; }
 
   /* lists / forms */
   .row2 { display:flex; align-items:center; justify-content:space-between; gap:1rem; }
@@ -253,6 +258,7 @@
     <div class="brand"><img src="icon.svg" alt="" width="96" height="96"><h1>Bloom Scroll</h1><p>enough for tonight</p></div>
 
     <div id="pausedCard" class="pausedcard" hidden></div>
+    <div id="gameCard" class="pausedcard" hidden></div>
 
     <div class="label">How long</div>
     <div class="chips" id="minChips"></div>
@@ -267,6 +273,7 @@
     </details>
 
     <div class="tiles">
+      <button class="tile relt" id="relTile"><b>Hand it over</b><span id="relNote">People, worries, and whatever has a grip on you.</span></button>
       <button class="tile want" id="wantTile"><b>What I Want</b><span>See the pull. Choose the way. Hold it open-handed.</span></button>
       <button class="tile" id="keptTile"><b>Kept</b><span id="keptCount">Nothing yet</span></button>
       <button class="tile" id="setTile"><b>Settings</b><span>Voice, dimming, update</span></button>
@@ -309,13 +316,24 @@
     <p class="small" id="nightRef"></p>
     <div class="carry" id="carry"></div>
     <div class="landbtns">
-      <a class="btn primary" id="toTreasure" href="../Treasure/index.html" style="text-decoration:none;display:block">Be with Him in Treasuring</a>
-      <a class="btn" id="toSteps" href="../AbidingSteps/index.html" style="text-decoration:none;display:block">Open AbidingSteps</a>
-      <button class="btn" id="restHere">Just rest here</button>
-      <button class="btn ghost" id="landHome">Done</button>
+      <button class="btn primary" id="landGood">Goodnight</button>
+      <button class="btn ghost" id="landHome">Back to home</button>
+    </div>
+  </div>
+  <div id="landK" hidden>
+    <h2 id="kH">Rest your eyes</h2>
+    <div class="kclock" id="kClock">10:00</div>
+    <p class="small" id="kSub">He is here. There is nothing to do.</p>
+    <div class="landbtns">
+      <button class="btn primary" id="kBack">Home</button>
+      <button class="btn" id="kMore">+5 minutes</button>
+      <button class="btn ghost" id="kHome">Home</button>
     </div>
   </div>
 </section>
+
+<!-- HAND IT OVER (release.js fills this) -->
+<section class="screen" id="relScreen" hidden></section>
 
 <!-- KEPT -->
 <section class="screen" id="keptScreen" hidden>
@@ -350,6 +368,9 @@
     <button class="btn" id="voiceBtn" style="margin-bottom:.7rem"></button>
     <div class="chips" id="engineChips" style="margin-bottom:.7rem"></div>
     <div class="chips" id="voiceChips"></div>
+    <div class="label">At wind-down</div>
+    <div class="chips" id="relChips"></div>
+    <p class="small">Winding down for sleep or a break goes through the breaths, then (if you like) handing people, cares and whatever has hold of you to Jesus.</p>
     <div class="label">Reading aloud</div>
     <div class="chips" id="autoChips"></div>
     <p class="small">Voice by Kokoro (open-source, runs on your phone). Default voice: Adam.</p>
@@ -378,6 +399,7 @@
 <script src="games-board.js"></script>
 <script src="games-cards.js"></script>
 <script src="papertoss.js"></script>
+<script src="release.js"></script>
 <script src="treasuring.js"></script>
 <script src="voice.js"></script>
 <script src="app.js"></script>

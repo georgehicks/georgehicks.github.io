@@ -70,3 +70,9 @@ A game is `{ id, title, blurb, levels:{easy,normal,hard}, make(level, host, api)
 - `papertoss.js`: Paper Toss (office; slingshot throw; pedestal fans re-randomised every throw, placed on the likely arc; gusting / sweeping on harder levels)
 - `treasuring.js`: level sets the fall time (24 / 17 / 11 s)
 No game-over screens: it rests and begins again. Tested in the desktop pane only; rAF there is throttled, so physics was checked with a fake frame clock. iPhone untested.
+
+## Hand it over, wind-down and game time (v22)
+- `release.js` (`MannaRelease`): people / cares / gripping. Tap-first (suggestion chips, "type your own" is the last resort). Choose orbs, **Give to Jesus** and they fly up into the heart-and-cross light; grips use **hold to open your hand** (2.4 s, with a How-tight? Loose / Firm / Clenched choice). Hold an orb for its story (times handed over, beads, "He carried it" settles it, remove). 🕯 = **Over time** (30-day count, per-item beads, loosening label for grips, a "He carried these" list). Store `manna.release` (history capped at 60 per item, no streaks or scores). Verses come from `text.js` only.
+- **Wind-down** (`windDown('sleep'|'break', mins)` in app.js): fade → breaths (6 for sleep, 2 for a break) → guided hand-over (`MannaRelease.guided`: People, Cares, Gripping for sleep; Gripping only for a break; each skippable; Settings → "At wind-down" can turn it off) → sleep: the night verse and a dark Goodnight screen; break: the sitting is paused and a quiet countdown waits (+5, "Back to it" resumes).
+- **Game time**: a game opened from Home starts a countdown (the Home "How long" chips) shown in the game bar and in a Home card; it ends with the same time-up choices (Wind down for sleep / +3 minutes / Take a break). ☾ in the game bar and ⋯ in the scroll offer the same. Not saved across an app close.
+- No links out of the app any more (the Treasuring and AbidingSteps buttons on the landing are gone).

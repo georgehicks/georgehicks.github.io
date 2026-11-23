@@ -3,8 +3,8 @@
 (function () {
   'use strict';
   var C = window.MannaContent, T = window.MannaText, PL = window.MannaPlaces, E = window.MannaEngine, A = window.MannaArt, G = window.MannaGames;
-  var VERSION = 'v21';
-  var V = window.MannaVoice;
+  var VERSION = 'v22';
+  var V = window.MannaVoice, R = window.MannaRelease;
   var KEY = 'manna.state', SKEY = 'manna.session', PKEY = 'manna.paused';
 
   // ---------- helpers ----------
@@ -18,7 +18,7 @@
   function catLabel(id) { var c = C.CATS.filter(function (x) { return x.id === id; })[0]; return c ? c.label : id; }
 
   // ---------- state ----------
-  var S = { mins: 15, cats: [], mood: null, kept: [], mine: [], math: E.newMath(), seen: {}, log: [], dim: 0.38, mathInput: 'pad', photos: true, voice: 'am_adam', autoRead: false, voiceInstalled: false, voiceDl: null, voiceEngine: 'gpu' };
+  var S = { mins: 15, cats: [], mood: null, kept: [], mine: [], math: E.newMath(), seen: {}, log: [], dim: 0.38, mathInput: 'pad', photos: true, voice: 'am_adam', autoRead: false, voiceInstalled: false, voiceDl: null, voiceEngine: 'gpu', relGuide: true };
   try { var raw = JSON.parse(localStorage.getItem(KEY) || 'null'); if (raw) { for (var k in raw) S[k] = raw[k]; } } catch (e) {}
   if (!S.voiceDl) S.voiceDl = { cpu: !!S.voiceInstalled };   // downloads are tracked per engine (the graphics-chip model is a different file)
   E.SKILLS.forEach(function (k) { if (!S.math[k]) S.math[k] = E.newMath()[k]; });
@@ -30,7 +30,7 @@
   var DESKTOP = !!(window.matchMedia && matchMedia('(hover: hover) and (pointer: fine)').matches);
 
   // ---------- screens ----------
-  var SCREENS = ['homeScreen', 'feedScreen', 'landScreen', 'keptScreen', 'mineScreen', 'mathScreen', 'setScreen'];
+  var SCREENS = ['homeScreen', 'feedScreen', 'landScreen', 'keptScreen', 'mineScreen', 'mathScreen', 'setScreen', 'relScreen'];
   function show(id) { SCREENS.forEach(function (s) { $(s).hidden = s !== id; }); }
   document.addEventListener('click', function (e) { if (e.target.closest && e.target.closest('[data-back]')) { renderHome(); show('homeScreen'); } });
 
@@ -61,6 +61,13 @@
       pc.innerHTML = '<div class="small">Your scroll is paused · ' + esc(what) + '</div><div class="serif" style="font-size:1.25rem;margin:.2rem 0 .7rem">' + fmt(Math.ceil(paused.left / 1000)) + ' left</div><div class="row"><button class="btn primary" id="resumeBtn">Resume</button><button class="btn ghost" id="dropBtn">Let it go</button></div><div class="small" style="margin-top:.6rem">Starting a new one below replaces it.</div>';
       $('resumeBtn').onclick = resume; $('dropBtn').onclick = function () { dropPaused(); renderHome(); };
     } else { pc.hidden = true; pc.innerHTML = ''; }
+    var gc = $('gameCard');
+    if (sess && sess.kind === 'games') {
+      gc.hidden = false;
+      gc.innerHTML = '<div class="small">Game time</div><div class="serif" style="font-size:1.25rem;margin:.2rem 0 .7rem" id="gcLeft">' + fmt(Math.max(0, Math.ceil((sess.end - Date.now()) / 1000))) + ' left</div><div class="row"><button class="btn primary" id="gcSleep">Wind down for sleep</button><button class="btn" id="gcBreak">Take a break</button></div><div class="small" style="margin-top:.6rem"><button class="back" id="gcEnd" style="min-height:0;padding:.2rem 0;text-decoration:underline">End game time</button></div>';
+      $('gcSleep').onclick = function () { windDown('sleep'); }; $('gcBreak').onclick = breakSheet; $('gcEnd').onclick = function () { endGameSession(); };
+    } else { gc.hidden = true; gc.innerHTML = ''; }
+    if (R) { var rs = R.stats(); $('relNote').textContent = rs.items ? rs.items + ' on your list' + (rs.n ? ' · ' + rs.n + ' handed over this month' : '') : 'People, worries, and whatever has a grip on you.'; }
     var cc = $('catChips'); cc.innerHTML = '';
     C.CATS.forEach(function (c) {
       var on = S.cats.indexOf(c.id) >= 0, b = el('button', 'chip' + (on ? ' on' : ''), esc(c.label)); b.type = 'button';
@@ -76,6 +83,7 @@
   }
   $('goBtn').onclick = function () { startSession({ cats: S.cats.slice() }); };
   $('wantTile').onclick = function () { startSession({ cats: ['want'] }); };
+  $('relTile').onclick = openRelease;
   $('keptTile').onclick = function () { renderKept(); show('keptScreen'); };
   $('mineTile').onclick = function () { renderMine(); show('mineScreen'); };
   $('mathTile').onclick = function () { renderMath(); show('mathScreen'); };
@@ -118,6 +126,8 @@
     var ic = $('inputChips'); ic.innerHTML = '';
     [['pad', 'Number pad'], ['choices', 'Tap the answer']].forEach(function (o) { var b = el('button', 'chip' + (S.mathInput === o[0] ? ' on' : ''), o[1]); b.type = 'button'; b.onclick = function () { S.mathInput = o[0]; save(); renderSettings(); }; ic.appendChild(b); });
     renderVoice();
+    var rc = $('relChips'); rc.innerHTML = '';
+    [[true, 'Hand it over'], [false, 'Just breathe']].forEach(function (o) { var b = el('button', 'chip' + ((S.relGuide !== false) === o[0] ? ' on' : ''), o[1]); b.type = 'button'; b.onclick = function () { S.relGuide = o[0]; save(); renderSettings(); }; rc.appendChild(b); });
     var pc = $('photoChips'); pc.innerHTML = '';
     [[true, 'Show photos'], [false, 'Drawn art only']].forEach(function (o) { var b = el('button', 'chip' + (S.photos === o[0] ? ' on' : ''), o[1]); b.type = 'button'; b.onclick = function () { S.photos = o[0]; save(); renderSettings(); }; pc.appendChild(b); });
   }
@@ -154,9 +164,19 @@
 
   function startSession(o) {
     dropPaused(); var now = Date.now();
-    sess = { start: now, end: now + S.mins * 60000, mins: S.mins, cats: o.cats || [], mood: S.mood, ext: false, keptNow: [] };
+    sess = { kind: 'feed', start: now, end: now + S.mins * 60000, mins: S.mins, cats: o.cats || [], mood: S.mood, ext: false, keptNow: [] };
     try { localStorage.setItem(SKEY, JSON.stringify(sess)); } catch (e) {}
     openFeed();
+  }
+  // Game time: the same countdown, but it lives with the games (not saved if the app is closed).
+  function ensureTick() { if (!tickT) tickT = setInterval(tick, 1000); tick(); }
+  function startGameSession() {
+    var now = Date.now(); sess = { kind: 'games', start: now, end: now + S.mins * 60000, mins: S.mins, cats: [], mood: S.mood, ext: false, keptNow: [] };
+    ensureTick();
+  }
+  function endGameSession() {
+    if (banner) { banner.remove(); banner = null; }
+    sess = null; clearInterval(tickT); tickT = 0; $('dim').style.opacity = 0; renderHome();
   }
   function openFeed() {
     show('feedScreen'); try { history.pushState({ manna: 1 }, ''); } catch (e) {} var feed = $('feed'); feed.innerHTML = ''; feed.scrollTop = 0; cardsN = 0; lastCat = null; closed = false;
@@ -189,15 +209,16 @@
     if (!sess) return; var now = Date.now(), p = progress(), rem = Math.max(0, Math.ceil((sess.end - now) / 1000));
     $('fill').style.width = (p * 100) + '%'; $('orb').style.left = (p * 100) + '%'; $('left').textContent = fmt(rem);
     $('orb').style.background = p < 0.38 ? '#ffe9b0' : p < 0.74 ? '#f6b38a' : '#b9b6ff';
-    $('dim').style.opacity = E.dimAt(p, S.dim); $('feedScreen').style.setProperty('--p', p.toFixed(3)); var gl = $('gameLeft'); if (gl) gl.textContent = fmt(rem) + ' left';
+    $('dim').style.opacity = E.dimAt(p, S.dim); $('feedScreen').style.setProperty('--p', p.toFixed(3)); var gl = $('gameLeft'); if (gl) gl.textContent = fmt(rem) + ' left'; var gcl = $('gcLeft'); if (gcl) gcl.textContent = fmt(rem) + ' left';
     if (now >= sess.end && !banner) showTimeUp();
-    if (banner && now >= sess.end + 45000) land();
+    if (banner && now >= sess.end + 45000) windDown('sleep');
   }
   function showTimeUp() {
-    banner = el('div', 'timeup', '<div class="serif" style="font-size:1.2rem">That\'s your time.</div><div class="small">Come down gently. He is waiting for you.</div><div class="row">' + (sess.ext ? '' : '<button class="btn ghost" data-x>+3 minutes</button>') + '<button class="btn primary" data-l>Land</button></div>');
+    banner = el('div', 'timeup', '<div class="serif" style="font-size:1.2rem">That\'s your time.</div><div class="small">Come down gently. He is waiting for you.</div><div class="row"><button class="btn primary" data-l>Wind down for sleep</button></div><div class="row" style="margin-top:.5rem">' + (sess.ext ? '' : '<button class="btn ghost" data-x>+3 minutes</button>') + '<button class="btn ghost" data-b>Take a break</button></div>');
     banner.style.zIndex = 45; banner.style.top = 'calc(env(safe-area-inset-top, 0px) + 3.2rem)'; banner.style.bottom = 'auto'; $('layer').appendChild(banner);
-    banner.querySelector('[data-l]').onclick = land;
-    var x = banner.querySelector('[data-x]'); if (x) x.onclick = function () { sess.ext = true; sess.end = Date.now() + 3 * 60000; try { localStorage.setItem(SKEY, JSON.stringify(sess)); } catch (e) {} banner.remove(); banner = null; tick(); };
+    banner.querySelector('[data-l]').onclick = function () { windDown('sleep'); };
+    banner.querySelector('[data-b]').onclick = breakSheet;
+    var x = banner.querySelector('[data-x]'); if (x) x.onclick = function () { sess.ext = true; sess.end = Date.now() + 3 * 60000; if (sess.kind !== 'games') { try { localStorage.setItem(SKEY, JSON.stringify(sess)); } catch (e) {} } banner.remove(); banner = null; tick(); };
   }
   document.addEventListener('visibilitychange', function () { if (!document.hidden && sess) tick(); });
   // ---------- going back, the menu, refresh ----------
@@ -216,6 +237,7 @@
   function resume() {
     if (!paused) return; var p = paused; dropPaused();
     sess = p.sess; sess.end = Date.now() + p.left; sess.start = sess.end - p.total;
+    if (sess.kind === 'games') { ensureTick(); renderHome(); show('homeScreen'); return; }
     try { localStorage.setItem(SKEY, JSON.stringify(sess)); } catch (e) {}
     openFeed();
   }
@@ -247,10 +269,10 @@
     var n = makeCard(); observer.unobserve(c); c.replaceWith(n); observer.observe(n);
   }
   function openMenu() {
-    var sh = el('div', 'sheet'), box = el('div', '', '<button class="btn" data-a="new">↻  Replace this card</button><button class="btn" data-a="what">Change what I\'m scrolling</button><button class="btn" data-a="leave">‹  Pause and pick something else</button><button class="btn" data-a="land">Land now</button><button class="btn ghost" data-a="x">Keep scrolling</button>');
+    var sh = el('div', 'sheet'), box = el('div', '', '<button class="btn" data-a="new">↻  Replace this card</button><button class="btn" data-a="what">Change what I\'m scrolling</button><button class="btn" data-a="leave">‹  Pause and pick something else</button><button class="btn" data-a="break">Take a break</button><button class="btn" data-a="land">☾  Wind down for sleep</button><button class="btn ghost" data-a="x">Keep scrolling</button>');
     sh.appendChild(box); $('layer').appendChild(sh);
     sh.onclick = function (e) { if (e.target === sh) sh.remove(); };
-    box.onclick = function (e) { var b = e.target.closest('button'); if (!b) return; var k = b.dataset.a; sh.remove(); if (k === 'new') refreshCard(); else if (k === 'land') land(); else if (k === 'leave') pause(); else if (k === 'what') changeWhat(); };
+    box.onclick = function (e) { var b = e.target.closest('button'); if (!b) return; var k = b.dataset.a; sh.remove(); if (k === 'new') refreshCard(); else if (k === 'land') windDown('sleep'); else if (k === 'break') breakSheet(); else if (k === 'leave') pause(); else if (k === 'what') changeWhat(); };
   }
   $('backBtn').onclick = pause; $('menuBtn').onclick = openMenu;
   window.addEventListener('popstate', function () { if (!$('feedScreen').hidden && sess) { try { history.pushState({ manna: 1 }, ''); } catch (e) {} if (!$('layer').children.length) pause(); } });
@@ -439,9 +461,16 @@
   };
   function openGame(g, home) {
     if (V) { V.stop(); resetListen(); }
-    var ov = el('div', 'overlay', '<div class="bar"><button class="back" data-x>' + (home ? '‹ Home' : '‹ Back to the scroll') + '</button><span class="small">' + esc(g.title) + (home ? '' : ' · <span id="gameLeft"></span>') + '</span></div><div class="stagebox"></div>'); $('layer').appendChild(ov);
-    var box = ov.querySelector('.stagebox'), h = g.start(box); gameH = h;
-    ov.querySelector('[data-x]').onclick = function () { h.stop(); gameH = null; ov.remove(); };
+    if (home && !sess) startGameSession();     // games from Home run on a countdown too
+    var ov = el('div', 'overlay', '<div class="bar"><button class="back" data-x>' + (home ? '‹ Home' : '‹ Back to the scroll') + '</button><span class="small">' + esc(g.title) + (sess ? ' · <span id="gameLeft"></span>' : '') + '</span><button class="back" data-moon aria-label="Wind down or take a break" style="font-size:1.2rem">☾</button></div><div class="stagebox"></div>'); $('layer').appendChild(ov);
+    var box = ov.querySelector('.stagebox'), h = g.start(box); gameH = h; tick();
+    ov.querySelector('[data-x]').onclick = function () { h.stop(); gameH = null; ov.remove(); if (home) renderHome(); };
+    ov.querySelector('[data-moon]').onclick = windMenu;
+  }
+  function windMenu() {
+    var sh = el('div', 'sheet'), box = el('div', '', '<button class="btn" data-a="sleep">☾  Wind down for sleep</button><button class="btn" data-a="break">Take a break</button><button class="btn ghost" data-a="x">Keep going</button>');
+    sh.appendChild(box); $('layer').appendChild(sh); sh.onclick = function (e) { if (e.target === sh) sh.remove(); };
+    box.onclick = function (e) { var b = e.target.closest('button'); if (!b) return; sh.remove(); if (b.dataset.a === 'sleep') windDown('sleep'); else if (b.dataset.a === 'break') breakSheet(); };
   }
 
   // ---------- mental math ----------
@@ -528,46 +557,82 @@
     return { key: 'want:' + w.id, title: w.title, body: w.held + ' — ' + w.pray, by: 'What I Want' };
   };
 
-  // ---------- landing ----------
-  var breathTimers = [];
+  // ---------- wind-down: sleep or a break ----------
+  // Both go the same way in: the screen fades, a few breaths toward Jesus, then the hand-over (release.js), then rest.
+  // Sleep ends in the night verse and a dark "Goodnight". A break keeps your sitting (it is paused) and rests for a set time.
+  var breathTimers = [], wind = null, guide = null, relView = null, brk = null, brkT = 0;
   function clearBreath() { breathTimers.forEach(clearTimeout); breathTimers = []; }
-  function land() {
-    if (landing || (!sess && !$('landScreen').hidden)) return;
-    landing = true; $('feedScreen').classList.add('fadeout');
+  function land() { windDown('sleep'); }
+  function windDown(kind, mins) {
+    if (landing || wind) return;
+    landing = true; wind = kind; brk = { mins: mins || 10 };
+    if (banner) { banner.remove(); banner = null; }
+    document.body.classList.add('fadeout');
     setTimeout(doLand, 1100);
   }
   function doLand() {
-    if (V) V.stop(); landing = false; $('feedScreen').classList.remove('fadeout'); if (gameH) { gameH.stop(); gameH = null; }
+    if (V) V.stop(); landing = false; document.body.classList.remove('fadeout'); if (gameH) { gameH.stop(); gameH = null; }
     clearInterval(tickT); tickT = 0; if (banner) { banner.remove(); banner = null; }
     var s = sess; sess = null; try { localStorage.removeItem(SKEY); } catch (e) {}
     $('layer').innerHTML = ''; if (observer) observer.disconnect(); $('feed').innerHTML = '';
-    if (s) { S.log.push({ d: today(), t: Date.now(), mins: s.mins, landed: true }); if (S.log.length > 80) S.log.splice(0, S.log.length - 80); save(); }
+    if (wind === 'sleep') { if (s) { S.log.push({ d: today(), t: Date.now(), mins: s.mins, landed: true }); if (S.log.length > 80) S.log.splice(0, S.log.length - 80); save(); } }
+    else if (s) { paused = { sess: s, left: Math.max(60000, s.end - Date.now()), total: s.end - s.start, at: Date.now() }; try { localStorage.setItem(PKEY, JSON.stringify(paused)); } catch (e) {} }
     var mood = C.MOODS.filter(function (m) { return s && m.id === s.mood; })[0];
-    $('landLine').textContent = mood ? mood.land : 'Time to put it down. He is here.';
-    $('landA').hidden = false; $('landB').hidden = true; $('skipBreath').hidden = true; show('landScreen'); landKept = s ? s.keptNow : [];
-    var cyc = 6, i = 0, ring = $('breathe'), word = $('bword'), cnt = $('bcount'); clearBreath();
-    function inhale() { if (i >= cyc) return landB(); if (i >= 1) $('skipBreath').hidden = false; ring.className = 'breathe bgo in'; word.textContent = C.BREATH.in[i % C.BREATH.in.length]; wordIn(word); cnt.textContent = 'Breath ' + (i + 1) + ' of ' + cyc; breathTimers.push(setTimeout(exhale, 4000)); }
+    $('landLine').textContent = wind === 'break' ? 'Step away for a few minutes. He is here.' : mood ? mood.land : 'Time to put it down. He is here.';
+    $('landA').hidden = false; $('landB').hidden = true; $('landK').hidden = true; $('skipBreath').hidden = true; show('landScreen'); landKept = s ? s.keptNow : [];
+    var cyc = wind === 'break' ? 2 : 6, i = 0, ring = $('breathe'), word = $('bword'), cnt = $('bcount'); clearBreath();
+    function inhale() { if (i >= cyc) return afterBreath(); if (i >= 1) $('skipBreath').hidden = false; ring.className = 'breathe bgo in'; word.textContent = C.BREATH.in[i % C.BREATH.in.length]; wordIn(word); cnt.textContent = 'Breath ' + (i + 1) + ' of ' + cyc; breathTimers.push(setTimeout(exhale, 4000)); }
     function exhale() { ring.className = 'breathe bgo out'; word.textContent = C.BREATH.out[i % C.BREATH.out.length]; wordIn(word); i++; breathTimers.push(setTimeout(inhale, 6000)); }
     ring.className = 'breathe'; breathTimers.push(setTimeout(inhale, 900));
   }
   function wordIn(w) { w.style.animation = 'none'; void w.offsetWidth; w.style.animation = ''; }
   var landKept = [];
+  function afterBreath() {
+    clearBreath();
+    if (R && S.relGuide !== false) {
+      show('relScreen');
+      guide = R.guided($('relScreen'), { mode: wind === 'break' ? 'brk' : 'sleep', kinds: wind === 'break' ? ['g'] : ['p', 'c', 'g'], onDone: function () { if (guide) guide.stop(); guide = null; afterRelease(); } });
+    } else afterRelease();
+  }
+  function afterRelease() { show('landScreen'); $('landA').hidden = true; if (wind === 'break') breakRest(); else landB(); }
   function landB() {
-    clearBreath(); $('landA').hidden = true; $('landB').hidden = false;
+    $('landB').hidden = false; $('landK').hidden = true;
     var ref = C.NIGHT_VERSES[Math.floor(rnd() * C.NIGHT_VERSES.length)];
     $('nightH').textContent = 'Come home'; $('nightV').textContent = T.verses[ref] || ''; $('nightRef').textContent = ref + ' · Berean Standard Bible';
     var c = $('carry'); c.innerHTML = '';
     if (landKept.length) { c.appendChild(el('div', 'small', 'Carry into the night')); landKept.slice(-3).forEach(function (k) { c.appendChild(el('div', 'it', esc(k.body.length > 220 ? k.body.slice(0, 220) + '…' : k.body))); }); }
   }
-  $('skipBreath').onclick = landB;
-  $('landHome').onclick = function () {
-    var r = el('div', 'rest', '<div>Goodnight.<div style="margin-top:1.2rem;font-size:.8rem;opacity:.55">tap to close</div></div>');
-    r.onclick = function () { r.remove(); $('dim').style.opacity = 0; renderHome(); show('homeScreen'); }; $('layer').appendChild(r);
+  $('skipBreath').onclick = afterBreath;
+  function leaveWind() { wind = null; brk = null; clearInterval(brkT); brkT = 0; clearBreath(); $('dim').style.opacity = 0; }
+  $('landHome').onclick = function () { leaveWind(); renderHome(); show('homeScreen'); };
+  $('landGood').onclick = function () {
+    var v = $('nightV').textContent, ref = $('nightRef').textContent.split(' · ')[0];
+    var r = el('div', 'rest', '<div class="rest-in"><div style="font-size:1.5rem;color:#b9b6c9">Goodnight.</div><div class="rest-v">' + esc(v) + '<br><span>' + esc(ref) + '</span></div><div style="margin-top:1.6rem;font-size:.8rem;opacity:.5">tap to close</div></div>');
+    r.onclick = function () { r.remove(); leaveWind(); renderHome(); show('homeScreen'); }; $('layer').appendChild(r);
   };
-  $('restHere').onclick = function () {
-    var v = $('nightV').textContent, r = el('div', 'rest', '<div>' + esc(v) + '<div style="margin-top:1.2rem;font-size:.8rem;opacity:.55">tap to close</div></div>');
-    r.onclick = function () { r.remove(); }; $('layer').appendChild(r);
-  };
+  // A break: a quiet countdown. Your sitting is kept and waits for you.
+  function breakSheet() {
+    var sh = el('div', 'sheet'), box = el('div', '', '<p class="serif" style="font-size:1.15rem;margin:.2rem 0 .8rem">How long a break?</p><div class="chips" id="bkc"></div><p class="small" style="margin:.7rem 0 0">Your time is kept. Come back when you are ready.</p><button class="btn ghost" id="bkx" style="text-align:center">Never mind</button>');
+    sh.appendChild(box); $('layer').appendChild(sh);
+    [5, 10, 15, 30].forEach(function (n) { var b = el('button', 'chip', n + ' min'); b.type = 'button'; b.onclick = function () { sh.remove(); windDown('break', n); }; box.querySelector('#bkc').appendChild(b); });
+    box.querySelector('#bkx').onclick = function () { sh.remove(); };
+  }
+  function paintBreak() {
+    if (!brk) return; var left = Math.max(0, Math.ceil((brk.end - Date.now()) / 1000));
+    $('kClock').textContent = left ? fmt(left) : '·'; $('kH').textContent = left ? 'Rest your eyes' : 'Welcome back'; $('kSub').textContent = left ? 'He is here. There is nothing to do.' : 'Ready when you are.';
+    $('landK').classList.toggle('over', !left); if (!left) { clearInterval(brkT); brkT = 0; }
+  }
+  function breakRest() {
+    $('landK').hidden = false; brk.end = Date.now() + brk.mins * 60000; $('kBack').textContent = paused ? 'Back to it' : 'Home'; $('kHome').hidden = !paused;
+    clearInterval(brkT); brkT = setInterval(paintBreak, 500); paintBreak();
+  }
+  $('kMore').onclick = function () { if (!brk) return; brk.end = Math.max(brk.end, Date.now()) + 5 * 60000; clearInterval(brkT); brkT = setInterval(paintBreak, 500); paintBreak(); };
+  $('kBack').onclick = function () { var had = !!paused; leaveWind(); if (had) resume(); else { renderHome(); show('homeScreen'); } };
+  $('kHome').onclick = function () { leaveWind(); renderHome(); show('homeScreen'); };
+  function openRelease() {
+    if (!R) return; if (relView) relView.stop();
+    relView = R.open($('relScreen'), { onBack: function () { relView.stop(); relView = null; renderHome(); show('homeScreen'); } }); show('relScreen');
+  }
 
   // ---------- desktop navigation (no swipe on a computer) ----------
   function step(dir) { var f = $('feed'); if (!f || $('feedScreen').hidden) return; f.scrollBy({ top: dir * f.clientHeight, behavior: 'smooth' }); }
@@ -583,8 +648,8 @@
   renderHome(); show('homeScreen');
   try {
     var ss = JSON.parse(localStorage.getItem(SKEY) || 'null');
-    if (ss && Date.now() < ss.end + 45000 && Date.now() - ss.start < 4 * 3600000) { sess = ss; openFeed(); }
+    if (ss && ss.kind !== 'games' && Date.now() < ss.end + 45000 && Date.now() - ss.start < 4 * 3600000) { sess = ss; openFeed(); }
     else if (ss) localStorage.removeItem(SKEY);
   } catch (e) {}
-  window.Manna = { S: S, E: E, startSession: startSession, land: land };
+  window.Manna = { S: S, E: E, startSession: startSession, land: land, windDown: windDown, peek: function () { return { sess: sess, wind: wind, paused: paused, brk: brk }; } };
 })();
