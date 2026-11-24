@@ -66,8 +66,8 @@
   // def: { id, title, blurb, levels:{easy,normal,hard}, make(level, host, api) -> { stop(), restart() } }
   K.run = function (box, def) {
     var wrap = K.el('div', 'kit'); box.appendChild(wrap);
-    var cur = null, level = null;
-    function clear() { if (cur && cur.stop) { try { cur.stop(); } catch (e) {} } cur = null; wrap.innerHTML = ''; }
+    var cur = null, level = null, stopWatch = null;
+    function clear() { if (stopWatch) { stopWatch(); stopWatch = null; } if (cur && cur.stop) { try { cur.stop(); } catch (e) {} } cur = null; wrap.innerHTML = ''; }
     function picker() {
       clear(); level = null;
       var p = K.el('div', 'kit-pick'); p.appendChild(K.el('div', 'kit-t', def.title)); p.appendChild(K.el('div', 'kit-s', def.blurb || 'Choose how it should feel tonight.'));
@@ -91,8 +91,19 @@
         setBest: function (v, low) { return K.setBest(def.id, l, v, low); },
         say: function (t, ms) { var m = K.el('div', 'kit-msg', t); host.appendChild(m); setTimeout(function () { if (m.parentNode) m.parentNode.removeChild(m); }, ms || 1600); }
       };
-      cur = def.make(l, host, api) || {};
-      nb.hidden = !cur.restart;
+      // Games that draw on a canvas work out their layout once, from the size of their area. On a phone that area changes while you
+      // play (Safari's toolbars slide in and out, the phone turns), which would cut off the bottom controls. So when it changes,
+      // the game is set up again at the new size. Games made of ordinary page elements adjust by themselves and are left alone.
+      var made = { w: 0, h: 0 }, rt = 0, ro = null;
+      function build() { var r = host.getBoundingClientRect(); made = { w: r.width, h: r.height }; cur = def.make(l, host, api) || {}; nb.hidden = !cur.restart; }
+      function refit() {
+        rt = 0; var r = host.getBoundingClientRect();
+        if (r.width < 50 || r.height < 50 || (Math.abs(r.width - made.w) < 3 && Math.abs(r.height - made.h) < 3) || !host.querySelector('canvas')) return;
+        if (cur && cur.stop) { try { cur.stop(); } catch (e) {} } cur = null; host.innerHTML = ''; build();
+      }
+      build();
+      if (root.ResizeObserver) { ro = new root.ResizeObserver(function () { clearTimeout(rt); rt = setTimeout(refit, 180); }); ro.observe(host); }
+      stopWatch = function () { clearTimeout(rt); if (ro) ro.disconnect(); };
     }
     picker();
     return { stop: function () { clear(); if (wrap.parentNode) wrap.parentNode.removeChild(wrap); }, peek: function () { return cur && cur.peek ? cur.peek() : null; } };

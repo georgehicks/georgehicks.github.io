@@ -140,7 +140,7 @@
     }
     function drop(col, who) {
       var r = rowFor(cells, col); if (r < 0) return false; cells[r * COLS + col] = who; drops.push({ col: col, row: r, who: who, y: by - cs, vy: 0, done: false });
-      var w = winner(cells); if (w) { over = true; win = w; if (w.v === 1) { api.setBest((api.best() || 0) + 1); } msg = w.v === 1 ? 'Four in a row — you win!' : 'Four for the computer — again?'; msgT = 3; nextT = 3.2; status(); }
+      var w = winner(cells); if (w) { over = true; win = w; ws[w.v === 1 ? 'you' : 'cpu']++; w.line.forEach(function (p) { for (var z = 0; z < 8; z++) sparks.push({ x: bx + p[1] * cs + cs / 2, y: by + p[0] * cs + cs / 2, vx: (Math.random() - 0.5) * 90, vy: -Math.random() * 60, t: 0.6 + Math.random() * 0.7, r: 1.5 + Math.random() * 2, c: w.v === 1 ? '#ffe3a0' : '#ffb0c0' }); }); if (w.v === 1) { api.setBest((api.best() || 0) + 1); } msg = w.v === 1 ? 'Four in a row — you win!' : 'Four for the computer — again?'; msgT = 3; nextT = 3.2; status(); }
       else if (cells.every(Boolean)) { over = true; msg = 'A full board — a draw'; msgT = 2.5; nextT = 2.8; }
       return true;
     }
@@ -182,20 +182,50 @@
       if (over) { nextT -= dt; if (nextT <= 0) newGame(); return; }
       if (turn === 2 && drops.every(function (d) { return d.done; })) { thinkT -= dt; if (thinkT <= 0) { var col = think(); drop(col, 2); if (!over) { turn = 1; msg = 'Your drop'; msgT = 0.9; } } }
     }
+    // ---- looks: a lit table, a glossy blue board with deep holes and little feet, and chunky grooved discs ----
+    var ws = { you: 0, cpu: 0 }, sparks = [], bgc = document.createElement('canvas');
+    (function () {
+      bgc.width = Math.round(W * 2); bgc.height = Math.round(H * 2); var g = bgc.getContext('2d'); g.scale(2, 2);
+      var v = g.createLinearGradient(0, 0, 0, H); v.addColorStop(0, '#0b0f24'); v.addColorStop(1, '#1b1238'); g.fillStyle = v; g.fillRect(0, 0, W, H);
+      var rg = g.createRadialGradient(W / 2, H * 0.42, 10, W / 2, H * 0.42, Math.max(W, H) * 0.62); rg.addColorStop(0, 'rgba(110,130,230,.30)'); rg.addColorStop(1, 'rgba(0,0,0,0)'); g.fillStyle = rg; g.fillRect(0, 0, W, H);
+      var fl = g.createLinearGradient(0, H * 0.82, 0, H); fl.addColorStop(0, 'rgba(0,0,0,0)'); fl.addColorStop(1, 'rgba(0,0,0,.35)'); g.fillStyle = fl; g.fillRect(0, H * 0.82, W, H * 0.18);
+    })();
+    function rrect(x, y, w, h, r) { ctx.beginPath(); ctx.moveTo(x + r, y); ctx.arcTo(x + w, y, x + w, y + h, r); ctx.arcTo(x + w, y + h, x, y + h, r); ctx.arcTo(x, y + h, x, y, r); ctx.arcTo(x, y, x + w, y, r); ctx.closePath(); }
+    function chip(x, y, who, rad, glow) {
+      ctx.save(); if (glow) { ctx.shadowColor = who === 1 ? 'rgba(255,215,130,.9)' : 'rgba(255,120,150,.9)'; ctx.shadowBlur = glow; }
+      var rim = ctx.createLinearGradient(x, y - rad, x, y + rad); rim.addColorStop(0, who === 1 ? '#f3c76d' : '#e46a88'); rim.addColorStop(1, who === 1 ? '#b87a1f' : '#9c2d50'); ctx.fillStyle = rim; ctx.beginPath(); ctx.arc(x, y, rad, 0, 7); ctx.fill(); ctx.shadowBlur = 0;
+      var g = ctx.createRadialGradient(x - rad * 0.3, y - rad * 0.3, rad * 0.05, x, y, rad * 0.9); if (who === 1) { g.addColorStop(0, '#fff0bd'); g.addColorStop(0.55, '#f0b94f'); g.addColorStop(1, '#cf8f2e'); } else { g.addColorStop(0, '#ffb3c2'); g.addColorStop(0.55, '#e8587c'); g.addColorStop(1, '#b8385c'); }
+      ctx.fillStyle = g; ctx.beginPath(); ctx.arc(x, y, rad * 0.86, 0, 7); ctx.fill();
+      ctx.strokeStyle = 'rgba(0,0,0,.2)'; ctx.lineWidth = Math.max(1, rad * 0.07); ctx.beginPath(); ctx.arc(x, y, rad * 0.58, 0, 7); ctx.stroke();
+      ctx.strokeStyle = 'rgba(255,255,255,.28)'; ctx.beginPath(); ctx.arc(x + rad * 0.02, y + rad * 0.04, rad * 0.55, 0.2, 1.5); ctx.stroke();
+      ctx.fillStyle = 'rgba(255,255,255,.5)'; ctx.beginPath(); ctx.ellipse(x - rad * 0.35, y - rad * 0.4, rad * 0.22, rad * 0.12, -0.7, 0, 7); ctx.fill(); ctx.restore();
+    }
+    function disc(x, y, who) { chip(x, y, who, cs * 0.4, 0); }
     function draw() {
-      var bgc = ctx.createLinearGradient(0, 0, 0, H); bgc.addColorStop(0, '#0d1126'); bgc.addColorStop(1, '#171236'); ctx.fillStyle = bgc; ctx.fillRect(0, 0, W, H);
-      if (hover >= 0 && hover < COLS && turn === 1 && !over) { ctx.fillStyle = 'rgba(242,200,121,.14)'; ctx.fillRect(bx + hover * cs, by - 6, cs, cs * ROWS + 12); ctx.fillStyle = 'rgba(242,200,121,.75)'; ctx.beginPath(); ctx.arc(bx + hover * cs + cs / 2, by - cs * 0.45, cs * 0.3, 0, 7); ctx.fill(); }
+      ctx.drawImage(bgc, 0, 0, W, H);
+      var bw = cs * COLS, bh = cs * ROWS, act = turn === 1 && !over ? 1 : 2, py = Math.max(34, by - cs * 1.75);
+      // who is who: two pills with the wins this visit; the one whose turn it is glows
+      [[1, 'You', ws.you, W / 2 - cs * 1.5], [2, 'Computer', ws.cpu, W / 2 + cs * 1.5]].forEach(function (p) {
+        var on = !over && act === p[0]; ctx.save(); rrect(p[3] - cs * 1.25, py - 18, cs * 2.5, 36, 18); ctx.fillStyle = on ? 'rgba(255,255,255,.12)' : 'rgba(255,255,255,.05)'; ctx.fill(); ctx.strokeStyle = on ? (p[0] === 1 ? 'rgba(255,215,130,.85)' : 'rgba(255,130,160,.85)') : 'rgba(255,255,255,.1)'; ctx.lineWidth = 1.5; ctx.stroke(); ctx.restore();
+        chip(p[3] - cs * 0.86, py, p[0], 10, on ? 10 : 0); ctx.font = '600 13px -apple-system,sans-serif'; ctx.textAlign = 'left'; ctx.fillStyle = on ? '#fff' : '#9aa3bf'; ctx.fillText(p[1] + ' ' + p[2], p[3] - cs * 0.86 + 17, py + 4.5);
+      });
+      if (hover >= 0 && hover < COLS && turn === 1 && !over) { var hg = ctx.createLinearGradient(0, by, 0, by + bh); hg.addColorStop(0, 'rgba(255,225,150,.20)'); hg.addColorStop(1, 'rgba(255,225,150,.04)'); ctx.fillStyle = hg; ctx.fillRect(bx + hover * cs, by - 6, cs, bh + 12); ctx.globalAlpha = 0.9; chip(bx + hover * cs + cs / 2, by - cs * 0.45, 1, cs * 0.34, 14); ctx.globalAlpha = 1; }
+      // the board's shadow on the table, then a dark backing so the holes look deep
+      ctx.save(); ctx.shadowColor = 'rgba(0,0,10,.6)'; ctx.shadowBlur = 26; ctx.shadowOffsetY = 12; rrect(bx - 10, by - 10, bw + 20, bh + 20, 16); ctx.fillStyle = '#2c418f'; ctx.fill(); ctx.restore();
+      ctx.save(); ctx.fillStyle = '#1a2260'; rrect(bx - 4, by + bh + 8, cs * 0.7, 14, 5); ctx.fill(); rrect(bx + bw - cs * 0.7 + 4, by + bh + 8, cs * 0.7, 14, 5); ctx.fill(); ctx.restore();
+      ctx.fillStyle = 'rgba(7,10,30,.75)'; ctx.fillRect(bx, by, bw, bh);
       // discs behind the board (falling or landed)
       for (var r = 0; r < ROWS; r++) for (var q = 0; q < COLS; q++) { var v = cells[r * COLS + q]; if (!v) continue; var d = drops.filter(function (dd) { return dd.col === q && dd.row === r; })[0], y = d ? d.y : by + r * cs; disc(bx + q * cs + cs / 2, y + cs / 2, v); }
-      // the board with holes
-      ctx.save(); ctx.beginPath(); ctx.rect(bx - 8, by - 8, cs * COLS + 16, cs * ROWS + 16); for (r = 0; r < ROWS; r++) for (q = 0; q < COLS; q++) { ctx.moveTo(bx + q * cs + cs / 2 + cs * 0.4, by + r * cs + cs / 2); ctx.arc(bx + q * cs + cs / 2, by + r * cs + cs / 2, cs * 0.4, 0, 6.2832, true); }
-      var bg2 = ctx.createLinearGradient(0, by, 0, by + cs * ROWS); bg2.addColorStop(0, '#3a56b0'); bg2.addColorStop(1, '#2a3f86'); ctx.fillStyle = bg2; ctx.fill('evenodd'); ctx.restore();
-      ctx.strokeStyle = 'rgba(255,255,255,.12)'; ctx.lineWidth = 2; for (r = 0; r < ROWS; r++) for (q = 0; q < COLS; q++) { ctx.beginPath(); ctx.arc(bx + q * cs + cs / 2, by + r * cs + cs / 2, cs * 0.4, 0, 7); ctx.stroke(); }
-      if (win) { ctx.strokeStyle = 'rgba(255,255,255,' + (0.6 + 0.4 * Math.sin(clock * 8)) + ')'; ctx.lineWidth = 4; win.line.forEach(function (p) { ctx.beginPath(); ctx.arc(bx + p[1] * cs + cs / 2, by + p[0] * cs + cs / 2, cs * 0.34, 0, 7); ctx.stroke(); }); }
-      if (turn === 2 && !over) { ctx.font = '15px -apple-system,sans-serif'; ctx.textAlign = 'center'; ctx.fillStyle = 'rgba(220,226,245,.85)'; ctx.fillText('Thinking' + '...'.slice(0, 1 + Math.floor(clock * 3) % 3), W / 2, by - cs * 0.9); }
-      if (msgT > 0 && msg) { ctx.font = '21px Georgia,serif'; ctx.textAlign = 'center'; ctx.lineWidth = 5; ctx.strokeStyle = 'rgba(5,8,16,' + Math.min(0.85, msgT) + ')'; ctx.strokeText(msg, W / 2, by + cs * ROWS + 44, W - 24); ctx.fillStyle = 'rgba(252,246,228,' + Math.min(1, msgT * 1.5) + ')'; ctx.fillText(msg, W / 2, by + cs * ROWS + 44, W - 24); }
+      // the board face with round holes
+      ctx.save(); rrect(bx - 10, by - 10, bw + 20, bh + 20, 16); for (r = 0; r < ROWS; r++) for (q = 0; q < COLS; q++) { ctx.moveTo(bx + q * cs + cs / 2 + cs * 0.4, by + r * cs + cs / 2); ctx.arc(bx + q * cs + cs / 2, by + r * cs + cs / 2, cs * 0.4, 0, 6.2832, true); }
+      var bg2 = ctx.createLinearGradient(bx, by, bx + bw, by + bh); bg2.addColorStop(0, '#5272d6'); bg2.addColorStop(0.5, '#3a56b8'); bg2.addColorStop(1, '#2a3f90'); ctx.fillStyle = bg2; ctx.fill('evenodd'); ctx.restore();
+      ctx.save(); rrect(bx - 9, by - 9, bw + 18, bh + 18, 15); ctx.strokeStyle = 'rgba(255,255,255,.22)'; ctx.lineWidth = 1.5; ctx.stroke(); ctx.restore();
+      for (r = 0; r < ROWS; r++) for (q = 0; q < COLS; q++) { var hx = bx + q * cs + cs / 2, hy = by + r * cs + cs / 2; ctx.lineWidth = 2.5; ctx.strokeStyle = 'rgba(8,14,56,.6)'; ctx.beginPath(); ctx.arc(hx, hy, cs * 0.4 + 1, 0, 7); ctx.stroke(); ctx.lineWidth = 1.5; ctx.strokeStyle = 'rgba(255,255,255,.2)'; ctx.beginPath(); ctx.arc(hx, hy, cs * 0.4 + 2.5, 0.25, 1.35); ctx.stroke(); }
+      if (win) { var pulse = 0.5 + 0.5 * Math.sin(clock * 7); win.line.forEach(function (p) { var wx = bx + p[1] * cs + cs / 2, wy = by + p[0] * cs + cs / 2; ctx.save(); ctx.shadowColor = '#fff'; ctx.shadowBlur = 10 + 12 * pulse; ctx.strokeStyle = 'rgba(255,255,255,' + (0.7 + 0.3 * pulse) + ')'; ctx.lineWidth = 4; ctx.beginPath(); ctx.arc(wx, wy, cs * 0.34, 0, 7); ctx.stroke(); ctx.restore(); }); }
+      ctx.globalCompositeOperation = 'lighter'; sparks = sparks.filter(function (s) { return s.t > 0; }); sparks.forEach(function (s) { s.t -= 1 / 60; s.x += s.vx / 60; s.y += s.vy / 60; s.vy += 0.6; ctx.globalAlpha = Math.max(0, s.t); ctx.fillStyle = s.c; ctx.beginPath(); ctx.arc(s.x, s.y, s.r, 0, 7); ctx.fill(); }); ctx.globalAlpha = 1; ctx.globalCompositeOperation = 'source-over';
+      if (turn === 2 && !over) { ctx.font = '15px -apple-system,sans-serif'; ctx.textAlign = 'center'; ctx.fillStyle = 'rgba(220,226,245,.85)'; ctx.fillText('Thinking' + '...'.slice(0, 1 + Math.floor(clock * 3) % 3), W / 2, by - cs * 0.55); }
+      if (msgT > 0 && msg) { ctx.font = '21px Georgia,serif'; ctx.textAlign = 'center'; ctx.lineWidth = 5; ctx.strokeStyle = 'rgba(5,8,16,' + Math.min(0.85, msgT) + ')'; ctx.strokeText(msg, W / 2, by + bh + 52, W - 24); ctx.fillStyle = 'rgba(252,246,228,' + Math.min(1, msgT * 1.5) + ')'; ctx.fillText(msg, W / 2, by + bh + 52, W - 24); }
     }
-    function disc(x, y, who) { var g = ctx.createRadialGradient(x - cs * 0.12, y - cs * 0.12, cs * 0.05, x, y, cs * 0.4); if (who === 1) { g.addColorStop(0, '#ffe9a8'); g.addColorStop(1, '#d9a24a'); } else { g.addColorStop(0, '#ff9aaa'); g.addColorStop(1, '#c4506f'); } ctx.fillStyle = g; ctx.beginPath(); ctx.arc(x, y, cs * 0.4, 0, 7); ctx.fill(); }
     newGame();
     var stop = K.loop(function (dt) { if (alive) { update(dt); draw(); } });
     return { stop: function () { alive = false; stop(); }, restart: newGame, peek: function () { return { cells: cells, turn: turn, over: over, tap: tap, drops: drops, win: win }; } };

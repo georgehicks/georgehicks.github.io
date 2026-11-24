@@ -104,3 +104,10 @@ Every readable card has a recorded clip: `voice/<hash>.mp3` (mono, 24 kHz, 32 kb
 - Service worker keeps the clips in their own cache `manna-voice` (cache-first, survives version bumps).
 - clips.js `texts()` mirrors the `_say` lines in app.js. **If you change a `_say` line or add a card type, change `texts()` too, then rebuild.**
 - Rebuild: `pip3 install lameenc`, then `python3 _scripts/voice-build/server.py`, then open http://127.0.0.1:8767/_scripts/voice-build/generate.html in a WebGPU browser (Chrome). It downloads the model (fp32) into that browser, skips clips that exist, and writes MP3s through the server. About 25-30 minutes for everything on an M4. Commit the new files in `BloomScroll/voice/`; regenerating an existing clip adds a full copy to git history, so only delete a clip if its text changed.
+
+## v28 — game face-lifts, and games re-fit when the screen height changes
+- **Star Watch**: pixel-art invaders (squid/crab/octopus, two flap frames, cached with a glow), a proper fighter with engine flame, nebula + far planet background (painted once into an offscreen canvas), glowing bolts, plasma enemy shots, pulsing power-up orbs, explosions, ship icons for lives.
+- **Four in a Row**: lit table, glossy board with deep holes and feet, grooved chunky discs, "You / Computer" pills (wins this visit, glowing for whose turn), win sparkles. `clips`-style offscreen background.
+- **Solitaire**: richer felt, lattice card backs, paper-textured faces, framed court cards. **Checkers**: wooden frame and squares, ringed pieces, glowing move dots.
+- **Re-fit on resize** (gamekit.js `K.run`): a ResizeObserver on the game area; when its size changes (Safari toolbars sliding in/out on an iPhone, rotation) any game that draws on a canvas is set up again at the new size. Before, canvas games measured once and cut off their bottom controls after the height changed. DOM-based games (Sudoku, Checkers, 2048…) are left alone. Support floor is an iPhone 15 (393 x 659 with toolbars up to 393 x 852).
+- Hold the Pass: its status line (gold / wave timer / lives) was half hidden behind the tower bar (reserved 54px, bar is ~60px) — now 64.

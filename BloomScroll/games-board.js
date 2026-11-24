@@ -10,18 +10,20 @@
   // =====================================================================================================================
   function checkers(level, host, api) {
     K.css('checkers', '' +
-      '.ck-wrap{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:.6rem}' +
-      '.ck-board{display:grid;grid-template-columns:repeat(8,1fr);border-radius:10px;overflow:hidden;box-shadow:0 6px 24px rgba(0,0,0,.5);border:3px solid #2b3252}' +
-      '.ck-sq{position:relative;border:none;padding:0;background:#394066;display:flex;align-items:center;justify-content:center}.ck-sq.d{background:#1b2036}' +
-      '.ck-sq.dst::after{content:"";width:34%;height:34%;border-radius:50%;background:rgba(155,232,181,.85);position:absolute}' +
-      '.ck-sq.last{box-shadow:inset 0 0 0 3px rgba(242,200,121,.45)}.ck-sq.sel{box-shadow:inset 0 0 0 3px var(--sage,#9BE8B5)}' +
-      '.ck-p{width:78%;height:78%;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:1.05em;line-height:1;box-shadow:0 3px 0 rgba(0,0,0,.45),inset 0 2px 3px rgba(255,255,255,.35)}' +
-      '.ck-p.h{background:radial-gradient(circle at 35% 30%,#ffe9b0,#e0a94c);color:#5a3d06}.ck-p.a{background:radial-gradient(circle at 35% 30%,#e9788a,#8b2b44);color:#ffd6dc}' +
+      '.ck-wrap{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:.6rem;background:radial-gradient(ellipse at 50% 38%,rgba(150,105,60,.22),transparent 68%)}' +
+      '.ck-board{display:grid;grid-template-columns:repeat(8,1fr);border-radius:12px;overflow:hidden;border:9px solid #6b4424;box-shadow:0 0 0 2px #2c1a0b,0 16px 34px rgba(0,0,0,.65),inset 0 0 0 2px rgba(255,220,160,.28)}' +
+      '.ck-sq{position:relative;border:none;padding:0;background:linear-gradient(135deg,#ecd5a8,#d8b985);display:flex;align-items:center;justify-content:center}' +
+      '.ck-sq.d{background:linear-gradient(135deg,#7a5230,#593a1f);box-shadow:inset 0 0 8px rgba(0,0,0,.35)}' +
+      '.ck-sq.dst::after{content:"";width:36%;height:36%;border-radius:50%;background:radial-gradient(circle at 35% 30%,#d9ffe6,#8fe0ae);box-shadow:0 0 10px 2px rgba(155,232,181,.7);position:absolute}' +
+      '.ck-sq.last{box-shadow:inset 0 0 0 3px rgba(242,200,121,.6),inset 0 0 12px rgba(242,200,121,.35)}.ck-sq.sel{box-shadow:inset 0 0 0 3px var(--sage,#9BE8B5),inset 0 0 14px rgba(155,232,181,.4)}' +
+      '.ck-p{position:relative;width:80%;height:80%;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:1.05em;line-height:1;box-shadow:0 3px 0 rgba(0,0,0,.5),0 6px 9px rgba(0,0,0,.4),inset 0 2px 3px rgba(255,255,255,.45),inset 0 -3px 5px rgba(0,0,0,.25)}' +
+      '.ck-p::before{content:"";position:absolute;inset:17%;border-radius:50%;border:2px solid rgba(0,0,0,.2);box-shadow:inset 0 0 0 1px rgba(255,255,255,.18)}' +
+      '.ck-p.h{background:radial-gradient(circle at 34% 28%,#fff3cc 0,#f4cc6e 36%,#c98c2b 100%);color:#5a3d06}.ck-p.a{background:radial-gradient(circle at 34% 28%,#ffb0bd 0,#e0566f 38%,#8b2342 100%);color:#ffe0e5}' +
       '.ck-p.can{animation:ckpulse 1.4s ease-in-out infinite}@keyframes ckpulse{50%{transform:scale(1.08);filter:brightness(1.18)}}');
     var depth = { easy: 1, normal: 4, hard: 9 }[level], rnd = { easy: 0.4, normal: 0.06, hard: 0 }[level], tms = { easy: 100, normal: 250, hard: 750 }[level];
     var wrap = el('div', 'ck-wrap'), boardEl = el('div', 'ck-board'), bar = el('div', 'kit-bar'); host.appendChild(wrap); wrap.appendChild(boardEl); wrap.appendChild(bar);
-    var hr = host.getBoundingClientRect(), S = Math.floor(Math.min(hr.width - 16, hr.height - 84) / 8), alive = true;
-    boardEl.style.width = boardEl.style.height = (S * 8 + 6) + 'px'; boardEl.style.fontSize = (S * 0.5) + 'px';
+    var hr = host.getBoundingClientRect(), S = Math.floor(Math.min(hr.width - 40, hr.height - 108) / 8), alive = true;
+    boardEl.style.width = boardEl.style.height = (S * 8 + 18) + 'px'; boardEl.style.fontSize = (S * 0.5) + 'px';
     var b, turn, sel, cands, prog, work, last, busy, hist, quiet, over, timer = 0;
 
     function dirsFor(p) { var fw = p > 0 ? -1 : 1, d = [[fw, -1], [fw, 1]]; if (Math.abs(p) === 2) d.push([-fw, -1], [-fw, 1]); return d; }

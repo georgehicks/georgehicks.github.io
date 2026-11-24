@@ -8,18 +8,21 @@
 
   function solitaire(level, host, api) {
     K.css('solitaire', '' +
-      '.sc-wrap{position:absolute;inset:0;background:radial-gradient(ellipse at 50% 20%,#17402f,#0c2219)}' +
-      '.sc-layer{position:absolute;left:0;right:0;top:0;bottom:54px;touch-action:none}' +
-      '.sc-slot{position:absolute;border:1.5px dashed rgba(255,255,255,.18);border-radius:7px;display:flex;align-items:center;justify-content:center;color:rgba(255,255,255,.25);font-size:1.3rem}' +
-      '.sc-card{position:absolute;border-radius:7px;box-shadow:0 1px 3px rgba(0,0,0,.5);transition:left .18s ease,top .18s ease;font-family:var(--sans);touch-action:none}' +
-      '.sc-card.up{background:#f6f1e4;color:#1a1a22}.sc-card.up.red{color:#c0283f}' +
-      '.sc-card.dn{background:repeating-linear-gradient(45deg,#2c3f86 0 5px,#243575 5px 10px);border:2px solid #e6e0cc}' +
-      '.sc-card .r{position:absolute;left:5%;top:2%;font-weight:700;line-height:1.1}.sc-card .s{position:absolute;right:6%;top:2%;line-height:1.1}.sc-card .c{position:absolute;left:0;right:0;bottom:6%;text-align:center;line-height:1}' +
-      '.sc-card.drag{transition:none;z-index:900!important;box-shadow:0 8px 18px rgba(0,0,0,.55)}.sc-card.hint{box-shadow:0 0 0 3px var(--gold),0 0 18px var(--gold)}' +
+      '.sc-wrap{position:absolute;inset:0;background:radial-gradient(ellipse at 50% 18%,#1e5440,#0f2d21 62%,#091a13);box-shadow:inset 0 0 70px rgba(0,0,0,.55)}' +
+      '.sc-wrap::before{content:"";position:absolute;inset:0;background:repeating-radial-gradient(circle at 20% 30%,rgba(255,255,255,.018) 0 1px,transparent 1px 3px);pointer-events:none}' +
+      '.sc-layer{position:absolute;left:0;right:0;top:0;bottom:62px;touch-action:none}' +
+      '.sc-slot{position:absolute;border:1.5px solid rgba(255,255,255,.12);background:rgba(0,0,0,.16);box-shadow:inset 0 2px 6px rgba(0,0,0,.35);border-radius:8px;display:flex;align-items:center;justify-content:center;color:rgba(255,255,255,.3);font-size:1.3rem}' +
+      '.sc-card{position:absolute;border-radius:8px;box-shadow:0 1px 2px rgba(0,0,0,.55),0 2px 6px rgba(0,0,0,.25);transition:left .18s ease,top .18s ease;font-family:var(--sans);touch-action:none;overflow:hidden}' +
+      '.sc-card.up{background:linear-gradient(160deg,#fffef9,#f1e9d4);color:#1c1c26;border:1px solid rgba(60,40,10,.18)}.sc-card.up.red{color:#c4263f}' +
+      '.sc-card.dn{background:radial-gradient(circle at 50% 50%,rgba(242,200,121,.5) 0 5%,transparent 6%),repeating-linear-gradient(45deg,#33479a 0 4px,#26387f 4px 8px),#26387f;border:3px solid #f1eadb;box-shadow:inset 0 0 0 2px #1b2a66,0 1px 2px rgba(0,0,0,.55),0 2px 6px rgba(0,0,0,.25)}' +
+      '.sc-card .r{position:absolute;left:6%;top:1%;font-weight:700;line-height:1.1}.sc-card .s{position:absolute;right:7%;top:2%;line-height:1.1;opacity:.9}.sc-card .c{position:absolute;left:0;right:0;bottom:5%;text-align:center;line-height:1}' +
+      '.sc-card .fr{position:absolute;left:14%;right:14%;top:30%;bottom:8%;border:1.5px solid currentColor;border-radius:5px;opacity:.45;background:repeating-linear-gradient(135deg,transparent 0 5px,currentColor 5px 6px);background-blend-mode:soft-light}' +
+      '.sc-card.court .c{bottom:12%;z-index:1;text-shadow:0 0 6px #fffdf4,0 0 6px #fffdf4}.sc-card .cl{position:absolute;left:0;right:0;top:36%;text-align:center;font-family:var(--serif);font-weight:700;z-index:1;line-height:1;text-shadow:0 0 6px #fffdf4,0 0 6px #fffdf4}' +
+      '.sc-card.drag{transition:none;z-index:900!important;box-shadow:0 10px 22px rgba(0,0,0,.6)}.sc-card.hint{box-shadow:0 0 0 3px var(--gold),0 0 18px var(--gold)}' +
       '.sc-card.wig{animation:scwig .25s}@keyframes scwig{25%{transform:translateX(-4px)}75%{transform:translateX(4px)}}');
     var draw3 = level === 'hard', canUndo = level !== 'hard', canHint = level === 'easy';
     var wrap = el('div', 'sc-wrap'), layer = el('div', 'sc-layer'), bar = el('div', 'kit-bar'); bar.style.cssText = 'position:absolute;left:0;right:0;bottom:0;'; host.appendChild(wrap); wrap.appendChild(layer); wrap.appendChild(bar);
-    var hr = host.getBoundingClientRect(), W = hr.width, H = hr.height - 54, gap = 4, side = 5, cw = Math.floor((W - side * 2 - gap * 6) / 7), ch = Math.floor(cw * 1.4), topY = 6, tabY = topY + ch + 12;
+    var hr = host.getBoundingClientRect(), W = hr.width, H = hr.height - 62, gap = 4, side = 5, cw = Math.floor((W - side * 2 - gap * 6) / 7), ch = Math.floor(cw * 1.4), topY = 6, tabY = topY + ch + 12;
     var st, byId = [], els = [], hist, moves, over, wins = 0, alive = true, slots = [], hintId = -1, autoT = 0;
     var fs = cw * 0.3;
 
@@ -37,8 +40,8 @@
     }
     function addSlot(x, y, t) { var s = el('div', 'sc-slot', t); s.style.cssText += 'left:' + x + 'px;top:' + y + 'px;width:' + cw + 'px;height:' + ch + 'px'; layer.appendChild(s); slots.push(s); if (t) s.addEventListener('click', function () { drawStock(); }); }
     function face(i) {
-      var c = byId[i], d = els[i]; d.className = 'sc-card ' + (c.up ? 'up' + (red(c) ? ' red' : '') : 'dn') + (hintId === i ? ' hint' : '');
-      if (c.up) { if (!d.firstChild) d.innerHTML = '<span class="r">' + RANKS[c.r] + '</span><span class="s">' + SUITS[c.s] + '</span><span class="c" style="font-size:' + (cw * 0.55) + 'px">' + SUITS[c.s] + '</span>'; } else d.innerHTML = '';
+      var c = byId[i], d = els[i]; d.className = 'sc-card ' + (c.up ? 'up' + (red(c) ? ' red' : '') + (c.r > 10 ? ' court' : '') : 'dn') + (hintId === i ? ' hint' : '');
+      if (c.up) { if (!d.firstChild) d.innerHTML = '<span class="r">' + RANKS[c.r] + '</span><span class="s">' + SUITS[c.s] + '</span>' + (c.r > 10 ? '<span class="fr"></span><span class="cl" style="font-size:' + (cw * 0.5) + 'px">' + RANKS[c.r] + '</span>' : '') + '<span class="c" style="font-size:' + (cw * (c.r > 10 ? 0.42 : 0.55)) + 'px">' + SUITS[c.s] + '</span>'; } else d.innerHTML = '';
     }
     function place(c, x, y, z) { var d = els[c.id]; d.style.left = x + 'px'; d.style.top = y + 'px'; d.style.zIndex = z; face(c.id); }
     function layout(instant) {
