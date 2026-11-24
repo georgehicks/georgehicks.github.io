@@ -38,9 +38,9 @@
     }
     function guide(vx, vy, n) { var pts = [], x = launch.x, y = launch.y, dt = 1 / 40; for (var k = 0; k < n; k++) { vy += g * dt; x += vx * dt; y += vy * dt; if (k % 2 === 0) pts.push([x, y]); if (y > floorY) break; } return pts; }
     function pt(e) { var r = cv.getBoundingClientRect(); return [e.clientX - r.left, e.clientY - r.top]; }
-    cv.addEventListener('pointerdown', function (e) { if (state !== 'aim') return; var p = pt(e); if (Math.hypot(p[0] - launch.x, p[1] - launch.y) < W * 0.28) { aim = { px: p[0], py: p[1] }; try { cv.setPointerCapture(e.pointerId); } catch (x) {} } });
+    cv.addEventListener('pointerdown', function (e) { if (state !== 'aim') return; var p = pt(e); aim = { sx: p[0], sy: p[1], px: p[0], py: p[1] }; try { cv.setPointerCapture(e.pointerId); } catch (x) {} });
     cv.addEventListener('pointermove', function (e) { if (!aim) return; var p = pt(e); aim.px = p[0]; aim.py = p[1]; });
-    function pull() { if (!aim) return [0, 0]; var dx = launch.x - aim.px, dy = launch.y - aim.py, l = Math.hypot(dx, dy); if (l > pullMax) { dx *= pullMax / l; dy *= pullMax / l; } return [dx, dy]; }
+    function pull() { if (!aim) return [0, 0]; var pl = K.pull(aim.sx, aim.sy, aim.px, aim.py, W, H, pullMax); return [pl.dx, pl.dy]; }   // drag back from anywhere; the room before the screen edge counts as a full pull
     function release() {
       if (!aim) return; var p = pull(); aim = null; if (Math.hypot(p[0], p[1]) < 16 || p[0] <= 0 && Math.abs(p[1]) < 10) return;
       ball.vx = p[0] * kv; ball.vy = p[1] * kv; ball.vr = (Math.random() < 0.5 ? -1 : 1) * rand(4, 9); state = 'fly'; t0 = t;
@@ -136,17 +136,17 @@
       if (ball && ball.y > top && ball.x > hoop.L && ball.x < hoop.R && ball.y < floorY) { ctx.save(); ctx.beginPath(); ctx.rect(hoop.L, top, bw0, floorY - top); ctx.clip(); drawBall(); ctx.restore(); }
       // aiming band and guide
       if (aim && state === 'aim') {
-        var p = pull(), bx = launch.x - p[0], by = launch.y - p[1];
+        var p = pull(), bx = Math.max(R0 + 6, launch.x - p[0]), by = Math.min(H - R0 - 6, launch.y - p[1]);   // the drawn paper stays on screen
         ctx.strokeStyle = 'rgba(242,200,121,.8)'; ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(launch.x - 10, launch.y + 6); ctx.lineTo(bx, by); ctx.lineTo(launch.x + 10, launch.y + 6); ctx.stroke();
         if (P.guide) { var pts = guide(p[0] * kv, p[1] * kv, P.guide === 2 ? 70 : 30); ctx.fillStyle = 'rgba(255,255,255,.7)'; pts.forEach(function (q, k) { ctx.globalAlpha = 1 - k / (pts.length + 2); ctx.beginPath(); ctx.arc(q[0], q[1], 2.4, 0, 7); ctx.fill(); }); ctx.globalAlpha = 1; }
         ctx.fillStyle = 'rgba(255,255,255,.12)'; ctx.fillRect(launch.x - 44, launch.y + 24, 88 * Math.hypot(p[0], p[1]) / pullMax, 4);
       }
       ctx.textAlign = 'center';
-      if (state === 'aim' && !aim && !score && !streak) { ctx.fillStyle = 'rgba(236,232,223,.8)'; ctx.font = '15px Georgia,serif'; ctx.fillText('Pull the paper back and let go', W / 2, floorY + (H - floorY) * 0.5); ctx.fillStyle = 'rgba(236,232,223,.5)'; ctx.font = '12px sans-serif'; ctx.fillText(P.guide ? 'The dotted line ignores the fans' : 'Watch the fans — no guide on Hard', W / 2, floorY + (H - floorY) * 0.5 + 20); }
+      if (state === 'aim' && !aim && !score && !streak) { ctx.fillStyle = 'rgba(236,232,223,.8)'; ctx.font = '15px Georgia,serif'; ctx.fillText('Drag back from anywhere and let go', W / 2, floorY + (H - floorY) * 0.5); ctx.fillStyle = 'rgba(236,232,223,.5)'; ctx.font = '12px sans-serif'; ctx.fillText(P.guide ? 'The dotted line ignores the fans' : 'Watch the fans — no guide on Hard', W / 2, floorY + (H - floorY) * 0.5 + 20); }
       if (msgT > 0) { ctx.fillStyle = 'rgba(242,200,121,' + Math.min(1, msgT) + ')'; ctx.font = '26px Georgia,serif'; ctx.fillText(msg, W / 2, H * 0.4); }
     }
     function drawBall() {
-      var x = aim && state === 'aim' ? launch.x - pull()[0] : ball.x, y = aim && state === 'aim' ? launch.y - pull()[1] : ball.y;
+      var x = aim && state === 'aim' ? Math.max(R0 + 6, launch.x - pull()[0]) : ball.x, y = aim && state === 'aim' ? Math.min(H - R0 - 6, launch.y - pull()[1]) : ball.y;
       ctx.save(); ctx.translate(x, y); ctx.rotate(ball.rot); ctx.fillStyle = '#f4f0e4'; ctx.beginPath();
       for (var k = 0; k < 9; k++) { var a = k / 9 * 6.283, rr = R0 * (0.88 + ((k * 7) % 5) / 22); ctx.lineTo(Math.cos(a) * rr, Math.sin(a) * rr); } ctx.closePath(); ctx.fill();
       ctx.strokeStyle = 'rgba(80,80,100,.45)'; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(-R0 * 0.6, -R0 * 0.2); ctx.lineTo(R0 * 0.1, R0 * 0.5); ctx.moveTo(-R0 * 0.1, -R0 * 0.6); ctx.lineTo(R0 * 0.55, -R0 * 0.1); ctx.moveTo(-R0 * 0.3, R0 * 0.3); ctx.lineTo(R0 * 0.3, R0 * 0.1); ctx.stroke(); ctx.restore();

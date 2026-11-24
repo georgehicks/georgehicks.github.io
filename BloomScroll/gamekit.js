@@ -33,6 +33,18 @@
     };
     o.size(); return o;
   };
+  // Pull-back aiming that respects the edge of the screen. A drag that starts at (sx, sy) and ends at (x, y) pulls back by (sx-x, sy-y).
+  // If the finger would run out of room before a full-power pull (you cannot drag off the phone), the room that IS there counts as a
+  // full pull, so a drag from near an edge still reaches full power. Returns the effective pull vector (never longer than maxPull)
+  // and pw, 0 to 1. Coordinates are in the same space as W x H (the canvas).
+  K.pull = function (sx, sy, x, y, W, H, maxPull) {
+    var dx = sx - x, dy = sy - y, l = Math.hypot(dx, dy);
+    if (l < 1e-6) return { dx: 0, dy: 0, l: 0, pw: 0 };
+    var ux = -dx / l, uy = -dy / l, M = 14;      // the way the finger is travelling
+    var tx = ux > 0 ? (W - M - sx) / ux : ux < 0 ? (sx - M) / -ux : 1e9, ty = uy > 0 ? (H - M - sy) / uy : uy < 0 ? (sy - M) / -uy : 1e9;
+    var room = Math.max(0, Math.min(tx, ty)), s = room >= maxPull ? 1 : maxPull / Math.max(room, maxPull * 0.38), le = Math.min(l * s, maxPull);
+    return { dx: dx / l * le, dy: dy / l * le, l: le, pw: le / maxPull };
+  };
   K.loop = function (fn) {
     var raf = 0, last = 0, on = true;
     function tick(t) { if (!on) return; var dt = Math.min(0.05, (t - (last || t)) / 1000); last = t; fn(dt); raf = requestAnimationFrame(tick); }

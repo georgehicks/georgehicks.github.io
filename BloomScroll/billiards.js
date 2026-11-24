@@ -89,8 +89,8 @@
     c.cv.addEventListener('pointerdown', function (e) { if (st !== 'aim') return; var p = pt(e); aim = { sx: p.x, sy: p.y, x: p.x, y: p.y }; try { c.cv.setPointerCapture(e.pointerId); } catch (x) {} });
     c.cv.addEventListener('pointermove', function (e) { if (aim) { var p = pt(e); aim.x = p.x; aim.y = p.y; } });
     c.cv.addEventListener('pointerup', function () {
-      if (!aim) return; var dx = aim.sx - aim.x, dy = aim.sy - aim.y, l = Math.hypot(dx, dy); aim = null;
-      if (l >= 16) shoot(dx, dy, (l - 10) / 150);
+      if (!aim) return; var pl = K.pull(aim.sx, aim.sy, aim.x, aim.y, W, H, 150); aim = null;
+      if (pl.l >= 16) shoot(pl.dx, pl.dy, (pl.l - 10) / 140);
     });
     c.cv.addEventListener('pointercancel', function () { aim = null; });
 
@@ -154,9 +154,9 @@
       var cue = balls[0];
       // aiming: guide, then the cue stick
       if (aim && cue.alive) {
-        var dx = aim.sx - aim.x, dy = aim.sy - aim.y, l = Math.hypot(dx, dy);
+        var pl = K.pull(aim.sx, aim.sy, aim.x, aim.y, W, H, 150), l = pl.l;
         if (l > 6) {
-          var ux = dx / l, uy = dy / l, pw_ = clamp((l - 10) / 150, 0, 1), rc = ray(ux, uy);
+          var ux = pl.dx / l, uy = pl.dy / l, pw_ = clamp((l - 10) / 140, 0, 1), rc = ray(ux, uy);
           ctx.save(); ctx.setLineDash([2, 7]); ctx.lineCap = 'round'; ctx.strokeStyle = 'rgba(255,255,255,.7)'; ctx.lineWidth = 2;
           var len = P.guide === 0 ? Math.min(rc.t, 95) : rc.t; ctx.beginPath(); ctx.moveTo(cue.x, cue.y); ctx.lineTo(cue.x + ux * len, cue.y + uy * len); ctx.stroke();
           if (P.guide > 0) {

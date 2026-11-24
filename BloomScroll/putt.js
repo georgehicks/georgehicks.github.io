@@ -110,7 +110,7 @@
     function pt(e) { var r = c.cv.getBoundingClientRect(); return { x: e.clientX - r.left, y: e.clientY - r.top }; }
     c.cv.addEventListener('pointerdown', function (e) { if (st !== 'aim') return; var p = pt(e); aim = { sx: p.x, sy: p.y, x: p.x, y: p.y }; try { c.cv.setPointerCapture(e.pointerId); } catch (x) {} });
     c.cv.addEventListener('pointermove', function (e) { if (aim) { var p = pt(e); aim.x = p.x; aim.y = p.y; } });
-    function release() { if (!aim) return; var dx = aim.sx - aim.x, dy = aim.sy - aim.y, pw = Math.min(1, Math.hypot(dx, dy) / 130); var a = aim; aim = null; if (pw > 0.06 && st === 'aim') shoot(dx, dy, pw); }
+    function release() { if (!aim) return; var pl = K.pull(aim.sx, aim.sy, aim.x, aim.y, W, H, 130); aim = null; if (pl.pw > 0.06 && st === 'aim') shoot(pl.dx, pl.dy, pl.pw); }
     c.cv.addEventListener('pointerup', release); c.cv.addEventListener('pointercancel', function () { aim = null; });
 
     function update(dt) {
@@ -156,7 +156,7 @@
       // trail, aim, ball
       if (trail.length > 1) { ctx.strokeStyle = 'rgba(255,255,255,.35)'; ctx.lineWidth = 3; ctx.lineCap = 'round'; ctx.beginPath(); trail.forEach(function (p, i) { i ? ctx.lineTo(p[0], p[1]) : ctx.moveTo(p[0], p[1]); }); ctx.stroke(); }
       if (aim && st === 'aim') {
-        var dx = aim.sx - aim.x, dy = aim.sy - aim.y, len = Math.hypot(dx, dy), pw = Math.min(1, len / 130);
+        var pl = K.pull(aim.sx, aim.sy, aim.x, aim.y, W, H, 130), dx = pl.dx, dy = pl.dy, len = pl.l, pw = pl.pw;
         if (len > 8) {
           var ux = dx / len, uy = dy / len, v = 140 + pw * (P.vmax - 140);
           if (P.guide > 0) { var pts = simulate(ux * v, uy * v, 260), use = P.guide === 2 ? pts.length : Math.min(pts.length, 12); ctx.setLineDash([2, 7]); ctx.strokeStyle = 'rgba(255,255,255,.75)'; ctx.lineWidth = 3; ctx.beginPath(); for (var i = 0; i < use; i++) i ? ctx.lineTo(pts[i][0], pts[i][1]) : ctx.moveTo(pts[i][0], pts[i][1]); ctx.stroke(); ctx.setLineDash([]); }

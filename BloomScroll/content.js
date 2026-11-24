@@ -1,6 +1,6 @@
 /* Manna — content. Hand-written cards plus structure. Public-domain text and Scripture live in text.js; places in places.js.
    Quotes are short and attributed. Nothing here is a quote unless it carries quotation marks and a source; "threads" are my own
-   paraphrases and are labelled as such. Jamie Winship's quotes are ones George supplied from his books; nothing else is put in his (or anyone's) mouth. */
+   paraphrases and are labelled as such. Jamie Winship's and Issam Nemeh's quotes are ones George supplied; nothing else is put in their (or anyone's) mouth. */
 (function (root) {
   'use strict';
 
@@ -78,7 +78,26 @@
     { a: 'Jamie Winship', w: 'The War of Worldviews', t: 'The separation worldview hates disorder, complexity, and perplexity. It craves certainty, power, and control. Unfortunately nothing in God’s reality works that way. Everything and everyone is in process, and to deny or resist that process is to not grow.' },
     { a: 'Jamie Winship', w: 'The War of Worldviews', t: 'We cannot give away what we do not have. But listen! What we do have, we will give away. Wounded people will wound other people. Hurt people will hurt other people. Fearful, angry people will produce fear and anger in other people.' },
     { a: 'Jamie Winship', w: 'The War of Worldviews', t: 'Being a Jesus follower is for losers. If anything is clear in the Gospels, it’s that Jesus is for losers. … The truth is, everybody is a loser. It’s just that some know it and others are better at pretending it ain’t so. Everyone has separated and fallen away.' },
-    { a: 'Jamie Winship', w: 'The War of Worldviews', t: '1. Caesar separates people—Jesus unites people. 2. Caesar conscripts people—Jesus liberates people. 3. Caesar taxes people—Jesus cancels people’s debts. 4. Caesar creates war—Jesus creates peace.' }
+    { a: 'Jamie Winship', w: 'The War of Worldviews', t: '1. Caesar separates people—Jesus unites people. 2. Caesar conscripts people—Jesus liberates people. 3. Caesar taxes people—Jesus cancels people’s debts. 4. Caesar creates war—Jesus creates peace.' },
+    // Dr. Issam Nemeh — statements George supplied from his talks and interviews (spoken-word fillers such as "uh" taken out).
+    { a: 'Issam Nemeh', w: 'interviews and teachings', t: 'If I placed myself the right way in this life where I care about [those] I’m surrounded by and I work for the well-being of everyone then automatically my mind would fall within the confines of that perfect being which is God and I would have a connection to him and then I will be able to reflect his will just like the son of God reflects the will of the Father… you put yourself at that place then you become an open place… you only open the door for God’s Spirit to transmit itself into…' },
+    { a: 'Issam Nemeh', w: 'interviews and teachings', t: 'You can call it spiritual mindset. And you can actually lead people into that type of state of mind that could allow them the access. And, to tell you the truth, that’s our origin to begin with. And the thing that we forget about by the age of four, five.' },
+    { a: 'Issam Nemeh', w: 'interviews and teachings', t: 'When they reach the right state of mind automatically then things materialize… so we cannot separate… spirituality from the physical.' },
+    { a: 'Issam Nemeh', w: 'interviews and teachings', t: 'People that come in, they have the right state of mind, they want to survive, they want to get healed, they get a healing… [Those with] the negative type of state of mind… those are the ones who usually have complications.' },
+    { a: 'Issam Nemeh', w: 'interviews and teachings', t: 'When we have the right state of mind then God does connect us together…' },
+    { a: 'Issam Nemeh', w: 'interviews and teachings', t: 'Faith is not enough. It has to be a practical faith… Love. Love is the essence. Love is the power that connects everything together. Love is the power that connects father to son.' },
+    { a: 'Issam Nemeh', w: 'interviews and teachings', t: 'If you have the faith that could move mountains [but] you have no love it amounts to nothing.' },
+    { a: 'Issam Nemeh', w: 'interviews and teachings', t: 'Love is not a feeling it’s not only a feeling… it’s a power actually that is behind maintaining everything that is in existence… the state of mind that is such will definitely bring things back into their supposed… manifestation and that’s how the healing happened.' },
+    { a: 'Issam Nemeh', w: 'interviews and teachings', t: 'It’s the faith of the people that actually allows the healing to happen.' },
+    { a: 'Issam Nemeh', w: 'interviews and teachings', t: 'They don’t have to have my faith in order for them to be healed… some of them were atheists… But they are the most beautiful people inside, and God touched them, very powerfully.' },
+    { a: 'Issam Nemeh', w: 'interviews and teachings', t: 'Prayer is non-stop.' },
+    { a: 'Issam Nemeh', w: 'interviews and teachings', t: 'My prayer is continuous… the prayer is such as a continuous state of mind which is love of God actually that is always with me.' },
+    { a: 'Issam Nemeh', w: 'interviews and teachings', t: 'I’m always connected. I reached a level where I don’t even have to mention to even say a word because it’s a continuous type of feeling that you have, love… I’m continuously connected. I call it belonging. You see, so I carry it with me all day long.' },
+    { a: 'Issam Nemeh', w: 'interviews and teachings', t: 'I cannot call it a gift, I call it a belonging because it’s the state of mind that binds you, actually, to our Lord… it’s a nature, it’s not a gift.' },
+    { a: 'Issam Nemeh', w: 'interviews and teachings', t: 'Our consciousness is not restricted to our physical body. Our consciousness is connected to everything around us… when your consciousness is connected actually it is in harmony with the consciousness of God through love then automatically… your intention when you have that true love in you towards the others will translate itself.' },
+    { a: 'Issam Nemeh', w: 'interviews and teachings', t: 'My intention is the most important… when I have the right intention I am seeking Perfection… that’s what counts… [Christ] neutralizes the negative part… as long as you have the right intention.' },
+    { a: 'Issam Nemeh', w: 'interviews and teachings', t: 'The acceptance is the most important… once you step across that everything opens up.' },
+    { a: 'Issam Nemeh', w: 'interviews and teachings', t: 'It’s not a matter of us achieving it’s a matter of God communicating it’s a matter of us being quiet and letting God communicate.' }
   ];
 
   // My own paraphrases of well-known threads (clearly labelled in the UI; not quotes).
