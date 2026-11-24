@@ -35,10 +35,11 @@
     function px(c0) { return ox + c0 * T + T / 2; } function py(r0) { return oy + r0 * T + T / 2; }
 
     // ---- bombs and flames ----
-    function placeBomb() {
-      if (st !== 'play') return; var bc = pl.c, br = pl.r; if (pl.mv) { var half = pl.mv.t > 0.5; bc = half ? pl.mv.tc : pl.c; br = half ? pl.mv.tr : pl.r; }
-      if (bombAt(bc, br) || bombs.filter(function (b) { return b.mine; }).length >= pl.maxB || grid[br][bc]) return;
-      bombs.push({ c: bc, r: br, t: P.fuse, range: pl.range, mine: true });
+    var wantBomb = 0;      // a tap that cannot be honoured this instant (still in the middle of a step, say) is kept for a moment
+    function placeBomb(again) {
+      if (st !== 'play') return false; var bc = pl.c, br = pl.r; if (pl.mv) { var half = pl.mv.t > 0.5; bc = half ? pl.mv.tc : pl.c; br = half ? pl.mv.tr : pl.r; }
+      if (bombAt(bc, br) || bombs.filter(function (b) { return b.mine; }).length >= pl.maxB || grid[br][bc]) { if (!again) wantBomb = 0.28; return false; }
+      bombs.push({ c: bc, r: br, t: P.fuse, range: pl.range, mine: true }); wantBomb = 0; return true;
     }
     function detonate(b) {
       var i = bombs.indexOf(b); if (i < 0) return; bombs.splice(i, 1); shake = 0.18; addFlame(b.c, b.r);
@@ -83,7 +84,7 @@
     }
 
     function update(dt) {
-      clock += dt; hintT = Math.max(0, hintT - dt * 0.4); shake = Math.max(0, shake - dt); msgT = Math.max(0, msgT - dt); pl.inv = Math.max(0, pl.inv - dt);
+      clock += dt; if (wantBomb > 0) { wantBomb -= dt; if (placeBomb(true)) wantBomb = 0; } hintT = Math.max(0, hintT - dt * 0.4); shake = Math.max(0, shake - dt); msgT = Math.max(0, msgT - dt); pl.inv = Math.max(0, pl.inv - dt);
       parts.forEach(function (q) { q.t -= dt; q.x += q.vx * dt; q.y += q.vy * dt; q.vy += 140 * dt; }); parts = parts.filter(function (q) { return q.t > 0; });
       if (st === 'rest') { stT -= dt; if (stT <= 0) newGame(); return; }
       if (st === 'clear') { stT -= dt; if (stT <= 0) { stage++; api.setBest(stage); genMap(); st = 'play'; msg = 'Stage ' + stage; msgT = 1.4; status(); } return; }
@@ -170,7 +171,8 @@
       steer = { id: e.pointerId, ax: p.x, ay: p.y, x: p.x, y: p.y, t: Date.now(), moved: 0 }; hintT = 0;
     });
     c.cv.addEventListener('pointermove', function (e) { if (!steer || e.pointerId !== steer.id) return; var p = pxy(e); steer.moved = Math.max(steer.moved, Math.hypot(p.x - steer.x, p.y - steer.y)); steer.x = p.x; steer.y = p.y; setSteer(); });
-    function lift(e) { if (!steer || e.pointerId !== steer.id) return; var tap = e.type === 'pointerup' && Date.now() - steer.t < 260 && Math.hypot(steer.x - steer.ax, steer.y - steer.ay) < 14 && steer.moved < 14; steer = null; setSteer(); if (tap) placeBomb(); }
+    // A relaxed tap: up to half a second, with a little finger drift.
+    function lift(e) { if (!steer || e.pointerId !== steer.id) return; var tap = e.type === 'pointerup' && Date.now() - steer.t < 480 && Math.hypot(steer.x - steer.ax, steer.y - steer.ay) < 24 && steer.moved < 24; steer = null; setSteer(); if (tap) placeBomb(); }
     c.cv.addEventListener('pointerup', lift); c.cv.addEventListener('pointercancel', lift); c.cv.addEventListener('contextmenu', function (e) { e.preventDefault(); });
     var KEYS = { ArrowUp: DIRS[3], ArrowDown: DIRS[2], ArrowLeft: DIRS[1], ArrowRight: DIRS[0], w: DIRS[3], s: DIRS[2], a: DIRS[1], d: DIRS[0] };
     function kd(e) { var d = KEYS[e.key]; if (d) { e.preventDefault(); keyHeld = keyHeld.filter(function (h) { return h !== d; }); keyHeld.push(d); refresh(); } else if (e.key === ' ' || e.key === 'Enter') { e.preventDefault(); placeBomb(); } }

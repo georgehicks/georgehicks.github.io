@@ -139,6 +139,10 @@
   .overlay .bar { display:flex; align-items:center; justify-content:space-between; padding:calc(var(--top) + .5rem) .9rem .4rem; }
   .overlay .stagebox { position:relative; flex:1; min-height:0; margin:0 .6rem calc(var(--bot) + .6rem); border-radius:16px; overflow:hidden; background:#0a0d18; }
   .stagebox canvas { display:block; touch-action:none; }
+  /* A game is played with fingers, so nothing in it may start a text selection, a callout, an image drag or a double-tap zoom. */
+  .overlay, .overlay * { -webkit-user-select:none; user-select:none; -webkit-touch-callout:none; -webkit-user-drag:none; }
+  .overlay { touch-action:manipulation; }
+  .overlay ::selection { background:transparent; }
   .td-bar { position:absolute; left:0; right:0; bottom:0; display:flex; gap:.5rem; justify-content:center; padding:.5rem; height:48px; background:#0a0d18; }
   .td-bar button { flex:1; max-width:9rem; border:1px solid var(--border); background:var(--surface); border-radius:10px; font-size:.95rem; } .td-bar button.on { border-color:var(--gold); background:var(--surface-2); }
   .lt-wrap { position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:1rem; gap:1rem; }

@@ -124,3 +124,7 @@ Every readable card has a recorded clip: `voice/<hash>.mp3` (mono, 24 kHz, 32 kb
 - Settings → **Game time: Counts down / No timer** (`S.gameTimer`). With No timer, a game opened from Home starts no session at all (no countdown, no Game time card).
 - Time up while a game is open: the banner now has **Finish this game** (`sess.grace`): it goes away and the game continues; leaving the game brings the usual time-up banner back with its 45 seconds. The 45-second auto wind-down no longer fires while a game is open.
 - **☾ menu in a game** has a new first option: in a Home game session "Play without the timer" ends the countdown (the game carries on); in a game opened from a scroll sitting, "Pause the timer while I play" freezes the clock (`sess.hold`, shifts start/end each tick) and it resumes when you leave the game. Flags are cleared on load/resume.
+
+## v32 — Blast taps are forgiving; no text selection in any game
+- Blast: a tap now counts up to 480 ms and 24 px of drift (was 260 ms / 14 px), and a bomb request that cannot be placed that instant (still mid-step, or your bomb limit is full) is kept for 0.28 s and placed when it can (`wantBomb`).
+- Every game screen (`.overlay`): `user-select:none`, `-webkit-touch-callout:none`, `touch-action:manipulation`, transparent `::selection`, plus `selectstart`, `contextmenu` and `dragstart` prevented in `openGame`. Covers the bar text, canvases and any game, not just the ones that remembered to ask.

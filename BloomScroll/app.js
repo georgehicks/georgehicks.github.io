@@ -3,7 +3,7 @@
 (function () {
   'use strict';
   var C = window.MannaContent, T = window.MannaText, PL = window.MannaPlaces, E = window.MannaEngine, A = window.MannaArt, G = window.MannaGames;
-  var VERSION = 'v31';
+  var VERSION = 'v32';
   var V = window.MannaVoice, K = window.MannaClips, R = window.MannaRelease, Mu = window.MannaMusic;
   var KEY = 'manna.state', SKEY = 'manna.session', PKEY = 'manna.paused';
 
@@ -443,6 +443,7 @@
     if (V) { V.stop(); resetListen(); }
     if (home && !sess && S.gameTimer !== false) startGameSession();     // games from Home run on a countdown too (unless Game time is set to No timer)
     var ov = el('div', 'overlay', '<div class="bar"><button class="back" data-x>' + (home ? '‹ Home' : '‹ Back to the scroll') + '</button><span class="small">' + esc(g.title) + (sess ? '<span id="gameLeftWrap"> · <span id="gameLeft"></span></span>' : '') + '</span><span><button class="back" data-snd aria-label="Music on or off" style="font-size:1.2rem">♪</button><button class="back" data-moon aria-label="Wind down or take a break" style="font-size:1.2rem">☾</button></span></div><div class="stagebox"></div>'); $('layer').appendChild(ov);
+    ['selectstart', 'contextmenu', 'dragstart'].forEach(function (t) { ov.addEventListener(t, function (e) { e.preventDefault(); }); });   // no text selection, long-press menus or image drags in a game
     var box = ov.querySelector('.stagebox'), h = g.start(box); gameH = h; tick();
     var mood = { starwatch: 1, pass: 1, blast: 1, rally: 1, bricks: 1, mathcmd: 1 }[g.id] ? 'play' : 'calm', snd = ov.querySelector('[data-snd]'); function paintSnd() { snd.textContent = S.music ? '♪' : '♪̸'; snd.style.opacity = S.music ? 1 : 0.45; }
     if (Mu && S.music) { Mu.start(mood); tick(); } paintSnd();
