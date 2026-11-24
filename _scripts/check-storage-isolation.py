@@ -24,6 +24,7 @@ ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 # focus-app) and are only checked for the global rules.
 NAMESPACES = {
     "AbidingSteps": ["abidingsteps:"],
+    "AbidingStep": ["abidingstep:"],
     "Treasure": ["treasure:"],
     "IAmHere": ["iamhere."],
     "With": ["with."],
