@@ -93,3 +93,7 @@ No game-over screens: it rests and begins again. Tested in the desktop pane only
 
 ## v25: a richer built-in soundtrack
 `music.js` generator rewritten: warm detuned-saw pads through a slowly moving low-pass, a soft kalimba pattern that follows each chord (humanised timing and velocity, alternating stereo), a four-bar tune on the first progression only (so it comes round every other time), a quiet low note, a softened room reverb, and for the action games (`play` mood: Star Watch, Hold the Pass, Blast Maze, Rally, Bricks, Math Command) a very soft thump and shaker that fade out first as the countdown level drops. 72 bpm, C major, two 4-chord progressions (A with the tune, B alone). Your own tracks in `audio/manifest.json` now play shuffled one after another (a single one loops). Checked offline: steady loudness, peak about 0.25, no clipping; still unheard by me.
+
+## v26 — Voice on/off
+Settings → Voice has **Voice off / Voice on** (default off). Off: no speaker buttons on cards, the model never loads or downloads, the voice options are hidden. Turning it on adds the buttons back to cards already in the feed. State: `S.voiceOn`; `vOn()` gates `addListen`, `autoLoad`, `vready`.
+Pre-built audio idea (not built): about 67k characters of spoken text (verses 27.6k, long passages 13.5k, Bible places 9.1k, science 4.3k, relationships 3.9k, philosophy 3.2k, quotes and threads 3.4k, world places 1.9k) is roughly 75 minutes of speech, about 15 MB as AAC/Opus for one voice; fetch per card and cache, not up front.
