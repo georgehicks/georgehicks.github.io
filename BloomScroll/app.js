@@ -3,7 +3,7 @@
 (function () {
   'use strict';
   var C = window.MannaContent, T = window.MannaText, PL = window.MannaPlaces, E = window.MannaEngine, A = window.MannaArt, G = window.MannaGames;
-  var VERSION = 'v30';
+  var VERSION = 'v31';
   var V = window.MannaVoice, K = window.MannaClips, R = window.MannaRelease, Mu = window.MannaMusic;
   var KEY = 'manna.state', SKEY = 'manna.session', PKEY = 'manna.paused';
 
@@ -18,7 +18,7 @@
   function catLabel(id) { var c = C.CATS.filter(function (x) { return x.id === id; })[0]; return c ? c.label : id; }
 
   // ---------- state ----------
-  var S = { mins: 15, cats: [], mood: null, kept: [], mine: [], math: E.newMath(), seen: {}, log: [], dim: 0.38, mathInput: 'pad', photos: true, voiceOn: false, autoRead: false, relGuide: true, music: true };
+  var S = { mins: 15, cats: [], mood: null, kept: [], mine: [], math: E.newMath(), seen: {}, log: [], dim: 0.38, mathInput: 'pad', photos: true, voiceOn: false, gameTimer: true, autoRead: false, relGuide: true, music: true };
   try { var raw = JSON.parse(localStorage.getItem(KEY) || 'null'); if (raw) { for (var k in raw) S[k] = raw[k]; } } catch (e) {}
   E.SKILLS.forEach(function (k) { if (!S.math[k]) S.math[k] = E.newMath()[k]; });
   function save() { try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) {} }
@@ -127,6 +127,8 @@
     renderVoice();
     var rc = $('relChips'); rc.innerHTML = '';
     [[true, 'Hand it over'], [false, 'Just breathe']].forEach(function (o) { var b = el('button', 'chip' + ((S.relGuide !== false) === o[0] ? ' on' : ''), o[1]); b.type = 'button'; b.onclick = function () { S.relGuide = o[0]; save(); renderSettings(); }; rc.appendChild(b); });
+    var gt = $('gameTimerChips'); gt.innerHTML = '';
+    [[true, 'Counts down'], [false, 'No timer']].forEach(function (o) { var b = el('button', 'chip' + ((S.gameTimer !== false) === o[0] ? ' on' : ''), o[1]); b.type = 'button'; b.onclick = function () { S.gameTimer = o[0]; save(); renderSettings(); }; gt.appendChild(b); });
     var mc2 = $('musicChips'); mc2.innerHTML = '';
     [[true, 'Music on'], [false, 'Music off']].forEach(function (o) { var b = el('button', 'chip' + (S.music !== false === o[0] ? ' on' : ''), o[1]); b.type = 'button'; b.onclick = function () { S.music = o[0]; save(); if (!o[0] && Mu) Mu.fadeOut(0.5); renderSettings(); }; mc2.appendChild(b); });
     var pc = $('photoChips');
@@ -197,17 +199,20 @@
   }
   function progress() { if (!sess) return 0; var p = Math.max(0, Math.min(1, (Date.now() - sess.start) / (sess.end - sess.start))); return sess.ext ? Math.max(p, 0.95) : p; }
   function tick() {
-    if (!sess) return; var now = Date.now(), p = progress(), rem = Math.max(0, Math.ceil((sess.end - now) / 1000));
+    if (!sess) return; var now = Date.now();
+    if (sess.hold) { var held = now - (sess.holdAt || now); sess.start += held; sess.end += held; sess.holdAt = now; }   // the clock is paused while you play
+    var p = progress(), rem = Math.max(0, Math.ceil((sess.end - now) / 1000));
     $('fill').style.width = (p * 100) + '%'; $('orb').style.left = (p * 100) + '%'; $('left').textContent = fmt(rem);
     $('orb').style.background = p < 0.38 ? '#ffe9b0' : p < 0.74 ? '#f6b38a' : '#b9b6ff';
-    $('dim').style.opacity = E.dimAt(p, S.dim); if (Mu && Mu.playing()) Mu.setLevel(1 - 0.65 * p); $('feedScreen').style.setProperty('--p', p.toFixed(3)); var gl = $('gameLeft'); if (gl) gl.textContent = fmt(rem) + ' left'; var gcl = $('gcLeft'); if (gcl) gcl.textContent = fmt(rem) + ' left';
-    if (now >= sess.end && !banner) showTimeUp();
-    if (banner && now >= sess.end + 45000) windDown('sleep');
+    $('dim').style.opacity = E.dimAt(p, S.dim); if (Mu && Mu.playing()) Mu.setLevel(1 - 0.65 * p); $('feedScreen').style.setProperty('--p', p.toFixed(3)); var gl = $('gameLeft'); if (gl) gl.textContent = sess.hold ? 'timer paused' : fmt(rem) + ' left'; var gcl = $('gcLeft'); if (gcl) gcl.textContent = fmt(rem) + ' left';
+    if (now >= sess.end && !banner && !sess.grace) showTimeUp();
+    if (banner && !gameH && now >= sess.end + 45000) windDown('sleep');     // never in the middle of a game
   }
   function showTimeUp() {
-    banner = el('div', 'timeup', '<div class="serif" style="font-size:1.2rem">That\'s your time.</div><div class="small">Come down gently. He is waiting for you.</div><div class="row"><button class="btn primary" data-l>Wind down for sleep</button></div><div class="row" style="margin-top:.5rem">' + (sess.ext ? '' : '<button class="btn ghost" data-x>+3 minutes</button>') + '<button class="btn ghost" data-b>Take a break</button></div>');
+    banner = el('div', 'timeup', '<div class="serif" style="font-size:1.2rem">That\'s your time.</div><div class="small">Come down gently. He is waiting for you.</div><div class="row">' + (gameH ? '<button class="btn primary" data-f>Finish this game</button>' : '') + '<button class="btn' + (gameH ? '' : ' primary') + '" data-l>Wind down for sleep</button></div><div class="row" style="margin-top:.5rem">' + (sess.ext ? '' : '<button class="btn ghost" data-x>+3 minutes</button>') + '<button class="btn ghost" data-b>Take a break</button></div>');
     banner.style.zIndex = 45; banner.style.top = 'calc(env(safe-area-inset-top, 0px) + 3.2rem)'; banner.style.bottom = 'auto'; $('layer').appendChild(banner);
     banner.querySelector('[data-l]').onclick = function () { windDown('sleep'); };
+    var fin = banner.querySelector('[data-f]'); if (fin) fin.onclick = function () { sess.grace = true; banner.remove(); banner = null; };   // play on; the time-up comes back when you leave the game
     banner.querySelector('[data-b]').onclick = breakSheet;
     var x = banner.querySelector('[data-x]'); if (x) x.onclick = function () { sess.ext = true; sess.end = Date.now() + 3 * 60000; if (sess.kind !== 'games') { try { localStorage.setItem(SKEY, JSON.stringify(sess)); } catch (e) {} } banner.remove(); banner = null; tick(); };
   }
@@ -227,7 +232,7 @@
   }
   function resume() {
     if (!paused) return; var p = paused; dropPaused();
-    sess = p.sess; sess.end = Date.now() + p.left; sess.start = sess.end - p.total;
+    sess = p.sess; sess.hold = false; sess.grace = false; sess.end = Date.now() + p.left; sess.start = sess.end - p.total;
     if (sess.kind === 'games') { ensureTick(); renderHome(); show('homeScreen'); return; }
     try { localStorage.setItem(SKEY, JSON.stringify(sess)); } catch (e) {}
     openFeed();
@@ -436,19 +441,29 @@
   };
   function openGame(g, home) {
     if (V) { V.stop(); resetListen(); }
-    if (home && !sess) startGameSession();     // games from Home run on a countdown too
-    var ov = el('div', 'overlay', '<div class="bar"><button class="back" data-x>' + (home ? '‹ Home' : '‹ Back to the scroll') + '</button><span class="small">' + esc(g.title) + (sess ? ' · <span id="gameLeft"></span>' : '') + '</span><span><button class="back" data-snd aria-label="Music on or off" style="font-size:1.2rem">♪</button><button class="back" data-moon aria-label="Wind down or take a break" style="font-size:1.2rem">☾</button></span></div><div class="stagebox"></div>'); $('layer').appendChild(ov);
+    if (home && !sess && S.gameTimer !== false) startGameSession();     // games from Home run on a countdown too (unless Game time is set to No timer)
+    var ov = el('div', 'overlay', '<div class="bar"><button class="back" data-x>' + (home ? '‹ Home' : '‹ Back to the scroll') + '</button><span class="small">' + esc(g.title) + (sess ? '<span id="gameLeftWrap"> · <span id="gameLeft"></span></span>' : '') + '</span><span><button class="back" data-snd aria-label="Music on or off" style="font-size:1.2rem">♪</button><button class="back" data-moon aria-label="Wind down or take a break" style="font-size:1.2rem">☾</button></span></div><div class="stagebox"></div>'); $('layer').appendChild(ov);
     var box = ov.querySelector('.stagebox'), h = g.start(box); gameH = h; tick();
     var mood = { starwatch: 1, pass: 1, blast: 1, rally: 1, bricks: 1, mathcmd: 1 }[g.id] ? 'play' : 'calm', snd = ov.querySelector('[data-snd]'); function paintSnd() { snd.textContent = S.music ? '♪' : '♪̸'; snd.style.opacity = S.music ? 1 : 0.45; }
     if (Mu && S.music) { Mu.start(mood); tick(); } paintSnd();
     snd.onclick = function () { S.music = !S.music; save(); paintSnd(); if (!Mu) return; if (S.music) Mu.start(mood); else Mu.fadeOut(0.8); };
-    ov.querySelector('[data-x]').onclick = function () { h.stop(); gameH = null; ov.remove(); if (Mu) Mu.fadeOut(1.5); if (home) renderHome(); };
-    ov.querySelector('[data-moon]').onclick = windMenu;
+    ov.querySelector('[data-x]').onclick = function () {
+      h.stop(); gameH = null; ov.remove(); if (Mu) Mu.fadeOut(1.5);
+      if (sess) { if (sess.hold) { sess.hold = false; if (sess.kind !== 'games') { try { localStorage.setItem(SKEY, JSON.stringify(sess)); } catch (e) {} } } if (sess.grace) { sess.grace = false; if (Date.now() > sess.end) sess.end = Date.now() - 500; } tick(); }   // the time-up you put off comes back with its usual 45 seconds   // leaving the game: the held clock runs again, and a time-up you put off now appears
+      if (home) renderHome();
+    };
+    // "Play without the timer": a game session just stops counting; a sitting in the scroll is held (the clock freezes while you play, then picks up)
+    ov.querySelector('[data-moon]').onclick = function () {
+      var nt = null;
+      if (sess && sess.kind === 'games') nt = { label: 'Play without the timer', go: function () { endGameSession(); var w = ov.querySelector('#gameLeftWrap'); if (w) w.remove(); } };
+      else if (sess && !sess.hold) nt = { label: 'Pause the timer while I play', go: function () { sess.hold = true; sess.holdAt = Date.now(); if (banner) { banner.remove(); banner = null; } sess.grace = false; var gl = ov.querySelector('#gameLeft'); if (gl) gl.textContent = 'timer paused'; tick(); } };
+      windMenu(nt);
+    };
   }
-  function windMenu() {
-    var sh = el('div', 'sheet'), box = el('div', '', '<button class="btn" data-a="sleep">☾  Wind down for sleep</button><button class="btn" data-a="break">Take a break</button><button class="btn ghost" data-a="x">Keep going</button>');
+  function windMenu(noTimer) {
+    var sh = el('div', 'sheet'), box = el('div', '', '<button class="btn" data-a="sleep">☾  Wind down for sleep</button><button class="btn" data-a="break">Take a break</button>' + (noTimer ? '<button class="btn" data-a="free">' + noTimer.label + '</button>' : '') + '<button class="btn ghost" data-a="x">Keep going</button>');
     sh.appendChild(box); $('layer').appendChild(sh); sh.onclick = function (e) { if (e.target === sh) sh.remove(); };
-    box.onclick = function (e) { var b = e.target.closest('button'); if (!b) return; sh.remove(); if (b.dataset.a === 'sleep') windDown('sleep'); else if (b.dataset.a === 'break') breakSheet(); };
+    box.onclick = function (e) { var b = e.target.closest('button'); if (!b) return; sh.remove(); if (b.dataset.a === 'sleep') windDown('sleep'); else if (b.dataset.a === 'break') breakSheet(); else if (b.dataset.a === 'free' && noTimer) noTimer.go(); };
   }
 
   // ---------- mental math ----------
@@ -626,7 +641,7 @@
   renderHome(); show('homeScreen');
   try {
     var ss = JSON.parse(localStorage.getItem(SKEY) || 'null');
-    if (ss && ss.kind !== 'games' && Date.now() < ss.end + 45000 && Date.now() - ss.start < 4 * 3600000) { sess = ss; openFeed(); }
+    if (ss && ss.kind !== 'games' && Date.now() < ss.end + 45000 && Date.now() - ss.start < 4 * 3600000) { sess = ss; sess.hold = false; sess.grace = false; openFeed(); }
     else if (ss) localStorage.removeItem(SKEY);
   } catch (e) {}
   window.Manna = { S: S, E: E, save: save, startSession: startSession, land: land, windDown: windDown, peek: function () { return { sess: sess, wind: wind, paused: paused, brk: brk }; } };
