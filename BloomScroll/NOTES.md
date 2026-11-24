@@ -97,3 +97,10 @@ No game-over screens: it rests and begins again. Tested in the desktop pane only
 ## v26 — Voice on/off
 Settings → Voice has **Voice off / Voice on** (default off). Off: no speaker buttons on cards, the model never loads or downloads, the voice options are hidden. Turning it on adds the buttons back to cards already in the feed. State: `S.voiceOn`; `vOn()` gates `addListen`, `autoLoad`, `vready`.
 Pre-built audio idea (not built): about 67k characters of spoken text (verses 27.6k, long passages 13.5k, Bible places 9.1k, science 4.3k, relationships 3.9k, philosophy 3.2k, quotes and threads 3.4k, world places 1.9k) is roughly 75 minutes of speech, about 15 MB as AAC/Opus for one voice; fetch per card and cache, not up front.
+
+## v27 — Pre-built voice (replaces the on-phone Kokoro model)
+Every readable card has a recorded clip: `voice/<hash>.mp3` (mono, 24 kHz, 32 kbps, voice Adam), with `voice/manifest.json` = `{clips:{hash:seconds}, bytes, seconds}`. The hash is of the exact spoken words (`MannaClips.hash`, clips.js), so editing a card's text orphans its clip and the next build makes the new one. Nothing is made on the phone and no model downloads. The old worker/queue/engine code is gone from `voice.js`; `voice-worker.js` stays only as the build tool's TTS engine.
+- Settings → Voice off/on (off by default) and "Tap 🔊" / "Read each card aloud". Cards you add yourself have no clip, so no speaker.
+- Service worker keeps the clips in their own cache `manna-voice` (cache-first, survives version bumps).
+- clips.js `texts()` mirrors the `_say` lines in app.js. **If you change a `_say` line or add a card type, change `texts()` too, then rebuild.**
+- Rebuild: `pip3 install lameenc`, then `python3 _scripts/voice-build/server.py`, then open http://127.0.0.1:8767/_scripts/voice-build/generate.html in a WebGPU browser (Chrome). It downloads the model (fp32) into that browser, skips clips that exist, and writes MP3s through the server. About 25-30 minutes for everything on an M4. Commit the new files in `BloomScroll/voice/`; regenerating an existing clip adds a full copy to git history, so only delete a clip if its text changed.

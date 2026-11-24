@@ -1,0 +1,54 @@
+<!doctype html><meta charset="utf-8"><title>BloomScroll voice build</title>
+<body style="font:14px system-ui;background:#111;color:#ddd;padding:1rem">
+<h3>BloomScroll voice build</h3><pre id="log">starting…</pre>
+<script src="/BloomScroll/text.js"></script><script src="/BloomScroll/content.js"></script><script src="/BloomScroll/places.js"></script><script src="/BloomScroll/clips.js"></script>
+<script>
+/* Makes every card's clip with the same Kokoro model the app used (WebGPU, fp32), posts the audio to server.py, which writes the MP3.
+   Safe to run again: clips already made are skipped. Open this page with ?limit=3 to try a few first. */
+var VOICE = 'am_adam', MAXC = 230, RATE = 24000, log = document.getElementById('log'), S = window.vb = { done: 0, total: 0, secs: 0, err: [], state: 'init', t0: Date.now() };
+function say(t) { log.textContent = t; }
+function maxc() { return MAXC; }
+function splitLong(x) { if (x.length <= maxc()) return [x]; var parts = x.match(/[^;:,—]+[;:,—]?\s*/g) || [x], out = [], acc = ''; parts.forEach(function (p) { if (acc && (acc + p).length > maxc()) { out.push(acc.trim()); acc = p; } else acc += p; }); if (acc.trim()) out.push(acc.trim()); return out; }
+function chunks(text) {
+  var s = String(text).replace(/\s+/g, ' ').trim().match(/[^.!?…]+[.!?…]+["”’')\]]*|[^.!?…]+$/g) || [String(text)], out = [], acc = '';
+  out.push(s.shift().trim());
+  s.forEach(function (x) { x = x.trim(); if (!x) return; if (acc && (acc + ' ' + x).length > maxc()) { splitLong(acc).forEach(function (y) { out.push(y); }); acc = x; } else acc = acc ? acc + ' ' + x : x; });
+  if (acc) splitLong(acc).forEach(function (y) { out.push(y); });
+  return out.filter(Boolean);
+}
+(async function () {
+  try {
+    if (!navigator.gpu) throw new Error('no WebGPU in this browser');
+    var all = MannaClips.texts(), lim = +(new URLSearchParams(location.search).get('limit') || 0);
+    var have = await fetch('/vb/have').then(function (r) { return r.json(); });
+    var todo = all.filter(function (o) { return !have[o.hash]; }); if (lim) todo = todo.slice(0, lim);
+    S.total = todo.length; S.all = all.length; S.have = Object.keys(have).length; S.state = 'loading model';
+    var w = new Worker('/BloomScroll/voice-worker.js', { type: 'module' }), pend = {}, nid = 1;
+    var ready = new Promise(function (res, rej) {
+      w.onmessage = function (e) { var m = e.data;
+        if (m.type === 'ready') res(); else if (m.type === 'audio') { pend[m.id].res(m); delete pend[m.id]; }
+        else if (m.type === 'error') { if (m.id && pend[m.id]) { pend[m.id].rej(new Error(m.message)); delete pend[m.id]; } else rej(new Error(m.message)); }
+        else if (m.type === 'progress') say('model ' + Math.round(100 * m.loaded / (m.total || 1)) + '% ' + m.file); };
+      w.onerror = function (e) { rej(new Error(e.message || 'worker error')); };
+      w.postMessage({ type: 'load', device: 'webgpu', dtype: 'fp32' });
+    });
+    await ready; S.state = 'making';
+    function gen(text) { return new Promise(function (res, rej) { var id = nid++; pend[id] = { res: res, rej: rej }; w.postMessage({ type: 'gen', id: id, text: text, voice: VOICE }); }); }
+    for (var i = 0; i < todo.length; i++) {
+      var o = todo[i], parts = chunks(o.text), bufs = [], len = 0, gap = new Float32Array(Math.round(RATE * 0.14));
+      try {
+        for (var j = 0; j < parts.length; j++) { var m = await gen(parts[j]); if (m.rate !== RATE) throw new Error('rate ' + m.rate); bufs.push(m.data); if (j < parts.length - 1) bufs.push(gap); }
+        bufs.push(new Float32Array(Math.round(RATE * 0.25)));
+        bufs.forEach(function (b) { len += b.length; });
+        var pk = 0; bufs.forEach(function (b) { for (var k = 0; k < b.length; k++) { var a = Math.abs(b[k]); if (a > pk) pk = a; } });
+        var g = pk > 0 ? Math.min(3, 0.89 / pk) : 1, pcm = new Int16Array(len), at = 0;
+        bufs.forEach(function (b) { for (var k = 0; k < b.length; k++) pcm[at++] = Math.max(-32768, Math.min(32767, Math.round(b[k] * g * 32767))); });
+        var r = await fetch('/vb/put?name=' + o.hash + '&rate=' + RATE, { method: 'POST', body: pcm.buffer }).then(function (r) { return r.json(); });
+        S.done++; S.secs += len / RATE; S.last = o.label + ' ' + (len / RATE).toFixed(1) + 's ' + r.bytes + 'B';
+      } catch (e) { S.err.push(o.label + ': ' + e.message); }
+      say(S.state + ' ' + S.done + '/' + S.total + '  audio ' + Math.round(S.secs) + 's  elapsed ' + Math.round((Date.now() - S.t0) / 1000) + 's\n' + (S.last || '') + '\nerrors: ' + S.err.length);
+    }
+    S.state = 'finished'; say('finished ' + S.done + '/' + S.total + ' errors ' + S.err.length);
+  } catch (e) { S.state = 'failed'; S.err.push(e.message); say('FAILED ' + e.message); }
+})();
+</script>
