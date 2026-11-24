@@ -3,7 +3,7 @@
 (function () {
   'use strict';
   var C = window.MannaContent, T = window.MannaText, PL = window.MannaPlaces, E = window.MannaEngine, A = window.MannaArt, G = window.MannaGames;
-  var VERSION = 'v28';
+  var VERSION = 'v29';
   var V = window.MannaVoice, K = window.MannaClips, R = window.MannaRelease, Mu = window.MannaMusic;
   var KEY = 'manna.state', SKEY = 'manna.session', PKEY = 'manna.paused';
 
@@ -88,7 +88,7 @@
   $('mathTile').onclick = function () { renderMath(); show('mathScreen'); };
   $('setTile').onclick = function () { renderSettings(); show('setScreen'); };
   // The games, straight from the home screen (no need to wait for one to turn up in the scroll).
-  var GICON = { starwatch: '🚀', pass: '🏰', lights: '💡', checkers: '♟️', mines: '💣', sudoku: '🔢', solitaire: '🃏', papertoss: '🗑️', rally: '🎾', blast: '💥', putt: '⛳', mathcmd: '☄️', tfe: '🟨', bricks: '🧱', connect4: '🔴', treasuring: '💛' };
+  var GICON = { starwatch: '🚀', pass: '🏰', lights: '💡', checkers: '♟️', mines: '💣', sudoku: '🔢', solitaire: '🃏', papertoss: '🗑️', rally: '🎾', blast: '💥', putt: '⛳', billiards: '🎱', mathcmd: '☄️', tfe: '🟨', bricks: '🧱', connect4: '🔴', treasuring: '💛' };
   G.list.forEach(function (g) { var b = el('button', 'gtile', '<i>' + (GICON[g.id] || '🎮') + '</i><span>' + esc(g.title) + '</span>'); b.type = 'button'; b.onclick = function () { openGame(g, true); }; $('gameGrid').appendChild(b); });
 
   function renderKept() {
@@ -379,7 +379,7 @@
     S.mine.forEach(function (x) { pool[x.id] = { k: 'mine', x: x }; });
     ids = Object.keys(pool); var id = pickId('wisdom', ids), it = pool[id], x = it.x;
     card.classList.add('plain');
-    var cls = it.k === 'long' ? 'long' : 'big';
+    var cls = it.k === 'long' || x.t.length > 260 ? 'long' : 'big';   // long quotes use the smaller reading size so they fit the card
     card.appendChild(el('div', '', '<div class="' + cls + '">' + (it.k === 'quote' ? '“' + esc(x.t) + '”' : esc(x.t)) + '</div><div class="by">' + esc(x.a) + (x.w ? ' <i>· ' + esc(x.w) + '</i>' : '') + (it.k === 'thread' ? ' <i>· in his spirit, not a quote</i>' : '') + '</div>'));
     card._say = x.t + (x.a ? ' — ' + x.a : '');
     return { key: 'wisdom:' + id, title: x.a + (x.w ? ' · ' + x.w : ''), body: x.t, by: '' };

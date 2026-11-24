@@ -1,6 +1,6 @@
 /* Manna — content. Hand-written cards plus structure. Public-domain text and Scripture live in text.js; places in places.js.
    Quotes are short and attributed. Nothing here is a quote unless it carries quotation marks and a source; "threads" are my own
-   paraphrases and are labelled as such. Nothing is put in the mouth of Winship or Nemeh — add their words with "Add your own". */
+   paraphrases and are labelled as such. Jamie Winship's quotes are ones George supplied from his books; nothing else is put in his (or anyone's) mouth. */
 (function (root) {
   'use strict';
 
@@ -63,7 +63,22 @@
     { a: 'Henry David Thoreau', w: 'Walden', t: 'The mass of men lead lives of quiet desperation.' },
     { a: 'Seneca', w: 'Letters to Lucilius', t: 'We suffer more often in imagination than in reality.' },
     { a: 'Blaise Pascal', w: 'Pensées', t: 'The heart has its reasons which reason knows nothing of.' },
-    { a: 'Brother Lawrence', w: 'The Practice of the Presence of God', t: 'We should establish ourselves in a sense of God\'s presence by continually conversing with Him.' }
+    { a: 'Brother Lawrence', w: 'The Practice of the Presence of God', t: 'We should establish ourselves in a sense of God\'s presence by continually conversing with Him.' },
+    // Jamie Winship — quotes George supplied (Living Fearless; The War of Worldviews: Choosing Connection in a Culture of Separation).
+    { a: 'Jamie Winship', w: 'Living Fearless', t: 'Nothing carries more potential for change than individual acts of human kindness.' },
+    { a: 'Jamie Winship', w: 'Living Fearless', t: 'People are mostly afraid all the time. In fact, the number one exhortation in Scripture is, ‘Do not be afraid.’ We can only become fearless as we follow God in our true identity and experience in real life the truth of God’s promises to us.' },
+    { a: 'Jamie Winship', w: 'Living Fearless', t: 'If you endeavor to love God with your mind, your mind is opened up beyond the rational into the intuitive. The intuitive mind is the place where we pray and dream and hope for things as they ought to be, things yet unseen by the rational mind. If you endeavor to love God with your heart, you engage the emotional intelligence center of your being. Both negative and positive emotions become invitations from God into transformation. If you endeavor to love God with your soul, life becomes nearly unimaginable—the impossible moves into the sphere of possibility. If you endeavor to love God with your body, you will physically change. You will look different. You will move beyond being well into being fit.' },
+    { a: 'Jamie Winship', w: 'Living Fearless', t: 'The most common form of human despair is not being who you are.' },
+    { a: 'Jamie Winship', w: 'Living Fearless', t: 'All who are obsessed with being secure in life will lose it all—including their lives.' },
+    { a: 'Jamie Winship', w: 'Living Fearless', t: 'The journey in discovering your true identity in the kingdom of God is an eternal journey. There is no end to the depths of who God made you to be.' },
+    { a: 'Jamie Winship', w: 'Living Fearless', t: 'The obstacle to experiencing God anywhere in life is shame. Shame (feeling unworthy, not good enough) needs to be confessed. You know why? Shame is a false identity… Fear, guilt, and shame are false identities.' },
+    { a: 'Jamie Winship', w: 'The War of Worldviews', t: 'All external conflict comes from internal conflict. All internal conflict is sourced in fear. All fear is sourced in a wrong view of reality/God, a wrong view of myself, and a wrong view of others.' },
+    { a: 'Jamie Winship', w: 'The War of Worldviews', t: 'I discussed with the men how much they (and the rest of the world) operate in a scarcity mindset, searching for certainty and perfection because we’re afraid of not being good enough or strong enough or smart enough to protect ourselves and our families from the rest of the scarcity mindset predatory world. We’re trapped in repetition compulsion that leads to constant fear and conflict. The only way out is through connection with God first—the presence of Someone, not the absence of something.' },
+    { a: 'Jamie Winship', w: 'The War of Worldviews', t: 'The external conflicts in which we regularly find ourselves come as a result of the inner conflict swirling at our heart level. The inner conflict is sourced in a fear that derives from our constant abiding in a false view of God, which leads to a false view of ourselves and a false view of other people, especially strangers. Unless we experience God in a personal, experiential manner, the repetition compulsion cycle cannot be broken, because the overriding separation worldview lie is too deeply entrenched.' },
+    { a: 'Jamie Winship', w: 'The War of Worldviews', t: 'The separation worldview hates disorder, complexity, and perplexity. It craves certainty, power, and control. Unfortunately nothing in God’s reality works that way. Everything and everyone is in process, and to deny or resist that process is to not grow.' },
+    { a: 'Jamie Winship', w: 'The War of Worldviews', t: 'We cannot give away what we do not have. But listen! What we do have, we will give away. Wounded people will wound other people. Hurt people will hurt other people. Fearful, angry people will produce fear and anger in other people.' },
+    { a: 'Jamie Winship', w: 'The War of Worldviews', t: 'Being a Jesus follower is for losers. If anything is clear in the Gospels, it’s that Jesus is for losers. … The truth is, everybody is a loser. It’s just that some know it and others are better at pretending it ain’t so. Everyone has separated and fallen away.' },
+    { a: 'Jamie Winship', w: 'The War of Worldviews', t: '1. Caesar separates people—Jesus unites people. 2. Caesar conscripts people—Jesus liberates people. 3. Caesar taxes people—Jesus cancels people’s debts. 4. Caesar creates war—Jesus creates peace.' }
   ];
 
   // My own paraphrases of well-known threads (clearly labelled in the UI; not quotes).
@@ -72,9 +87,7 @@
     { a: 'John Eldredge', w: 'Captivating', t: 'A thread from his teaching: a woman\'s deepest longings are to be loved, to have a part in something that matters, and to share her beauty. The Lord is not embarrassed by them — He made them.' },
     { a: 'John Eldredge', w: 'Walking with God', t: 'A thread from his teaching: the Christian life was meant to be a conversation. Ask Him a simple question, then wait with an open hand. He is not far.' },
     { a: 'C. S. Lewis', w: 'Mere Christianity', t: 'A thread from Lewis: the Christian does not become good by trying harder at being good, but by letting Christ live in him — the way a branch bears fruit without straining.' },
-    { a: 'Oswald Chambers', w: 'My Utmost for His Highest', t: 'A thread from Chambers: devotion is not a mood but a decision. He keeps returning to the same call — be wholly His, and leave the results with Him.' },
-    { a: 'Jamie Winship', w: '', t: 'Paste something of his here with "Add your own" — I will not put words in his mouth. When you do, it will turn up in this feed.' },
-    { a: 'Issam Nemeh', w: '', t: 'Paste something of his here with "Add your own" — I will not put words in his mouth. When you do, it will turn up in this feed.' }
+    { a: 'Oswald Chambers', w: 'My Utmost for His Highest', t: 'A thread from Chambers: devotion is not a mood but a decision. He keeps returning to the same call — be wholly His, and leave the results with Him.' }
   ];
 
   // ---------- discovery ----------

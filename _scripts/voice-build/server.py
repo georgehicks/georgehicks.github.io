@@ -50,6 +50,13 @@ class H(http.server.SimpleHTTPRequestHandler):
             open(os.path.join(VOICE, name + '.mp3'), 'wb').write(mp3)
             manifest['clips'][name] = round(len(body) / 2 / rate, 1); save_manifest()
             return self.reply({'ok': True, 'bytes': len(mp3), 'clips': len(manifest['clips'])})
+        if u.path == '/vb/prune':   # body: JSON list of every hash the app still uses; clips for removed cards are deleted
+            keep = set(json.loads(body)); gone = []
+            for f in os.listdir(VOICE):
+                if f.endswith('.mp3') and f[:-4] not in keep: os.remove(os.path.join(VOICE, f)); gone.append(f[:-4])
+            for h in list(manifest['clips']):
+                if h not in keep: del manifest['clips'][h]
+            save_manifest(); return self.reply({'removed': gone, 'clips': len(manifest['clips'])})
         self.send_error(404)
 
 socketserver.ThreadingTCPServer.allow_reuse_address = True
