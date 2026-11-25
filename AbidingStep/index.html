@@ -27,10 +27,16 @@
   /* ===== time header ===== */
   #hdr { background: var(--el); border: 1px solid var(--bd); border-radius: 18px; padding: 12px 12px 10px; }
   .clockrow { display: flex; align-items: center; justify-content: space-between; padding: 0 4px; }
-  #clockWrap { display: flex; align-items: baseline; gap: 6px; }
-  #clock { font-size: 3.6rem; font-weight: 700; letter-spacing: -0.03em; line-height: 1; font-variant-numeric: tabular-nums; }
-  #ampm { font-size: 1.05rem; color: var(--dim); font-weight: 600; }
+  #hdr { transition: opacity 0.4s; }
+  #hdr.dim { opacity: 0.4; }
+  #clockSvg { flex: none; display: block; }
+  #clockSvg .face { fill: var(--el2); stroke: var(--bd); stroke-width: 2; }
+  #clockSvg .tk { stroke: var(--faint); stroke-width: 1.6; stroke-linecap: round; }
+  #clockSvg .tk.q { stroke: var(--dim); stroke-width: 2.6; }
+  #clockSvg .hand { stroke: var(--tx); stroke-linecap: round; }
+  #clockSvg .hub { fill: var(--accent); }
   .dateCol { text-align: right; }
+  #partDay { font-size: 0.82rem; color: var(--faint); margin-top: 2px; }
   #dow { font-size: 1.45rem; font-weight: 700; line-height: 1.1; }
   #dateTxt { font-size: 0.95rem; color: var(--dim); margin-top: 2px; }
   #weekStrip { display: flex; gap: 5px; margin: 11px 0 9px; }
@@ -77,6 +83,10 @@
   #runCat { color: var(--c); font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; font-size: 0.9rem; }
   #runTime { font-size: 5.4rem; font-weight: 700; font-variant-numeric: tabular-nums; line-height: 1.05; margin: 10px 0 4px; letter-spacing: -0.02em; }
   #runEnds { color: var(--dim); font-size: 0.95rem; min-height: 1.3em; }
+  #runGoal { display: block; width: 100%; margin: 12px 0 0; padding: 9px 4px; background: transparent; border: 0; border-bottom: 1px solid color-mix(in srgb, var(--c) 45%, transparent);
+    border-radius: 0; color: var(--tx); font: inherit; font-size: 16px; text-align: center; outline: none; }
+  #runGoal::placeholder { color: var(--faint); }
+  #runGoal:focus { border-bottom-color: var(--c); }
   .runBar { height: 8px; border-radius: 4px; background: var(--bd); margin: 16px 6px 20px; overflow: hidden; }
   .runBar div { height: 100%; width: 0; background: var(--c); border-radius: 4px; }
   .runBtns { display: flex; gap: 9px; }
@@ -169,11 +179,20 @@
   .status { font-size: 0.78rem; color: var(--dim); margin: 2px 2px 8px; min-height: 1.2em; line-height: 1.4; }
   input[type=checkbox] { width: 22px; height: 22px; accent-color: var(--accent); }
 
+  .alarmRow { width: 100%; display: flex; align-items: center; gap: 10px; text-align: left; padding: 11px 13px; margin-bottom: 6px;
+    background: var(--el); border: 1.5px solid var(--bd); border-radius: 12px; font-size: 0.95rem; }
+  .alarmRow .nm { flex: 1; font-weight: 600; }
+  .alarmRow .ln { font-size: 0.76rem; color: var(--faint); }
+  .alarmRow .ck { width: 18px; color: var(--accent); font-weight: 700; text-align: center; }
+  .alarmRow.on { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 12%, var(--el)); }
+  .alarmRow:active { background: var(--el2); }
+
   /* done overlay */
   #doneOv { position: fixed; inset: 0; z-index: 90; background: rgba(8,9,13,0.88); display: none; align-items: center; justify-content: center; padding: 20px; }
   #doneOv.show { display: flex; }
   #doneCard { width: 100%; max-width: 380px; background: var(--el); border: 2px solid var(--c); border-radius: 22px; padding: 26px 18px 18px; text-align: center; }
   #doneCard .big { font-size: 1.7rem; font-weight: 700; color: var(--c); }
+  #doneCard .goal { color: var(--tx); font-size: 1.05rem; margin: 10px 0 0; word-break: break-word; }
   #doneCard .sub { color: var(--dim); margin: 6px 0 20px; font-size: 0.95rem; }
   #doneCard .nx { display: grid; grid-template-columns: 1fr 1fr; gap: 9px; margin-bottom: 9px; }
   #doneCard .nx button { height: 54px; border-radius: 13px; border: 1.5px solid color-mix(in srgb, var(--c2) 55%, transparent);
@@ -186,8 +205,14 @@
 <div id="app">
   <header id="hdr">
     <div class="clockrow">
-      <div id="clockWrap"><span id="clock">--:--</span><span id="ampm"></span></div>
-      <div class="dateCol"><div id="dow"></div><div id="dateTxt"></div></div>
+      <svg id="clockSvg" viewBox="0 0 100 100" width="92" height="92" role="img" aria-label="Clock">
+        <circle class="face" cx="50" cy="50" r="47"/>
+        <g id="ticks"></g>
+        <line class="hand" id="hHand" x1="50" y1="50" x2="50" y2="28" stroke-width="5.5"/>
+        <line class="hand" id="mHand" x1="50" y1="50" x2="50" y2="12" stroke-width="3.2"/>
+        <circle class="hub" cx="50" cy="50" r="3.8"/>
+      </svg>
+      <div class="dateCol"><div id="dow"></div><div id="dateTxt"></div><div id="partDay"></div></div>
     </div>
     <div id="weekStrip"></div>
     <div class="pills"><div id="pWeek"></div><div id="pDay"></div></div>
@@ -198,6 +223,7 @@
 
   <section id="runPanel" hidden>
     <div id="runCat"></div>
+    <input id="runGoal" type="text" maxlength="90" placeholder="Goal for this time (optional)" enterkeyhint="done" autocomplete="off" autocorrect="off" spellcheck="false">
     <div id="runTime">0:00</div>
     <div id="runEnds"></div>
     <div class="runBar"><div id="runFill"></div></div>
@@ -267,10 +293,12 @@
     <div class="srow"><span>Day ends</span><select class="sSel" id="setEnd"></select></div>
     <div class="srow"><span>Week starts on</span><select class="sSel" id="setWeek"><option value="1">Monday</option><option value="0">Sunday</option><option value="6">Saturday</option></select></div>
 
-    <h3>Sound</h3>
-    <div class="srow"><span>Chime when a timer ends</span><input type="checkbox" id="setChime"></div>
-    <button class="btn full" id="testChime" type="button">Test chime</button>
-    <p class="hint">The chime only plays while the app is open on screen, and the iPhone ringer switch must be on. A locked phone can't ring a web app, so while a timer runs the screen is kept awake. If you leave and come back, the timer is still right: it counts to a clock time, not ticks.</p>
+    <h3>Alarm</h3>
+    <div class="srow"><span>Sound when a timer ends</span><input type="checkbox" id="setChime"></div>
+    <div class="srow"><span>Keep repeating until I dismiss</span><input type="checkbox" id="setRepeat"></div>
+    <div id="alarmList" style="margin-top:6px;"></div>
+    <button class="btn full" id="alarmStop" type="button">Stop sound</button>
+    <p class="hint">Tap a sound to choose it and hear it. The alarm only plays while the app is open on screen, and the iPhone ringer switch must be on. A locked phone can't ring a web app, so the screen is kept awake while a timer runs. If you leave and come back, the timer is still right: it counts to a clock time, not ticks.</p>
 
     <h3>Your data</h3>
     <p class="hint">Your note and your timer history are saved only on this device, in this app. They survive refreshes and restarts. Export a backup now and then.</p>
@@ -281,7 +309,7 @@
 </div>
 
 <!-- timer finished -->
-<div id="doneOv"><div id="doneCard"><div class="big" id="doneBig"></div><div class="sub" id="doneSub"></div><div class="nx" id="doneNx"></div><button class="close" id="doneClose" type="button">Done</button></div></div>
+<div id="doneOv"><div id="doneCard"><div class="big" id="doneBig"></div><div class="goal" id="doneGoal" hidden></div><div class="sub" id="doneSub"></div><div class="nx" id="doneNx"></div><button class="close" id="doneClose" type="button">Done</button></div></div>
 
 <script>
 (() => {
@@ -328,7 +356,7 @@
   const WORK = ['light', 'deep', 'think'];
 
   // ===== state =====
-  const settings = Object.assign({ dayStart: 6, dayEnd: 22, weekStart: 1, chime: true, icsUrls: '', icsProxy: '' }, store.get('settings', {}));
+  const settings = Object.assign({ dayStart: 6, dayEnd: 22, weekStart: 1, chime: true, repeat: true, alarm: 'chime', icsUrls: '', icsProxy: '' }, store.get('settings', {}));
   let sessions = store.get('sessions', []);   // [{id,cat,min,start,end,ms,done}]
   // One running note — no per-day history. (v1 kept a note per date; take the most recent one across.)
   let note = store.get('note', null);
@@ -371,20 +399,68 @@
   }
   document.addEventListener('touchend', unlockAudio, { passive: true });
   document.addEventListener('click', unlockAudio, { passive: true });
-  function chime() {
-    if (!settings.chime) return;
+  // ===== alarm sounds — all synthesized, so they work offline and need no files =====
+  // each play(ctx, out, t0) schedules its notes and returns its length in seconds
+  function tone(ctx, out, f, t, dur, peak, attack, type) {
+    const o = ctx.createOscillator(), g = ctx.createGain();
+    o.type = type || 'sine'; o.frequency.value = f;
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.exponentialRampToValueAtTime(peak, t + attack);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+    o.connect(g); g.connect(out); o.start(t); o.stop(t + dur + 0.05);
+  }
+  function chimeOnce(ctx, out, t) {
+    [[659.25, 0], [783.99, 0.3], [1046.5, 0.6]].forEach(([f, dt]) => tone(ctx, out, f, t + dt, 1.3, 0.35, 0.03));
+    return 1.9;
+  }
+  const SOUNDS = [
+    { id: 'chime', name: 'Chime', len: '2 s', play: (c, o, t) => chimeOnce(c, o, t) },
+    { id: 'chime3', name: 'Chime × 3', len: '8 s', play: (c, o, t) => { chimeOnce(c, o, t); chimeOnce(c, o, t + 3.2); chimeOnce(c, o, t + 6.4); return 8.3; } },
+    { id: 'bell', name: 'Bell', len: '7 s', play: (c, o, t) => {
+      const strike = (t0, k) => [[0.5, 0.5], [1, 1], [1.2, 0.6], [2, 0.5], [2.5, 0.25], [3, 0.2], [4.1, 0.1]]
+        .forEach(([r, a], i) => tone(c, o, 392 * r, t0, 6 / (1 + 0.5 * i), a * 0.3 * k, 0.005));
+      strike(t, 1); strike(t + 4, 0.7); return 10;
+    } },
+    { id: 'bowl', name: 'Singing bowl', len: '10 s', play: (c, o, t) => {
+      const strike = (t0, k, len) => [[1, 0.3], [1.004, 0.3], [2.71, 0.1], [2.714, 0.08], [5.4, 0.03]]
+        .forEach(([r, a], i) => tone(c, o, 240 * r, t0, len / (1 + i * 0.35), a * k, 0.25));
+      strike(t, 1, 11); strike(t + 5, 0.6, 8); return 13;
+    } },
+    { id: 'harp', name: 'Harp', len: '6 s', play: (c, o, t) => {
+      const ns = [523.25, 587.33, 659.25, 783.99, 880, 1046.5];
+      const pass = (t0, list) => list.forEach((f, i) => { tone(c, o, f, t0 + i * 0.3, 1.8, 0.25, 0.008, 'triangle'); tone(c, o, f * 2, t0 + i * 0.3, 0.8, 0.05, 0.008); });
+      pass(t, ns); pass(t + 3.4, ns.slice().reverse()); return 6.8;
+    } },
+    { id: 'dawn', name: 'Dawn', len: '10 s', play: (c, o, t) => {
+      [261.63, 329.63, 392, 493.88, 587.33].forEach((f, i) => {
+        const osc = c.createOscillator(), g = c.createGain();
+        osc.type = 'sine'; osc.frequency.value = f; osc.detune.value = (i - 2) * 3;
+        g.gain.setValueAtTime(0.0001, t);
+        g.gain.linearRampToValueAtTime(0.11, t + 3.5);
+        g.gain.linearRampToValueAtTime(0.09, t + 6.5);
+        g.gain.linearRampToValueAtTime(0.0001, t + 10);
+        osc.connect(g); g.connect(o); osc.start(t); osc.stop(t + 10.1);
+      });
+      return 10;
+    } },
+  ];
+  let alarmOut = null;
+  function stopAlarm() {
+    if (alarmOut) { try { alarmOut.gain.cancelScheduledValues(0); alarmOut.gain.setTargetAtTime(0, actx.currentTime, 0.04); } catch (e) {} alarmOut = null; }
+  }
+  function playAlarm(id) { // returns the sound's length in seconds (0 if audio isn't unlocked yet)
+    if (!actx) return 0;
+    stopAlarm();
+    const snd = SOUNDS.find(x => x.id === id) || SOUNDS[0];
+    const out = actx.createGain(), comp = actx.createDynamicsCompressor();
+    out.connect(comp); comp.connect(actx.destination);
+    alarmOut = out;
+    return snd.play(actx, out, actx.currentTime + 0.03);
+  }
+  function ringAlarm() { // the timer-ended alarm; returns its length
+    if (!settings.chime) return 0;
     try { if (navigator.vibrate) navigator.vibrate([200, 100, 200]); } catch (e) {}
-    if (!actx) return;
-    const t = actx.currentTime;
-    [[659.25, 0], [783.99, 0.3], [1046.5, 0.6]].forEach(([f, dt]) => {
-      const o = actx.createOscillator(), g = actx.createGain();
-      o.type = 'sine'; o.frequency.value = f;
-      g.gain.setValueAtTime(0.0001, t + dt);
-      g.gain.exponentialRampToValueAtTime(0.35, t + dt + 0.03);
-      g.gain.exponentialRampToValueAtTime(0.0001, t + dt + 1.3);
-      o.connect(g); g.connect(actx.destination);
-      o.start(t + dt); o.stop(t + dt + 1.4);
-    });
+    return playAlarm(settings.alarm);
   }
   let wl = null;
   async function acquireWake() {
@@ -398,10 +474,21 @@
   function releaseWake() { try { if (wl) wl.release(); } catch (e) {} wl = null; }
 
   // ===== header: the time-blindness block =====
+  (function buildTicks() {
+    let t = '';
+    for (let i = 0; i < 12; i++) {
+      const q = i % 3 === 0;
+      t += '<line class="tk' + (q ? ' q' : '') + '" x1="50" y1="' + (q ? 7 : 8.5) + '" x2="50" y2="' + (q ? 14 : 12) + '" transform="rotate(' + (i * 30) + ' 50 50)"/>';
+    }
+    $('ticks').innerHTML = t;
+  })();
   function renderHeader() {
     const now = new Date(), h = now.getHours();
-    $('clock').textContent = (h % 12 || 12) + ':' + pad(now.getMinutes());
-    $('ampm').textContent = h < 12 ? 'AM' : 'PM';
+    const mi = now.getMinutes();
+    $('hHand').setAttribute('transform', 'rotate(' + (((h % 12) + mi / 60) * 30) + ' 50 50)');
+    $('mHand').setAttribute('transform', 'rotate(' + (mi * 6) + ' 50 50)');
+    $('clockSvg').setAttribute('aria-label', (h % 12 || 12) + ':' + pad(mi) + (h < 12 ? ' AM' : ' PM'));
+    $('partDay').textContent = h >= 5 && h < 12 ? 'morning' : h >= 12 && h < 17 ? 'afternoon' : h >= 17 && h < 21 ? 'evening' : 'night';
     $('dow').textContent = now.toLocaleDateString('en-US', { weekday: 'long' });
     $('dateTxt').textContent = now.toLocaleDateString('en-US', { month: 'long', day: 'numeric' });
 
@@ -476,7 +563,7 @@
   function startTimer(cat, min) {
     unlockAudio();
     const now = Date.now();
-    run = { id: uid(), cat, min, startedAt: now, endsAt: now + min * 60000, paused: false, remaining: null, added: 0 };
+    run = { id: uid(), cat, min, startedAt: now, endsAt: now + min * 60000, paused: false, remaining: null, added: 0, goal: '' };
     saveRun(); acquireWake(); renderMain();
   }
   function pauseResume() {
@@ -510,6 +597,9 @@
   $('runPause').addEventListener('click', pauseResume);
   $('runAdd').addEventListener('click', addMinute);
   $('runStop').addEventListener('click', stopTimer);
+  // the goal belongs to this one timer: kept only while it runs (so a refresh doesn't lose it), never written to the history
+  $('runGoal').addEventListener('input', () => { if (run) { run.goal = $('runGoal').value; saveRun(); } });
+  $('runGoal').addEventListener('keydown', e => { if (e.key === 'Enter') $('runGoal').blur(); });
 
   function updateRun() {
     if (!run) { document.title = 'Abiding Step'; return; }
@@ -523,10 +613,13 @@
   }
   function renderMain() {
     const on = !!run;
+    $('hdr').classList.toggle('dim', on);
+    if (!on) $('runGoal').blur();
     $('runPanel').hidden = !on; $('grid').hidden = on; $('todayLine').hidden = on;
     if (on) {
       $('runPanel').style.setProperty('--c', CAT[run.cat].color);
       $('runCat').textContent = CAT[run.cat].name + ' · ' + run.min + ' min';
+      $('runGoal').value = run.goal || '';
       updateRun();
     } else { document.title = 'Abiding Step'; renderCounts(); }
     renderNotesBar(); renderHeader();
@@ -538,6 +631,7 @@
     const c = CAT[r.cat];
     $('doneCard').style.setProperty('--c', c.color);
     $('doneBig').textContent = c.name + ' done';
+    $('doneGoal').hidden = !r.goal; $('doneGoal').textContent = r.goal ? '“' + r.goal + '”' : '';
     const late = lateMs > 20000 ? ' · ended ' + fmtDur(lateMs) + ' ago' : '';
     $('doneSub').textContent = r.min + ' min' + (r.added ? ' + ' + Math.round(r.added / 60000) : '') + late;
     const next = WORK.includes(r.cat) ? [['rest', 5], ['break', 5]] : [['light', 5], ['deep', 15]];
@@ -545,13 +639,13 @@
     next.forEach(([id, m]) => { h += '<button style="--c2:' + CAT[id].color + '" data-cat="' + id + '" data-min="' + m + '" type="button">' + CAT[id].name + ' ' + m + ' min</button>'; });
     $('doneNx').innerHTML = h;
     $('doneOv').classList.add('show');
-    clearInterval(repeatTimer); repeatN = 0;
+    clearTimeout(repeatTimer); repeatN = 0;
     if (lateMs < 60000) {
-      chime();
-      repeatTimer = setInterval(() => { if (++repeatN > 5) clearInterval(repeatTimer); else chime(); }, 12000);
+      const again = len => { if (settings.repeat && ++repeatN <= 5) repeatTimer = setTimeout(() => again(ringAlarm()), (len + 8) * 1000); };
+      again(ringAlarm());
     }
   }
-  function closeDone() { clearInterval(repeatTimer); $('doneOv').classList.remove('show'); }
+  function closeDone() { clearTimeout(repeatTimer); stopAlarm(); $('doneOv').classList.remove('show'); }
   $('doneClose').addEventListener('click', closeDone);
   $('doneNx').addEventListener('click', e => {
     const b = e.target.closest('button'); if (!b) return;
@@ -764,7 +858,8 @@
   function openSettings() {
     $('icsUrls').value = settings.icsUrls; $('icsProxy').value = settings.icsProxy;
     hoursOptions($('setStart'), settings.dayStart); hoursOptions($('setEnd'), settings.dayEnd);
-    $('setWeek').value = String(settings.weekStart); $('setChime').checked = settings.chime;
+    $('setWeek').value = String(settings.weekStart); $('setChime').checked = settings.chime; $('setRepeat').checked = settings.repeat;
+    renderAlarmList();
     $('icsStatus').textContent = cal.pulledAt ? 'Last pulled ' + new Date(cal.pulledAt).toLocaleString() : '';
     refreshDataStatus(); openSheet('sheetSet');
   }
@@ -783,7 +878,15 @@
   bind('setWeek', () => { settings.weekStart = +$('setWeek').value; saveSettings(); renderHeader(); });
   bind('setChime', () => { settings.chime = $('setChime').checked; saveSettings(); });
   $('icsPull').addEventListener('click', () => pullCalendar(false));
-  $('testChime').addEventListener('click', () => { unlockAudio(); const c = settings.chime; settings.chime = true; chime(); settings.chime = c; });
+  bind('setRepeat', () => { settings.repeat = $('setRepeat').checked; saveSettings(); });
+  function renderAlarmList() {
+    $('alarmList').innerHTML = SOUNDS.map(x => '<button type="button" class="alarmRow' + (x.id === settings.alarm ? ' on' : '') + '" data-id="' + x.id + '"><span class="ck">' + (x.id === settings.alarm ? '✓' : '') + '</span><span class="nm">' + x.name + '</span><span class="ln">' + x.len + '</span></button>').join('');
+  }
+  $('alarmList').addEventListener('click', e => {
+    const b = e.target.closest('.alarmRow'); if (!b) return;
+    unlockAudio(); settings.alarm = b.dataset.id; saveSettings(); renderAlarmList(); playAlarm(settings.alarm);
+  });
+  $('alarmStop').addEventListener('click', stopAlarm);
   $('btnSet').addEventListener('click', openSettings);
   $('setClose').addEventListener('click', () => closeSheet('sheetSet'));
 
