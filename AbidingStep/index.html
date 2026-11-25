@@ -207,7 +207,10 @@
   #focusOv.show { display: flex; }
   #focusCard { width: 100%; max-width: 520px; background: var(--el); border: 1px solid var(--bd); border-radius: 20px; padding: 14px; max-height: 80dvh; overflow-y: auto; }
   #focusCard h4 { margin: 2px 4px 10px; font-size: 0.78rem; color: var(--faint); text-transform: uppercase; letter-spacing: 0.08em; }
-  #focusList .fo { display: block; width: 100%; height: 50px; margin-bottom: 7px; border-radius: 13px; border: 1.5px solid var(--bd); background: var(--el2); font-size: 1rem; font-weight: 600; text-align: left; padding: 0 16px; }
+  #focusList .fo { display: flex; flex-direction: column; justify-content: center; width: 100%; min-height: 54px; margin-bottom: 7px; border-radius: 13px; border: 1.5px solid var(--bd); background: var(--el2); text-align: left; padding: 8px 16px; }
+  #focusList .fo .fn { font-size: 1rem; font-weight: 700; }
+  #focusList .fo .fd { font-size: 0.8rem; font-weight: 400; color: var(--dim); margin-top: 2px; line-height: 1.3; }
+  #focusList .fo.on .fd { color: color-mix(in srgb, var(--accent) 70%, var(--dim)); }
   #focusList .fo.on { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 14%, var(--el2)); color: var(--accent); }
   #focusList .fo.none { color: var(--dim); font-weight: 500; }
 
@@ -350,8 +353,8 @@
     <div class="srow"><span>Header &amp; notes while timing <b id="dimIv"></b></span><input type="range" id="setDimI" min="15" max="100" step="5" style="flex:1; max-width:150px; accent-color:var(--accent);"></div>
 
     <h3>Focus areas</h3>
-    <p class="hint">The areas you can plant a stake in, one per line. Pick one on the main screen and it stays until you change it.</p>
-    <textarea class="sInput" id="setFocuses" placeholder="One area per line" autocapitalize="words" spellcheck="false"></textarea>
+    <p class="hint">What you can focus on for a stretch, one per line, written as "Name — short note". The note shows beside the name when you pick. Pick one on the main screen; it stays until you change it.</p>
+    <textarea class="sInput" id="setFocuses" style="min-height:190px;" placeholder="Name — short note" autocapitalize="sentences" spellcheck="false"></textarea>
     <div class="srow"><span>Short abiding lines (encouragement)</span><input type="checkbox" id="setWords"></div>
 
     <h3>Focus music</h3>
@@ -388,7 +391,7 @@
 
 <div id="confetti"></div>
 
-<div id="focusOv"><div id="focusCard"><h4>Where is the stake today?</h4><div id="focusList"></div></div></div>
+<div id="focusOv"><div id="focusCard"><h4>Focus for now</h4><div id="focusList"></div></div></div>
 
 <script src="music.js"></script>
 <script>
@@ -436,9 +439,25 @@
   const MINS = [3, 5, 10, 15, 25, 45];   // small ones start things; 25 and 45 are the real chunks
   const WORK = ['light', 'deep', 'think'];
 
+  // a focus is "Name — short note"; the note is shown beside the name in the picker
+  const FOCUS_DEFAULT = [
+    'Make — things that ship, your deliverables',
+    'Reply — inbox, messages, owed answers',
+    'People — relationships, care for specific people',
+    'Learn — research, reading, thinking it through',
+    'Tend — admin, money, household, keeping things running',
+    'Plan — deciding what\'s next, setting up the day or week',
+  ];
+  const FOCUS_OLD_DEFAULT = ['Deliverables', 'Communications', 'Admin', 'Relationships', 'Research'];
+  function parseFocus(str) { const m = String(str).split(/\s+[—–-]\s+|:\s+/); return { name: m[0].trim(), note: m.slice(1).join(' — ').trim() }; }
+
   // ===== state =====
-  const settings = Object.assign({ dayStart: 6, dayEnd: 22, weekStart: 1, chime: true, repeat: true, barHours: 8, words: true, btnI: 40, dimI: 40, musicWhen: 'off', music: 'calm', musicVol: 80, focuses: ['Deliverables', 'Communications', 'Admin', 'Relationships', 'Research'], alarm: 'chime', icsUrls: '', icsProxy: '' }, store.get('settings', {}));
+  const settings = Object.assign({ dayStart: 6, dayEnd: 22, weekStart: 1, chime: true, repeat: true, barHours: 8, words: true, btnI: 40, dimI: 40, musicWhen: 'off', music: 'calm', musicVol: 80, focuses: FOCUS_DEFAULT, alarm: 'chime', icsUrls: '', icsProxy: '' }, store.get('settings', {}));
   if (!settings.barChosen) settings.barHours = 8;   // 8 h is the default; an auto-saved earlier default doesn't count as a choice
+  if (JSON.stringify(settings.focuses) === JSON.stringify(FOCUS_OLD_DEFAULT)) {   // you never edited the old list: move to the new one
+    settings.focuses = FOCUS_DEFAULT.slice(); store.set('settings', settings);
+    if (FOCUS_OLD_DEFAULT.includes(store.get('focus', ''))) store.set('focus', '');
+  }
   function applyLook() {
     document.documentElement.style.setProperty('--btnI', (settings.btnI / 100).toFixed(2));
     document.documentElement.style.setProperty('--dimI', (settings.dimI / 100).toFixed(2));
@@ -714,8 +733,8 @@
   function renderFocus() { $('focusVal').textContent = focus || 'pick one'; $('focusPill').classList.toggle('unset', !focus); }
   $('nextBtn').addEventListener('click', () => { if (!run && sug) startTimer(sug.cat, sug.min); });
   $('focusPill').addEventListener('click', () => {
-    $('focusList').innerHTML = settings.focuses.map(f => '<button type="button" class="fo' + (f === focus ? ' on' : '') + '" data-f="' + esc(f) + '">' + esc(f) + '</button>').join('')
-      + '<button type="button" class="fo none' + (!focus ? ' on' : '') + '" data-f="">No focus right now</button>';
+    $('focusList').innerHTML = settings.focuses.map(parseFocus).filter(f => f.name).map(f => '<button type="button" class="fo' + (f.name === focus ? ' on' : '') + '" data-f="' + esc(f.name) + '"><span class="fn">' + esc(f.name) + '</span>' + (f.note ? '<span class="fd">' + esc(f.note) + '</span>' : '') + '</button>').join('')
+      + '<button type="button" class="fo none' + (!focus ? ' on' : '') + '" data-f=""><span class="fn">No focus</span></button>';
     $('focusOv').classList.add('show');
   });
   $('focusList').addEventListener('click', e => {
