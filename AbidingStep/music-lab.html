@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0e1016">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>Music lab — Abiding Step</title>
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png?v=1">
+<style>
+  :root { --bg: #0e1016; --el: #171a24; --el2: #1e2230; --bd: #2a2f40; --tx: #e8eaf0; --dim: #9aa1b5; --faint: #6b7288; --accent: #4fd1c5; }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body { margin: 0; background: var(--bg); color: var(--tx); font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", system-ui, sans-serif; }
+  body { padding: env(safe-area-inset-top) 0 0; -webkit-text-size-adjust: 100%; }
+  button { font: inherit; color: inherit; touch-action: manipulation; cursor: pointer; }
+  #wrap { max-width: 560px; margin: 0 auto; padding: 12px 14px calc(30px + env(safe-area-inset-bottom)); }
+  .top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px; }
+  h1 { margin: 0; font-size: 1.3rem; }
+  a.back { color: var(--accent); text-decoration: none; font-weight: 600; font-size: 0.92rem; padding: 8px 0 8px 12px; }
+  p.intro { color: var(--dim); font-size: 0.9rem; line-height: 1.5; margin: 6px 0 14px; }
+  .fam { display: block; width: 100%; text-align: left; margin-bottom: 8px; padding: 12px 14px; border-radius: 14px; background: var(--el); border: 1.5px solid var(--bd); }
+  .fam .nm { display: flex; justify-content: space-between; align-items: baseline; font-size: 1.05rem; font-weight: 700; }
+  .fam .st { font-size: 0.74rem; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--faint); }
+  .fam .ds, .fam .ch { display: block; }
+  .fam .ds { font-size: 0.86rem; color: var(--dim); margin-top: 3px; line-height: 1.4; }
+  .fam .ch { font-size: 0.76rem; color: var(--faint); margin-top: 5px; }
+  .fam.on { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 12%, var(--el)); }
+  .fam.on .st { color: var(--accent); }
+  .panel { background: var(--el); border: 1px solid var(--bd); border-radius: 14px; padding: 12px 14px; margin: 14px 0 10px; }
+  .row { display: flex; align-items: center; gap: 10px; padding: 7px 0; font-size: 0.92rem; }
+  .row span { flex: 0 0 96px; color: var(--dim); }
+  .row input[type=range] { flex: 1; accent-color: var(--accent); min-width: 0; }
+  .row b { flex: 0 0 62px; text-align: right; font-variant-numeric: tabular-nums; font-weight: 600; }
+  .btns { display: flex; gap: 8px; margin-top: 8px; flex-wrap: wrap; }
+  .btns button { flex: 1 1 140px; height: 46px; border-radius: 12px; border: 1px solid var(--bd); background: var(--el2); font-weight: 600; font-size: 0.92rem; }
+  .btns button.main { background: color-mix(in srgb, var(--accent) 18%, var(--el2)); border-color: var(--accent); color: var(--accent); }
+  #now { font-size: 0.88rem; line-height: 1.55; color: var(--tx); }
+  #now .k { color: var(--faint); }
+  #copyStatus { font-size: 0.8rem; color: var(--dim); min-height: 1.2em; margin-top: 6px; }
+  .note { color: var(--faint); font-size: 0.78rem; line-height: 1.5; margin-top: 12px; }
+</style>
+</head>
+<body>
+<div id="wrap">
+  <div class="top"><h1>Music lab</h1><a class="back" href="index.html">← Back to the app</a></div>
+  <p class="intro">Five families of music, each with its own chords, scale, rhythm and voice, and a short melodic <b>motif</b> that is stated, repeated, answered and turned over. Tap a family to hear it. <b>Another variation</b> keeps the family but builds a new motif. Nothing here changes the app yet. When something sounds right, tap <b>Copy what I'm hearing</b> and send it to me.</p>
+
+  <div id="fams"></div>
+
+  <div class="panel">
+    <div class="row"><span>Key</span><input type="range" id="shift" min="-5" max="6" step="1" value="0"><b id="shiftV">0</b></div>
+    <div class="row"><span>Tempo</span><input type="range" id="bpm" min="40" max="130" step="1" value="72"><b id="bpmV">72</b></div>
+    <div class="row"><span>Busyness</span><input type="range" id="dens" min="10" max="100" step="5" value="70"><b id="densV">70%</b></div>
+    <div class="row"><span>Volume</span><input type="range" id="vol" min="10" max="100" step="5" value="80"><b id="volV">80%</b></div>
+    <div class="btns">
+      <button id="another" class="main" type="button">Another variation</button>
+      <button id="surprise" type="button">Surprise me</button>
+      <button id="stop" type="button">Stop</button>
+    </div>
+  </div>
+
+  <div class="panel">
+    <div id="now">Nothing playing. Tap a family above.</div>
+    <div class="btns"><button id="copy" type="button">Copy what I'm hearing</button></div>
+    <div id="copyStatus"></div>
+  </div>
+
+  <p class="note">The ringer switch must be on to hear it. Everything is made on the phone as it plays, so it works offline. Each seed is a repeatable melody: the same seed with the same family always gives the same motif.</p>
+</div>
+
+<script src="music.js"></script>
+<script>
+(() => {
+  'use strict';
+  const $ = id => document.getElementById(id), M = window.StepMusic;
+  const FAM = M.FAMILIES;
+  const S = { id: '', seed: 1, shift: 0, bpm: 72, dens: 0.7, vol: 0.8, playing: false };
+  const fmtShift = v => (v > 0 ? '+' : '') + v;
+
+  $('fams').innerHTML = FAM.map(f => {
+    const full = M._family(f.id);
+    return '<button type="button" class="fam" data-id="' + f.id + '"><span class="nm"><span>' + f.name + '</span><span class="st" data-st="' + f.id + '">tap to hear</span></span>'
+      + '<span class="ds">' + f.desc + '</span><span class="ch">' + full.progs[0].names.join(' – ') + ' · ' + f.bpm + ' bpm</span></button>';
+  }).join('');
+
+  function readout(info) {
+    if (!info) { $('now').textContent = 'Nothing playing. Tap a family above.'; return; }
+    const m = info.motif.length ? info.motif.map(n => n.name).join(' · ') + '  <span class="k">(on beats ' + info.motif.map(n => n.beat).join(', ') + ')</span>' : 'a fixed tune that returns every other time round';
+    $('now').innerHTML = '<span class="k">Playing</span> <b>' + info.name + '</b> · <span class="k">seed</span> ' + info.seed + ' · ' + info.bpm + ' bpm · key ' + fmtShift(info.shift) + ' · busy ' + Math.round(info.density * 100) + '%<br><span class="k">Chords</span> ' + info.chords + '<br><span class="k">Motif</span> ' + m;
+  }
+  function paint() {
+    document.querySelectorAll('.fam').forEach(b => { const on = S.playing && b.dataset.id === S.id; b.classList.toggle('on', on); });
+    document.querySelectorAll('[data-st]').forEach(e => { e.textContent = S.playing && e.dataset.st === S.id ? 'playing' : 'tap to hear'; });
+  }
+  function play(restart) {
+    M.setVolume(S.vol);
+    const info = M.startFamily(S.id, { seed: S.seed, shift: S.shift, bpm: S.bpm, density: S.dens });
+    if (!info) return; S.playing = true; readout(info); paint();
+  }
+  function choose(id) {   // a new family brings its own tempo and busyness; key and volume stay
+    const f = FAM.find(x => x.id === id); S.id = id; S.bpm = f.bpm; S.dens = f.density;
+    S.seed = Math.floor(Math.random() * 9000) + 1; syncControls(); play();
+  }
+  function syncControls() {
+    $('shift').value = S.shift; $('shiftV').textContent = fmtShift(S.shift);
+    $('bpm').value = S.bpm; $('bpmV').textContent = S.bpm;
+    $('dens').value = Math.round(S.dens * 100); $('densV').textContent = Math.round(S.dens * 100) + '%';
+    $('vol').value = Math.round(S.vol * 100); $('volV').textContent = Math.round(S.vol * 100) + '%';
+  }
+  let deb = 0;
+  const changed = () => { clearTimeout(deb); if (S.playing) deb = setTimeout(() => play(), 350); };
+  $('fams').addEventListener('click', e => { const b = e.target.closest('.fam'); if (b) choose(b.dataset.id); });
+  $('shift').addEventListener('input', () => { S.shift = +$('shift').value; $('shiftV').textContent = fmtShift(S.shift); changed(); });
+  $('bpm').addEventListener('input', () => { S.bpm = +$('bpm').value; $('bpmV').textContent = S.bpm; changed(); });
+  $('dens').addEventListener('input', () => { S.dens = +$('dens').value / 100; $('densV').textContent = $('dens').value + '%'; changed(); });
+  $('vol').addEventListener('input', () => { S.vol = +$('vol').value / 100; $('volV').textContent = $('vol').value + '%'; M.setVolume(S.vol); });
+  $('another').addEventListener('click', () => { if (!S.id) choose(FAM[0].id); else { S.seed = Math.floor(Math.random() * 9000) + 1; play(); } });
+  $('surprise').addEventListener('click', () => { S.shift = Math.floor(Math.random() * 7) - 3; choose(FAM[Math.floor(Math.random() * FAM.length)].id); });
+  $('stop').addEventListener('click', () => { M.fadeOut(1.2); S.playing = false; readout(null); paint(); });
+  $('copy').addEventListener('click', async () => {
+    const i = M.info(); const st = $('copyStatus'); if (!i) { st.textContent = 'Play something first.'; return; }
+    const txt = 'Music lab: ' + i.name + ', seed ' + i.seed + ', key ' + fmtShift(i.shift) + ', tempo ' + i.bpm + ', busy ' + Math.round(i.density * 100) + '%' + (i.motif.length ? ', motif ' + i.motif.map(n => n.name).join(' ') : '');
+    try { await navigator.clipboard.writeText(txt); st.textContent = 'Copied: ' + txt; } catch (e) { st.textContent = txt; }
+  });
+  syncControls();
+})();
+</script>
+</body>
+</html>
