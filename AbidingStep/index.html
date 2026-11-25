@@ -358,7 +358,13 @@
     <h3>Focus areas</h3>
     <p class="hint">What you can focus on for a stretch, one per line, written as "Name — short note". The note shows beside the name when you pick. Pick one on the main screen; it stays until you change it.</p>
     <textarea class="sInput" id="setFocuses" style="min-height:210px;" placeholder="Name — short note" autocapitalize="sentences" spellcheck="false"></textarea>
-    <div class="srow"><span>Short abiding lines (encouragement)</span><input type="checkbox" id="setWords"></div>
+
+    <h3>Abiding lines</h3>
+    <div class="srow"><span>Show short encouraging lines</span><input type="checkbox" id="setWords"></div>
+    <div class="srow"><span>How often</span><select class="sSel" id="setWordsFreq"><option value="always">Every timer</option><option value="most">Most timers</option><option value="some">Some timers</option><option value="stages">Only at stages</option></select></div>
+    <p class="hint" id="wordsCount"></p>
+    <textarea class="sInput" id="setWordsMine" style="min-height:96px;" placeholder="Your own lines, one per line. They join the mix." autocapitalize="sentences" spellcheck="true"></textarea>
+    <div class="srow"><span>Use only my lines</span><input type="checkbox" id="setWordsOnlyMine"></div>
 
     <h3>Focus music</h3>
     <div class="srow"><span>Play during</span><select class="sSel" id="setMusicWhen"><option value="off">Off</option><option value="work">Work timers</option><option value="all">All timers</option></select></div>
@@ -469,7 +475,7 @@
   function parseFocus(str) { const m = String(str).split(/\s+[—–-]\s+|:\s+/); return { name: m[0].trim(), note: m.slice(1).join(' — ').trim() }; }
 
   // ===== state =====
-  const settings = Object.assign({ dayStart: 6, dayEnd: 22, weekStart: 1, chime: true, repeat: true, barHours: 8, words: true, btnI: 40, dimI: 40, musicWhen: 'off', music: 'calm', musicVol: 80, focuses: FOCUS_DEFAULT, alarm: 'chime', icsUrls: '', icsProxy: '' }, store.get('settings', {}));
+  const settings = Object.assign({ dayStart: 6, dayEnd: 22, weekStart: 1, chime: true, repeat: true, barHours: 8, words: true, wordsFreq: 'most', wordsMine: '', wordsOnlyMine: false, btnI: 40, dimI: 40, musicWhen: 'off', music: 'calm', musicVol: 80, focuses: FOCUS_DEFAULT, alarm: 'chime', icsUrls: '', icsProxy: '' }, store.get('settings', {}));
   if (!settings.barChosen) settings.barHours = 8;   // 8 h is the default; an auto-saved earlier default doesn't count as a choice
   // an unedited earlier default list moves to the current one; a list you edited is left alone. Selected focus and stored tags are renamed with it
   // (note "Care" meant people in v21 and means the body now, so v21's Care becomes Connect).
@@ -664,34 +670,357 @@
     el.classList.toggle('empty', !t);
   }
 
-  // ===== abiding lines — short, optional, in Settings can be switched off. Edit freely. =====
+  // ===== abiding lines — a large rotating set (~270), drawn from a shuffled deck so none repeats until the whole pool has been seen.
+  // Settings: on/off, how often, and your own lines (mixed in, or used alone). Edit this block freely. =====
   const WORDS = {
-    first: "Begin with Him. A few minutes is a faithful start.",
-    start: {
-      light: ["Small, and with Him. That's enough to begin.", "Just the next small thing. He's here in it.", "No big push. Start, and let Him meet you."],
-      deep:  ["Abide, then act. His strength in your hands.", "Work from His presence, not for approval.", "Apart from Him, nothing. With Him, this."],
-      think: ["Be still and think with Him. Wisdom is freely given.", "Ask Him, then listen as you think.", "Let your mind rest in Him while it works."],
-      rest:  ["Rest is abiding too. Nothing to prove.", "He gives rest to the weary. Receive it.", "Let go of the list. You are held."],
-      break: ["Step back. He is as near in the pause.", "A breath, a stretch, and Him with you.", "Look up for a moment."],
-    },
-    done: {
-      work: ["Offered to Him.", "Thank You, Lord.", "Hand it back to Him, and breathe.", "Held by Him, not by your effort."],
-      rest: ["Received.", "Rested in Him.", "Good. Now, with Him, what is next?"],
-    },
-    stage: [
-      "You have begun. He was with you at the start.",
-      "Another stretch given. A branch only has to stay.",
-      "Time with Him, and fruit grows quietly.",
-      "Still abiding. Rest when you need it. It counts.",
-      "Well on your way. He carries what you cannot.",
-      "Steady. The vine does the work; you stay.",
-      "Much of the day offered. Keep it gentle.",
-      "Nearly there. Look up for a moment.",
-      "One more stretch, and you are not doing it alone.",
-      "The day is full. You stayed, and He bore the fruit. Rest well.",
-    ],
-  };
-  const pickWord = arr => arr[Math.floor(Math.random() * arr.length)];
+ "first": [
+  "Begin with Him. A few minutes is a faithful start.",
+  "A new day. Take the first step and let Him lead.",
+  "Cold start is fine. He is warm.",
+  "His mercies are new every day. So is this start.",
+  "You don't have to feel ready. Just begin.",
+  "First small step of a long day, taken together.",
+  "Lord, this day is Yours. Here is the first piece.",
+  "Start tiny. The day will build itself.",
+  "He was here before you were. Walk with Him now.",
+  "Don't plan the whole day. Begin with this.",
+  "A gentle start beats a perfect one.",
+  "The hardest part is the first minute. You're in it.",
+  "Let grace set the pace today.",
+  "Today's work begins here."
+ ],
+ "start": {
+  "light": [
+   "Small, and with Him. That's enough to begin.",
+   "Just the next small thing. He's here in it.",
+   "No big push. Start, and let Him meet you.",
+   "A little step is still a step taken with Him.",
+   "Begin before you feel ready. He goes ahead of you.",
+   "This is only a few minutes. Offer them.",
+   "Easy does it. You are not carrying this alone.",
+   "Light hands. Let Him hold the weight.",
+   "Start where you are, with what you have.",
+   "Lord, here are these minutes.",
+   "Nothing heroic. Just the next faithful thing.",
+   "Breathe once, then begin.",
+   "He already knows how this goes. Walk into it.",
+   "A small yes is enough for now.",
+   "Let this one be quick, and quiet, and done with Him.",
+   "No need to see the whole path. Take this step.",
+   "Momentum is made of small things like this.",
+   "Ease in. His grace covers the beginning.",
+   "A few minutes, with an open hand.",
+   "Don't wait for the feeling. Move, and He meets you.",
+   "Let this one be simple.",
+   "You can do a little. That's plenty to start.",
+   "Pick it up lightly.",
+   "He is as present in the small things as in the large.",
+   "Start gently. The rest follows.",
+   "One thing. Then the next.",
+   "Come as you are to this small task.",
+   "Open the door a crack. Grace does the rest.",
+   "Here we go, gently, with Him.",
+   "The smallest start still counts with Him."
+  ],
+  "deep": [
+   "Abide, then act. His strength in your hands.",
+   "Work from His presence, not for approval.",
+   "Apart from Him, nothing. With Him, this.",
+   "Do this as for the Lord, not for anyone's applause.",
+   "Settle in. Give this your whole attention.",
+   "Strength is supplied. Lean in.",
+   "Lord, work through these hands.",
+   "One thing, done with all your heart.",
+   "He gives power to the weary. Receive it, then dig in.",
+   "Steady. You are not striving; you are staying.",
+   "Quiet the noise. Let this be the only thing.",
+   "Fruit comes from staying close. Stay close, and work.",
+   "Let your effort be an offering.",
+   "Focus is a gift. Ask for it.",
+   "Wisdom for the hard parts is yours for the asking.",
+   "Go deep. He is there at the bottom of it.",
+   "Hard work, held in grace.",
+   "You don't have to be impressive. Just faithful.",
+   "Begin, and keep coming back when your mind wanders.",
+   "This is worship with your sleeves rolled up.",
+   "Give it your best, and leave the outcome with Him.",
+   "Dig in. His help is closer than your next breath.",
+   "Distraction will knock. Gently answer: not now.",
+   "Let peace sit under the effort.",
+   "Be fully here. He is.",
+   "Skill and strength both come from Him. Use them.",
+   "Do the hard thing first, and do it with Him.",
+   "Not by force, but by staying near.",
+   "Your work matters to the One you do it for.",
+   "Go on. The Lord is with you in this."
+  ],
+  "think": [
+   "Be still and think with Him. Wisdom is freely given.",
+   "Ask Him, then listen as you think.",
+   "Let your mind rest in Him while it works.",
+   "No rush to an answer. Let it come.",
+   "Think slowly. He is not in a hurry.",
+   "Lord, give light on this.",
+   "Hold the question loosely, and let it breathe.",
+   "Clarity is a gift. Wait for it, gladly.",
+   "Wonder first, conclusions later.",
+   "You don't have to figure it all out today.",
+   "Bring the tangle to Him, and untie one thread.",
+   "Quiet mind, open hand.",
+   "Let understanding arrive; don't chase it.",
+   "Think it through with the One who made your mind.",
+   "Write down what comes. Sort it later.",
+   "Slow is fine. Deep is better.",
+   "Ask for wisdom. He gives without scolding.",
+   "Sit with the problem as a friend sits with a friend.",
+   "Let your thoughts settle like silt in still water.",
+   "You are allowed to not know yet.",
+   "Turn it over gently, from every side.",
+   "He sees the whole of what you see in part.",
+   "Think, and let prayer and thought run together.",
+   "Make room for a better idea than your first.",
+   "Rest your reasoning in His faithfulness.",
+   "Follow the question where it leads.",
+   "No pressure. Just honest thinking, with Him.",
+   "Let the noise fall away; one thread at a time.",
+   "What does He want to show you here?",
+   "Think well, and trust Him with the rest."
+  ],
+  "rest": [
+   "Rest is abiding too. Nothing to prove.",
+   "He gives rest to the weary. Receive it.",
+   "Let go of the list. You are held.",
+   "You have permission to stop.",
+   "Put it down. It will keep.",
+   "Be still. You don't have to earn this.",
+   "Lord, I rest in You.",
+   "Close your eyes if you like. He keeps watch.",
+   "This is not wasted time. It is received time.",
+   "Let your shoulders drop.",
+   "Peace is not something you achieve; it is given.",
+   "Nothing is waiting that He is not already holding.",
+   "Rest the way a child rests: completely.",
+   "The world turns without your hands on it.",
+   "Soften. You are safe here.",
+   "Breathe in grace, breathe out the day.",
+   "Quiet is a kind of prayer.",
+   "He is at work, so you can stop.",
+   "Lay it all down for now.",
+   "Slow your breathing. Slow your thoughts.",
+   "Rest, so that you can serve well later.",
+   "You are loved before you are useful.",
+   "Let this be a sabbath in miniature.",
+   "Stillness is not laziness; it is trust.",
+   "Receive the quiet as a gift.",
+   "There is nothing you must fix right now.",
+   "Be loved. That's the whole task.",
+   "Let your mind drift; He is at the shore.",
+   "Rest, and remember who carries whom.",
+   "Tired in body, tired in soul, or both: bring it here."
+  ],
+  "break": [
+   "Step back. He is as near in the pause.",
+   "A breath, a stretch, and Him with you.",
+   "Look up for a moment.",
+   "Stand, stretch, and say thank you.",
+   "Water, light, a few slow breaths.",
+   "Leave the screen. Look at something far away.",
+   "A short pause is part of the work.",
+   "Walk a little. Let your body remember it's yours.",
+   "Notice one good thing nearby.",
+   "Unclench your jaw and your hands.",
+   "Say a quick thank you to the Giver.",
+   "Let the work wait. It will be there.",
+   "Open a window, or step outside if you can.",
+   "A moment of grace, between tasks.",
+   "Shake out your arms. Roll your shoulders.",
+   "Pray a short one: thank You, help me, here I am.",
+   "Nothing to do for a few minutes. Enjoy that.",
+   "Eyes up, away from the glow.",
+   "A small reset. He's good at those.",
+   "Drink some water. Be kind to your body.",
+   "Breathe slowly. Let the work go quiet.",
+   "Look out a window and name three things you see.",
+   "Stretch like you mean it.",
+   "A pause with a purpose: to remember Him.",
+   "Take the long way to the kitchen.",
+   "Smile at no one in particular. It helps.",
+   "Come up for air.",
+   "This pause is on the schedule of grace.",
+   "Give your eyes and your mind a rest.",
+   "Back soon, but not yet."
+  ]
+ },
+ "done": {
+  "work": [
+   "Offered to Him.",
+   "Thank You, Lord.",
+   "Hand it back to Him, and breathe.",
+   "Held by Him, not by your effort.",
+   "Well done. Let Him have the credit.",
+   "That was given, and it was enough.",
+   "Faithful in this much.",
+   "Release it. It's in good hands.",
+   "Whatever came of it, it was offered.",
+   "Thank Him for the strength.",
+   "One more stretch with Him.",
+   "Unclench. You did your part.",
+   "He saw that.",
+   "Let the result be His business.",
+   "Good work, quietly done.",
+   "Breathe out. Breathe in grace.",
+   "Gratitude first, then what's next.",
+   "He gave the strength; you gave the hours.",
+   "That's a gift returned to the Giver.",
+   "Done is done. Rest in it for a moment.",
+   "A little more faithful ground covered.",
+   "Say thanks before you move on.",
+   "Not perfect, but offered, and that's what counts.",
+   "Look back for one second: He was there.",
+   "Set it down. Pick up peace.",
+   "Another piece given back to Him.",
+   "Steady. You stayed.",
+   "That counts, in ways you can't measure.",
+   "Stretch, thank, and carry on.",
+   "You showed up. So did He."
+  ],
+  "rest": [
+   "Received.",
+   "Rested in Him.",
+   "Good. Now, with Him, what is next?",
+   "Gentle in, gentle out.",
+   "Peace goes with you.",
+   "You are restored enough for the next thing.",
+   "Thank You for this quiet.",
+   "Take a little of that stillness with you.",
+   "Rested, not rushed.",
+   "He met you here.",
+   "Ready when you are, and not before.",
+   "That was good for you.",
+   "Rise slowly. He's with you.",
+   "Carry the calm into what comes.",
+   "Refreshed. Offer it forward.",
+   "The pause did its work.",
+   "Back with fresh eyes.",
+   "Grateful for the break.",
+   "Settled. Let's go on together.",
+   "Rest is part of the rhythm, and you kept it."
+  ]
+ },
+ "stage": [
+  [
+   "You have begun. He was with you at the start.",
+   "Momentum starts here. Well begun.",
+   "The cold start is behind you. Thank Him for the first step.",
+   "First stretch given. The rest of the day just got easier.",
+   "That's the hardest part done: starting.",
+   "A good beginning, with a good Companion."
+  ],
+  [
+   "Another stretch given. A branch only has to stay.",
+   "Settling in. Stay close, and keep going gently.",
+   "You're in the rhythm now. He is the rhythm.",
+   "Well done. Fruit grows quietly, and so does this.",
+   "Steady beginnings make strong days.",
+   "A little more offered. A little more His."
+  ],
+  [
+   "Time with Him, and fruit grows quietly.",
+   "A solid stretch in. Look at what quietly accumulates.",
+   "You're building something, one small yes at a time.",
+   "Keep staying; it's working, even when it's unseen.",
+   "Solid. Neither rushing nor stalling.",
+   "The day has weight now, and it's good weight."
+  ],
+  [
+   "Still abiding. Rest when you need it. It counts.",
+   "The first real hurdle is behind you.",
+   "You've got traction. Hold it lightly.",
+   "Take care of your body now; it carries all of this.",
+   "Strength is being supplied. Notice it.",
+   "Thank Him for carrying the load you can't."
+  ],
+  [
+   "Well on your way. He carries what you cannot.",
+   "Past the early part. The day is yours to steward.",
+   "Keep the pace gentle; the long run is the point.",
+   "Look up for a moment. He is still here.",
+   "This is what faithfulness looks like: ordinary and steady.",
+   "You're not behind. You're in it."
+  ],
+  [
+   "Steady. The vine does the work; you stay.",
+   "A solid middle. Don't hurry to the end.",
+   "You've done real work today. Receive that.",
+   "Pause, water, breathe. Then on.",
+   "Faithful, and not frantic. That's the way.",
+   "He is as present now as in the first minute."
+  ],
+  [
+   "Much of the day offered. Keep it gentle.",
+   "More than halfway. Let grace set the pace.",
+   "The long middle is the hardest stretch, and you're crossing it.",
+   "Don't coast, don't rush: just continue.",
+   "Offer the tiredness too. He takes that.",
+   "This is love in the form of effort."
+  ],
+  [
+   "Nearly there. Look up for a moment.",
+   "You've come a long way today, with Him.",
+   "Finish gently. There's no prize for frantic.",
+   "A grateful heart makes the last stretch lighter.",
+   "Notice what's already been given today.",
+   "A strong finish is ahead, but gentle first."
+  ],
+  [
+   "One more stretch, and you are not doing it alone.",
+   "Almost full. Thank Him for the whole day so far.",
+   "The finish line is a quiet one. Walk to it.",
+   "Don't squeeze. Just be faithful to the end.",
+   "What you've done today was seen and kept.",
+   "Ease off the grip. He has the rest."
+  ],
+  [
+   "The day is full. You stayed, and He bore the fruit. Rest well.",
+   "Full day, full heart. Offer it up and rest.",
+   "You gave the day what you intended. Thank Him, and stop.",
+   "Done. Truly done. Rest is the next faithful thing.",
+   "A day well spent in His company. Sleep in peace.",
+   "Anything more is a gift; there's no need to chase it."
+  ]
+ ]
+};
+  const WORD_P = { always: 1, most: 0.67, some: 0.33, stages: 0 };   // chance a start/finish line shows; stage lines always do
+  let bags = store.get('bags', {});                                   // the remembered deck order per pool, so a restart doesn't reshuffle
+  const shuffled = n => { const a = Array.from({ length: n }, (_, i) => i); for (let i = n - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; };
+  const mineLines = () => String(settings.wordsMine || '').split('\n').map(x => x.trim()).filter(Boolean);
+  function drawLine(key, builtin, mixMine) {
+    let pool = builtin;
+    if (mixMine) { const mine = mineLines(); pool = settings.wordsOnlyMine && mine.length ? mine : builtin.concat(mine); }
+    if (!pool.length) return '';
+    let h = 0; for (const ch of pool.join('|')) h = (h * 31 + ch.charCodeAt(0)) | 0;
+    let bag = bags[key];
+    if (!bag || bag.sig !== h || !bag.q.length) {
+      const q = shuffled(pool.length);
+      if (bag && bag.last != null && q.length > 1 && q[q.length - 1] === bag.last) [q[0], q[q.length - 1]] = [q[q.length - 1], q[0]];   // never the same line twice running
+      bag = { sig: h, q, last: bag ? bag.last : null };
+    }
+    const i = bag.q.pop(); bag.last = i; bags[key] = bag; store.set('bags', bags);
+    return pool[i];
+  }
+  function startWord(cat, first) {
+    if (!settings.words || settings.wordsFreq === 'stages') return '';
+    if (first && WORK.includes(cat)) return drawLine('first', WORDS.first, false);
+    if (Math.random() >= (WORD_P[settings.wordsFreq] ?? 0.67)) return '';
+    return drawLine('start.' + cat, WORDS.start[cat], true);
+  }
+  function doneWord(cat) {
+    if (!settings.words || Math.random() >= (WORD_P[settings.wordsFreq] ?? 0.67)) return '';
+    const k = WORK.includes(cat) ? 'work' : 'rest';
+    return drawLine('done.' + k, WORDS.done[k], true);
+  }
+  const stageWord = n => drawLine('stage.' + n, WORDS.stage[n - 1], false);
+  const wordsBuiltIn = () => WORDS.first.length + Object.values(WORDS.start).reduce((a, l) => a + l.length, 0) + WORDS.done.work.length + WORDS.done.rest.length + WORDS.stage.reduce((a, l) => a + l.length, 0);
 
   // ===== ten stages that climb to the day goal; the bar always fills toward the next one =====
   const STAGE_F = [1 / 32, 1 / 16, 1 / 8, 1 / 5, 3 / 10, 2 / 5, 11 / 20, 7 / 10, 17 / 20, 1];
@@ -789,7 +1118,7 @@
     unlockAudio();
     const now = Date.now(), first = todaysSessions().length === 0;
     run = { id: uid(), cat, min, startedAt: now, endsAt: now + min * 60000, paused: false, remaining: null, added: 0, goal: '', focus: focus || '',
-            word: settings.words ? ((first && WORK.includes(cat)) ? WORDS.first : pickWord(WORDS.start[cat])) : '' };
+            word: startWord(cat, first) };
     saveRun(); acquireWake(); renderMain(); musicStart();
   }
   function pauseResume() {
@@ -877,13 +1206,13 @@
     $('doneGoal').hidden = !r.goal; $('doneGoal').textContent = r.goal ? '“' + r.goal + '”' : '';
     const late = !stopped && lateMs > 20000 ? ' · ended ' + fmtDur(lateMs) + ' ago' : '';
     $('doneSub').textContent = (stopped ? fmtDur(info.ms) + ' logged' : r.min + ' min' + (r.added ? ' + ' + Math.round(r.added / 60000) : '')) + (r.focus ? ' · ' + r.focus : '') + late;
-    const w = settings.words ? pickWord(WORK.includes(r.cat) ? WORDS.done.work : WORDS.done.rest) : '';
+    const w = doneWord(r.cat);
     $('doneWord').hidden = !w || !!stage; $('doneWord').textContent = w;
     $('doneStage').hidden = !stage;
     if (stage) {
       const isLast = stage >= st.length;
       $('doneStage').innerHTML = '<div class="sn">Stage ' + stage + ' of ' + st.length + ' · ' + fmtC(st[stage - 1] * 60000) + '</div>'
-        + '<div class="sw">' + esc(settings.words ? WORDS.stage[stage - 1] : (isLast ? 'The day goal is reached.' : 'Stage reached.')) + '</div>'
+        + '<div class="sw">' + esc(settings.words ? stageWord(stage) : (isLast ? 'The day goal is reached.' : 'Stage reached.')) + '</div>'
         + '<div class="st">' + (isLast ? 'Anything more is a gift, and rest counts too.' : 'Next stage at ' + fmtC(st[stage] * 60000)) + '</div>';
       burst(isLast);
     }
@@ -1066,7 +1395,7 @@
     $('setBar').innerHTML = [2, 3, 4, 5, 6, 8, 10, 12].map(h => '<option value="' + h + '">' + h + ' hours</option>').join(''); $('setBar').value = String(settings.barHours);
     $('setWeek').value = String(settings.weekStart); $('setChime').checked = settings.chime; $('setRepeat').checked = settings.repeat;
     $('setBtnI').value = String(settings.btnI); $('setDimI').value = String(settings.dimI); $('btnIv').textContent = settings.btnI + '%'; $('dimIv').textContent = settings.dimI + '%';
-    $('setFocuses').value = settings.focuses.join('\n'); $('setWords').checked = settings.words;
+    $('setFocuses').value = settings.focuses.join('\n'); $('setWords').checked = settings.words; $('setWordsFreq').value = settings.wordsFreq; $('setWordsMine').value = settings.wordsMine; $('setWordsOnlyMine').checked = settings.wordsOnlyMine; renderWordsCount();
     $('setMusicWhen').value = settings.musicWhen; $('setMusicVol').value = String(settings.musicVol); renderMusicList();
     renderAlarmList();
     $('icsStatus').textContent = cal.pulledAt ? 'Last pulled ' + new Date(cal.pulledAt).toLocaleString() : '';
@@ -1098,7 +1427,11 @@
   bind('setFocuses', () => { settings.focuses = $('setFocuses').value.split('\n').map(x => x.trim()).filter(Boolean).slice(0, 10); saveSettings(); }, 'input');
   bind('setBtnI', () => { settings.btnI = +$('setBtnI').value; $('btnIv').textContent = settings.btnI + '%'; saveSettings(); applyLook(); }, 'input');
   bind('setDimI', () => { settings.dimI = +$('setDimI').value; $('dimIv').textContent = settings.dimI + '%'; saveSettings(); applyLook(); }, 'input');
+  function renderWordsCount() { const m = mineLines().length; $('wordsCount').textContent = wordsBuiltIn() + ' lines are built in and rotate from a shuffled deck, so one doesn\'t come back until the rest have been seen' + (m ? ' · ' + m + ' of yours mixed in.' : '.'); }
   bind('setWords', () => { settings.words = $('setWords').checked; saveSettings(); renderNext(); });
+  bind('setWordsFreq', () => { settings.wordsFreq = $('setWordsFreq').value; saveSettings(); });
+  bind('setWordsMine', () => { settings.wordsMine = $('setWordsMine').value; saveSettings(); renderWordsCount(); }, 'input');
+  bind('setWordsOnlyMine', () => { settings.wordsOnlyMine = $('setWordsOnlyMine').checked; saveSettings(); });
   bind('setMusicWhen', () => { settings.musicWhen = $('setMusicWhen').value; saveSettings(); });
   bind('setMusicVol', () => { settings.musicVol = +$('setMusicVol').value; saveSettings(); if (window.StepMusic) StepMusic.setVolume(settings.musicVol / 100); }, 'input');
   let previewT = 0;
