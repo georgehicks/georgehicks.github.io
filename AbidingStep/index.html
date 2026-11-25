@@ -355,7 +355,7 @@
     <div class="status" id="planStatus"></div>
     <div id="planList"></div>
     <p class="hint">Tap a block to skip it (tap again to bring it back).</p>
-    <button class="btn full" id="planCopy" type="button" style="margin-bottom:8px;">Copy a planning prompt for Claude</button>
+    <button class="btn full" id="planCopy" type="button" style="margin-bottom:8px;">Copy a planning prompt</button>
     <textarea class="sInput" id="planPromptBox" readonly hidden style="min-height:180px;"></textarea>
     <div class="status" id="planCopyStatus"></div>
     <button class="btn full" id="planClear" type="button">Clear today's plan</button>
@@ -1474,7 +1474,7 @@
   }
   $('planCopy').addEventListener('click', async () => {
     const txt = planPrompt(), st = $('planCopyStatus'), box = $('planPromptBox');
-    try { await navigator.clipboard.writeText(txt); st.textContent = "Copied. Paste it into Claude, add what's on your plate, then paste its answer above."; box.hidden = true; }
+    try { await navigator.clipboard.writeText(txt); st.textContent = "Copied. Paste it into any AI assistant, add what's on your plate, then paste its answer above."; box.hidden = true; }
     catch (e) { box.value = txt; box.hidden = false; box.focus(); box.select(); st.textContent = 'Select all of the text below and copy it.'; }
   });
 
