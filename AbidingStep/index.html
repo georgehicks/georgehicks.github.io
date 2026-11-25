@@ -357,7 +357,7 @@
 
     <h3>Focus areas</h3>
     <p class="hint">What you can focus on for a stretch, one per line, written as "Name — short note". The note shows beside the name when you pick. Pick one on the main screen; it stays until you change it.</p>
-    <textarea class="sInput" id="setFocuses" style="min-height:190px;" placeholder="Name — short note" autocapitalize="sentences" spellcheck="false"></textarea>
+    <textarea class="sInput" id="setFocuses" style="min-height:210px;" placeholder="Name — short note" autocapitalize="sentences" spellcheck="false"></textarea>
     <div class="srow"><span>Short abiding lines (encouragement)</span><input type="checkbox" id="setWords"></div>
 
     <h3>Focus music</h3>
@@ -443,7 +443,7 @@
   const WORK = ['light', 'deep', 'think'];
 
   // a focus is "Name — short note"; the note is shown beside the name in the picker
-  const FOCUS_DEFAULT = [
+  const FOCUS_V18 = [
     'Make — things that ship, your deliverables',
     'Reply — inbox, messages, owed answers',
     'People — relationships, care for specific people',
@@ -451,15 +451,18 @@
     'Tend — admin, money, household, keeping things running',
     'Plan — deciding what\'s next, setting up the day or week',
   ];
+  // ("With Him" is deliberately not a focus: it runs through everything, via the abiding lines. Add it in Settings if you want set-apart time.)
+  const FOCUS_DEFAULT = FOCUS_V18.concat(['Body — exercise, food, sleep']);
   const FOCUS_OLD_DEFAULT = ['Deliverables', 'Communications', 'Admin', 'Relationships', 'Research'];
   function parseFocus(str) { const m = String(str).split(/\s+[—–-]\s+|:\s+/); return { name: m[0].trim(), note: m.slice(1).join(' — ').trim() }; }
 
   // ===== state =====
   const settings = Object.assign({ dayStart: 6, dayEnd: 22, weekStart: 1, chime: true, repeat: true, barHours: 8, words: true, btnI: 40, dimI: 40, musicWhen: 'off', music: 'calm', musicVol: 80, focuses: FOCUS_DEFAULT, alarm: 'chime', icsUrls: '', icsProxy: '' }, store.get('settings', {}));
   if (!settings.barChosen) settings.barHours = 8;   // 8 h is the default; an auto-saved earlier default doesn't count as a choice
-  if (JSON.stringify(settings.focuses) === JSON.stringify(FOCUS_OLD_DEFAULT)) {   // you never edited the old list: move to the new one
+  // an unedited earlier default list moves to the current one; a list you edited is left alone
+  if ([FOCUS_OLD_DEFAULT, FOCUS_V18].some(l => JSON.stringify(l) === JSON.stringify(settings.focuses))) {
     settings.focuses = FOCUS_DEFAULT.slice(); store.set('settings', settings);
-    if (FOCUS_OLD_DEFAULT.includes(store.get('focus', ''))) store.set('focus', '');
+    if (!settings.focuses.some(f => parseFocus(f).name === store.get('focus', ''))) store.set('focus', '');
   }
   function applyLook() {
     document.documentElement.style.setProperty('--btnI', (settings.btnI / 100).toFixed(2));
