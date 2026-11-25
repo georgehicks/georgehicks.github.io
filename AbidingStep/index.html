@@ -505,10 +505,13 @@
     <h3>Focus music</h3>
     <div class="srow"><span>Play during</span><select class="sSel" id="setMusicWhen"><option value="off">Off</option><option value="work">Work timers</option><option value="all">All timers</option></select></div>
     <div id="musicList" style="margin-top:6px;"></div>
+    <div class="srow"><span>Variation</span><select class="sSel" id="setMusicVary"><option value="standard">Same every time</option><option value="seed">New melody each timer</option><option value="surprise">New sound each timer</option></select></div>
+    <button class="btn full" id="musicRandom" type="button" style="margin-bottom:6px;">Randomize: hear a new one</button>
+    <div class="status" id="musicNow"></div>
     <div class="srow"><span>Volume</span><input type="range" id="setMusicVol" min="10" max="100" step="5" style="flex:1; max-width:210px; accent-color:var(--accent);"></div>
     <button class="btn full" id="musicStop" type="button">Stop music</button>
     <a class="btn full" href="music-lab.html" style="display:flex; align-items:center; justify-content:center; text-decoration:none; color:inherit; margin-top:8px;">Open the music lab</a>
-    <p class="hint">Made on the phone, so it works offline and needs no files. It starts when a timer starts and fades out when it ends. Tap a track to choose it and hear it. The ringer switch must be on.</p>
+    <p class="hint">Made on the phone, so it works offline and needs no files. It starts when a timer starts and fades out when it ends. Dawn is the standard. Tap a sound to choose it and hear it. Randomize picks a new sound and melody and keeps it until you change it, or set Variation to get a new one every timer. The ringer switch must be on.</p>
 
     <h3>Alarm</h3>
     <div class="srow"><span>Sound when a timer ends</span><input type="checkbox" id="setChime"></div>
@@ -612,7 +615,9 @@
   function parseFocus(str) { const m = String(str).split(/\s+[—–-]\s+|:\s+/); return { name: m[0].trim(), note: m.slice(1).join(' — ').trim() }; }
 
   // ===== state =====
-  const settings = Object.assign({ dayStart: 6, dayEnd: 22, weekStart: 1, chime: true, repeat: true, barHours: 8, restAfter: 60, routinesText: '', restRoutine: 'Breathe', breakRoutine: 'Move', useEnergy: true, energy: '', promptCal: true, words: true, wordsFreq: 'most', wordsMine: '', wordsOnlyMine: false, btnI: 40, dimI: 40, musicWhen: 'off', music: 'calm', musicVol: 80, focuses: FOCUS_DEFAULT, alarm: 'chime', icsUrls: '', icsProxy: '' }, store.get('settings', {}));
+  const settings = Object.assign({ dayStart: 6, dayEnd: 22, weekStart: 1, chime: true, repeat: true, barHours: 8, restAfter: 60, routinesText: '', restRoutine: 'Breathe', breakRoutine: 'Move', useEnergy: true, energy: '', promptCal: true, words: true, wordsFreq: 'most', wordsMine: '', wordsOnlyMine: false, btnI: 40, dimI: 40, musicWhen: 'off', music: 'dawn', musicSeed: 1, musicVary: 'standard', musicVol: 80, focuses: FOCUS_DEFAULT, alarm: 'chime', icsUrls: '', icsProxy: '' }, store.get('settings', {}));
+  const MUSIC_MIGRATE = { calm: 'dawn', flow: 'dawn', drive: 'quest', deep: 'water' };   // the old four presets all shared one motif; they map to the nearest family
+  if (MUSIC_MIGRATE[settings.music]) settings.music = MUSIC_MIGRATE[settings.music];
   if (!settings.barChosen) settings.barHours = 8;   // 8 h is the default; an auto-saved earlier default doesn't count as a choice
   // an unedited earlier default list moves to the current one; a list you edited is left alone. Selected focus and stored tags are renamed with it
   // (note "Care" meant people in v21 and means the body now, so v21's Care becomes Connect).
@@ -1428,7 +1433,20 @@ Immanuel
 
   // ----- focus music: starts with a work timer (inside the tap), fades out when it ends -----
   const musicWanted = cat => settings.musicWhen === 'all' || (settings.musicWhen === 'work' && WORK.includes(cat));
-  function musicStart() { if (window.StepMusic && run && !run.paused && !run.soft && musicWanted(run.cat)) { StepMusic.setVolume(settings.musicVol / 100); StepMusic.start(settings.music); } }
+  // which sound, and which melody: fixed (the standard), a new melody each timer, or a new sound each timer. Decided once per timer, so pausing doesn't change it.
+  function musicPick() {
+    const fams = StepMusic.FAMILIES, rnd = () => Math.floor(Math.random() * 9000) + 1;
+    let id = settings.music, seed = settings.musicSeed;
+    if (settings.musicVary === 'seed') seed = rnd();
+    else if (settings.musicVary === 'surprise') { id = fams[Math.floor(Math.random() * fams.length)].id; seed = rnd(); }
+    return { id, seed };
+  }
+  function musicStart() {
+    if (window.StepMusic && run && !run.paused && !run.soft && musicWanted(run.cat)) {
+      if (!run.music) { run.music = musicPick(); saveRun(); }
+      StepMusic.setVolume(settings.musicVol / 100); StepMusic.startFamily(run.music.id, { seed: run.music.seed });
+    }
+  }
   function musicStop() { if (window.StepMusic) StepMusic.fadeOut(1.5); }
   // after a refresh a running timer has no music until the next tap (the phone requires a tap to start sound)
   const tapMusic = () => { if (run && !run.paused && window.StepMusic && !StepMusic.playing()) musicStart(); };
@@ -2058,15 +2076,29 @@ Immanuel
   bind('setMusicWhen', () => { settings.musicWhen = $('setMusicWhen').value; saveSettings(); });
   bind('setMusicVol', () => { settings.musicVol = +$('setMusicVol').value; saveSettings(); if (window.StepMusic) StepMusic.setVolume(settings.musicVol / 100); }, 'input');
   let previewT = 0;
+  const MUSIC_NOTES = { dawn: 'standard · slow pads, soft kalimba', water: 'slow and open, for thinking', hymn: 'warm and plain', quest: 'steady, game-like', lantern: 'patient, a little wistful' };
+  function renderMusicNow() {
+    const f = window.StepMusic && StepMusic.FAMILIES.find(x => x.id === settings.music);
+    $('musicNow').textContent = !f ? '' : settings.musicVary === 'surprise' ? 'A new sound each timer.' : settings.musicVary === 'seed' ? f.name + ', with a new melody each timer.' : 'Chosen: ' + f.name + (settings.music === 'dawn' && settings.musicSeed === 1 ? ' (the standard)' : ', melody ' + settings.musicSeed) + '.';
+  }
   function renderMusicList() {
     if (!window.StepMusic) { $('musicList').textContent = 'Music is not available here.'; return; }
-    $('musicList').innerHTML = StepMusic.PRESETS.map(x => '<button type="button" class="alarmRow' + (x.id === settings.music ? ' on' : '') + '" data-id="' + x.id + '"><span class="ck">' + (x.id === settings.music ? '✓' : '') + '</span><span class="nm">' + x.name + '</span><span class="ln">' + x.note + '</span></button>').join('');
+    $('musicList').innerHTML = StepMusic.FAMILIES.map(x => '<button type="button" class="alarmRow' + (x.id === settings.music ? ' on' : '') + '" data-id="' + x.id + '"><span class="ck">' + (x.id === settings.music ? '✓' : '') + '</span><span class="nm">' + x.name + '</span><span class="ln">' + (MUSIC_NOTES[x.id] || '') + '</span></button>').join('');
+    $('setMusicVary').value = settings.musicVary; renderMusicNow();
   }
   $('musicList').addEventListener('click', e => {
     const b = e.target.closest('.alarmRow'); if (!b || !window.StepMusic) return;
     unlockAudio(); settings.music = b.dataset.id; saveSettings(); renderMusicList();
-    StepMusic.setVolume(settings.musicVol / 100); StepMusic.start(settings.music);
+    StepMusic.setVolume(settings.musicVol / 100); StepMusic.startFamily(settings.music, { seed: settings.musicSeed });
     clearTimeout(previewT); previewT = setTimeout(() => { if (!(run && !run.paused && musicWanted(run.cat))) StepMusic.fadeOut(1.5); }, 10000);
+  });
+  bind('setMusicVary', () => { settings.musicVary = $('setMusicVary').value; saveSettings(); renderMusicNow(); });
+  $('musicRandom').addEventListener('click', () => {   // a new sound and melody, kept until you change it
+    if (!window.StepMusic) return; unlockAudio();
+    const fams = StepMusic.FAMILIES, others = fams.filter(f => f.id !== settings.music);
+    settings.music = others[Math.floor(Math.random() * others.length)].id; settings.musicSeed = Math.floor(Math.random() * 9000) + 1; settings.musicVary = 'standard'; saveSettings(); renderMusicList();
+    StepMusic.setVolume(settings.musicVol / 100); StepMusic.startFamily(settings.music, { seed: settings.musicSeed });
+    clearTimeout(previewT); previewT = setTimeout(() => { if (!(run && !run.paused && musicWanted(run.cat))) StepMusic.fadeOut(1.5); }, 12000);
   });
   $('musicStop').addEventListener('click', () => { clearTimeout(previewT); if (window.StepMusic) StepMusic.fadeOut(0.8); });
   $('btnSet').addEventListener('click', openSettings);
