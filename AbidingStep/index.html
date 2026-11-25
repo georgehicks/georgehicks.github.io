@@ -401,9 +401,14 @@
     <div class="srow"><span>Rest after about</span><select class="sSel" id="setRestAfter"><option value="0">Don't prompt</option><option value="45">45 min of work</option><option value="60">60 min of work</option><option value="75">75 min of work</option><option value="90">90 min of work</option></select></div>
     <div class="srow"><span>Week starts on</span><select class="sSel" id="setWeek"><option value="1">Monday</option><option value="0">Sunday</option><option value="6">Saturday</option></select></div>
 
+    <h3>Energy zones</h3>
+    <p class="hint">When your energy is high, steady and low, with times. It shapes the suggestions (lighter steps and earlier rests in low hours, more ambition in peak hours) and goes into the prompt you copy from Where to.</p>
+    <textarea class="sInput" id="setEnergy" style="min-height:84px;" placeholder="e.g. peak 8–11 am, steady 11–2, slump 2–4, second wind 4–7" autocapitalize="sentences" spellcheck="true"></textarea>
+    <div class="status" id="energyPreview"></div>
+    <div class="srow"><span>Let energy zones shape suggestions</span><input type="checkbox" id="setUseEnergy"></div>
+
     <h3>Working out where to go</h3>
-    <p class="hint">These go into the prompt you copy from the Where to sheet, so the destinations are realistic for your fixed times and your energy.</p>
-    <textarea class="sInput" id="setEnergy" style="min-height:84px;" placeholder="Your energy zones, e.g. peak 8–11 am, steady 11–2, slump 2–4, second wind 4–7" autocapitalize="sentences" spellcheck="true"></textarea>
+    <p class="hint">The prompt you copy from the Where to sheet can include today's calendar events as your fixed times.</p>
     <div class="srow"><span>Include today's calendar events</span><input type="checkbox" id="setPromptCal"></div>
 
     <h3>Quiet levels</h3>
@@ -537,7 +542,7 @@
   function parseFocus(str) { const m = String(str).split(/\s+[—–-]\s+|:\s+/); return { name: m[0].trim(), note: m.slice(1).join(' — ').trim() }; }
 
   // ===== state =====
-  const settings = Object.assign({ dayStart: 6, dayEnd: 22, weekStart: 1, chime: true, repeat: true, barHours: 8, restAfter: 60, energy: '', promptCal: true, words: true, wordsFreq: 'most', wordsMine: '', wordsOnlyMine: false, btnI: 40, dimI: 40, musicWhen: 'off', music: 'calm', musicVol: 80, focuses: FOCUS_DEFAULT, alarm: 'chime', icsUrls: '', icsProxy: '' }, store.get('settings', {}));
+  const settings = Object.assign({ dayStart: 6, dayEnd: 22, weekStart: 1, chime: true, repeat: true, barHours: 8, restAfter: 60, useEnergy: true, energy: '', promptCal: true, words: true, wordsFreq: 'most', wordsMine: '', wordsOnlyMine: false, btnI: 40, dimI: 40, musicWhen: 'off', music: 'calm', musicVol: 80, focuses: FOCUS_DEFAULT, alarm: 'chime', icsUrls: '', icsProxy: '' }, store.get('settings', {}));
   if (!settings.barChosen) settings.barHours = 8;   // 8 h is the default; an auto-saved earlier default doesn't count as a choice
   // an unedited earlier default list moves to the current one; a list you edited is left alone. Selected focus and stored tags are renamed with it
   // (note "Care" meant people in v21 and means the body now, so v21's Care becomes Connect).
@@ -689,7 +694,8 @@
     $('hHand').setAttribute('transform', 'rotate(' + (((h % 12) + mi / 60) * 30) + ' 50 50)');
     $('mHand').setAttribute('transform', 'rotate(' + (mi * 6) + ' 50 50)');
     $('clockSvg').setAttribute('aria-label', (h % 12 || 12) + ':' + pad(mi) + (h < 12 ? ' AM' : ' PM'));
-    $('partDay').textContent = h >= 5 && h < 12 ? 'morning' : h >= 12 && h < 17 ? 'afternoon' : h >= 17 && h < 21 ? 'evening' : 'night';
+    const zn = zoneNow();
+    $('partDay').textContent = (h >= 5 && h < 12 ? 'morning' : h >= 12 && h < 17 ? 'afternoon' : h >= 17 && h < 21 ? 'evening' : 'night') + (zn ? ' · ' + zn.level + ' until ' + fmtHour(zn.to) : '');
     $('dow').textContent = now.toLocaleDateString('en-US', { weekday: 'long' });
     $('dateTxt').textContent = now.toLocaleDateString('en-US', { month: 'long', day: 'numeric' });
 
@@ -1130,6 +1136,40 @@
   function dropDest(id) { dests = dests.filter(x => x.id !== id); if (destCur === id) destCur = ''; saveDests(); }
   function destToday(id) { let ms = 0, n = 0; todaysSessions().forEach(x => { if (x.dest === id && WORK.includes(x.cat)) { ms += x.ms; n++; } }); return { ms, n }; }
 
+  // ===== energy zones: "peak 8–11 am, steady 11–2, slump 2–4, second wind 4–7" → hour ranges with a level =====
+  // am/pm may be left off: each range is read as the next one after the previous (so "11–2" after "8–11 am" means 11 am to 2 pm)
+  function parseZones(text) {
+    const out = []; let prevEnd = 0;
+    String(text || '').split(/[,;\n]+/).forEach(chunk => {
+      const m = chunk.match(/(\d{1,2})(?::(\d{2}))?\s*(am|pm|a\.m\.|p\.m\.)?\s*(?:–|—|-|to|until|till)\s*(\d{1,2})(?::(\d{2}))?\s*(am|pm|a\.m\.|p\.m\.)?/i);
+      if (!m) return;
+      const w = chunk.toLowerCase();
+      const level = /second wind/.test(w) ? 'peak'
+        : /\b(slump|low|dip|tired|fog|foggy|crash|wind[- ]?down|sleepy|drag)\b/.test(w) ? 'low'
+        : /\b(peak|high|best|prime|sharp|strong|power|focus)\b/.test(w) ? 'peak'
+        : /\b(steady|medium|mid|okay|ok|normal|moderate|decent)\b/.test(w) ? 'steady' : '';
+      if (!level) return;
+      const sfx = x => x ? (x[0].toLowerCase() === 'p' ? 'pm' : 'am') : '';
+      const h1 = +m[1], m1 = m[2] ? +m[2] / 60 : 0, h2 = +m[4], m2 = m[5] ? +m[5] / 60 : 0; let a1 = sfx(m[3]); const a2 = sfx(m[6]);
+      if (h1 > 24 || h2 > 24) return;
+      const cands = (h, a) => { if (h >= 13) return [h]; const b = h % 12; return a === 'am' ? [b] : a === 'pm' ? [b + 12] : [b, b + 12]; };
+      if (!a1 && a2) { const alt = cands(h1, a2)[0] + m1, eVal = cands(h2, a2)[0] + m2; a1 = alt < eVal ? a2 : (a2 === 'pm' ? 'am' : 'pm'); }
+      const starts = cands(h1, a1).map(x => x + m1);
+      let st = starts.filter(x => x >= prevEnd - 0.01).sort((a, b) => a - b)[0]; if (st == null) st = starts[0];
+      const en = cands(h2, a2).map(x => x + m2).filter(x => x > st).sort((a, b) => a - b)[0];
+      if (en == null) return;
+      out.push({ from: st, to: en, level }); prevEnd = en;
+    });
+    return out;
+  }
+  function zoneNow() { if (!settings.useEnergy) return null; const h = nowHours(); return parseZones(settings.energy).find(z => h >= z.from && h < z.to) || null; }
+  // a nudge, never a wall: in low hours a hard action becomes a light one and steps stay small; everything is still on the grid
+  function zoned(sg, z) {
+    if (!z || !WORK.includes(sg.cat)) return sg;
+    if (z.level === 'low') { if (sg.cat === 'deep') sg.cat = 'light'; sg.min = Math.min(sg.min, 10); }
+    sg.zone = z.level; return sg;
+  }
+
   // ===== guardrails =====
   const restAfterMs = () => (settings.restAfter || 0) * 60000;
   function workStreakMs(list) {   // work since the last rest or break (or a gap of half an hour)
@@ -1152,20 +1192,23 @@
 
   // The next step: guardrails first, then the momentum engine (small to start, a little bigger each time, rest after a real chunk).
   // With a destination set, every work step is "toward" it. `cold` = nothing yet today, or 90+ minutes since the last timer.
-  function suggestNext() {
-    const now = Date.now(), list = todaysSessions(), last = list[list.length - 1], d = curDest();
+  function suggestNext() { const z = zoneNow(); return zoned(baseSuggest(z), z); }
+  function baseSuggest(z) {
+    const now = Date.now(), list = todaysSessions(), last = list[list.length - 1], d = curDest(), zl = z ? z.level : '';
     if (nowHours() >= settings.dayEnd) return { cat: 'rest', min: 15, k: 'Evening — rest with Him' };
     const cold = !last || now - last.end > 90 * 60000, streak = workStreakMs(list);
     const lab = k => d ? '→ ' + shortText(d.text, 24) : k, tw = !!d;
-    if (!cold && WORK.includes(last.cat) && restAfterMs() && streak >= restAfterMs()) return { cat: 'rest', min: streak >= restAfterMs() * 1.5 ? 15 : 10, k: 'Pace yourself — rest first', guard: true };
+    const restMs = restAfterMs() * (zl === 'peak' ? 1.25 : zl === 'low' ? 0.75 : 1);   // rest sooner in low hours, later in peak ones
+    if (!cold && WORK.includes(last.cat) && restMs && streak >= restMs) return { cat: 'rest', min: streak >= restMs * 1.5 ? 15 : 10, k: 'Pace yourself — rest first', guard: true };
     if (!last) return fitDay({ cat: 'light', min: 3, k: lab('Begin with Him'), first: true, cold: true, toward: tw });
     if (cold) return fitDay({ cat: 'light', min: 3, k: lab('Pick it back up'), cold: true, toward: tw });
     const lm = Math.max(1, Math.round(last.ms / 60000));
     if (!last.done) return fitDay(WORK.includes(last.cat) ? { cat: last.cat, min: rungDown(last.min), k: lab('A smaller step'), toward: tw } : { cat: last.cat, min: 5, k: 'Settle in' });
     if (WORK.includes(last.cat)) {
-      if (lm >= 25) return { cat: 'rest', min: 10, k: 'Rest counts too' };
-      if (lm >= 15) return { cat: 'break', min: 5, k: 'A short pause' };
-      return fitDay({ cat: last.cat === 'light' && lm >= 5 ? 'deep' : last.cat, min: rungUp(lm), k: lab('Keep the momentum'), toward: tw });
+      if (lm >= (zl === 'low' ? 15 : 25)) return { cat: 'rest', min: 10, k: 'Rest counts too' };
+      if (lm >= (zl === 'low' ? 10 : 15)) return { cat: 'break', min: 5, k: 'A short pause' };
+      const up = last.cat === 'light' && lm >= (zl === 'peak' ? 3 : 5);   // in peak hours the warm-up leads straight into a deep step
+      return fitDay({ cat: up ? 'deep' : last.cat, min: Math.max(up && zl === 'peak' ? 10 : 0, rungUp(lm)), k: lab('Keep the momentum'), toward: tw });
     }
     const w = list.slice().reverse().find(x => WORK.includes(x.cat));   // after rest or a break: back to the last kind of work
     if (!w) return fitDay({ cat: 'light', min: 3, k: lab('Back, with Him'), toward: tw });
@@ -1634,7 +1677,7 @@
     $('icsUrls').value = settings.icsUrls; $('icsProxy').value = settings.icsProxy;
     hoursOptions($('setStart'), settings.dayStart); hoursOptions($('setEnd'), settings.dayEnd);
     $('setBar').innerHTML = [2, 3, 4, 5, 6, 8, 10, 12].map(h => '<option value="' + h + '">' + h + ' hours</option>').join(''); $('setBar').value = String(settings.barHours);
-    $('setEnergy').value = settings.energy; $('setPromptCal').checked = settings.promptCal;
+    $('setEnergy').value = settings.energy; $('setPromptCal').checked = settings.promptCal; $('setUseEnergy').checked = settings.useEnergy; renderEnergyPreview();
     $('setRestAfter').value = String(settings.restAfter); $('setWeek').value = String(settings.weekStart); $('setChime').checked = settings.chime; $('setRepeat').checked = settings.repeat;
     $('setBtnI').value = String(settings.btnI); $('setDimI').value = String(settings.dimI); $('btnIv').textContent = settings.btnI + '%'; $('dimIv').textContent = settings.dimI + '%';
     $('setFocuses').value = settings.focuses.join('\n'); $('setWords').checked = settings.words; $('setWordsFreq').value = settings.wordsFreq; $('setWordsMine').value = settings.wordsMine; $('setWordsOnlyMine').checked = settings.wordsOnlyMine; renderWordsCount();
@@ -1654,7 +1697,13 @@
   bind('setStart', () => { settings.dayStart = +$('setStart').value; saveSettings(); renderHeader(); });
   bind('setEnd', () => { settings.dayEnd = +$('setEnd').value; saveSettings(); renderHeader(); });
   bind('setBar', () => { settings.barHours = +$('setBar').value; settings.barChosen = true; saveSettings(); renderCounts(); });
-  bind('setEnergy', () => { settings.energy = $('setEnergy').value; saveSettings(); }, 'input');
+  function renderEnergyPreview() {
+    const txt = (settings.energy || '').trim(), z = parseZones(settings.energy), L = { peak: 'peak', steady: 'steady', low: 'low' };
+    $('energyPreview').textContent = !txt ? '' : z.length ? 'Understood: ' + z.map(x => fmtHM(x.from).replace(':00', '') + '–' + fmtHM(x.to).replace(':00', '') + ' ' + L[x.level]).join(' · ')
+      : "Couldn't read any times yet. Try: peak 8–11 am, steady 11–2, slump 2–4";
+  }
+  bind('setEnergy', () => { settings.energy = $('setEnergy').value; saveSettings(); renderEnergyPreview(); renderHeader(); if (!run) renderNext(); }, 'input');
+  bind('setUseEnergy', () => { settings.useEnergy = $('setUseEnergy').checked; saveSettings(); renderHeader(); if (!run) renderNext(); });
   bind('setPromptCal', () => { settings.promptCal = $('setPromptCal').checked; saveSettings(); });
   bind('setRestAfter', () => { settings.restAfter = +$('setRestAfter').value; saveSettings(); });
   bind('setWeek', () => { settings.weekStart = +$('setWeek').value; saveSettings(); renderHeader(); });
