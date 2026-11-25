@@ -22,7 +22,7 @@
     font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", system-ui, sans-serif; }
   body { padding-top: env(safe-area-inset-top); min-height: 100dvh; -webkit-text-size-adjust: 100%; }
   button { font: inherit; color: inherit; touch-action: manipulation; -webkit-user-select: none; user-select: none; cursor: pointer; }
-  #app { display: flex; flex-direction: column; min-height: calc(100dvh - env(safe-area-inset-top)); max-width: 560px; margin: 0 auto; padding: 10px 14px calc(70px + env(safe-area-inset-bottom)); }
+  #app { display: flex; flex-direction: column; min-height: calc(100dvh - env(safe-area-inset-top)); max-width: 560px; margin: 0 auto; padding: 8px 14px calc(64px + env(safe-area-inset-bottom)); }
 
   /* ===== time header ===== */
   #hdr { background: var(--el); border: 1px solid var(--bd); border-radius: 18px; padding: 10px 12px 8px; }
@@ -40,8 +40,8 @@
   #partDay { font-size: 0.82rem; color: var(--faint); margin-top: 2px; }
   #dow { font-size: 1.45rem; font-weight: 700; line-height: 1.1; }
   #dateTxt { font-size: 0.95rem; color: var(--dim); margin-top: 2px; }
-  #weekStrip { display: flex; gap: 5px; margin: 8px 0 7px; }
-  .wd { flex: 1; text-align: center; padding: 5px 0 4px; border-radius: 10px; background: var(--el2); border: 1px solid var(--bd); cursor: pointer; min-width: 0; }
+  #weekStrip { display: flex; gap: 5px; margin: 6px 0 6px; }
+  .wd { flex: 1; text-align: center; padding: 4px 0 3px; border-radius: 10px; background: var(--el2); border: 1px solid var(--bd); cursor: pointer; min-width: 0; }
   .wd .n { font-size: 0.58rem; color: var(--faint); text-transform: uppercase; letter-spacing: 0.04em; }
   .wd .d { font-size: 0.95rem; color: var(--dim); margin-top: 1px; font-variant-numeric: tabular-nums; }
   .wd.past { opacity: 0.42; }
@@ -55,11 +55,27 @@
   #nextEv b { color: #8fa9f5; font-weight: 600; }
   #nextEv:empty { display: none; }
 
+  /* ===== today's time by category: ten equal blocks that fill as the day's minutes add up ===== */
+  #dayBar { position: relative; height: 7px; border-radius: 4px; background: var(--bd); overflow: hidden; margin: 6px 4px 2px; }
+  #dayBarSegs { display: flex; height: 100%; }
+  #dayBarSegs i { display: block; height: 100%; }
+  #dayBar::after { content: ''; position: absolute; inset: 0;
+    background-image: repeating-linear-gradient(to right, transparent 0, transparent calc(10% - 1.5px), var(--el) calc(10% - 1.5px), var(--el) 10%); }
+
+  /* ===== landscape: this app is portrait-only (iOS ignores the manifest lock), so ask for the phone to be turned back ===== */
+  #landscape { display: none; }
+  @media (orientation: landscape) and (max-height: 520px) {
+    #landscape { display: flex; position: fixed; inset: 0; z-index: 300; background: var(--bg); align-items: center; justify-content: center; text-align: center; gap: 22px; padding: 0 24px; }
+    #landscape .msg { font-size: 1.15rem; font-weight: 700; }
+    #landscape .sub { margin-top: 6px; font-size: 0.95rem; color: var(--dim); font-variant-numeric: tabular-nums; min-height: 1.3em; }
+    body { overflow: hidden; }
+  }
+
   /* ===== notes bar ===== */
-  #notesBar { display: flex; align-items: flex-start; gap: 10px; width: 100%; margin: 8px 0 10px; padding: 9px 14px; text-align: left;
+  #notesBar { display: flex; align-items: flex-start; gap: 10px; width: 100%; margin: 8px 0 9px; padding: 7px 14px; text-align: left;
     background: var(--el); border: 1px solid var(--bd); border-radius: 14px; }
   #notesBar .lbl { padding-top: 3px; font-size: 0.66rem; font-weight: 700; color: var(--faint); text-transform: uppercase; letter-spacing: 0.08em; flex: none; }
-  #notesBar .txt { flex: 1; min-width: 0; white-space: pre-wrap; word-break: break-word; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 3; overflow: hidden; font-size: 0.92rem; line-height: 1.4; color: var(--tx); }
+  #notesBar .txt { flex: 1; min-width: 0; white-space: pre-wrap; word-break: break-word; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 3; overflow: hidden; font-size: 0.92rem; line-height: 1.32; color: var(--tx); }
   #notesBar .txt.empty { color: var(--faint); }
   
   /* ===== timer grid ===== */
@@ -215,7 +231,7 @@
 <div id="app">
   <header id="hdr">
     <div class="clockrow">
-      <svg id="clockSvg" viewBox="0 0 100 100" width="80" height="80" role="img" aria-label="Clock">
+      <svg id="clockSvg" viewBox="0 0 100 100" width="72" height="72" role="img" aria-label="Clock">
         <circle class="face" cx="50" cy="50" r="47"/>
         <g id="ticks"></g>
         <line class="hand" id="hHand" x1="50" y1="50" x2="50" y2="28" stroke-width="5.5"/>
@@ -227,6 +243,7 @@
     <div id="weekStrip"></div>
     <div class="pills"><div id="pWeek"></div><div id="pDay"></div></div>
     <div id="nextEv"></div>
+    <div id="dayBar" role="img" aria-label="Today's time by category"><div id="dayBarSegs"></div></div>
   </header>
 
   <button id="notesBar" type="button"><span class="lbl">Notes</span><span class="txt empty" id="notesTxt">Tap to write — stays until you change it</span></button>
@@ -305,6 +322,7 @@
     <h3>Your day</h3>
     <div class="srow"><span>Day starts</span><select class="sSel" id="setStart"></select></div>
     <div class="srow"><span>Day ends</span><select class="sSel" id="setEnd"></select></div>
+    <div class="srow"><span>Full day bar =</span><select class="sSel" id="setBar"></select></div>
     <div class="srow"><span>Week starts on</span><select class="sSel" id="setWeek"><option value="1">Monday</option><option value="0">Sunday</option><option value="6">Saturday</option></select></div>
 
     <h3>Alarm</h3>
@@ -323,6 +341,11 @@
 </div>
 
 <div id="updBar"><span>A new version is ready.</span><button id="updBtn" type="button">Reload</button></div>
+
+<div id="landscape">
+  <svg width="64" height="64" viewBox="0 0 64 64" aria-hidden="true"><rect x="22" y="6" width="20" height="36" rx="4" fill="none" stroke="#9aa1b5" stroke-width="3"/><path d="M14 52 Q32 62 50 52" fill="none" stroke="#4fd1c5" stroke-width="3" stroke-linecap="round"/><path d="M45 47 L51 52 L44 56" fill="none" stroke="#4fd1c5" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg>
+  <div><div class="msg">Turn your phone upright</div><div class="sub" id="lsTime"></div></div>
+</div>
 
 <!-- timer finished -->
 <div id="doneOv"><div id="doneCard"><div class="big" id="doneBig"></div><div class="goal" id="doneGoal" hidden></div><div class="sub" id="doneSub"></div><div class="nx" id="doneNx"></div><button class="close" id="doneClose" type="button">Done</button></div></div>
@@ -372,7 +395,7 @@
   const WORK = ['light', 'deep', 'think'];
 
   // ===== state =====
-  const settings = Object.assign({ dayStart: 6, dayEnd: 22, weekStart: 1, chime: true, repeat: true, alarm: 'chime', icsUrls: '', icsProxy: '' }, store.get('settings', {}));
+  const settings = Object.assign({ dayStart: 6, dayEnd: 22, weekStart: 1, chime: true, repeat: true, barHours: 4, alarm: 'chime', icsUrls: '', icsProxy: '' }, store.get('settings', {}));
   let sessions = store.get('sessions', []);   // [{id,cat,min,start,end,ms,done}]
   // One running note — no per-day history. (v1 kept a note per date; take the most recent one across.)
   let note = store.get('note', null);
@@ -568,6 +591,9 @@
       el.textContent = fmtDur(ms);
       el.classList.toggle('zero', !ms);
     });
+    const full = Math.max(settings.barHours * 3600000, d.ms);   // never overflows; past the goal the scale just stretches
+    $('dayBarSegs').innerHTML = CATS.filter(c => d.cats[c.id] && d.cats[c.id].ms).map(c => '<i style="width:' + (100 * d.cats[c.id].ms / full).toFixed(2) + '%;background:' + c.color + '"></i>').join('');
+    $('dayBar').setAttribute('aria-label', 'Today: ' + fmtDur(d.ms) + ' of ' + settings.barHours + ' hours');
     $('btnTrends').textContent = d.ms ? 'Trends · ' + fmtDur(d.ms).replace(' ', '') : 'Trends';
   }
 
@@ -618,7 +644,7 @@
   $('runGoal').addEventListener('keydown', e => { if (e.key === 'Enter') $('runGoal').blur(); });
 
   function updateRun() {
-    if (!run) { document.title = 'Abiding Step'; return; }
+    if (!run) { document.title = 'Abiding Step'; $('lsTime').textContent = ''; return; }
     const rem = Math.max(0, remainingMs()), s = Math.ceil(rem / 1000);
     const txt = Math.floor(s / 60) + ':' + pad(s % 60);
     $('runTime').textContent = txt;
@@ -626,6 +652,7 @@
     $('runEnds').textContent = run.paused ? 'Paused' : 'Ends at ' + fmtHM(nowHours(new Date(run.endsAt)));
     $('runPause').textContent = run.paused ? 'Resume' : 'Pause';
     document.title = txt + ' · ' + CAT[run.cat].name;
+    $('lsTime').textContent = CAT[run.cat].name + ' · ' + txt + (run.paused ? ' (paused)' : ' left');
   }
   function renderMain() {
     const on = !!run;
@@ -885,6 +912,7 @@
     showVersion();
     $('icsUrls').value = settings.icsUrls; $('icsProxy').value = settings.icsProxy;
     hoursOptions($('setStart'), settings.dayStart); hoursOptions($('setEnd'), settings.dayEnd);
+    $('setBar').innerHTML = [2, 3, 4, 5, 6, 8].map(h => '<option value="' + h + '">' + h + ' hours</option>').join(''); $('setBar').value = String(settings.barHours);
     $('setWeek').value = String(settings.weekStart); $('setChime').checked = settings.chime; $('setRepeat').checked = settings.repeat;
     renderAlarmList();
     $('icsStatus').textContent = cal.pulledAt ? 'Last pulled ' + new Date(cal.pulledAt).toLocaleString() : '';
@@ -900,6 +928,7 @@
   bind('icsProxy', () => { settings.icsProxy = $('icsProxy').value; saveSettings(); }, 'input');
   bind('setStart', () => { settings.dayStart = +$('setStart').value; saveSettings(); renderHeader(); });
   bind('setEnd', () => { settings.dayEnd = +$('setEnd').value; saveSettings(); renderHeader(); });
+  bind('setBar', () => { settings.barHours = +$('setBar').value; saveSettings(); renderCounts(); });
   bind('setWeek', () => { settings.weekStart = +$('setWeek').value; saveSettings(); renderHeader(); });
   bind('setChime', () => { settings.chime = $('setChime').checked; saveSettings(); });
   $('icsPull').addEventListener('click', () => pullCalendar(false));
@@ -942,7 +971,7 @@
   let lastMin = -1;
   function tick() {
     const now = new Date();
-    if (now.getMinutes() !== lastMin) { lastMin = now.getMinutes(); renderHeader(); }
+    if (now.getMinutes() !== lastMin) { lastMin = now.getMinutes(); renderHeader(); renderCounts(); }
     if (run) {
       const rem = remainingMs();
       if (!run.paused && rem <= 0) { completeTimer(-rem); return; }
