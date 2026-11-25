@@ -41,7 +41,8 @@
   .wd.today { border-color: var(--accent); }
   .wd.today .n, .wd.today .d { color: var(--tx); font-weight: 700; }
   .pills { display: flex; gap: 8px; font-size: 0.8rem; color: var(--dim); padding: 0 4px; }
-  .pills > div { flex: 1; }
+  .pills > div { flex: 1; white-space: nowrap; }
+  .pills > div:last-child { text-align: right; }
   .pills b { color: var(--tx); font-weight: 600; }
   #nextEv { margin: 7px 4px 0; font-size: 0.82rem; color: var(--dim); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   #nextEv b { color: #8fa9f5; font-weight: 600; }
@@ -58,7 +59,9 @@
   .cat { margin: 0 0 11px; }
   .catHead { display: flex; align-items: baseline; gap: 8px; margin: 0 3px 5px; font-size: 0.76rem; font-weight: 700; color: var(--c);
     text-transform: uppercase; letter-spacing: 0.07em; }
-  .catHead .cnt { margin-left: auto; font-weight: 500; color: var(--faint); text-transform: none; letter-spacing: 0; font-size: 0.74rem; }
+  .badge { padding: 2px 10px; border-radius: 999px; background: color-mix(in srgb, var(--c) 20%, var(--el)); border: 1px solid color-mix(in srgb, var(--c) 50%, transparent);
+    color: var(--c); font-size: 0.78rem; font-weight: 700; letter-spacing: 0; text-transform: none; font-variant-numeric: tabular-nums; }
+  .badge.zero { opacity: 0.4; font-weight: 600; }
   .btns { display: grid; grid-template-columns: repeat(5, 1fr); gap: 7px; }
   .tbtn { height: 58px; border-radius: 14px; border: 1.5px solid color-mix(in srgb, var(--c) 55%, transparent);
     background: color-mix(in srgb, var(--c) 13%, var(--el)); color: var(--c); font-size: 1.4rem; font-weight: 700;
@@ -417,7 +420,7 @@
     $('pWeek').innerHTML = 'Day <b>' + (dow + 1) + ' of 7</b>' + (dow === 6 ? ' · last day' : ' · ' + (6 - dow) + ' to go');
     if (nh < settings.dayStart) $('pDay').innerHTML = 'Day starts <b>' + fmtHour(settings.dayStart) + '</b>';
     else if (nh >= settings.dayEnd) $('pDay').innerHTML = '<b>Past ' + fmtHour(settings.dayEnd) + '</b> · wind down';
-    else $('pDay').innerHTML = '<b>' + fmtDur((settings.dayEnd - nh) * 3600000) + '</b> left · until ' + fmtHour(settings.dayEnd);
+    else $('pDay').innerHTML = '<b>' + fmtDur((settings.dayEnd - nh) * 3600000) + '</b> left to ' + fmtHour(settings.dayEnd);
 
     const evs = eventsFor(dkey(now)).filter(e => !e.ad && e.e > nh);
     const el = $('nextEv');
@@ -444,7 +447,7 @@
   // ===== timer grid =====
   function buildGrid() {
     $('grid').innerHTML = CATS.map(c =>
-      '<section class="cat" style="--c:' + c.color + '"><div class="catHead"><span>' + c.name + '</span><span class="cnt" data-cnt="' + c.id + '"></span></div><div class="btns">' +
+      '<section class="cat" style="--c:' + c.color + '"><div class="catHead"><span>' + c.name + '</span><span class="badge zero" data-cnt="' + c.id + '">0m</span></div><div class="btns">' +
       MINS.map(m => '<button class="tbtn" type="button" data-cat="' + c.id + '" data-min="' + m + '">' + m + '<small>min</small></button>').join('') +
       '</div></section>').join('');
   }
@@ -457,7 +460,10 @@
     CATS.forEach(c => {
       const x = d.cats[c.id];
       const el = document.querySelector('[data-cnt="' + c.id + '"]');
-      if (el) el.textContent = x && x.ms ? 'today ' + x.n + ' · ' + fmtDur(x.ms) : '';
+      if (!el) return;
+      const ms = x ? x.ms : 0;
+      el.textContent = fmtDur(ms);
+      el.classList.toggle('zero', !ms);
     });
     $('todayLine').innerHTML = d.ms ? 'Today: <b>' + d.n + ' timer' + (d.n === 1 ? '' : 's') + '</b> · <b>' + fmtDur(d.ms) + '</b> · see trends' : 'No timers yet today · see trends';
   }
