@@ -22,10 +22,10 @@
     font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", system-ui, sans-serif; }
   body { padding-top: env(safe-area-inset-top); min-height: 100dvh; -webkit-text-size-adjust: 100%; }
   button { font: inherit; color: inherit; touch-action: manipulation; -webkit-user-select: none; user-select: none; cursor: pointer; }
-  #app { max-width: 560px; margin: 0 auto; padding: 10px 14px calc(78px + env(safe-area-inset-bottom)); }
+  #app { display: flex; flex-direction: column; min-height: calc(100dvh - env(safe-area-inset-top)); max-width: 560px; margin: 0 auto; padding: 10px 14px calc(70px + env(safe-area-inset-bottom)); }
 
   /* ===== time header ===== */
-  #hdr { background: var(--el); border: 1px solid var(--bd); border-radius: 18px; padding: 12px 12px 10px; }
+  #hdr { background: var(--el); border: 1px solid var(--bd); border-radius: 18px; padding: 10px 12px 8px; }
   .clockrow { display: flex; align-items: center; justify-content: space-between; padding: 0 4px; }
   #hdr { transition: opacity 0.4s; }
   #hdr.dim { opacity: 0.4; }
@@ -39,8 +39,8 @@
   #partDay { font-size: 0.82rem; color: var(--faint); margin-top: 2px; }
   #dow { font-size: 1.45rem; font-weight: 700; line-height: 1.1; }
   #dateTxt { font-size: 0.95rem; color: var(--dim); margin-top: 2px; }
-  #weekStrip { display: flex; gap: 5px; margin: 11px 0 9px; }
-  .wd { flex: 1; text-align: center; padding: 6px 0 5px; border-radius: 10px; background: var(--el2); border: 1px solid var(--bd); cursor: pointer; min-width: 0; }
+  #weekStrip { display: flex; gap: 5px; margin: 8px 0 7px; }
+  .wd { flex: 1; text-align: center; padding: 5px 0 4px; border-radius: 10px; background: var(--el2); border: 1px solid var(--bd); cursor: pointer; min-width: 0; }
   .wd .n { font-size: 0.58rem; color: var(--faint); text-transform: uppercase; letter-spacing: 0.04em; }
   .wd .d { font-size: 0.95rem; color: var(--dim); margin-top: 1px; font-variant-numeric: tabular-nums; }
   .wd.past { opacity: 0.42; }
@@ -55,27 +55,27 @@
   #nextEv:empty { display: none; }
 
   /* ===== notes bar ===== */
-  #notesBar { display: flex; align-items: flex-start; gap: 10px; width: 100%; margin: 10px 0 12px; padding: 11px 14px; text-align: left;
+  #notesBar { display: flex; align-items: flex-start; gap: 10px; width: 100%; margin: 8px 0 10px; padding: 9px 14px; text-align: left;
     background: var(--el); border: 1px solid var(--bd); border-radius: 14px; }
   #notesBar .lbl { padding-top: 3px; font-size: 0.66rem; font-weight: 700; color: var(--faint); text-transform: uppercase; letter-spacing: 0.08em; flex: none; }
   #notesBar .txt { flex: 1; min-width: 0; white-space: pre-wrap; word-break: break-word; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 3; overflow: hidden; font-size: 0.92rem; line-height: 1.4; color: var(--tx); }
   #notesBar .txt.empty { color: var(--faint); }
   
   /* ===== timer grid ===== */
-  .cat { margin: 0 0 11px; }
-  .catHead { display: flex; align-items: baseline; gap: 8px; margin: 0 3px 5px; font-size: 0.76rem; font-weight: 700; color: var(--c);
+  .cat { display: flex; flex-direction: column; min-height: 0; }
+  /* the five rows share whatever height is left under the header + note, so it fits any phone and any note length */
+  #grid { flex: 1 1 auto; display: grid; grid-template-rows: repeat(5, minmax(70px, 1fr)); gap: 8px; min-height: 0; }
+  .catHead { display: flex; align-items: baseline; gap: 8px; margin: 0 3px 4px; font-size: 0.76rem; font-weight: 700; color: var(--c);
     text-transform: uppercase; letter-spacing: 0.07em; }
   .badge { padding: 2px 10px; border-radius: 999px; background: color-mix(in srgb, var(--c) 20%, var(--el)); border: 1px solid color-mix(in srgb, var(--c) 50%, transparent);
     color: var(--c); font-size: 0.78rem; font-weight: 700; letter-spacing: 0; text-transform: none; font-variant-numeric: tabular-nums; }
   .badge.zero { opacity: 0.4; font-weight: 600; }
-  .btns { display: grid; grid-template-columns: repeat(5, 1fr); gap: 7px; }
-  .tbtn { height: 58px; border-radius: 14px; border: 1.5px solid color-mix(in srgb, var(--c) 55%, transparent);
+  .btns { display: grid; grid-template-columns: repeat(5, 1fr); gap: 7px; flex: 1; min-height: 0; }
+  .tbtn { min-height: 44px; max-height: 62px; border-radius: 14px; border: 1.5px solid color-mix(in srgb, var(--c) 55%, transparent);
     background: color-mix(in srgb, var(--c) 13%, var(--el)); color: var(--c); font-size: 1.4rem; font-weight: 700;
     display: flex; flex-direction: column; align-items: center; justify-content: center; line-height: 1; padding: 0; }
-  .tbtn small { font-size: 0.54rem; font-weight: 600; opacity: 0.75; margin-top: 4px; letter-spacing: 0.06em; text-transform: uppercase; }
+  .tbtn small { font-size: 0.54rem; font-weight: 600; opacity: 0.75; margin-top: 3px; letter-spacing: 0.06em; text-transform: uppercase; }
   .tbtn:active { transform: scale(0.94); background: color-mix(in srgb, var(--c) 32%, var(--el)); }
-  #todayLine { width: 100%; background: none; border: 0; color: var(--dim); font-size: 0.82rem; padding: 6px 4px; text-align: center; }
-  #todayLine b { color: var(--tx); }
 
   /* ===== running panel ===== */
   #runPanel { border: 2px solid var(--c); border-radius: 22px; background: color-mix(in srgb, var(--c) 10%, var(--el));
@@ -97,9 +97,9 @@
 
   /* ===== bottom bar ===== */
   #bottom { position: fixed; left: 0; right: 0; bottom: 0; z-index: 20; display: flex; gap: 8px; justify-content: center;
-    padding: 8px 14px calc(8px + env(safe-area-inset-bottom)); background: rgba(14,16,22,0.94); border-top: 1px solid var(--bd);
+    padding: 7px 14px calc(7px + env(safe-area-inset-bottom)); background: rgba(14,16,22,0.94); border-top: 1px solid var(--bd);
     -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px); }
-  #bottom button { flex: 1; max-width: 180px; height: 46px; border-radius: 12px; border: 1px solid var(--bd); background: var(--el); font-size: 0.92rem; font-weight: 600; color: var(--dim); }
+  #bottom button { flex: 1; max-width: 180px; height: 42px; border-radius: 12px; border: 1px solid var(--bd); background: var(--el); font-size: 0.92rem; font-weight: 600; color: var(--dim); }
   #bottom button:active { background: var(--el2); }
 
   /* ===== sheets ===== */
@@ -211,7 +211,7 @@
 <div id="app">
   <header id="hdr">
     <div class="clockrow">
-      <svg id="clockSvg" viewBox="0 0 100 100" width="92" height="92" role="img" aria-label="Clock">
+      <svg id="clockSvg" viewBox="0 0 100 100" width="80" height="80" role="img" aria-label="Clock">
         <circle class="face" cx="50" cy="50" r="47"/>
         <g id="ticks"></g>
         <line class="hand" id="hHand" x1="50" y1="50" x2="50" y2="28" stroke-width="5.5"/>
@@ -241,7 +241,6 @@
   </section>
 
   <main id="grid"></main>
-  <button id="todayLine" type="button"></button>
 </div>
 
 <nav id="bottom">
@@ -565,7 +564,7 @@
       el.textContent = fmtDur(ms);
       el.classList.toggle('zero', !ms);
     });
-    $('todayLine').innerHTML = d.ms ? 'Today: <b>' + d.n + ' timer' + (d.n === 1 ? '' : 's') + '</b> · <b>' + fmtDur(d.ms) + '</b> · see trends' : 'No timers yet today · see trends';
+    $('btnTrends').textContent = d.ms ? 'Trends · ' + fmtDur(d.ms) : 'Trends';
   }
 
   // ===== the running timer =====
@@ -628,7 +627,7 @@
     const on = !!run;
     $('hdr').classList.toggle('dim', on);
     if (!on) $('runGoal').blur();
-    $('runPanel').hidden = !on; $('grid').hidden = on; $('todayLine').hidden = on;
+    $('runPanel').hidden = !on; $('grid').hidden = on;
     if (on) {
       $('runPanel').style.setProperty('--c', CAT[run.cat].color);
       $('runCat').textContent = CAT[run.cat].name + ' · ' + run.min + ' min';
@@ -783,7 +782,6 @@
   }
   $('trSeg').addEventListener('click', e => { const b = e.target.closest('button'); if (!b) return; trRange = +b.dataset.r; store.set('trRange', trRange); renderTrends(); });
   $('btnTrends').addEventListener('click', () => { renderTrends(); openSheet('sheetTrends'); $('sheetTrends').querySelector('.sheetBody').scrollTop = 0; });
-  $('todayLine').addEventListener('click', () => $('btnTrends').click());
   $('trClose').addEventListener('click', () => closeSheet('sheetTrends'));
 
   // ===== calendar import (ICS) — same approach as AbidingSteps, kept in this app's own storage =====
