@@ -84,18 +84,18 @@
   .cat { display: flex; flex-direction: column; min-height: 0; }
   /* the five rows share whatever height is left under the header + note, so it fits any phone and any note length */
   #grid { flex: 1 1 auto; display: grid; grid-template-rows: repeat(5, minmax(65px, 1fr)); gap: 6px; min-height: 0; }
-  .catHead { display: flex; align-items: baseline; gap: 8px; margin: 0 3px 3px; font-size: 0.76rem; font-weight: 700; color: var(--c);
+  .catHead { display: flex; align-items: baseline; gap: 8px; margin: 0 3px 3px; font-size: 0.72rem; font-weight: 700; color: color-mix(in srgb, var(--c) 55%, var(--faint));
     text-transform: uppercase; letter-spacing: 0.07em; }
-  .badge { margin-left: auto; padding: 1px 9px; border-radius: 999px; background: color-mix(in srgb, var(--c) 20%, var(--el)); border: 1px solid color-mix(in srgb, var(--c) 50%, transparent);
-    color: var(--c); font-size: 0.74rem; font-weight: 700; letter-spacing: 0; text-transform: none; font-variant-numeric: tabular-nums; }
-  .badge.zero { opacity: 0.4; font-weight: 600; }
+  .badge { margin-left: auto; padding: 1px 9px; border-radius: 999px; background: color-mix(in srgb, var(--c) 9%, var(--el)); border: 1px solid color-mix(in srgb, var(--c) 26%, var(--bd));
+    color: color-mix(in srgb, var(--c) 60%, var(--dim)); font-size: 0.72rem; font-weight: 600; letter-spacing: 0; text-transform: none; font-variant-numeric: tabular-nums; }
+  .badge.zero { opacity: 0.45; }
   .btns { display: grid; grid-template-columns: repeat(6, 1fr); gap: 6px; flex: 1; min-height: 0; }
-  .tbtn { min-height: 44px; max-height: 62px; border-radius: 14px; border: 1.5px solid color-mix(in srgb, var(--c) 55%, transparent);
-    background: color-mix(in srgb, var(--c) 13%, var(--el)); color: var(--c); font-size: 1.4rem; font-weight: 700;
+  .tbtn { min-height: 44px; max-height: 62px; border-radius: 14px; border: 1px solid color-mix(in srgb, var(--c) 26%, var(--bd));
+    background: color-mix(in srgb, var(--c) 5%, var(--el)); color: color-mix(in srgb, var(--c) 58%, var(--dim)); font-size: 1.3rem; font-weight: 600;
     display: flex; flex-direction: column; align-items: center; justify-content: center; line-height: 1; padding: 0; }
-  .tbtn small { font-size: 0.54rem; font-weight: 600; opacity: 0.75; margin-top: 3px; letter-spacing: 0.06em; text-transform: uppercase; }
-  .tbtn.big { border-width: 2.5px; background: color-mix(in srgb, var(--c) 26%, var(--el)); }
-  .tbtn:active { transform: scale(0.94); background: color-mix(in srgb, var(--c) 32%, var(--el)); }
+  .tbtn small { font-size: 0.54rem; font-weight: 600; opacity: 0.5; margin-top: 3px; letter-spacing: 0.06em; text-transform: uppercase; }
+  .tbtn.big { border-width: 1.5px; border-color: color-mix(in srgb, var(--c) 38%, var(--bd)); background: color-mix(in srgb, var(--c) 9%, var(--el)); }
+  .tbtn:active { transform: scale(0.94); background: color-mix(in srgb, var(--c) 30%, var(--el)); color: var(--c); }
 
   /* ===== running panel ===== */
   #runPanel { border: 2px solid var(--c); border-radius: 22px; background: color-mix(in srgb, var(--c) 10%, var(--el));
@@ -197,9 +197,9 @@
   #focusPill .k, #nextBtn .k { font-size: 0.62rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--faint); white-space: nowrap; }
   #focusPill .v { font-size: 0.95rem; font-weight: 600; color: var(--tx); max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   #focusPill.unset { border-color: var(--accent); } #focusPill.unset .v { color: var(--accent); }
-  #nextBtn { flex: 1; height: 50px; border-radius: 14px; border: 2px solid var(--c); background: color-mix(in srgb, var(--c) 22%, var(--el)); color: var(--c);
+  #nextBtn { flex: 1; height: 50px; border-radius: 14px; border: 2px solid var(--c); background: color-mix(in srgb, var(--c) 30%, var(--el)); color: var(--tx); box-shadow: 0 0 20px color-mix(in srgb, var(--c) 28%, transparent);
     display: flex; flex-direction: column; align-items: flex-start; justify-content: center; padding: 0 14px; text-align: left; min-width: 0; }
-  #nextBtn .k { color: color-mix(in srgb, var(--c) 70%, var(--tx)); }
+  #nextBtn .k { color: color-mix(in srgb, var(--c) 55%, var(--tx)); }
   #nextBtn .v { font-size: 1.02rem; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
   #nextBtn:active { transform: scale(0.98); }
   #focusOv { position: fixed; inset: 0; z-index: 95; background: rgba(8,9,13,0.8); display: none; align-items: flex-end; justify-content: center; padding: 0 12px calc(12px + env(safe-area-inset-bottom)); }
