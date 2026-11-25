@@ -208,7 +208,10 @@
   #focusCard { width: 100%; max-width: 520px; background: var(--el); border: 1px solid var(--bd); border-radius: 20px; padding: 14px; max-height: 80dvh; overflow-y: auto; }
   #focusCard h4 { margin: 2px 4px 10px; font-size: 0.78rem; color: var(--faint); text-transform: uppercase; letter-spacing: 0.08em; }
   #focusList .fo { display: flex; flex-direction: column; justify-content: center; width: 100%; min-height: 54px; margin-bottom: 7px; border-radius: 13px; border: 1.5px solid var(--bd); background: var(--el2); text-align: left; padding: 8px 16px; }
+  #focusList .fo .fh { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; }
   #focusList .fo .fn { font-size: 1rem; font-weight: 700; }
+  #focusList .fo .fm { font-size: 0.8rem; font-weight: 700; color: var(--accent); font-variant-numeric: tabular-nums; }
+  #focusList .fo .fm.zero { color: var(--faint); font-weight: 500; opacity: 0.6; }
   #focusList .fo .fd { font-size: 0.8rem; font-weight: 400; color: var(--dim); margin-top: 2px; line-height: 1.3; }
   #focusList .fo.on .fd { color: color-mix(in srgb, var(--accent) 70%, var(--dim)); }
   #focusList .fo.on { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 14%, var(--el2)); color: var(--accent); }
@@ -733,7 +736,9 @@
   function renderFocus() { $('focusVal').textContent = focus || 'pick one'; $('focusPill').classList.toggle('unset', !focus); }
   $('nextBtn').addEventListener('click', () => { if (!run && sug) startTimer(sug.cat, sug.min); });
   $('focusPill').addEventListener('click', () => {
-    $('focusList').innerHTML = settings.focuses.map(parseFocus).filter(f => f.name).map(f => '<button type="button" class="fo' + (f.name === focus ? ' on' : '') + '" data-f="' + esc(f.name) + '"><span class="fn">' + esc(f.name) + '</span>' + (f.note ? '<span class="fd">' + esc(f.note) + '</span>' : '') + '</button>').join('')
+    const spent = {};   // today's minutes per focus — work only, so rest and breaks don't pad whatever was selected
+    todaysSessions().forEach(x => { if (WORK.includes(x.cat) && x.focus) spent[x.focus] = (spent[x.focus] || 0) + x.ms; });
+    $('focusList').innerHTML = settings.focuses.map(parseFocus).filter(f => f.name).map(f => '<button type="button" class="fo' + (f.name === focus ? ' on' : '') + '" data-f="' + esc(f.name) + '"><span class="fh"><span class="fn">' + esc(f.name) + '</span><span class="fm' + (spent[f.name] ? '' : ' zero') + '">' + fmtDur(spent[f.name] || 0) + '</span></span>' + (f.note ? '<span class="fd">' + esc(f.note) + '</span>' : '') + '</button>').join('')
       + '<button type="button" class="fo none' + (!focus ? ' on' : '') + '" data-f=""><span class="fn">No focus</span></button>';
     $('focusOv').classList.add('show');
   });
