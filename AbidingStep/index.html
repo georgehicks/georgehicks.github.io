@@ -48,13 +48,12 @@
   #nextEv:empty { display: none; }
 
   /* ===== notes bar ===== */
-  #notesBar { display: flex; align-items: center; gap: 10px; width: 100%; margin: 10px 0 12px; padding: 11px 14px; text-align: left;
+  #notesBar { display: flex; align-items: flex-start; gap: 10px; width: 100%; margin: 10px 0 12px; padding: 11px 14px; text-align: left;
     background: var(--el); border: 1px solid var(--bd); border-radius: 14px; }
-  #notesBar .lbl { font-size: 0.66rem; font-weight: 700; color: var(--faint); text-transform: uppercase; letter-spacing: 0.08em; flex: none; }
-  #notesBar .txt { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: 0.92rem; color: var(--tx); }
+  #notesBar .lbl { padding-top: 3px; font-size: 0.66rem; font-weight: 700; color: var(--faint); text-transform: uppercase; letter-spacing: 0.08em; flex: none; }
+  #notesBar .txt { flex: 1; min-width: 0; white-space: pre-wrap; word-break: break-word; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 3; overflow: hidden; font-size: 0.92rem; line-height: 1.4; color: var(--tx); }
   #notesBar .txt.empty { color: var(--faint); }
-  #notesBar .more { flex: none; font-size: 0.72rem; color: var(--faint); }
-
+  
   /* ===== timer grid ===== */
   .cat { margin: 0 0 11px; }
   .catHead { display: flex; align-items: baseline; gap: 8px; margin: 0 3px 5px; font-size: 0.76rem; font-weight: 700; color: var(--c);
@@ -119,7 +118,7 @@
   .cd.sel { background: color-mix(in srgb, var(--accent) 22%, var(--el)); border-color: var(--accent); }
   .dots { display: flex; gap: 3px; height: 6px; }
   .dots i { width: 6px; height: 6px; border-radius: 3px; display: block; }
-  .dots .e { background: #8fa9f5; } .dots .s { background: var(--accent); } .dots .n { background: #e6c25a; }
+  .dots .e { background: #8fa9f5; } .dots .s { background: var(--accent); } 
   .legend { display: flex; gap: 14px; font-size: 0.72rem; color: var(--faint); margin: 10px 2px 0; }
   .legend i { display: inline-block; width: 8px; height: 8px; border-radius: 4px; margin-right: 5px; }
   .ev { display: flex; gap: 10px; padding: 9px 12px; background: var(--el); border: 1px solid var(--bd); border-radius: 11px; margin-bottom: 6px; font-size: 0.92rem; }
@@ -128,7 +127,6 @@
   .chips { display: flex; flex-wrap: wrap; gap: 7px; }
   .chip { padding: 6px 11px; border-radius: 999px; border: 1px solid color-mix(in srgb, var(--c) 55%, transparent);
     background: color-mix(in srgb, var(--c) 14%, var(--el)); color: var(--c); font-size: 0.82rem; font-weight: 600; }
-  .notePrev { white-space: pre-wrap; word-break: break-word; background: var(--el); border: 1px solid var(--bd); border-radius: 12px; padding: 11px 13px; font-size: 0.92rem; margin-bottom: 8px; }
   .btn { height: 44px; padding: 0 16px; border-radius: 12px; border: 1px solid var(--bd); background: var(--el); font-weight: 600; font-size: 0.92rem; }
   .btn.full { width: 100%; }
   .btn:active { background: var(--el2); }
@@ -193,7 +191,7 @@
     <div id="nextEv"></div>
   </header>
 
-  <button id="notesBar" type="button"><span class="lbl">Today</span><span class="txt empty" id="notesTxt">Notes for the day…</span><span class="more" id="notesMore"></span></button>
+  <button id="notesBar" type="button"><span class="lbl">Notes</span><span class="txt empty" id="notesTxt">Tap to write — stays until you change it</span></button>
 
   <section id="runPanel" hidden>
     <div id="runCat"></div>
@@ -221,7 +219,7 @@
 <div class="sheet" id="sheetNote">
   <div class="sheetHead"><h2 id="noteTitle">Notes</h2><button class="primary" id="noteDone" type="button">Done</button></div>
   <div class="sheetBody" style="display:flex; flex-direction:column;">
-    <textarea id="noteArea" placeholder="Anything for this day…" autocapitalize="sentences"></textarea>
+    <textarea id="noteArea" placeholder="Your running notes — they stay here until you change them." autocapitalize="sentences"></textarea>
   </div>
 </div>
 
@@ -236,7 +234,7 @@
       <button id="calNext" type="button" aria-label="Next month">›</button>
     </div>
     <div class="calGrid" id="calGrid"></div>
-    <div class="legend"><span><i style="background:#8fa9f5"></i>event</span><span><i style="background:var(--accent)"></i>timers</span><span><i style="background:#e6c25a"></i>note</span></div>
+    <div class="legend"><span><i style="background:#8fa9f5"></i>event</span><span><i style="background:var(--accent)"></i>timers</span></div>
     <div id="dayDetail"></div>
   </div>
 </div>
@@ -272,7 +270,7 @@
     <p class="hint">The chime only plays while the app is open on screen, and the iPhone ringer switch must be on. A locked phone can't ring a web app, so while a timer runs the screen is kept awake. If you leave and come back, the timer is still right: it counts to a clock time, not ticks.</p>
 
     <h3>Your data</h3>
-    <p class="hint">Timers, notes and trends are saved only on this device, in this app. They survive refreshes and restarts. Export a backup now and then.</p>
+    <p class="hint">Your note and your timer history are saved only on this device, in this app. They survive refreshes and restarts. Export a backup now and then.</p>
     <button class="btn full" id="expBtn" type="button" style="margin-bottom:8px;">Export backup (.json)</button>
     <label class="btn full" style="display:flex; align-items:center; justify-content:center;">Import backup (merges, never overwrites)<input type="file" id="impFile" accept="application/json,.json" style="display:none;"></label>
     <div class="status" id="dataStatus"></div>
@@ -329,13 +327,19 @@
   // ===== state =====
   const settings = Object.assign({ dayStart: 6, dayEnd: 22, weekStart: 1, chime: true, icsUrls: '', icsProxy: '' }, store.get('settings', {}));
   let sessions = store.get('sessions', []);   // [{id,cat,min,start,end,ms,done}]
-  let notes = store.get('notes', {});         // {dateKey: text}
+  // One running note — no per-day history. (v1 kept a note per date; take the most recent one across.)
+  let note = store.get('note', null);
+  if (note === null) {
+    const old = store.get('notes', {}); const ks = Object.keys(old).filter(k => (old[k] || '').trim()).sort();
+    note = ks.length ? old[ks[ks.length - 1]] : '';
+    store.set('note', note);
+  }
   let cal = store.get('cal', { pulledAt: 0, days: {} });
   let run = store.get('run', null);           // the running timer — survives refresh because it's a clock time
   let dayMapCache = null;
   const saveSettings = () => store.set('settings', settings);
   const saveSessions = () => { store.set('sessions', sessions); dayMapCache = null; };
-  const saveNotes = () => store.set('notes', notes);
+  const saveNote = () => store.set('note', note);
 
   function dayMap() {
     if (dayMapCache) return dayMapCache;
@@ -432,12 +436,9 @@
 
   // ===== notes bar =====
   function renderNotesBar() {
-    const t = (notes[dkey(new Date())] || '').trim();
-    const lines = t ? t.split('\n').filter(l => l.trim()) : [];
-    const el = $('notesTxt');
-    el.textContent = lines.length ? lines[0] : 'Notes for the day…';
-    el.classList.toggle('empty', !lines.length);
-    $('notesMore').textContent = lines.length > 1 ? '+' + (lines.length - 1) : '';
+    const t = note.trim(), el = $('notesTxt');
+    el.textContent = t || 'Tap to write — stays until you change it';
+    el.classList.toggle('empty', !t);
   }
 
   // ===== timer grid =====
@@ -557,25 +558,14 @@
   function closeSheet(id) { $(id).classList.remove('show'); if (!sheetsOpen()) document.body.style.overflow = ''; }
 
   // ----- notes sheet -----
-  let noteKey = dkey(new Date());
-  function openNote(key) {
-    noteKey = key;
-    const d = fromKey(key);
-    $('noteTitle').textContent = 'Notes · ' + d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
-    $('noteArea').value = notes[key] || '';
+  function openNote() {
+    $('noteArea').value = note;
     openSheet('sheetNote');
     $('noteArea').focus();
   }
-  $('noteArea').addEventListener('input', () => {
-    const v = $('noteArea').value;
-    if (v.trim()) notes[noteKey] = v; else delete notes[noteKey];
-    saveNotes();
-  });
-  $('noteDone').addEventListener('click', () => {
-    $('noteArea').blur(); closeSheet('sheetNote');
-    renderNotesBar(); if ($('sheetCal').classList.contains('show')) renderCal();
-  });
-  $('notesBar').addEventListener('click', () => openNote(dkey(new Date())));
+  $('noteArea').addEventListener('input', () => { note = $('noteArea').value; saveNote(); });
+  $('noteDone').addEventListener('click', () => { $('noteArea').blur(); closeSheet('sheetNote'); renderNotesBar(); });
+  $('notesBar').addEventListener('click', openNote);
 
   // ----- calendar sheet -----
   let calMonth = new Date(), calSel = dkey(new Date());
@@ -593,9 +583,9 @@
     for (let i = 0; i < 42; i++) {
       const d = new Date(y, m, 1 - off + i), k = dkey(d);
       if (i >= 35 && d.getMonth() !== m) break;
-      const hasE = cal.days && cal.days[k] && cal.days[k].length, hasS = dm[k] && dm[k].ms, hasN = notes[k];
+      const hasE = cal.days && cal.days[k] && cal.days[k].length, hasS = dm[k] && dm[k].ms;
       h += '<button type="button" class="cd' + (d.getMonth() !== m ? ' other' : '') + (k === todayK ? ' today' : '') + (k === calSel ? ' sel' : '') + '" data-k="' + k + '">' + d.getDate() +
-        '<span class="dots">' + (hasE ? '<i class="e"></i>' : '') + (hasS ? '<i class="s"></i>' : '') + (hasN ? '<i class="n"></i>' : '') + '</span></button>';
+        '<span class="dots">' + (hasE ? '<i class="e"></i>' : '') + (hasS ? '<i class="s"></i>' : '') + '</span></button>';
     }
     $('calGrid').innerHTML = h;
     renderDayDetail();
@@ -609,10 +599,6 @@
     if (dm && dm.ms) {
       h += '<div class="chips">' + CATS.filter(c => dm.cats[c.id]).map(c => '<span class="chip" style="--c:' + c.color + '">' + c.name + ' · ' + dm.cats[c.id].n + ' · ' + fmtDur(dm.cats[c.id].ms) + '</span>').join('') + '</div>';
     } else h += '<div class="none">None logged.</div>';
-    h += '<h3>Notes</h3>';
-    const n = (notes[calSel] || '').trim();
-    h += n ? '<div class="notePrev">' + esc(n.length > 600 ? n.slice(0, 600) + '…' : n) + '</div>' : '';
-    h += '<button class="btn full" id="editNote" type="button">' + (n ? 'Edit note' : 'Write a note for this day') + '</button>';
     $('dayDetail').innerHTML = h;
   }
   $('calGrid').addEventListener('click', e => {
@@ -622,7 +608,6 @@
     if (d.getMonth() !== calMonth.getMonth()) calMonth = new Date(d.getFullYear(), d.getMonth(), 1);
     renderCal();
   });
-  $('dayDetail').addEventListener('click', e => { if (e.target.id === 'editNote') openNote(calSel); });
   $('calPrev').addEventListener('click', () => { calMonth = new Date(calMonth.getFullYear(), calMonth.getMonth() - 1, 1); renderCal(); });
   $('calNext').addEventListener('click', () => { calMonth = new Date(calMonth.getFullYear(), calMonth.getMonth() + 1, 1); renderCal(); });
   $('calToday').addEventListener('click', () => openCal());
@@ -782,7 +767,7 @@
     try { if (navigator.storage && navigator.storage.persisted) p = (await navigator.storage.persisted()) ? ' Storage is marked persistent.' : ' Storage is not marked persistent (the browser may clear it if the phone is very low on space).'; } catch (e) {}
     let ver = '';
     try { const t = await (await fetch('sw.js', { cache: 'no-cache' })).text(); const m = t.match(/CACHE\s*=\s*'[a-z-]+-(v\d+)'/); if (m) ver = ' · ' + m[1]; } catch (e) {}
-    $('dataStatus').textContent = sessions.length + ' timers and ' + Object.keys(notes).length + ' notes saved here.' + p + ver;
+    $('dataStatus').textContent = sessions.length + ' timers saved here' + (note.trim() ? ', plus your note.' : '.') + p + ver;
   }
   const bind = (id, fn, ev = 'change') => $(id).addEventListener(ev, fn);
   bind('icsUrls', () => { settings.icsUrls = $('icsUrls').value; saveSettings(); }, 'input');
@@ -797,7 +782,7 @@
   $('setClose').addEventListener('click', () => closeSheet('sheetSet'));
 
   $('expBtn').addEventListener('click', () => {
-    const data = { app: 'abidingstep', version: 1, exportedAt: new Date().toISOString(), sessions, notes, settings };
+    const data = { app: 'abidingstep', version: 1, exportedAt: new Date().toISOString(), sessions, note, settings };
     const a = document.createElement('a');
     a.href = URL.createObjectURL(new Blob([JSON.stringify(data, null, 1)], { type: 'application/json' }));
     a.download = 'abiding-step-' + dkey(new Date()) + '.json';
@@ -811,10 +796,10 @@
       if (d.app !== 'abidingstep') throw new Error('That is not an Abiding Step backup.');
       const have = new Set(sessions.map(s => s.id)); let addedS = 0, addedN = 0;
       (d.sessions || []).forEach(s => { if (s && s.id && !have.has(s.id)) { sessions.push(s); have.add(s.id); addedS++; } });
-      Object.entries(d.notes || {}).forEach(([k, v]) => { if (v && !notes[k]) { notes[k] = v; addedN++; } });
+      if (!note.trim() && typeof d.note === 'string' && d.note.trim()) { note = d.note; addedN = 1; }
       sessions.sort((a, b) => a.start - b.start);
-      saveSessions(); saveNotes(); renderCounts(); renderNotesBar();
-      $('dataStatus').textContent = 'Merged ' + addedS + ' timers and ' + addedN + ' notes.';
+      saveSessions(); saveNote(); renderCounts(); renderNotesBar();
+      $('dataStatus').textContent = 'Merged ' + addedS + ' timers' + (addedN ? ' and your note.' : '. Your current note was kept.');
     } catch (err) { $('dataStatus').textContent = err.message || 'Could not read that file.'; }
     e.target.value = '';
   });
@@ -823,7 +808,7 @@
   let lastMin = -1;
   function tick() {
     const now = new Date();
-    if (now.getMinutes() !== lastMin) { lastMin = now.getMinutes(); renderHeader(); renderNotesBar(); }
+    if (now.getMinutes() !== lastMin) { lastMin = now.getMinutes(); renderHeader(); }
     if (run) {
       const rem = remainingMs();
       if (!run.paused && rem <= 0) { completeTimer(-rem); return; }
