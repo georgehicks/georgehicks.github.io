@@ -90,11 +90,13 @@
     color: color-mix(in srgb, var(--c) 60%, var(--dim)); font-size: 0.72rem; font-weight: 600; letter-spacing: 0; text-transform: none; font-variant-numeric: tabular-nums; }
   .badge.zero { opacity: 0.45; }
   .btns { display: grid; grid-template-columns: repeat(6, 1fr); gap: 6px; flex: 1; min-height: 0; }
-  .tbtn { min-height: 44px; max-height: 62px; border-radius: 14px; border: 1px solid color-mix(in srgb, var(--c) 12%, var(--bd));
-    background: color-mix(in srgb, var(--c) 3%, var(--el)); color: color-mix(in srgb, var(--c) 42%, var(--faint)); font-size: 1.3rem; font-weight: 500;
-    display: flex; align-items: center; justify-content: center; line-height: 1; padding: 0; font-variant-numeric: tabular-nums; }
-  .tbtn.big { border-color: color-mix(in srgb, var(--c) 22%, var(--bd)); background: color-mix(in srgb, var(--c) 6%, var(--el)); font-weight: 600; }
-  .tbtn:active { transform: scale(0.94); background: color-mix(in srgb, var(--c) 28%, var(--el)); color: var(--c); border-color: var(--c); }
+  /* the buttons sit at the same 40% as the header does while a timer runs: seen in a flash, never competing with the next step */
+  .tbtn { min-height: 44px; max-height: 62px; border-radius: 14px; border: 1.5px solid color-mix(in srgb, var(--c) 50%, transparent);
+    background: color-mix(in srgb, var(--c) 12%, var(--el)); color: var(--c); font-size: 1.3rem; font-weight: 700; opacity: 0.4; transition: opacity 0.15s;
+    display: flex; flex-direction: column; align-items: center; justify-content: center; line-height: 1; padding: 0; font-variant-numeric: tabular-nums; }
+  .tbtn small { font-size: 0.54rem; font-weight: 600; opacity: 0.8; margin-top: 3px; letter-spacing: 0.06em; text-transform: uppercase; }
+  .tbtn.big { border-width: 2px; background: color-mix(in srgb, var(--c) 20%, var(--el)); }
+  .tbtn:active { transform: scale(0.94); opacity: 1; background: color-mix(in srgb, var(--c) 30%, var(--el)); }
 
   /* ===== running panel ===== */
   #runPanel { border: 2px solid var(--c); border-radius: 22px; background: color-mix(in srgb, var(--c) 10%, var(--el));
@@ -658,7 +660,7 @@
   function buildGrid() {
     $('grid').innerHTML = CATS.map(c =>
       '<section class="cat" style="--c:' + c.color + '"><div class="catHead"><span>' + c.name + '</span><span class="badge zero" data-cnt="' + c.id + '">0m</span></div><div class="btns">' +
-      MINS.map(m => '<button class="tbtn' + (m >= 25 ? ' big' : '') + '" type="button" data-cat="' + c.id + '" data-min="' + m + '" aria-label="' + c.name + ', ' + m + ' minutes">' + m + '</button>').join('') +
+      MINS.map(m => '<button class="tbtn' + (m >= 25 ? ' big' : '') + '" type="button" data-cat="' + c.id + '" data-min="' + m + '" aria-label="' + c.name + ', ' + m + ' minutes">' + m + '<small>min</small></button>').join('') +
       '</div></section>').join('');
   }
   $('grid').addEventListener('click', e => {
