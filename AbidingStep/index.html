@@ -395,7 +395,8 @@
   const WORK = ['light', 'deep', 'think'];
 
   // ===== state =====
-  const settings = Object.assign({ dayStart: 6, dayEnd: 22, weekStart: 1, chime: true, repeat: true, barHours: 4, alarm: 'chime', icsUrls: '', icsProxy: '' }, store.get('settings', {}));
+  const settings = Object.assign({ dayStart: 6, dayEnd: 22, weekStart: 1, chime: true, repeat: true, barHours: 8, alarm: 'chime', icsUrls: '', icsProxy: '' }, store.get('settings', {}));
+  if (!settings.barChosen) settings.barHours = 8;   // 8 h is the default; an auto-saved earlier default doesn't count as a choice
   let sessions = store.get('sessions', []);   // [{id,cat,min,start,end,ms,done}]
   // One running note — no per-day history. (v1 kept a note per date; take the most recent one across.)
   let note = store.get('note', null);
@@ -928,7 +929,7 @@
   bind('icsProxy', () => { settings.icsProxy = $('icsProxy').value; saveSettings(); }, 'input');
   bind('setStart', () => { settings.dayStart = +$('setStart').value; saveSettings(); renderHeader(); });
   bind('setEnd', () => { settings.dayEnd = +$('setEnd').value; saveSettings(); renderHeader(); });
-  bind('setBar', () => { settings.barHours = +$('setBar').value; saveSettings(); renderCounts(); });
+  bind('setBar', () => { settings.barHours = +$('setBar').value; settings.barChosen = true; saveSettings(); renderCounts(); });
   bind('setWeek', () => { settings.weekStart = +$('setWeek').value; saveSettings(); renderHeader(); });
   bind('setChime', () => { settings.chime = $('setChime').checked; saveSettings(); });
   $('icsPull').addEventListener('click', () => pullCalendar(false));
