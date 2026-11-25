@@ -452,27 +452,36 @@
     'Plan — deciding what\'s next, setting up the day or week',
   ];
   const FOCUS_V20 = FOCUS_V18.concat(['Body — exercise, food, sleep']);
+  const FOCUS_V21 = FOCUS_V18.map(x => x.startsWith('People') ? 'Care — time and attention for specific people' : x);
   // every focus is an action word. ("With Him" is deliberately not one: it runs through everything, via the abiding lines.)
   const FOCUS_DEFAULT = [
     'Make — things that ship, your deliverables',
     'Reply — inbox, messages, owed answers',
-    'Care — time and attention for specific people',
+    'Connect — time and attention for specific people',
     'Learn — research, reading, thinking it through',
     'Tend — admin, money, household, keeping things running',
     'Plan — deciding what\'s next, setting up the day or week',
+    'Care — your body and health: exercise, food, sleep',
   ];
-  const FOCUS_ALIAS = { People: 'Care' };   // an earlier name, so today's tally and a selected focus carry over
+  const FOCUS_ALIAS = { People: 'Connect', Body: 'Care' };   // earlier names, for today's tally
   const FOCUS_OLD_DEFAULT = ['Deliverables', 'Communications', 'Admin', 'Relationships', 'Research'];
   function parseFocus(str) { const m = String(str).split(/\s+[—–-]\s+|:\s+/); return { name: m[0].trim(), note: m.slice(1).join(' — ').trim() }; }
 
   // ===== state =====
   const settings = Object.assign({ dayStart: 6, dayEnd: 22, weekStart: 1, chime: true, repeat: true, barHours: 8, words: true, btnI: 40, dimI: 40, musicWhen: 'off', music: 'calm', musicVol: 80, focuses: FOCUS_DEFAULT, alarm: 'chime', icsUrls: '', icsProxy: '' }, store.get('settings', {}));
   if (!settings.barChosen) settings.barHours = 8;   // 8 h is the default; an auto-saved earlier default doesn't count as a choice
-  // an unedited earlier default list moves to the current one; a list you edited is left alone
-  if ([FOCUS_OLD_DEFAULT, FOCUS_V18, FOCUS_V20].some(l => JSON.stringify(l) === JSON.stringify(settings.focuses))) {
+  // an unedited earlier default list moves to the current one; a list you edited is left alone. Selected focus and stored tags are renamed with it
+  // (note "Care" meant people in v21 and means the body now, so v21's Care becomes Connect).
+  const FOCUS_FROM = [[FOCUS_OLD_DEFAULT, { People: 'Connect' }], [FOCUS_V18, { People: 'Connect' }], [FOCUS_V20, { People: 'Connect', Body: 'Care' }], [FOCUS_V21, { Care: 'Connect' }]];
+  const focusHit = FOCUS_FROM.find(([l]) => JSON.stringify(l) === JSON.stringify(settings.focuses));
+  if (focusHit) {
+    const ren = focusHit[1];
     settings.focuses = FOCUS_DEFAULT.slice(); store.set('settings', settings);
-    let f = store.get('focus', ''); f = FOCUS_ALIAS[f] || f;
+    let f = store.get('focus', ''); f = ren[f] || f;
     store.set('focus', settings.focuses.some(x => parseFocus(x).name === f) ? f : '');
+    const ss = store.get('sessions', []); let changed = false;
+    ss.forEach(x => { if (ren[x.focus]) { x.focus = ren[x.focus]; changed = true; } });
+    if (changed) store.set('sessions', ss);
   }
   function applyLook() {
     document.documentElement.style.setProperty('--btnI', (settings.btnI / 100).toFixed(2));
