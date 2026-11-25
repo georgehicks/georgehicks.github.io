@@ -309,6 +309,22 @@
   .dbtns button { flex: 1; min-height: 32px; padding: 0 12px; border-radius: 10px; border: 1px solid var(--bd); background: var(--el2); font-size: 0.78rem; font-weight: 600; color: var(--dim); }
   .dbtns button[data-act="reached"] { color: #ffd36b; border-color: color-mix(in srgb, #ffd36b 45%, transparent); }
   .drow.reached .dmain { opacity: 0.5; }
+  .dstar { flex: none; width: 46px; border-radius: 12px; border: 1.5px solid var(--bd); background: var(--el); font-size: 1.25rem; color: var(--faint); }
+  .dstar.on { color: #ffd36b; border-color: color-mix(in srgb, #ffd36b 50%, transparent); }
+  .dstar:disabled { opacity: 0.3; }
+  .rh { display: flex; justify-content: space-between; align-items: baseline; }
+  .rh span, details.rlater summary span { color: var(--faint); font-weight: 600; letter-spacing: 0; text-transform: none; font-size: 0.8rem; }
+  details.rlater { margin-top: 14px; }
+  details.rlater summary { font-size: 0.78rem; font-weight: 700; color: var(--faint); text-transform: uppercase; letter-spacing: 0.08em; padding: 8px 0; cursor: pointer; display: flex; justify-content: space-between; }
+  .qaRow { display: flex; gap: 8px; margin: 4px 0 4px; }
+  .qaRow .sInput { flex: 1; min-width: 0; margin: 0; }
+  .qaRow button { flex: none; padding: 0 18px; border-radius: 12px; border: 1px solid var(--accent); background: color-mix(in srgb, var(--accent) 16%, var(--el2)); color: var(--accent); font-weight: 700; }
+  .dateRow { display: flex; gap: 8px; align-items: stretch; }
+  .dateRow .sInput { flex: 1; min-width: 0; margin: 0; color-scheme: dark; }
+  .dateRow button { flex: none; padding: 0 14px; border-radius: 10px; border: 1px solid var(--bd); background: var(--el2); color: var(--dim); font-size: 0.82rem; font-weight: 600; }
+  .itemBtns { display: flex; gap: 8px; margin-top: 18px; }
+  .itemBtns button { flex: 1; min-height: 44px; border-radius: 12px; border: 1px solid var(--bd); background: var(--el2); font-weight: 600; color: var(--dim); }
+  .itemBtns button[data-it="reached"] { color: #ffd36b; border-color: color-mix(in srgb, #ffd36b 45%, transparent); }
   #doneReached { width: 100%; height: 42px; margin-bottom: 9px; border-radius: 12px; border: 1px dashed color-mix(in srgb, #ffd36b 60%, transparent); background: none; color: #ffd36b; font-weight: 600; font-size: 0.9rem; }
 
   /* ===== routines: timed steps where a target is a guide, not a limit ===== */
@@ -413,7 +429,7 @@
 
 <nav id="bottom">
   <button id="btnCal" type="button">Calendar</button>
-  <button id="btnDest" type="button">Destination</button>
+  <button id="btnDest" type="button">Radar</button>
   <button id="btnRoutines" type="button">Routines</button>
   <button id="btnSet" type="button">Settings</button>
 </nav>
@@ -444,27 +460,19 @@
 
 <div id="routineOv"><div id="routineCard"><h4>Reach for one</h4><button id="routinePick" type="button">Pick for me</button><div id="routineList"></div><button id="routineEdit" type="button">Edit routines</button></div></div>
 
-<!-- where we are headed -->
+<!-- the radar: everything that matters, as many as you like; a few go on your plate -->
 <div class="sheet" id="sheetDest">
-  <div class="sheetHead"><h2>Destinations</h2><button class="primary" id="destClose" type="button">Done</button></div>
+  <div class="sheetHead"><h2>Radar</h2><button class="primary" id="destClose" type="button">Done</button></div>
   <div class="sheetBody">
-    <p class="hint">Where do you want to get to? One to three places. Every step you take here leads toward the one marked <b>now</b>, and a destination stays until you reach it or drop it.</p>
+    <p class="hint">Everything that matters can live here, as many as you like, so it is out of your head. Put a few on your plate and the app works from those. Anything months away can wait for its start date.</p>
+    <div class="qaRow"><input class="sInput" id="radarNew" type="text" maxlength="90" placeholder="Add whatever is on your mind" enterkeyhint="done" autocomplete="off" autocapitalize="sentences"><button id="radarAdd" type="button">Add</button></div>
+    <div class="status" id="radarMsg"></div>
+    <div class="fldLbl">Sort by</div>
+    <div class="chips2" id="radarSort"></div>
     <div id="loadCard" hidden></div>
     <div id="destList"></div>
-    <h3 id="destFormTitle">Add a destination</h3>
-    <input class="sInput" id="destText" type="text" maxlength="90" placeholder="Where do you want to get to?" enterkeyhint="done" autocomplete="off" autocapitalize="sentences">
-    <div class="fldLbl">Kind of effort (optional)</div>
-    <div class="chips2" id="destChips"></div>
-    <div class="fldLbl">Time to give it each week (optional)</div>
-    <div class="chips2" id="destGoalChips"></div>
-    <div class="fldLbl">Small steps (optional)</div>
-    <div id="destSteps"></div>
-    <button class="stepLink" id="destStepLink" type="button">+ A small step</button>
-    <div class="fldLbl" id="destRoutLbl">Or start from a routine</div>
-    <div class="chips2" id="destRoutChips"></div>
-    <button class="btn full" id="destAddBtn" type="button">Add</button>
-    <button class="btn full" id="destCancel" type="button" hidden style="margin-top:8px;">Cancel</button>
-    <div class="status" id="destStatus"></div>
+    <div class="fldLbl" style="margin-top:16px;">My plate holds up to</div>
+    <div class="chips2" id="plateChips"></div>
 
     <details class="dd"><summary>Paste lines from an assistant</summary>
       <p class="hint">One destination per line. Each line can start with a focus word and a colon, and an arrow can mark a first step, but a plain line works too.</p>
@@ -477,6 +485,33 @@
       <textarea class="sInput" id="destPromptBox" readonly hidden style="min-height:180px;"></textarea>
       <div class="status" id="destCopyStatus"></div>
     </details>
+  </div>
+</div>
+
+<!-- one destination: name, a light note, dates, steps -->
+<div class="sheet" id="sheetItem">
+  <div class="sheetHead"><h2>Destination</h2><button class="primary" id="itemDone" type="button">Done</button></div>
+  <div class="sheetBody">
+    <input class="sInput" id="destText" type="text" maxlength="90" placeholder="Where do you want to get to?" enterkeyhint="done" autocomplete="off" autocapitalize="sentences">
+    <div class="fldLbl">A light thought about it (optional)</div>
+    <textarea class="sInput" id="destNote" maxlength="600" placeholder="Why it matters, what you noticed, anything to hold onto" autocapitalize="sentences" spellcheck="true"></textarea>
+    <div class="fldLbl">Where it lives</div>
+    <div class="chips2" id="destPlate"></div>
+    <div class="fldLbl">Start (it wakes up on this day)</div>
+    <div class="dateRow"><input class="sInput" id="destStart" type="date"><button id="destStartX" type="button">Clear</button></div>
+    <div class="fldLbl">Target (when you hope to be there)</div>
+    <div class="dateRow"><input class="sInput" id="destTarget" type="date"><button id="destTargetX" type="button">Clear</button></div>
+    <div class="fldLbl">Kind of effort (optional)</div>
+    <div class="chips2" id="destChips"></div>
+    <div class="fldLbl">Time to give it each week (optional)</div>
+    <div class="chips2" id="destGoalChips"></div>
+    <div class="fldLbl">Small steps (optional, add them any time)</div>
+    <div id="destSteps"></div>
+    <button class="stepLink" id="destStepLink" type="button">+ A small step</button>
+    <div class="fldLbl" id="destRoutLbl">Or start from a routine</div>
+    <div class="chips2" id="destRoutChips"></div>
+    <div class="status" id="destStatus"></div>
+    <div class="itemBtns"><button type="button" data-it="reached">Reached</button><button type="button" data-it="drop">Drop it</button></div>
   </div>
 </div>
 
@@ -662,7 +697,7 @@
   function parseFocus(str) { const m = String(str).split(/\s+[—–-]\s+|:\s+/); return { name: m[0].trim(), note: m.slice(1).join(' — ').trim() }; }
 
   // ===== state =====
-  const settings = Object.assign({ dayStart: 6, dayEnd: 22, weekStart: 1, chime: true, repeat: true, barHours: 8, restAfter: 60, focusGoals: {}, routineGoals: {}, workDays: [1, 2, 3, 4, 5], gentleWeek: '', routinesText: '', restRoutine: 'Breathe', breakRoutine: 'Move', useEnergy: true, energy: '', promptCal: true, words: true, wordsFreq: 'most', wordsMine: '', wordsOnlyMine: false, btnI: 40, dimI: 40, musicWhen: 'off', music: 'dawn', musicSeed: 1, musicVary: 'standard', musicVol: 80, focuses: FOCUS_DEFAULT, alarm: 'chime', icsUrls: '', icsProxy: '' }, store.get('settings', {}));
+  const settings = Object.assign({ dayStart: 6, dayEnd: 22, weekStart: 1, chime: true, repeat: true, barHours: 8, restAfter: 60, focusGoals: {}, routineGoals: {}, workDays: [1, 2, 3, 4, 5], gentleWeek: '', todayMax: 5, routinesText: '', restRoutine: 'Breathe', breakRoutine: 'Move', useEnergy: true, energy: '', promptCal: true, words: true, wordsFreq: 'most', wordsMine: '', wordsOnlyMine: false, btnI: 40, dimI: 40, musicWhen: 'off', music: 'dawn', musicSeed: 1, musicVary: 'standard', musicVol: 80, focuses: FOCUS_DEFAULT, alarm: 'chime', icsUrls: '', icsProxy: '' }, store.get('settings', {}));
   const MUSIC_MIGRATE = { calm: 'dawn', flow: 'dawn', drive: 'quest', deep: 'water' };   // the old four presets all shared one motif; they map to the nearest family
   if (MUSIC_MIGRATE[settings.music]) settings.music = MUSIC_MIGRATE[settings.music];
   if (!settings.barChosen) settings.barHours = 8;   // 8 h is the default; an auto-saved earlier default doesn't count as a choice
@@ -1236,12 +1271,18 @@
   let dests = store.get('dests', []).filter(d => d.state === 'open' || d.on === dkey(new Date()));
   const STEP_MAX = 5;   // a short list of small steps, taken in order and gone when done: no backlog
   const stepsOf = d => d.steps || [];
-  dests.forEach(d => { if (!d.steps) { d.steps = d.step ? [d.step] : []; delete d.step; } });   // the single first step becomes a list
+  dests.forEach(d => {
+    if (!d.steps) { d.steps = d.step ? [d.step] : []; delete d.step; }   // the single first step becomes a list
+    if (d.star === undefined) d.star = d.state === 'open';   // what was open before the radar is on the plate
+    if (d.note === undefined) d.note = ''; if (d.start === undefined) d.start = ''; if (d.target === undefined) d.target = '';
+  });
+  let radarSort = store.get('radarSort', 'target');
   const nextStepText = d => { const l = stepsOf(d); return l.length ? l[0] + (l.length > 1 ? ' (+' + (l.length - 1) + ' more)' : '') : ''; };
   let destCur = store.get('destCur', '');
   store.set('plan', null);   // the earlier timed-block plan is gone
   const saveDests = () => { store.set('dests', dests); store.set('destCur', destCur); };
-  const openDests = () => dests.filter(d => d.state === 'open');
+  const isDormant = (d, now) => !!d.start && d.start > dkey(now || new Date());   // not woken yet: it waits for its start day
+  const openDests = () => dests.filter(d => d.state === 'open' && d.star && !isDormant(d));   // the PLATE: the few things the app works from. The radar (everything open) is `dests`.
   const curDest = () => { if (destCur === '-') return null; const o = openDests(); return o.find(d => d.id === destCur) || o[0] || null; };   // '-' = you chose a plain focus, not a destination
   const shortText = (t, n) => t.length > n ? t.slice(0, n - 1).trimEnd() + '…' : t;
   // one per line:  Focus: where we are going → the very next small step   (the focus and the step are both optional)
@@ -1257,7 +1298,12 @@
     });
     return out;
   }
-  function addDests(list) { if (destCur === '-') destCur = ''; let added = 0; list.forEach(d => { if (openDests().length < 5) { dests.push(d); added++; } }); saveDests(); return added; }   // five is the most held at once
+  function newDest(text) { return { id: uid(), text: String(text).slice(0, 90), steps: [], focus: '', goal: 0, state: 'open', on: '', star: false, note: '', start: '', target: '' }; }
+  function addDests(list) {   // the radar holds any number; only the plate is limited. If the plate is empty the first few go on it so the app has something to work from.
+    if (destCur === '-') destCur = ''; const emptyPlate = openDests().length === 0;
+    list.forEach((d, i) => { const x = Object.assign(newDest(''), d); x.star = emptyPlate && i < Math.min(3, settings.todayMax); dests.push(x); });
+    saveDests(); return list.length;
+  }
   function markReached(id) { const d = dests.find(x => x.id === id); if (!d || d.state !== 'open') return null; d.state = 'reached'; d.on = dkey(new Date()); if (destCur === id) destCur = ''; saveDests(); return d; }
   function dropDest(id) { dests = dests.filter(x => x.id !== id); if (destCur === id) destCur = ''; saveDests(); }
   function destToday(id) { let ms = 0, n = 0; todaysSessions().forEach(x => { if (x.dest === id && WORK.includes(x.cat)) { ms += x.ms; n++; } }); return { ms, n }; }
@@ -1788,14 +1834,16 @@ Immanuel
   function renderColdCard() {
     renderNudge();
     const od = openDests(), body = $('ccBody'), cur = curDest();
-    $('ccEdit').textContent = od.length ? 'Edit' : 'Name one';
+    const radarN = dests.filter(d => d.state === 'open').length;
+    $('ccEdit').textContent = od.length ? 'Radar' : radarN ? 'Open radar' : 'Name one';
     if (!od.length) {
-      $('ccTitle').textContent = 'No destination yet';
-      body.innerHTML = '<div class="ccEmpty">Name where you want to go, one to three places, each with the very next small step. Then every step here leads toward it.</div>';
+      $('ccTitle').textContent = radarN ? 'Nothing on your plate' : 'No destination yet';
+      body.innerHTML = radarN ? '<div class="ccEmpty">You have ' + radarN + ' on your radar. Put a few on your plate and every step here leads toward them.</div>'
+        : '<div class="ccEmpty">Name where you want to go. Add as many as are on your mind, then put a few on your plate. Every step here leads toward them.</div>';
       return;
     }
     $('ccTitle').textContent = 'Destinations';
-    body.innerHTML = dests.slice(0, 6).map(d => {
+    body.innerHTML = dests.filter(d => d.state === 'reached' || od.includes(d)).slice(0, 8).map(d => {
       const t = destToday(d.id), isCur = cur && cur.id === d.id;
       return '<div class="cr ' + (d.state === 'reached' ? 'done' : isCur ? 'next' : '') + '" data-id="' + d.id + '" style="--c:var(--accent)"><i></i><span class="cn">' + esc(shortText(d.text, 34)) + '</span>'
         + (d.focus ? '<span class="cf">' + esc(d.focus) + '</span>' : '') + '<span class="cs">' + (d.state === 'reached' ? 'reached ✓' : (t.ms ? fmtDur(t.ms) + ' · ' : '') + (isCur ? 'now' : '')) + '</span></div>';
@@ -1993,19 +2041,64 @@ Immanuel
   $('calClose').addEventListener('click', () => closeSheet('sheetCal'));
   $('btnCal').addEventListener('click', () => openCal());
 
-  // ----- the where-to sheet -----
+  // ----- the radar (everything that matters) and the one-destination editor -----
+  const dayParts = k => k.split('-').map(Number);
+  const fmtDay = k => { const [y, m, dd] = dayParts(k); return new Date(y, m - 1, dd).toLocaleDateString(undefined, { month: 'short', day: 'numeric' }); };
+  const daysTo = k => { const [y, m, dd] = dayParts(k), n = new Date(); n.setHours(0, 0, 0, 0); return Math.round((new Date(y, m - 1, dd) - n) / 86400000); };
+  const relDays = n => n === 0 ? 'today' : n === 1 ? 'tomorrow' : n < 14 ? 'in ' + n + ' days' : n < 70 ? 'in ' + Math.round(n / 7) + ' weeks' : 'in ' + Math.round(n / 30) + ' months';
+  const SORTS = [['target', 'Target date'], ['start', 'Start date'], ['name', 'Name'], ['newest', 'Newest']], PLATES = [2, 3, 4, 5, 7, 10];
+  function sortDests(list, how) {
+    const idx = d => dests.indexOf(d), a = list.slice();
+    if (how === 'target') a.sort((x, y) => (x.target || '9999').localeCompare(y.target || '9999') || idx(x) - idx(y));
+    else if (how === 'start') a.sort((x, y) => (x.start || '0000').localeCompare(y.start || '0000') || idx(x) - idx(y));
+    else if (how === 'name') a.sort((x, y) => x.text.localeCompare(y.text));
+    else a.sort((x, y) => idx(y) - idx(x));
+    return a;
+  }
+  let laterOpen = false;
+  function radarRow(d) {
+    const dorm = isDormant(d), plate = d.star && !dorm, cur = curDest(), isCur = plate && cur && cur.id === d.id, t = destToday(d.id), meta = [];
+    if (d.focus) meta.push(d.focus);
+    if (isCur) meta.push('now');
+    if (d.from) meta.push('from ' + d.from);
+    if (dorm) meta.push('starts ' + fmtDay(d.start));
+    if (d.target) { const n = daysTo(d.target); meta.push(n < 0 ? 'target was ' + fmtDay(d.target) : 'target ' + fmtDay(d.target) + ' · ' + relDays(n)); }
+    if (plate) { if (t.n) meta.push('today ' + fmtDur(t.ms) + ' · ' + t.n + ' step' + (t.n === 1 ? '' : 's')); const sh = shareText(d); if (sh) meta.push(sh); }
+    return '<div class="drow' + (isCur ? ' now' : '') + '" data-id="' + d.id + '"><button type="button" class="dstar' + (plate ? ' on' : '') + '" data-act="star"' + (dorm ? ' disabled' : '') + ' aria-label="' + (plate ? 'Take off my plate' : 'Put on my plate') + '">' + (plate ? '★' : '☆') + '</button>'
+      + '<button type="button" class="dmain" data-act="open"><span class="dn">' + esc(d.text) + '</span>'
+      + (d.note ? '<span class="dd">' + esc(shortText(d.note.split('\n')[0], 90)) + '</span>' : '')
+      + (plate && stepsOf(d).length ? '<span class="dd">Next: ' + esc(nextStepText(d)) + '</span>' : '')
+      + (meta.length ? '<span class="dt">' + esc(meta.join(' · ')) + '</span>' : '') + '</button></div>';
+  }
   function renderDestList() {
-    const cur = curDest();
-    $('destList').innerHTML = dests.length ? dests.map(d => {
-      const t = destToday(d.id), open = d.state === 'open';
-      return '<div class="drow ' + (open ? (cur && cur.id === d.id ? 'now' : '') : 'reached') + '" data-id="' + d.id + '"><button type="button" class="dmain" data-act="aim"><span class="dn">' + esc(d.text) + '</span>'
-        + (stepsOf(d).length ? '<span class="dd">Next: ' + esc(nextStepText(d)) + '</span>' : '')
-        + '<span class="dt">' + (open ? [d.focus, d.from ? 'from ' + d.from : '', cur && cur.id === d.id ? 'now' : '', t.n ? 'today ' + fmtDur(t.ms) + ' · ' + t.n + ' step' + (t.n === 1 ? '' : 's') : '', shareText(d)].filter(Boolean).join(' · ') : 'reached today ✓') + '</span></button>'
-        + (open ? '<div class="dbtns"><button type="button" data-act="reached">Reached</button><button type="button" data-act="edit">Edit</button><button type="button" data-act="drop">Drop</button></div>' : '') + '</div>';
-    }).join('') : '<div class="none">No destinations yet.</div>';
+    const open = dests.filter(d => d.state === 'open'), awake = open.filter(d => !isDormant(d)), plate = sortDests(awake.filter(d => d.star), radarSort), rad = sortDests(awake.filter(d => !d.star), radarSort);
+    const later = sortDests(open.filter(d => isDormant(d)), radarSort === 'target' ? 'start' : radarSort), done = dests.filter(d => d.state === 'reached');
+    let h = '';
+    if (!dests.length) h = '<div class="none">Nothing on the radar yet. Add whatever is on your mind, as many as you like.</div>';
+    else {
+      h += '<h3 class="rh">On my plate <span>' + plate.length + ' of ' + settings.todayMax + '</span></h3>' + (plate.length ? plate.map(radarRow).join('') : '<div class="none">Nothing on your plate. Tap a star to bring something here.</div>');
+      if (rad.length) h += '<h3 class="rh">On the radar <span>' + rad.length + '</span></h3>' + rad.map(radarRow).join('');
+      if (later.length) h += '<details class="rlater"' + (laterOpen ? ' open' : '') + '><summary>Later <span>' + later.length + '</span></summary>' + later.map(radarRow).join('') + '</details>';
+      if (done.length) h += '<h3 class="rh">Reached today</h3>' + done.map(d => '<div class="drow reached"><div class="dmain"><span class="dn">' + esc(d.text) + '</span><span class="dt">reached today ✓</span></div></div>').join('');
+    }
+    $('destList').innerHTML = h;
+    $('radarSort').innerHTML = SORTS.map(([k, l]) => '<button type="button" class="chip2' + (k === radarSort ? ' on' : '') + '" data-k="' + k + '">' + l + '</button>').join('');
+    $('plateChips').innerHTML = PLATES.map(n => '<button type="button" class="chip2' + (n === settings.todayMax ? ' on' : '') + '" data-n="' + n + '">' + n + '</button>').join('');
     renderLoadCard();
   }
-  let editId = '', chipSel = '', goalSel = 0, stepsSel = [], fromSel = '';
+  $('destList').addEventListener('toggle', e => { if (e.target.classList && e.target.classList.contains('rlater')) laterOpen = e.target.open; }, true);
+  $('radarSort').addEventListener('click', e => { const b = e.target.closest('.chip2'); if (!b) return; radarSort = b.dataset.k; store.set('radarSort', radarSort); renderDestList(); });
+  $('plateChips').addEventListener('click', e => { const b = e.target.closest('.chip2'); if (!b) return; settings.todayMax = +b.dataset.n; saveSettings(); $('radarMsg').textContent = ''; renderDestList(); });
+  function radarAdd() {   // capture never refuses: anything on your mind goes straight onto the radar
+    const t = $('radarNew').value.trim(); if (!t) return;
+    const emptyPlate = openDests().length === 0, d = newDest(t); d.star = emptyPlate; dests.push(d); saveDests();
+    $('radarNew').value = ''; $('radarMsg').textContent = 'Added to the radar.'; renderDestList(); $('radarNew').focus();
+  }
+  $('radarAdd').addEventListener('click', radarAdd);
+  $('radarNew').addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); radarAdd(); } });
+
+  // ----- the editor for one destination -----
+  let editId = '', chipSel = '', goalSel = 0, stepsSel = [], fromSel = '', plateSel = false;
   function renderDestSteps() {
     $('destSteps').innerHTML = stepsSel.map((t, i) => '<div class="stRow"><input class="sInput" type="text" maxlength="120" data-i="' + i + '" value="' + esc(t) + '" placeholder="One small thing" enterkeyhint="done" autocomplete="off" autocapitalize="sentences">'
       + (i ? '<button type="button" data-up="' + i + '" aria-label="Move up">↑</button>' : '<span class="sp"></span>') + '<button type="button" data-rm="' + i + '" aria-label="Remove">×</button></div>').join('');
@@ -2021,28 +2114,40 @@ Immanuel
   function renderDestChips() {
     $('destChips').innerHTML = settings.focuses.map(parseFocus).filter(f => f.name).map(f => '<button type="button" class="chip2' + (f.name === chipSel ? ' on' : '') + '" data-f="' + esc(f.name) + '">' + esc(f.name) + '</button>').join('');
   }
-  function resetDestForm() {
-    editId = ''; chipSel = ''; goalSel = 0; stepsSel = []; fromSel = ''; $('destText').value = ''; renderDestSteps(); renderDestRoutChips();
-    $('destAddBtn').textContent = 'Add'; $('destCancel').hidden = true; $('destFormTitle').textContent = 'Add a destination'; renderDestChips(); renderDestGoalChips();
+  function renderPlateSel() { $('destPlate').innerHTML = '<button type="button" class="chip2' + (plateSel ? ' on' : '') + '" data-p="1">★ On my plate</button><button type="button" class="chip2' + (plateSel ? '' : ' on') + '" data-p="0">On the radar</button>'; }
+  $('destPlate').addEventListener('click', e => { const b = e.target.closest('.chip2'); if (!b) return; plateSel = b.dataset.p === '1'; renderPlateSel(); });
+  function openItem(id) {
+    const d = dests.find(x => x.id === id); if (!d) return;
+    editId = id; chipSel = d.focus || ''; goalSel = d.goal || 0; stepsSel = stepsOf(d).slice(); fromSel = d.from || ''; plateSel = !!d.star;
+    $('destText').value = d.text; $('destNote').value = d.note || ''; $('destStart').value = d.start || ''; $('destTarget').value = d.target || ''; $('destStatus').textContent = '';
+    renderDestSteps(); renderDestRoutChips(); renderDestChips(); renderDestGoalChips(); renderPlateSel();
+    openSheet('sheetItem'); $('sheetItem').querySelector('.sheetBody').scrollTop = 0;
   }
-  function saveDestForm() {
-    const text = $('destText').value.trim(), steps = stepsSel.map(t => t.trim().slice(0, 120)).filter(Boolean).slice(0, STEP_MAX), st = $('destStatus');
-    if (!text) { st.textContent = 'Say where you want to get to, in a few words.'; $('destText').focus(); return; }
-    if (editId) {
-      const d = dests.find(x => x.id === editId);
-      if (d) { d.text = text.slice(0, 90); d.steps = steps; d.from = fromSel; d.focus = chipSel; d.goal = goalSel; saveDests(); }
-      st.textContent = 'Saved.';
-    } else {
-      const n = addDests([{ id: uid(), text: text.slice(0, 90), steps, from: fromSel, focus: chipSel, goal: goalSel, state: 'open', on: '' }]);
-      if (!n) { st.textContent = 'Five is the most at once: reach or drop one first.'; return; }
-      st.textContent = 'Added.';
-    }
-    resetDestForm(); renderDestList();
+  function saveItem() {   // returns a short note about anything that was adjusted, or null if it could not be saved
+    const d = dests.find(x => x.id === editId); if (!d) return '';
+    const text = $('destText').value.trim(); if (!text) { $('destStatus').textContent = 'Give it a few words so you can find it.'; $('destText').focus(); return null; }
+    const start = $('destStart').value, target = $('destTarget').value;
+    d.text = text.slice(0, 90); d.note = $('destNote').value.trim().slice(0, 600); d.start = start; d.target = target;
+    d.steps = stepsSel.map(t => t.trim().slice(0, 120)).filter(Boolean).slice(0, STEP_MAX); d.from = fromSel; d.focus = chipSel; d.goal = goalSel;
+    let star = plateSel, msg = '';
+    if (star && isDormant(d)) { star = false; msg = 'It will wake up on ' + fmtDay(start) + '.'; }
+    else if (star && !d.star && openDests().length >= settings.todayMax) { star = false; msg = 'Your plate is full, so it is on the radar. Take one off, or raise the plate.'; }
+    d.star = star; saveDests(); return msg;
   }
+  function closeItem() { if (document.activeElement && document.activeElement.blur) document.activeElement.blur(); closeSheet('sheetItem'); }
+  $('itemDone').addEventListener('click', () => { const m = saveItem(); if (m === null) return; closeItem(); $('radarMsg').textContent = m; renderDestList(); });
+  $('sheetItem').addEventListener('click', e => {
+    const b = e.target.closest('[data-it]'); if (!b) return;
+    if (b.dataset.it === 'drop') { dropDest(editId); closeItem(); $('radarMsg').textContent = ''; renderDestList(); return; }
+    const m = saveItem(); if (m === null) return; const d = markReached(editId); closeItem();
+    if (d) { closeSheet('sheetDest'); showReached(d); } else renderDestList();
+  });
+  $('destStartX').addEventListener('click', () => { $('destStart').value = ''; });
+  $('destTargetX').addEventListener('click', () => { $('destTarget').value = ''; });
   function openDest() {
-    resetDestForm(); $('destPaste').value = ''; $('destStatus').textContent = ''; $('destPromptBox').hidden = true; $('destCopyStatus').textContent = '';
+    $('destPaste').value = ''; $('radarMsg').textContent = ''; $('radarNew').value = ''; $('destPromptBox').hidden = true; $('destCopyStatus').textContent = '';
     renderDestList(); openSheet('sheetDest'); $('sheetDest').querySelector('.sheetBody').scrollTop = 0;
-    if (!dests.some(d => d.state === 'open')) $('destText').focus();   // nothing yet: you came here to name one
+    if (!dests.some(d => d.state === 'open')) $('radarNew').focus();   // nothing yet: you came here to name something
   }
   $('destChips').addEventListener('click', e => { const b = e.target.closest('.chip2'); if (!b) return; chipSel = chipSel === b.dataset.f ? '' : b.dataset.f; renderDestChips(); });
   $('destStepLink').addEventListener('click', () => {
@@ -2071,22 +2176,16 @@ Immanuel
     }
     renderDestSteps(); renderDestRoutChips();
   });
-  $('destText').addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); saveDestForm(); } });
-  $('destAddBtn').addEventListener('click', saveDestForm);
-  $('destCancel').addEventListener('click', () => { resetDestForm(); $('destStatus').textContent = ''; });
+  $('destText').addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); e.target.blur(); } });
   $('destList').addEventListener('click', e => {
-    const row = e.target.closest('.drow'); if (!row) return;
-    const act = (e.target.closest('[data-act]') || {}).dataset ? e.target.closest('[data-act]').dataset.act : '', id = row.dataset.id;
-    if (act === 'aim') { const d = dests.find(x => x.id === id); if (d && d.state === 'open') { destCur = id; saveDests(); } }
-    else if (act === 'drop') dropDest(id);
-    else if (act === 'edit') {
-      const d = dests.find(x => x.id === id); if (!d) return;
-      editId = id; chipSel = d.focus || ''; goalSel = d.goal || 0; $('destText').value = d.text; stepsSel = stepsOf(d).slice(); fromSel = d.from || ''; renderDestSteps(); renderDestRoutChips();
-      $('destAddBtn').textContent = 'Save'; $('destCancel').hidden = false; $('destFormTitle').textContent = 'Edit this destination'; renderDestChips(); renderDestGoalChips(); $('destStatus').textContent = '';
-      $('destText').scrollIntoView({ block: 'center' }); $('destText').focus(); return;
-    }
-    else if (act === 'reached') { const d = markReached(id); renderDestList(); if (d) { closeSheet('sheetDest'); showReached(d); return; } }
-    renderDestList();
+    const row = e.target.closest('.drow'); if (!row || !row.dataset.id) return;
+    const b = e.target.closest('[data-act]'), act = b ? b.dataset.act : '', d = dests.find(x => x.id === row.dataset.id); if (!d) return;
+    if (act === 'star') {
+      if (d.star) d.star = false;
+      else if (openDests().length >= settings.todayMax) { $('radarMsg').textContent = 'Your plate holds ' + settings.todayMax + '. Take one off first, or raise the plate below.'; return; }
+      else d.star = true;
+      $('radarMsg').textContent = ''; saveDests(); renderDestList();
+    } else if (act === 'open') openItem(d.id);
   });
   $('loadCard').addEventListener('click', e => {
     const b = e.target.closest('[data-lc]'); if (!b) return; const d = dests.find(x => x.id === b.dataset.id); if (!d) return;
@@ -2094,11 +2193,10 @@ Immanuel
     saveDests(); renderDestList();
   });
   $('destPasteBtn').addEventListener('click', () => {
-    const list = parseDests($('destPaste').value), st = $('destStatus');
+    const list = parseDests($('destPaste').value), st = $('radarMsg');
     if (!list.length) { st.textContent = 'Nothing to add yet. One destination per line.'; return; }
-    const n = addDests(list);
-    st.textContent = n === list.length ? 'Added ' + n + '.' : 'Added ' + n + '. Five is the most at once: reach or drop one first.';
-    if (n) $('destPaste').value = ''; renderDestList();
+    const n = addDests(list); st.textContent = 'Added ' + n + ' to the radar.';
+    $('destPaste').value = ''; renderDestList();
   });
   $('destClose').addEventListener('click', () => { if (document.activeElement && document.activeElement.blur) document.activeElement.blur(); closeSheet('sheetDest'); gridOpen = false; if (!run) renderMain(); });
   $('btnDest').addEventListener('click', openDest);
