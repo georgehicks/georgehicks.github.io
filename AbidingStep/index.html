@@ -187,6 +187,12 @@
   .alarmRow.on { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 12%, var(--el)); }
   .alarmRow:active { background: var(--el2); }
 
+  #updBar { position: fixed; left: 12px; right: 12px; top: calc(10px + env(safe-area-inset-top)); z-index: 120; display: none; align-items: center; gap: 12px;
+    background: var(--accent); color: #0e1016; border-radius: 14px; padding: 12px 14px; font-weight: 600; font-size: 0.95rem; box-shadow: 0 6px 24px rgba(0,0,0,0.5); }
+  #updBar.show { display: flex; }
+  #updBar span { flex: 1; }
+  #updBar button { height: 36px; padding: 0 14px; border-radius: 10px; border: 0; background: #0e1016; color: var(--accent); font-weight: 700; }
+
   /* done overlay */
   #doneOv { position: fixed; inset: 0; z-index: 90; background: rgba(8,9,13,0.88); display: none; align-items: center; justify-content: center; padding: 20px; }
   #doneOv.show { display: flex; }
@@ -281,6 +287,11 @@
 <div class="sheet" id="sheetSet">
   <div class="sheetHead"><h2>Settings</h2><button id="setClose" type="button">Close</button></div>
   <div class="sheetBody">
+    <h3>App</h3>
+    <div class="srow"><span id="verTxt">Version …</span></div>
+    <button class="btn full" id="reloadBtn" type="button">Reload app (get the latest)</button>
+    <p class="hint">An installed app has no browser reload button, so this does it: it checks for a new version, then reloads. Your timer, note and history stay as they are. The app also checks by itself and shows a bar at the top when an update is ready.</p>
+
     <h3>Calendar (ICS)</h3>
     <p class="hint">Same setup as AbidingSteps: paste your published .ics feed link(s), one per line, plus the CORS proxy URL (ends with ?url=). On an iPhone each Home Screen app keeps its own storage, so paste them here once even if AbidingSteps already has them.</p>
     <textarea class="sInput" id="icsUrls" placeholder="One .ics feed URL per line" autocapitalize="off" autocorrect="off" spellcheck="false"></textarea>
@@ -307,6 +318,8 @@
     <div class="status" id="dataStatus"></div>
   </div>
 </div>
+
+<div id="updBar"><span>A new version is ready.</span><button id="updBtn" type="button">Reload</button></div>
 
 <!-- timer finished -->
 <div id="doneOv"><div id="doneCard"><div class="big" id="doneBig"></div><div class="goal" id="doneGoal" hidden></div><div class="sub" id="doneSub"></div><div class="nx" id="doneNx"></div><button class="close" id="doneClose" type="button">Done</button></div></div>
@@ -855,7 +868,19 @@
     sel.innerHTML = Array.from({ length: 24 }, (_, h) => '<option value="' + h + '">' + fmtHour(h) + '</option>').join('');
     sel.value = String(val);
   }
+  async function showVersion() {
+    try { const t = await (await fetch('sw.js', { cache: 'no-cache' })).text(); const m = t.match(/CACHE\s*=\s*'[a-z-]+-(v\d+)'/); $('verTxt').textContent = 'Abiding Step ' + (m ? m[1] : ''); }
+    catch (e) { $('verTxt').textContent = 'Abiding Step (offline — version unknown)'; }
+  }
+  async function reloadApp() {
+    $('reloadBtn').textContent = 'Checking…';
+    try { const reg = await navigator.serviceWorker.getRegistration(); if (reg) await reg.update(); } catch (e) {}
+    location.reload();
+  }
+  $('reloadBtn').addEventListener('click', reloadApp);
+  $('updBtn').addEventListener('click', reloadApp);
   function openSettings() {
+    showVersion();
     $('icsUrls').value = settings.icsUrls; $('icsProxy').value = settings.icsProxy;
     hoursOptions($('setStart'), settings.dayStart); hoursOptions($('setEnd'), settings.dayEnd);
     $('setWeek').value = String(settings.weekStart); $('setChime').checked = settings.chime; $('setRepeat').checked = settings.repeat;
@@ -866,9 +891,7 @@
   async function refreshDataStatus() {
     let p = '';
     try { if (navigator.storage && navigator.storage.persisted) p = (await navigator.storage.persisted()) ? ' Storage is marked persistent.' : ' Storage is not marked persistent (the browser may clear it if the phone is very low on space).'; } catch (e) {}
-    let ver = '';
-    try { const t = await (await fetch('sw.js', { cache: 'no-cache' })).text(); const m = t.match(/CACHE\s*=\s*'[a-z-]+-(v\d+)'/); if (m) ver = ' · ' + m[1]; } catch (e) {}
-    $('dataStatus').textContent = sessions.length + ' timers saved here' + (note.trim() ? ', plus your note.' : '.') + p + ver;
+    $('dataStatus').textContent = sessions.length + ' timers saved here' + (note.trim() ? ', plus your note.' : '.') + p;
   }
   const bind = (id, fn, ev = 'change') => $(id).addEventListener(ev, fn);
   bind('icsUrls', () => { settings.icsUrls = $('icsUrls').value; saveSettings(); }, 'input');
@@ -937,7 +960,15 @@
   try { if (navigator.storage && navigator.storage.persist) navigator.storage.persist(); } catch (e) {}
   if (run && !run.paused) acquireWake();
   if (((settings.icsUrls || '').trim()) && Date.now() - (cal.pulledAt || 0) > 3 * 3600000 && navigator.onLine) pullCalendar(true);
-  if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(() => {});
+  if ('serviceWorker' in navigator) {
+    const hadController = !!navigator.serviceWorker.controller;   // false on the very first install — nothing to update then
+    navigator.serviceWorker.addEventListener('controllerchange', () => { if (hadController) $('updBar').classList.add('show'); });
+    navigator.serviceWorker.register('sw.js').then(reg => {
+      const check = () => { try { reg.update(); } catch (e) {} };
+      check();
+      document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') check(); });
+    }).catch(() => {});
+  }
 })();
 </script>
 </body>
