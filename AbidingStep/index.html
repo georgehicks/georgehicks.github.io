@@ -229,6 +229,17 @@
   #doneEnough { margin: 6px 0 14px; padding: 12px; border-radius: 14px; background: color-mix(in srgb, var(--accent) 12%, var(--el2)); border: 1px solid color-mix(in srgb, var(--accent) 50%, transparent); }
   #doneEnough .sn { font-size: 0.72rem; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: var(--accent); }
   #doneEnough .sw { font-size: 0.98rem; line-height: 1.4; margin-top: 6px; }
+  #doneStep { margin: 0 0 9px; padding: 10px 12px; border-radius: 12px; border: 1px solid var(--bd); background: var(--el2); font-size: 0.88rem; }
+  #doneStep .dsq { line-height: 1.35; color: var(--tx); }
+  #doneStep .dsb { display: flex; gap: 8px; margin-top: 8px; }
+  #doneStep .dsb button { flex: 1; min-height: 38px; border-radius: 10px; border: 1px solid var(--bd); background: var(--el); font-weight: 600; font-size: 0.82rem; color: var(--dim); }
+  #doneStep .dsb button.yes { color: var(--accent); border-color: color-mix(in srgb, var(--accent) 50%, transparent); }
+  #doneStep .dsb .sInput { flex: 1; min-width: 0; margin: 0; }
+  #doneStep .dsb .sInput + button { flex: none; width: 70px; }
+  .stRow { display: flex; gap: 6px; margin-bottom: 6px; align-items: stretch; }
+  .stRow .sInput { flex: 1; min-width: 0; margin: 0; }
+  .stRow button, .stRow .sp { flex: none; width: 38px; border-radius: 10px; border: 1px solid var(--bd); background: var(--el2); color: var(--dim); font-size: 1.05rem; }
+  .stRow .sp { border: 0; background: none; }
   #loadCard { margin: 0 0 12px; padding: 12px 13px; border-radius: 12px; border: 1px solid var(--bd); background: var(--el); font-size: 0.84rem; line-height: 1.45; color: var(--dim); }
   #loadCard b { color: var(--tx); font-weight: 600; }
   .lcRow { display: flex; align-items: center; gap: 8px; margin-top: 8px; }
@@ -446,8 +457,11 @@
     <div class="chips2" id="destChips"></div>
     <div class="fldLbl">Time to give it each week (optional)</div>
     <div class="chips2" id="destGoalChips"></div>
-    <button class="stepLink" id="destStepLink" type="button">+ The very next small step</button>
-    <div id="destStepWrap" hidden><input class="sInput" id="destStep" type="text" maxlength="120" placeholder="One small thing you could start on" enterkeyhint="done" autocomplete="off" autocapitalize="sentences"></div>
+    <div class="fldLbl">Small steps (optional)</div>
+    <div id="destSteps"></div>
+    <button class="stepLink" id="destStepLink" type="button">+ A small step</button>
+    <div class="fldLbl" id="destRoutLbl">Or start from a routine</div>
+    <div class="chips2" id="destRoutChips"></div>
     <button class="btn full" id="destAddBtn" type="button">Add</button>
     <button class="btn full" id="destCancel" type="button" hidden style="margin-top:8px;">Cancel</button>
     <div class="status" id="destStatus"></div>
@@ -569,7 +583,7 @@
 </div>
 
 <!-- timer finished -->
-<div id="doneOv"><div id="doneCard"><div class="big" id="doneBig"></div><div class="goal" id="doneGoal" hidden></div><div class="sub" id="doneSub" style="margin-bottom:6px;"></div><div id="doneStage" hidden></div><div id="doneEnough" hidden></div><div id="doneWord" hidden></div><div class="nx" id="doneNx"></div><button id="doneKeep" type="button" hidden>Keep what I wrote in my note</button><button id="doneReached" type="button" hidden></button><button class="close" id="doneClose" type="button">Done</button></div></div>
+<div id="doneOv"><div id="doneCard"><div class="big" id="doneBig"></div><div class="goal" id="doneGoal" hidden></div><div class="sub" id="doneSub" style="margin-bottom:6px;"></div><div id="doneStage" hidden></div><div id="doneEnough" hidden></div><div id="doneWord" hidden></div><div class="nx" id="doneNx"></div><div id="doneStep" hidden></div><button id="doneKeep" type="button" hidden>Keep what I wrote in my note</button><button id="doneReached" type="button" hidden></button><button class="close" id="doneClose" type="button">Done</button></div></div>
 
 <div id="confetti"></div>
 
@@ -1220,6 +1234,10 @@
   // ===== where we are headed: a few destinations, each with the very next small step. Every step leads toward the one marked "now". =====
   // dests: [{ id, text, step, focus, state: 'open' | 'reached', on }] — kept until reached or dropped; a reached one shows until midnight
   let dests = store.get('dests', []).filter(d => d.state === 'open' || d.on === dkey(new Date()));
+  const STEP_MAX = 5;   // a short list of small steps, taken in order and gone when done: no backlog
+  const stepsOf = d => d.steps || [];
+  dests.forEach(d => { if (!d.steps) { d.steps = d.step ? [d.step] : []; delete d.step; } });   // the single first step becomes a list
+  const nextStepText = d => { const l = stepsOf(d); return l.length ? l[0] + (l.length > 1 ? ' (+' + (l.length - 1) + ' more)' : '') : ''; };
   let destCur = store.get('destCur', '');
   store.set('plan', null);   // the earlier timed-block plan is gone
   const saveDests = () => { store.set('dests', dests); store.set('destCur', destCur); };
@@ -1235,7 +1253,7 @@
       const fm = line.match(/^([A-Za-z]+)\s*:\s*(.+)$/);
       if (fm) { const hit = names.find(n => n.toLowerCase() === fm[1].toLowerCase()); if (hit) { focus = hit; line = fm[2].trim(); } }
       const parts = line.split(/\s*(?:→|->|=>)\s*/), name = (parts[0] || '').trim();
-      if (name) out.push({ id: uid(), text: name.slice(0, 90), step: (parts[1] || '').trim().slice(0, 120), focus, state: 'open', on: '' });
+      if (name) out.push({ id: uid(), text: name.slice(0, 90), steps: (parts[1] || '').trim() ? [(parts[1] || '').trim().slice(0, 120)] : [], focus, state: 'open', on: '' });
     });
     return out;
   }
@@ -1548,7 +1566,7 @@ Immanuel
     if (od.length) {
       if (od.length > 1) h += '<button type="button" class="fo pickBtn" id="goingPick">Pick for me</button>';
       h += od.map(d => {
-        const t = destToday(d.id), sub = [d.focus, d.step ? 'first step: ' + d.step : '', shareText(d)].filter(Boolean).join(' · ');
+        const t = destToday(d.id), sub = [d.focus, stepsOf(d).length ? 'next: ' + nextStepText(d) : '', shareText(d)].filter(Boolean).join(' · ');
         return '<button type="button" class="fo' + (cur && cur.id === d.id ? ' on' : '') + '" data-dest="' + d.id + '"><span class="fh"><span class="fn">' + esc(d.text) + '</span><span class="fm' + (t.ms ? '' : ' zero') + '">' + fmtDur(t.ms) + '</span></span>' + (sub ? '<span class="fd">' + esc(sub) + '</span>' : '') + '</button>';
       }).join('');
       h += '<button type="button" class="fo none' + (free ? ' on' : '') + '" id="goingFree"><span class="fn">Just a focus for now…</span></button><div id="goingFocus"' + (free ? '' : ' hidden') + '>' + focusListHtml() + '</div>';
@@ -1601,7 +1619,7 @@ Immanuel
     // a step toward the destination: the hero and the finish card always are; a grid timer is too unless you've pointed the focus somewhere else
     const d = opt.focusStep ? null : (WORK.includes(cat) ? curDest() : null);   // your own focus choice stays yours; a destination's tag travels with its steps; a focus offer is its own step
     const now = Date.now(), first = todaysSessions().length === 0;
-    run = { id: uid(), cat, min, startedAt: now, endsAt: now + min * 60000, paused: false, remaining: null, added: 0, goal: d && d.step ? d.step : '', focus: opt.focusStep ? opt.focusStep : d ? (d.focus || '') : (focus || ''),
+    run = { id: uid(), cat, min, startedAt: now, endsAt: now + min * 60000, paused: false, remaining: null, added: 0, goal: d && stepsOf(d)[0] ? stepsOf(d)[0] : '', stepText: d && stepsOf(d)[0] ? stepsOf(d)[0] : '', focus: opt.focusStep ? opt.focusStep : d ? (d.focus || '') : (focus || ''),
             dest: d ? d.id : '', word: startWord(cat, first) };
     saveRun(); acquireWake(); renderMain(); musicStart();
   }
@@ -1621,8 +1639,6 @@ Immanuel
     const before = stagesDone(todayMs());
     sessions.push({ id: r.id, cat: r.cat, min: r.min, start: r.startedAt, end: endAt, ms, done, focus: r.focus || '', dest: r.dest || '' });
     saveSessions();
-    const dd = r.dest ? dests.find(x => x.id === r.dest) : null;
-    if (dd && dd.step) { dd.step = ''; saveDests(); }   // the first step is used once; after that you choose what comes next
     const after = stagesDone(todayMs());
     return after > before ? after : 0;
   }
@@ -1783,7 +1799,7 @@ Immanuel
       const t = destToday(d.id), isCur = cur && cur.id === d.id;
       return '<div class="cr ' + (d.state === 'reached' ? 'done' : isCur ? 'next' : '') + '" data-id="' + d.id + '" style="--c:var(--accent)"><i></i><span class="cn">' + esc(shortText(d.text, 34)) + '</span>'
         + (d.focus ? '<span class="cf">' + esc(d.focus) + '</span>' : '') + '<span class="cs">' + (d.state === 'reached' ? 'reached ✓' : (t.ms ? fmtDur(t.ms) + ' · ' : '') + (isCur ? 'now' : '')) + '</span></div>';
-    }).join('') + (cur && cur.step ? '<div class="ccStep">First step: ' + esc(cur.step) + '</div>' : '') + (cur && shareText(cur) ? '<div class="ccStep">' + esc(shareText(cur)) + '</div>' : '');
+    }).join('') + (cur && stepsOf(cur).length ? '<div class="ccStep">Next: ' + esc(nextStepText(cur)) + '</div>' : '') + (cur && shareText(cur) ? '<div class="ccStep">' + esc(shareText(cur)) + '</div>' : '');
   }
   $('ccBody').addEventListener('click', e => {   // tap a destination to aim at it
     const r = e.target.closest('.cr'); if (!r) return;
@@ -1876,6 +1892,7 @@ Immanuel
     const rd = r.dest ? dests.find(x => x.id === r.dest && x.state === 'open') : null;   // a gentle "did that get you there?"
     $('doneReached').hidden = !rd; $('doneReached').dataset.id = rd ? rd.id : '';
     if (rd) $('doneReached').textContent = 'Reached “' + shortText(rd.text, 28) + '”?';
+    renderDoneStep(r);
     $('doneOv').classList.add('show');
     clearTimeout(repeatTimer); repeatN = 0;
     if (!stopped && lateMs < 60000) {
@@ -1883,6 +1900,28 @@ Immanuel
       again(ringAlarm());
     }
   }
+  function renderDoneStep(r) {   // the step this timer was for: done, or still next
+    const el = $('doneStep'), d = r.dest ? dests.find(x => x.id === r.dest && x.state === 'open') : null;
+    if (!d || !r.stepText || !stepsOf(d).includes(r.stepText)) { el.hidden = true; return; }
+    el.dataset.id = d.id; el.dataset.t = r.stepText;
+    el.innerHTML = '<div class="dsq">“' + esc(shortText(r.stepText, 60)) + '” — is that step done?</div><div class="dsb"><button type="button" class="yes" data-s="done">Yes, done</button><button type="button" data-s="keep">Still on it</button></div>';
+    el.hidden = false;
+  }
+  $('doneStep').addEventListener('click', e => {
+    const b = e.target.closest('[data-s]'); if (!b) return; const el = $('doneStep'), d = dests.find(x => x.id === el.dataset.id); if (!d) { el.hidden = true; return; }
+    const act = b.dataset.s;
+    if (act === 'done') {
+      const i = stepsOf(d).indexOf(el.dataset.t); if (i >= 0) d.steps.splice(i, 1); saveDests();
+      el.innerHTML = d.steps.length ? '<div class="dsq">Done. Next on this: “' + esc(shortText(d.steps[0], 60)) + '”</div>'
+        : '<div class="dsq">Done. What is next on this? (optional)</div><div class="dsb"><input class="sInput" id="doneStepIn" type="text" maxlength="120" placeholder="One small thing" enterkeyhint="done" autocomplete="off" autocapitalize="sentences"><button type="button" class="yes" data-s="add">Add</button></div>';
+      renderMain();
+    } else if (act === 'keep') el.innerHTML = '<div class="dsq">It stays next.</div>';
+    else if (act === 'add') {
+      const v = ($('doneStepIn').value || '').trim();
+      if (v && stepsOf(d).length < STEP_MAX) { d.steps = stepsOf(d).concat(v.slice(0, 120)); saveDests(); renderMain(); }
+      el.innerHTML = v ? '<div class="dsq">Added. It is next.</div>' : ''; el.hidden = !v;
+    }
+  });
   function closeDone() { clearTimeout(repeatTimer); stopAlarm(); $('confetti').innerHTML = ''; $('doneOv').classList.remove('show'); }
   $('doneClose').addEventListener('click', closeDone);
   $('doneNx').addEventListener('click', e => {
@@ -1960,13 +1999,22 @@ Immanuel
     $('destList').innerHTML = dests.length ? dests.map(d => {
       const t = destToday(d.id), open = d.state === 'open';
       return '<div class="drow ' + (open ? (cur && cur.id === d.id ? 'now' : '') : 'reached') + '" data-id="' + d.id + '"><button type="button" class="dmain" data-act="aim"><span class="dn">' + esc(d.text) + '</span>'
-        + (d.step ? '<span class="dd">First step: ' + esc(d.step) + '</span>' : '')
-        + '<span class="dt">' + (open ? [d.focus, cur && cur.id === d.id ? 'now' : '', t.n ? 'today ' + fmtDur(t.ms) + ' · ' + t.n + ' step' + (t.n === 1 ? '' : 's') : '', shareText(d)].filter(Boolean).join(' · ') : 'reached today ✓') + '</span></button>'
+        + (stepsOf(d).length ? '<span class="dd">Next: ' + esc(nextStepText(d)) + '</span>' : '')
+        + '<span class="dt">' + (open ? [d.focus, d.from ? 'from ' + d.from : '', cur && cur.id === d.id ? 'now' : '', t.n ? 'today ' + fmtDur(t.ms) + ' · ' + t.n + ' step' + (t.n === 1 ? '' : 's') : '', shareText(d)].filter(Boolean).join(' · ') : 'reached today ✓') + '</span></button>'
         + (open ? '<div class="dbtns"><button type="button" data-act="reached">Reached</button><button type="button" data-act="edit">Edit</button><button type="button" data-act="drop">Drop</button></div>' : '') + '</div>';
     }).join('') : '<div class="none">No destinations yet.</div>';
     renderLoadCard();
   }
-  let editId = '', chipSel = '', goalSel = 0;
+  let editId = '', chipSel = '', goalSel = 0, stepsSel = [], fromSel = '';
+  function renderDestSteps() {
+    $('destSteps').innerHTML = stepsSel.map((t, i) => '<div class="stRow"><input class="sInput" type="text" maxlength="120" data-i="' + i + '" value="' + esc(t) + '" placeholder="One small thing" enterkeyhint="done" autocomplete="off" autocapitalize="sentences">'
+      + (i ? '<button type="button" data-up="' + i + '" aria-label="Move up">↑</button>' : '<span class="sp"></span>') + '<button type="button" data-rm="' + i + '" aria-label="Remove">×</button></div>').join('');
+    $('destStepLink').hidden = stepsSel.length >= STEP_MAX;
+  }
+  function renderDestRoutChips() {
+    const rs = routines(); $('destRoutLbl').hidden = $('destRoutChips').hidden = !rs.length;
+    $('destRoutChips').innerHTML = rs.map(r => '<button type="button" class="chip2' + (r.name === fromSel ? ' on' : '') + '" data-r="' + esc(r.name) + '">' + esc(r.name) + '</button>').join('');
+  }
   const DGOALS = [[0, 'None'], [60, '1h'], [120, '2h'], [180, '3h'], [300, '5h'], [480, '8h']];
   function renderDestGoalChips() { $('destGoalChips').innerHTML = DGOALS.map(([v, l]) => '<button type="button" class="chip2' + (v === goalSel ? ' on' : '') + '" data-g="' + v + '">' + l + '</button>').join(''); }
   $('destGoalChips').addEventListener('click', e => { const b = e.target.closest('.chip2'); if (!b) return; goalSel = +b.dataset.g; renderDestGoalChips(); });
@@ -1974,18 +2022,18 @@ Immanuel
     $('destChips').innerHTML = settings.focuses.map(parseFocus).filter(f => f.name).map(f => '<button type="button" class="chip2' + (f.name === chipSel ? ' on' : '') + '" data-f="' + esc(f.name) + '">' + esc(f.name) + '</button>').join('');
   }
   function resetDestForm() {
-    editId = ''; chipSel = ''; goalSel = 0; $('destText').value = ''; $('destStep').value = ''; $('destStepWrap').hidden = true; $('destStepLink').hidden = false;
+    editId = ''; chipSel = ''; goalSel = 0; stepsSel = []; fromSel = ''; $('destText').value = ''; renderDestSteps(); renderDestRoutChips();
     $('destAddBtn').textContent = 'Add'; $('destCancel').hidden = true; $('destFormTitle').textContent = 'Add a destination'; renderDestChips(); renderDestGoalChips();
   }
   function saveDestForm() {
-    const text = $('destText').value.trim(), step = $('destStep').value.trim(), st = $('destStatus');
+    const text = $('destText').value.trim(), steps = stepsSel.map(t => t.trim().slice(0, 120)).filter(Boolean).slice(0, STEP_MAX), st = $('destStatus');
     if (!text) { st.textContent = 'Say where you want to get to, in a few words.'; $('destText').focus(); return; }
     if (editId) {
       const d = dests.find(x => x.id === editId);
-      if (d) { d.text = text.slice(0, 90); d.step = step.slice(0, 120); d.focus = chipSel; d.goal = goalSel; saveDests(); }
+      if (d) { d.text = text.slice(0, 90); d.steps = steps; d.from = fromSel; d.focus = chipSel; d.goal = goalSel; saveDests(); }
       st.textContent = 'Saved.';
     } else {
-      const n = addDests([{ id: uid(), text: text.slice(0, 90), step: step.slice(0, 120), focus: chipSel, goal: goalSel, state: 'open', on: '' }]);
+      const n = addDests([{ id: uid(), text: text.slice(0, 90), steps, from: fromSel, focus: chipSel, goal: goalSel, state: 'open', on: '' }]);
       if (!n) { st.textContent = 'Five is the most at once: reach or drop one first.'; return; }
       st.textContent = 'Added.';
     }
@@ -1997,9 +2045,33 @@ Immanuel
     if (!dests.some(d => d.state === 'open')) $('destText').focus();   // nothing yet: you came here to name one
   }
   $('destChips').addEventListener('click', e => { const b = e.target.closest('.chip2'); if (!b) return; chipSel = chipSel === b.dataset.f ? '' : b.dataset.f; renderDestChips(); });
-  $('destStepLink').addEventListener('click', () => { $('destStepWrap').hidden = false; $('destStepLink').hidden = true; $('destStep').focus(); });
+  $('destStepLink').addEventListener('click', () => {
+    if (stepsSel.length >= STEP_MAX) return; stepsSel.push(''); renderDestSteps();
+    const ins = $('destSteps').querySelectorAll('input'); ins[ins.length - 1].focus();
+  });
+  $('destSteps').addEventListener('input', e => { const i = e.target.dataset.i; if (i !== undefined) stepsSel[+i] = e.target.value; });
+  $('destSteps').addEventListener('click', e => {
+    const b = e.target.closest('button'); if (!b) return;
+    if (b.dataset.rm !== undefined) stepsSel.splice(+b.dataset.rm, 1);
+    else if (b.dataset.up !== undefined) { const i = +b.dataset.up; [stepsSel[i - 1], stepsSel[i]] = [stepsSel[i], stepsSel[i - 1]]; }
+    renderDestSteps();
+  });
+  $('destSteps').addEventListener('keydown', e => {
+    if (e.key !== 'Enter' || e.target.dataset.i === undefined) return; e.preventDefault();
+    const i = +e.target.dataset.i;
+    if (i === stepsSel.length - 1 && stepsSel[i].trim() && stepsSel.length < STEP_MAX) $('destStepLink').click(); else e.target.blur();
+  });
+  $('destRoutChips').addEventListener('click', e => {   // a routine is a template: its steps are copied in, and the destination is its own thing
+    const b = e.target.closest('.chip2'); if (!b) return; const name = b.dataset.r;
+    if (fromSel === name) { fromSel = ''; $('destStatus').textContent = ''; }
+    else {
+      const rt = routines().find(r => r.name === name); if (!rt) return;
+      fromSel = name; stepsSel = rt.steps.slice(0, STEP_MAX).map(x => x.title.slice(0, 120));
+      $('destStatus').textContent = 'Copied the steps from ' + name + '. Change them however you like.';
+    }
+    renderDestSteps(); renderDestRoutChips();
+  });
   $('destText').addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); saveDestForm(); } });
-  $('destStep').addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); saveDestForm(); } });
   $('destAddBtn').addEventListener('click', saveDestForm);
   $('destCancel').addEventListener('click', () => { resetDestForm(); $('destStatus').textContent = ''; });
   $('destList').addEventListener('click', e => {
@@ -2009,7 +2081,7 @@ Immanuel
     else if (act === 'drop') dropDest(id);
     else if (act === 'edit') {
       const d = dests.find(x => x.id === id); if (!d) return;
-      editId = id; chipSel = d.focus || ''; goalSel = d.goal || 0; $('destText').value = d.text; $('destStep').value = d.step || ''; $('destStepWrap').hidden = !d.step; $('destStepLink').hidden = !!d.step;
+      editId = id; chipSel = d.focus || ''; goalSel = d.goal || 0; $('destText').value = d.text; stepsSel = stepsOf(d).slice(); fromSel = d.from || ''; renderDestSteps(); renderDestRoutChips();
       $('destAddBtn').textContent = 'Save'; $('destCancel').hidden = false; $('destFormTitle').textContent = 'Edit this destination'; renderDestChips(); renderDestGoalChips(); $('destStatus').textContent = '';
       $('destText').scrollIntoView({ block: 'center' }); $('destText').focus(); return;
     }
@@ -2028,7 +2100,7 @@ Immanuel
     st.textContent = n === list.length ? 'Added ' + n + '.' : 'Added ' + n + '. Five is the most at once: reach or drop one first.';
     if (n) $('destPaste').value = ''; renderDestList();
   });
-  $('destClose').addEventListener('click', () => { $('destText').blur(); $('destStep').blur(); $('destPaste').blur(); closeSheet('sheetDest'); gridOpen = false; if (!run) renderMain(); });
+  $('destClose').addEventListener('click', () => { if (document.activeElement && document.activeElement.blur) document.activeElement.blur(); closeSheet('sheetDest'); gridOpen = false; if (!run) renderMain(); });
   $('btnDest').addEventListener('click', openDest);
   $('ccEdit').addEventListener('click', openDest);
   // the prompt has [square-bracket] placeholders for anything the app doesn't know; it tells the assistant to ask about any that are still blank
