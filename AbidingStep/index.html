@@ -252,6 +252,16 @@
   .prow .pn { flex: 1; font-weight: 600; } .prow .pf { font-size: 0.8rem; color: var(--dim); } .prow .ps { font-size: 0.74rem; color: var(--faint); min-width: 58px; text-align: right; }
   .prow.done { opacity: 0.5; } .prow.skip { opacity: 0.4; }
 
+  .chips2 { display: flex; gap: 7px; overflow-x: auto; padding: 4px 0 8px; margin: 0 -2px; -webkit-overflow-scrolling: touch; }
+  .chip2 { flex: none; padding: 9px 15px; border-radius: 999px; border: 1.5px solid var(--bd); background: var(--el2); font-size: 0.92rem; font-weight: 600; color: var(--dim); }
+  .chip2.on { border-color: var(--accent); color: var(--accent); background: color-mix(in srgb, var(--accent) 14%, var(--el2)); }
+  .fldLbl { font-size: 0.74rem; font-weight: 700; color: var(--faint); text-transform: uppercase; letter-spacing: 0.07em; margin: 10px 2px 4px; }
+  .stepLink { background: none; border: 0; color: var(--accent); font-size: 0.9rem; font-weight: 600; padding: 6px 2px 10px; }
+  details.dd { border-top: 1px solid var(--bd); margin-top: 16px; }
+  details.dd > summary { padding: 14px 2px; color: var(--dim); font-weight: 600; font-size: 0.92rem; cursor: pointer; }
+  .feRow { display: flex; gap: 6px; margin-bottom: 8px; }
+  .feRow input { min-width: 0; margin: 0; } .feRow .fn1 { flex: 0 0 34%; } .feRow .fn2 { flex: 1; }
+  .feRow button { flex: none; width: 42px; border-radius: 10px; border: 1px solid var(--bd); background: var(--el2); font-size: 1.15rem; color: var(--dim); }
   .ccStep { margin: 4px 10px 8px; font-size: 0.82rem; color: var(--dim); line-height: 1.4; }
   .drow { display: flex; align-items: stretch; gap: 8px; margin-bottom: 8px; }
   .drow .dmain { flex: 1; min-width: 0; text-align: left; padding: 11px 13px; border-radius: 12px; border: 1.5px solid var(--bd); background: var(--el); }
@@ -260,7 +270,7 @@
   .dmain .dd { display: block; font-size: 0.82rem; color: var(--dim); margin-top: 2px; line-height: 1.35; }
   .dmain .dt { display: block; font-size: 0.74rem; color: var(--faint); margin-top: 3px; }
   .dbtns { display: flex; flex-direction: column; gap: 6px; }
-  .dbtns button { flex: 1; padding: 0 12px; border-radius: 10px; border: 1px solid var(--bd); background: var(--el2); font-size: 0.78rem; font-weight: 600; color: var(--dim); }
+  .dbtns button { flex: 1; min-height: 32px; padding: 0 12px; border-radius: 10px; border: 1px solid var(--bd); background: var(--el2); font-size: 0.78rem; font-weight: 600; color: var(--dim); }
   .dbtns button[data-act="reached"] { color: #ffd36b; border-color: color-mix(in srgb, #ffd36b 45%, transparent); }
   .drow.reached .dmain { opacity: 0.5; }
   #doneReached { width: 100%; height: 42px; margin-bottom: 9px; border-radius: 12px; border: 1px dashed color-mix(in srgb, #ffd36b 60%, transparent); background: none; color: #ffd36b; font-weight: 600; font-size: 0.9rem; }
@@ -400,17 +410,29 @@
 <div class="sheet" id="sheetDest">
   <div class="sheetHead"><h2>Destinations</h2><button class="primary" id="destClose" type="button">Done</button></div>
   <div class="sheetBody">
-    <p class="hint">Name where you want to go, one to three places, each with the very next small step. Every step you take here leads toward the one marked <b>now</b>. A destination stays until you reach it or drop it.</p>
+    <p class="hint">Where do you want to get to? One to three places. Every step you take here leads toward the one marked <b>now</b>, and a destination stays until you reach it or drop it.</p>
     <div id="destList"></div>
-    <h3>Add</h3>
-    <textarea class="sInput" id="destAdd" style="min-height:96px;" placeholder="Make: Grant draft sent → open the doc and write the outline&#10;Connect: Call Sam → pick up the phone" autocapitalize="sentences" spellcheck="true"></textarea>
+    <h3 id="destFormTitle">Add a destination</h3>
+    <input class="sInput" id="destText" type="text" maxlength="90" placeholder="Where do you want to get to?" enterkeyhint="done" autocomplete="off" autocapitalize="sentences">
+    <div class="fldLbl">Kind of effort (optional)</div>
+    <div class="chips2" id="destChips"></div>
+    <button class="stepLink" id="destStepLink" type="button">+ The very next small step</button>
+    <div id="destStepWrap" hidden><input class="sInput" id="destStep" type="text" maxlength="120" placeholder="One small thing you could start on" enterkeyhint="done" autocomplete="off" autocapitalize="sentences"></div>
     <button class="btn full" id="destAddBtn" type="button">Add</button>
+    <button class="btn full" id="destCancel" type="button" hidden style="margin-top:8px;">Cancel</button>
     <div class="status" id="destStatus"></div>
-    <h3>Work it out with an assistant</h3>
-    <p class="hint">If where to go isn't clear yet, copy this prompt into any AI assistant. It asks you a few questions, then answers in lines you can paste above.</p>
-    <button class="btn full" id="destCopy" type="button" style="margin-bottom:8px;">Copy a prompt for working out where to go</button>
-    <textarea class="sInput" id="destPromptBox" readonly hidden style="min-height:180px;"></textarea>
-    <div class="status" id="destCopyStatus"></div>
+
+    <details class="dd"><summary>Paste lines from an assistant</summary>
+      <p class="hint">One destination per line. Each line can start with a focus word and a colon, and an arrow can mark a first step, but a plain line works too.</p>
+      <textarea class="sInput" id="destPaste" style="min-height:96px;" placeholder="Grant draft sent" autocapitalize="sentences" spellcheck="true"></textarea>
+      <button class="btn full" id="destPasteBtn" type="button">Add these</button>
+    </details>
+    <details class="dd"><summary>Work it out with an assistant</summary>
+      <p class="hint">If where to go isn't clear yet, copy this prompt into any AI assistant. It asks you a few questions, then answers in lines you can paste above.</p>
+      <button class="btn full" id="destCopy" type="button" style="margin-bottom:8px;">Copy a prompt for working out where to go</button>
+      <textarea class="sInput" id="destPromptBox" readonly hidden style="min-height:180px;"></textarea>
+      <div class="status" id="destCopyStatus"></div>
+    </details>
   </div>
 </div>
 
@@ -468,8 +490,10 @@
     <button class="btn full" id="routineReset" type="button">Reset to the starters</button>
 
     <h3>Focus areas</h3>
-    <p class="hint">The kinds of effort a destination can carry as a tag, and what you choose when you're not heading toward a destination. One per line, written as "Name — short note".</p>
-    <textarea class="sInput" id="setFocuses" style="min-height:210px;" placeholder="Name — short note" autocapitalize="sentences" spellcheck="false"></textarea>
+    <p class="hint">Short names you tap: they tag a destination, and they are what you choose when you're not heading toward one. The note is optional.</p>
+    <div id="focusEditor"></div>
+    <button class="btn full" id="focusAdd" type="button">Add a focus</button>
+    <button class="btn full" id="focusReset" type="button" style="margin-top:8px;">Reset to the defaults</button>
 
     <h3>Abiding lines</h3>
     <div class="srow"><span>Show short encouraging lines</span><input type="checkbox" id="setWords"></div>
@@ -1765,26 +1789,64 @@ Immanuel
       return '<div class="drow ' + (open ? (cur && cur.id === d.id ? 'now' : '') : 'reached') + '" data-id="' + d.id + '"><button type="button" class="dmain" data-act="aim"><span class="dn">' + esc(d.text) + '</span>'
         + (d.step ? '<span class="dd">First step: ' + esc(d.step) + '</span>' : '')
         + '<span class="dt">' + (open ? [d.focus, cur && cur.id === d.id ? 'now' : '', t.n ? 'today ' + fmtDur(t.ms) + ' · ' + t.n + ' step' + (t.n === 1 ? '' : 's') : ''].filter(Boolean).join(' · ') : 'reached today ✓') + '</span></button>'
-        + (open ? '<div class="dbtns"><button type="button" data-act="reached">Reached</button><button type="button" data-act="drop">Drop</button></div>' : '') + '</div>';
+        + (open ? '<div class="dbtns"><button type="button" data-act="reached">Reached</button><button type="button" data-act="edit">Edit</button><button type="button" data-act="drop">Drop</button></div>' : '') + '</div>';
     }).join('') : '<div class="none">No destinations yet.</div>';
   }
-  function openDest() { $('destAdd').value = ''; $('destStatus').textContent = ''; $('destPromptBox').hidden = true; $('destCopyStatus').textContent = ''; renderDestList(); openSheet('sheetDest'); $('sheetDest').querySelector('.sheetBody').scrollTop = 0; }
+  let editId = '', chipSel = '';
+  function renderDestChips() {
+    $('destChips').innerHTML = settings.focuses.map(parseFocus).filter(f => f.name).map(f => '<button type="button" class="chip2' + (f.name === chipSel ? ' on' : '') + '" data-f="' + esc(f.name) + '">' + esc(f.name) + '</button>').join('');
+  }
+  function resetDestForm() {
+    editId = ''; chipSel = ''; $('destText').value = ''; $('destStep').value = ''; $('destStepWrap').hidden = true; $('destStepLink').hidden = false;
+    $('destAddBtn').textContent = 'Add'; $('destCancel').hidden = true; $('destFormTitle').textContent = 'Add a destination'; renderDestChips();
+  }
+  function saveDestForm() {
+    const text = $('destText').value.trim(), step = $('destStep').value.trim(), st = $('destStatus');
+    if (!text) { st.textContent = 'Say where you want to get to, in a few words.'; $('destText').focus(); return; }
+    if (editId) {
+      const d = dests.find(x => x.id === editId);
+      if (d) { d.text = text.slice(0, 90); d.step = step.slice(0, 120); d.focus = chipSel; saveDests(); }
+      st.textContent = 'Saved.';
+    } else {
+      const n = addDests([{ id: uid(), text: text.slice(0, 90), step: step.slice(0, 120), focus: chipSel, state: 'open', on: '' }]);
+      if (!n) { st.textContent = 'Five is the most at once: reach or drop one first.'; return; }
+      st.textContent = 'Added.';
+    }
+    resetDestForm(); renderDestList();
+  }
+  function openDest() {
+    resetDestForm(); $('destPaste').value = ''; $('destStatus').textContent = ''; $('destPromptBox').hidden = true; $('destCopyStatus').textContent = '';
+    renderDestList(); openSheet('sheetDest'); $('sheetDest').querySelector('.sheetBody').scrollTop = 0;
+    if (!dests.some(d => d.state === 'open')) $('destText').focus();   // nothing yet: you came here to name one
+  }
+  $('destChips').addEventListener('click', e => { const b = e.target.closest('.chip2'); if (!b) return; chipSel = chipSel === b.dataset.f ? '' : b.dataset.f; renderDestChips(); });
+  $('destStepLink').addEventListener('click', () => { $('destStepWrap').hidden = false; $('destStepLink').hidden = true; $('destStep').focus(); });
+  $('destText').addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); saveDestForm(); } });
+  $('destStep').addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); saveDestForm(); } });
+  $('destAddBtn').addEventListener('click', saveDestForm);
+  $('destCancel').addEventListener('click', () => { resetDestForm(); $('destStatus').textContent = ''; });
   $('destList').addEventListener('click', e => {
     const row = e.target.closest('.drow'); if (!row) return;
     const act = (e.target.closest('[data-act]') || {}).dataset ? e.target.closest('[data-act]').dataset.act : '', id = row.dataset.id;
     if (act === 'aim') { const d = dests.find(x => x.id === id); if (d && d.state === 'open') { destCur = id; saveDests(); } }
     else if (act === 'drop') dropDest(id);
+    else if (act === 'edit') {
+      const d = dests.find(x => x.id === id); if (!d) return;
+      editId = id; chipSel = d.focus || ''; $('destText').value = d.text; $('destStep').value = d.step || ''; $('destStepWrap').hidden = !d.step; $('destStepLink').hidden = !!d.step;
+      $('destAddBtn').textContent = 'Save'; $('destCancel').hidden = false; $('destFormTitle').textContent = 'Edit this destination'; renderDestChips(); $('destStatus').textContent = '';
+      $('destText').scrollIntoView({ block: 'center' }); $('destText').focus(); return;
+    }
     else if (act === 'reached') { const d = markReached(id); renderDestList(); if (d) { closeSheet('sheetDest'); showReached(d); return; } }
     renderDestList();
   });
-  $('destAddBtn').addEventListener('click', () => {
-    const list = parseDests($('destAdd').value), st = $('destStatus');
-    if (!list.length) { st.textContent = 'Nothing to add yet. For example: Make: Grant draft sent → open the doc and write the outline'; return; }
+  $('destPasteBtn').addEventListener('click', () => {
+    const list = parseDests($('destPaste').value), st = $('destStatus');
+    if (!list.length) { st.textContent = 'Nothing to add yet. One destination per line.'; return; }
     const n = addDests(list);
     st.textContent = n === list.length ? 'Added ' + n + '.' : 'Added ' + n + '. Five is the most at once: reach or drop one first.';
-    if (n) $('destAdd').value = ''; renderDestList();
+    if (n) $('destPaste').value = ''; renderDestList();
   });
-  $('destClose').addEventListener('click', () => { $('destAdd').blur(); closeSheet('sheetDest'); gridOpen = false; if (!run) renderMain(); });
+  $('destClose').addEventListener('click', () => { $('destText').blur(); $('destStep').blur(); $('destPaste').blur(); closeSheet('sheetDest'); gridOpen = false; if (!run) renderMain(); });
   $('btnDest').addEventListener('click', openDest);
   $('ccEdit').addEventListener('click', openDest);
   // the prompt has [square-bracket] placeholders for anything the app doesn't know; it tells the assistant to ask about any that are still blank
@@ -1927,7 +1989,7 @@ Immanuel
     $('setEnergy').value = settings.energy; $('setPromptCal').checked = settings.promptCal; $('setUseEnergy').checked = settings.useEnergy; renderEnergyPreview();
     $('setRestAfter').value = String(settings.restAfter); $('setWeek').value = String(settings.weekStart); $('setChime').checked = settings.chime; $('setRepeat').checked = settings.repeat;
     $('setBtnI').value = String(settings.btnI); $('setDimI').value = String(settings.dimI); $('btnIv').textContent = settings.btnI + '%'; $('dimIv').textContent = settings.dimI + '%';
-    $('setFocuses').value = settings.focuses.join('\n'); $('setWords').checked = settings.words; $('setWordsFreq').value = settings.wordsFreq; $('setWordsMine').value = settings.wordsMine; $('setWordsOnlyMine').checked = settings.wordsOnlyMine; renderWordsCount();
+    renderFocusEditor(); $('setWords').checked = settings.words; $('setWordsFreq').value = settings.wordsFreq; $('setWordsMine').value = settings.wordsMine; $('setWordsOnlyMine').checked = settings.wordsOnlyMine; renderWordsCount();
     $('setMusicWhen').value = settings.musicWhen; $('setMusicVol').value = String(settings.musicVol); renderMusicList();
     renderAlarmList();
     $('icsStatus').textContent = cal.pulledAt ? 'Last pulled ' + new Date(cal.pulledAt).toLocaleString() : '';
@@ -1977,7 +2039,15 @@ Immanuel
     unlockAudio(); settings.alarm = b.dataset.id; saveSettings(); renderAlarmList(); playAlarm(settings.alarm);
   });
   $('alarmStop').addEventListener('click', stopAlarm);
-  bind('setFocuses', () => { settings.focuses = $('setFocuses').value.split('\n').map(x => x.trim()).filter(Boolean).slice(0, 10); saveSettings(); }, 'input');
+  const feRowHtml = (name, note) => '<div class="feRow"><input class="sInput fn1" type="text" maxlength="20" value="' + esc(name) + '" placeholder="Name" aria-label="Focus name" autocapitalize="words"><input class="sInput fn2" type="text" maxlength="60" value="' + esc(note) + '" placeholder="Note (optional)" aria-label="Note"><button type="button" aria-label="Remove this focus">×</button></div>';
+  function renderFocusEditor() { $('focusEditor').innerHTML = settings.focuses.map(parseFocus).map(f => feRowHtml(f.name, f.note)).join(''); }
+  function readFocusEditor() {
+    return [...$('focusEditor').querySelectorAll('.feRow')].map(r => { const ins = r.querySelectorAll('input'), name = ins[0].value.replace(/[:→—–]/g, ' ').replace(/\s+/g, ' ').trim(), note = ins[1].value.trim(); return name ? name + (note ? ' — ' + note : '') : ''; }).filter(Boolean).slice(0, 10);
+  }
+  $('focusEditor').addEventListener('input', () => { settings.focuses = readFocusEditor(); saveSettings(); });
+  $('focusEditor').addEventListener('click', e => { const b = e.target.closest('button'); if (!b) return; b.closest('.feRow').remove(); settings.focuses = readFocusEditor(); saveSettings(); });
+  $('focusAdd').addEventListener('click', () => { if ($('focusEditor').children.length >= 10) return; $('focusEditor').insertAdjacentHTML('beforeend', feRowHtml('', '')); $('focusEditor').lastElementChild.querySelector('input').focus(); });
+  $('focusReset').addEventListener('click', () => { settings.focuses = FOCUS_DEFAULT.slice(); saveSettings(); renderFocusEditor(); });
   bind('setBtnI', () => { settings.btnI = +$('setBtnI').value; $('btnIv').textContent = settings.btnI + '%'; saveSettings(); applyLook(); }, 'input');
   bind('setDimI', () => { settings.dimI = +$('setDimI').value; $('dimIv').textContent = settings.dimI + '%'; saveSettings(); applyLook(); }, 'input');
   function renderWordsCount() { const m = mineLines().length; $('wordsCount').textContent = wordsBuiltIn() + ' lines are built in and rotate from a shuffled deck, so one doesn\'t come back until the rest have been seen' + (m ? ' · ' + m + ' of yours mixed in.' : '.'); }
