@@ -28,7 +28,8 @@
   #hdr { background: var(--el); border: 1px solid var(--bd); border-radius: 18px; padding: 10px 12px 8px; }
   .clockrow { display: flex; align-items: center; justify-content: space-between; padding: 0 4px; }
   #hdr { transition: opacity 0.4s; }
-  #hdr.dim { opacity: 0.4; }
+  #hdr.dim, #notesBar.dim { opacity: 0.4; }
+  #notesBar { transition: opacity 0.4s; }
   #clockSvg { flex: none; display: block; }
   #clockSvg .face { fill: var(--el2); stroke: var(--bd); stroke-width: 2; }
   #clockSvg .tk { stroke: var(--faint); stroke-width: 1.6; stroke-linecap: round; }
@@ -628,7 +629,7 @@
   }
   function renderMain() {
     const on = !!run;
-    $('hdr').classList.toggle('dim', on);
+    $('hdr').classList.toggle('dim', on); $('notesBar').classList.toggle('dim', on);
     if (!on) $('runGoal').blur();
     $('runPanel').hidden = !on; $('grid').hidden = on;
     if (on) {
