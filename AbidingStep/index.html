@@ -913,7 +913,7 @@
     showVersion();
     $('icsUrls').value = settings.icsUrls; $('icsProxy').value = settings.icsProxy;
     hoursOptions($('setStart'), settings.dayStart); hoursOptions($('setEnd'), settings.dayEnd);
-    $('setBar').innerHTML = [2, 3, 4, 5, 6, 8].map(h => '<option value="' + h + '">' + h + ' hours</option>').join(''); $('setBar').value = String(settings.barHours);
+    $('setBar').innerHTML = [2, 3, 4, 5, 6, 8, 10, 12].map(h => '<option value="' + h + '">' + h + ' hours</option>').join(''); $('setBar').value = String(settings.barHours);
     $('setWeek').value = String(settings.weekStart); $('setChime').checked = settings.chime; $('setRepeat').checked = settings.repeat;
     renderAlarmList();
     $('icsStatus').textContent = cal.pulledAt ? 'Last pulled ' + new Date(cal.pulledAt).toLocaleString() : '';
