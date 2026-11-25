@@ -28,7 +28,7 @@
   #hdr { background: var(--el); border: 1px solid var(--bd); border-radius: 18px; padding: 10px 12px 8px; }
   .clockrow { display: flex; align-items: center; justify-content: space-between; padding: 0 4px; }
   #hdr { transition: opacity 0.4s; }
-  #hdr.dim, #notesBar.dim { opacity: 0.4; }
+  #hdr.dim, #notesBar.dim { opacity: var(--dimI, 0.4); }
   #notesBar { transition: opacity 0.4s; }
   #clockSvg { flex: none; display: block; }
   #clockSvg .face { fill: var(--el2); stroke: var(--bd); stroke-width: 2; }
@@ -92,7 +92,7 @@
   .btns { display: grid; grid-template-columns: repeat(6, 1fr); gap: 6px; flex: 1; min-height: 0; }
   /* the buttons sit at the same 40% as the header does while a timer runs: seen in a flash, never competing with the next step */
   .tbtn { min-height: 44px; max-height: 62px; border-radius: 14px; border: 1.5px solid color-mix(in srgb, var(--c) 50%, transparent);
-    background: color-mix(in srgb, var(--c) 12%, var(--el)); color: var(--c); font-size: 1.3rem; font-weight: 700; opacity: 0.4; transition: opacity 0.15s;
+    background: color-mix(in srgb, var(--c) 12%, var(--el)); color: var(--c); font-size: 1.3rem; font-weight: 700; opacity: var(--btnI, 0.4); transition: opacity 0.15s;
     display: flex; flex-direction: column; align-items: center; justify-content: center; line-height: 1; padding: 0; font-variant-numeric: tabular-nums; }
   .tbtn small { font-size: 0.54rem; font-weight: 600; opacity: 0.8; margin-top: 3px; letter-spacing: 0.06em; text-transform: uppercase; }
   .tbtn.big { border-width: 2px; background: color-mix(in srgb, var(--c) 20%, var(--el)); }
@@ -224,6 +224,10 @@
   #doneCard .nx button .k { display: block; font-size: 0.64rem; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; opacity: 0.8; margin-bottom: 2px; }
   #doneCard .nx button.full { height: 62px; }
 
+  .lookSample { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; margin: 4px 0 10px; }
+  .lookSample .tbtn { pointer-events: none; height: 50px; }
+  .dimSample { padding: 10px 14px; background: var(--el); border: 1px solid var(--bd); border-radius: 14px; font-size: 0.95rem; margin-bottom: 4px; opacity: var(--dimI, 0.4); }
+
   /* done overlay */
   #doneOv { position: fixed; inset: 0; z-index: 90; background: rgba(8,9,13,0.88); display: none; align-items: center; justify-content: center; padding: 20px; }
   #doneOv.show { display: flex; }
@@ -334,6 +338,17 @@
     <p class="hint">The bar fills toward the next of ten stages that climb to this goal, and each stage is celebrated. Rest and breaks count.</p>
     <div class="srow"><span>Week starts on</span><select class="sSel" id="setWeek"><option value="1">Monday</option><option value="0">Sunday</option><option value="6">Saturday</option></select></div>
 
+    <h3>Quiet levels</h3>
+    <p class="hint">How strong things look. Lower is quieter. The samples change as you drag.</p>
+    <div class="lookSample">
+      <button type="button" class="tbtn" style="--c:#5fd0c0">3<small>min</small></button>
+      <button type="button" class="tbtn" style="--c:#f08a6b">15<small>min</small></button>
+      <button type="button" class="tbtn big" style="--c:#8fa9f5">25<small>min</small></button>
+    </div>
+    <div class="srow"><span>Timer buttons <b id="btnIv"></b></span><input type="range" id="setBtnI" min="15" max="100" step="5" style="flex:1; max-width:190px; accent-color:var(--accent);"></div>
+    <div class="dimSample">Wednesday · 11h 20m left to 10 pm</div>
+    <div class="srow"><span>Header &amp; notes while timing <b id="dimIv"></b></span><input type="range" id="setDimI" min="15" max="100" step="5" style="flex:1; max-width:150px; accent-color:var(--accent);"></div>
+
     <h3>Focus areas</h3>
     <p class="hint">The areas you can plant a stake in, one per line. Pick one on the main screen and it stays until you change it.</p>
     <textarea class="sInput" id="setFocuses" placeholder="One area per line" autocapitalize="words" spellcheck="false"></textarea>
@@ -422,8 +437,13 @@
   const WORK = ['light', 'deep', 'think'];
 
   // ===== state =====
-  const settings = Object.assign({ dayStart: 6, dayEnd: 22, weekStart: 1, chime: true, repeat: true, barHours: 8, words: true, musicWhen: 'off', music: 'calm', musicVol: 80, focuses: ['Deliverables', 'Communications', 'Admin', 'Relationships', 'Research'], alarm: 'chime', icsUrls: '', icsProxy: '' }, store.get('settings', {}));
+  const settings = Object.assign({ dayStart: 6, dayEnd: 22, weekStart: 1, chime: true, repeat: true, barHours: 8, words: true, btnI: 40, dimI: 40, musicWhen: 'off', music: 'calm', musicVol: 80, focuses: ['Deliverables', 'Communications', 'Admin', 'Relationships', 'Research'], alarm: 'chime', icsUrls: '', icsProxy: '' }, store.get('settings', {}));
   if (!settings.barChosen) settings.barHours = 8;   // 8 h is the default; an auto-saved earlier default doesn't count as a choice
+  function applyLook() {
+    document.documentElement.style.setProperty('--btnI', (settings.btnI / 100).toFixed(2));
+    document.documentElement.style.setProperty('--dimI', (settings.dimI / 100).toFixed(2));
+  }
+  applyLook();
   let sessions = store.get('sessions', []);   // [{id,cat,min,start,end,ms,done}]
   // One running note — no per-day history. (v1 kept a note per date; take the most recent one across.)
   let note = store.get('note', null);
@@ -998,6 +1018,7 @@
     hoursOptions($('setStart'), settings.dayStart); hoursOptions($('setEnd'), settings.dayEnd);
     $('setBar').innerHTML = [2, 3, 4, 5, 6, 8, 10, 12].map(h => '<option value="' + h + '">' + h + ' hours</option>').join(''); $('setBar').value = String(settings.barHours);
     $('setWeek').value = String(settings.weekStart); $('setChime').checked = settings.chime; $('setRepeat').checked = settings.repeat;
+    $('setBtnI').value = String(settings.btnI); $('setDimI').value = String(settings.dimI); $('btnIv').textContent = settings.btnI + '%'; $('dimIv').textContent = settings.dimI + '%';
     $('setFocuses').value = settings.focuses.join('\n'); $('setWords').checked = settings.words;
     $('setMusicWhen').value = settings.musicWhen; $('setMusicVol').value = String(settings.musicVol); renderMusicList();
     renderAlarmList();
@@ -1028,6 +1049,8 @@
   });
   $('alarmStop').addEventListener('click', stopAlarm);
   bind('setFocuses', () => { settings.focuses = $('setFocuses').value.split('\n').map(x => x.trim()).filter(Boolean).slice(0, 10); saveSettings(); }, 'input');
+  bind('setBtnI', () => { settings.btnI = +$('setBtnI').value; $('btnIv').textContent = settings.btnI + '%'; saveSettings(); applyLook(); }, 'input');
+  bind('setDimI', () => { settings.dimI = +$('setDimI').value; $('dimIv').textContent = settings.dimI + '%'; saveSettings(); applyLook(); }, 'input');
   bind('setWords', () => { settings.words = $('setWords').checked; saveSettings(); renderNext(); });
   bind('setMusicWhen', () => { settings.musicWhen = $('setMusicWhen').value; saveSettings(); });
   bind('setMusicVol', () => { settings.musicVol = +$('setMusicVol').value; saveSettings(); if (window.StepMusic) StepMusic.setVolume(settings.musicVol / 100); }, 'input');
