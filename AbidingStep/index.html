@@ -313,6 +313,7 @@
   #routineList .fo .fh { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; }
   #routineList .fo .fn { font-size: 1.05rem; font-weight: 700; } #routineList .fo .fm { font-size: 0.8rem; font-weight: 600; color: #8fcf7f; }
   #routineList .fo .fd { font-size: 0.8rem; color: var(--dim); margin-top: 2px; line-height: 1.3; }
+  #focusList .fo.pickBtn { min-height: 54px; align-items: center; justify-content: center; border-color: var(--accent); background: color-mix(in srgb, var(--accent) 16%, var(--el2)); color: var(--accent); font-weight: 700; font-size: 1rem; }
   #routinePick { width: 100%; height: 54px; margin-bottom: 9px; border-radius: 13px; border: 1.5px solid var(--accent); background: color-mix(in srgb, var(--accent) 16%, var(--el2)); color: var(--accent); font-weight: 700; font-size: 1rem; }
   .ccLinks { flex: none; display: flex; justify-content: center; gap: 22px; }
   .ccLinks button { background: none; border: 0; color: var(--faint); font-size: 0.9rem; padding: 10px 8px 12px; text-decoration: underline; text-underline-offset: 3px; }
@@ -433,6 +434,8 @@
     <input class="sInput" id="destText" type="text" maxlength="90" placeholder="Where do you want to get to?" enterkeyhint="done" autocomplete="off" autocapitalize="sentences">
     <div class="fldLbl">Kind of effort (optional)</div>
     <div class="chips2" id="destChips"></div>
+    <div class="fldLbl">Time to give it each week (optional)</div>
+    <div class="chips2" id="destGoalChips"></div>
     <button class="stepLink" id="destStepLink" type="button">+ The very next small step</button>
     <div id="destStepWrap" hidden><input class="sInput" id="destStep" type="text" maxlength="120" placeholder="One small thing you could start on" enterkeyhint="done" autocomplete="off" autocapitalize="sentences"></div>
     <button class="btn full" id="destAddBtn" type="button">Add</button>
@@ -1230,6 +1233,29 @@
   function markReached(id) { const d = dests.find(x => x.id === id); if (!d || d.state !== 'open') return null; d.state = 'reached'; d.on = dkey(new Date()); if (destCur === id) destCur = ''; saveDests(); return d; }
   function dropDest(id) { dests = dests.filter(x => x.id !== id); if (destCur === id) destCur = ''; saveDests(); }
   function destToday(id) { let ms = 0, n = 0; todaysSessions().forEach(x => { if (x.dest === id && WORK.includes(x.cat)) { ms += x.ms; n++; } }); return { ms, n }; }
+  // a destination can carry a weekly time (a budget of attention, not a quota): the week's remainder spread over the work days left, with today's share rounded up to 5 minutes and never more than 2 hours
+  function weekDestMs(id, d) { const ws = weekStartMs(d); let ms = 0; sessions.forEach(x => { if (x.dest === id && x.start >= ws && WORK.includes(x.cat)) ms += x.ms; }); return ms; }
+  function destShare(dst, d) {
+    const goal = (dst.goal || 0) * 60000; if (!goal || !targetsOn()) return null;
+    const now = d || new Date(), key = dkey(now), wk = weekDestMs(dst.id, now);
+    let todayMs = 0; sessions.forEach(x => { if (x.dest === dst.id && WORK.includes(x.cat) && dkey(new Date(x.start)) === key) todayMs += x.ms; });
+    const left = workDaysLeft(now), isWork = (settings.workDays || []).includes(now.getDay()), weekLeft = Math.max(0, goal - wk);
+    const need0 = Math.max(0, goal - (wk - todayMs)), share = left > 0 && isWork ? Math.min(7200000, Math.ceil(need0 / left / 300000) * 300000) : 0;
+    return { goal, weekMs: wk, weekLeft, todayMs, share, remaining: Math.max(0, share - todayMs) };
+  }
+  function shareText(dst, d) {   // soft, never "behind": what the week looks like and, when it is a work day, about how much today would keep it comfortable
+    const sh = destShare(dst, d); if (!sh) return '';
+    const wk = 'this week ' + fmtDur(sh.weekMs) + ' of ' + fmtDur(sh.goal);
+    if (sh.weekLeft <= 0) return 'goal met this week';
+    if (!sh.share) return wk;
+    return (sh.remaining > 0 ? 'about ' + fmtDur(sh.remaining) + ' more today' : "today's share is done") + ' · ' + wk;
+  }
+  function pickDest() {   // the destination with the most of today's share still open; if none has one open, any of them (never none)
+    const od = openDests(); if (!od.length) return null; const cur = curDest();
+    const sc = od.map(x => { const sh = destShare(x); return { x, r: sh ? sh.remaining : 0 }; }), max = Math.max(...sc.map(y => y.r));
+    let best = max > 0 ? sc.filter(y => y.r === max) : sc; if (best.length > 1 && cur) best = best.filter(y => y.x.id !== cur.id);
+    return best[Math.floor(Math.random() * best.length)].x;
+  }
 
   // ===== energy zones: "peak 8–11 am, steady 11–2, slump 2–4, second wind 4–7" → hour ranges with a level =====
   // am/pm may be left off: each range is read as the next one after the previous (so "11–2" after "8–11 am" means 11 am to 2 pm)
@@ -1468,8 +1494,9 @@ Immanuel
     $('focusTitle').textContent = od.length ? 'Destination' : 'Focus for now';
     let h = '';
     if (od.length) {
+      if (od.length > 1) h += '<button type="button" class="fo pickBtn" id="goingPick">Pick for me</button>';
       h += od.map(d => {
-        const t = destToday(d.id), sub = [d.focus, d.step ? 'first step: ' + d.step : ''].filter(Boolean).join(' · ');
+        const t = destToday(d.id), sub = [d.focus, d.step ? 'first step: ' + d.step : '', shareText(d)].filter(Boolean).join(' · ');
         return '<button type="button" class="fo' + (cur && cur.id === d.id ? ' on' : '') + '" data-dest="' + d.id + '"><span class="fh"><span class="fn">' + esc(d.text) + '</span><span class="fm' + (t.ms ? '' : ' zero') + '">' + fmtDur(t.ms) + '</span></span>' + (sub ? '<span class="fd">' + esc(sub) + '</span>' : '') + '</button>';
       }).join('');
       h += '<button type="button" class="fo none' + (free ? ' on' : '') + '" id="goingFree"><span class="fn">Just a focus for now…</span></button><div id="goingFocus"' + (free ? '' : ' hidden') + '>' + focusListHtml() + '</div>';
@@ -1478,6 +1505,7 @@ Immanuel
   }
   $('focusPill').addEventListener('click', openGoing);
   $('focusList').addEventListener('click', e => {
+    if (e.target.closest('#goingPick')) { const d = pickDest(); if (d) { destCur = d.id; saveDests(); $('focusOv').classList.remove('show'); if (!run) renderMain(); else renderFocus(); } return; }
     if (e.target.closest('#goingFree')) { $('goingFocus').hidden = !$('goingFocus').hidden; return; }
     const b = e.target.closest('.fo'); if (!b) return;
     if (b.dataset.dest) { destCur = b.dataset.dest; saveDests(); }
@@ -1702,7 +1730,7 @@ Immanuel
       const t = destToday(d.id), isCur = cur && cur.id === d.id;
       return '<div class="cr ' + (d.state === 'reached' ? 'done' : isCur ? 'next' : '') + '" data-id="' + d.id + '" style="--c:var(--accent)"><i></i><span class="cn">' + esc(shortText(d.text, 34)) + '</span>'
         + (d.focus ? '<span class="cf">' + esc(d.focus) + '</span>' : '') + '<span class="cs">' + (d.state === 'reached' ? 'reached ✓' : (t.ms ? fmtDur(t.ms) + ' · ' : '') + (isCur ? 'now' : '')) + '</span></div>';
-    }).join('') + (cur && cur.step ? '<div class="ccStep">First step: ' + esc(cur.step) + '</div>' : '');
+    }).join('') + (cur && cur.step ? '<div class="ccStep">First step: ' + esc(cur.step) + '</div>' : '') + (cur && shareText(cur) ? '<div class="ccStep">' + esc(shareText(cur)) + '</div>' : '');
   }
   $('ccBody').addEventListener('click', e => {   // tap a destination to aim at it
     const r = e.target.closest('.cr'); if (!r) return;
@@ -1878,27 +1906,30 @@ Immanuel
       const t = destToday(d.id), open = d.state === 'open';
       return '<div class="drow ' + (open ? (cur && cur.id === d.id ? 'now' : '') : 'reached') + '" data-id="' + d.id + '"><button type="button" class="dmain" data-act="aim"><span class="dn">' + esc(d.text) + '</span>'
         + (d.step ? '<span class="dd">First step: ' + esc(d.step) + '</span>' : '')
-        + '<span class="dt">' + (open ? [d.focus, cur && cur.id === d.id ? 'now' : '', t.n ? 'today ' + fmtDur(t.ms) + ' · ' + t.n + ' step' + (t.n === 1 ? '' : 's') : ''].filter(Boolean).join(' · ') : 'reached today ✓') + '</span></button>'
+        + '<span class="dt">' + (open ? [d.focus, cur && cur.id === d.id ? 'now' : '', t.n ? 'today ' + fmtDur(t.ms) + ' · ' + t.n + ' step' + (t.n === 1 ? '' : 's') : '', shareText(d)].filter(Boolean).join(' · ') : 'reached today ✓') + '</span></button>'
         + (open ? '<div class="dbtns"><button type="button" data-act="reached">Reached</button><button type="button" data-act="edit">Edit</button><button type="button" data-act="drop">Drop</button></div>' : '') + '</div>';
     }).join('') : '<div class="none">No destinations yet.</div>';
   }
-  let editId = '', chipSel = '';
+  let editId = '', chipSel = '', goalSel = 0;
+  const DGOALS = [[0, 'None'], [60, '1h'], [120, '2h'], [180, '3h'], [300, '5h'], [480, '8h']];
+  function renderDestGoalChips() { $('destGoalChips').innerHTML = DGOALS.map(([v, l]) => '<button type="button" class="chip2' + (v === goalSel ? ' on' : '') + '" data-g="' + v + '">' + l + '</button>').join(''); }
+  $('destGoalChips').addEventListener('click', e => { const b = e.target.closest('.chip2'); if (!b) return; goalSel = +b.dataset.g; renderDestGoalChips(); });
   function renderDestChips() {
     $('destChips').innerHTML = settings.focuses.map(parseFocus).filter(f => f.name).map(f => '<button type="button" class="chip2' + (f.name === chipSel ? ' on' : '') + '" data-f="' + esc(f.name) + '">' + esc(f.name) + '</button>').join('');
   }
   function resetDestForm() {
-    editId = ''; chipSel = ''; $('destText').value = ''; $('destStep').value = ''; $('destStepWrap').hidden = true; $('destStepLink').hidden = false;
-    $('destAddBtn').textContent = 'Add'; $('destCancel').hidden = true; $('destFormTitle').textContent = 'Add a destination'; renderDestChips();
+    editId = ''; chipSel = ''; goalSel = 0; $('destText').value = ''; $('destStep').value = ''; $('destStepWrap').hidden = true; $('destStepLink').hidden = false;
+    $('destAddBtn').textContent = 'Add'; $('destCancel').hidden = true; $('destFormTitle').textContent = 'Add a destination'; renderDestChips(); renderDestGoalChips();
   }
   function saveDestForm() {
     const text = $('destText').value.trim(), step = $('destStep').value.trim(), st = $('destStatus');
     if (!text) { st.textContent = 'Say where you want to get to, in a few words.'; $('destText').focus(); return; }
     if (editId) {
       const d = dests.find(x => x.id === editId);
-      if (d) { d.text = text.slice(0, 90); d.step = step.slice(0, 120); d.focus = chipSel; saveDests(); }
+      if (d) { d.text = text.slice(0, 90); d.step = step.slice(0, 120); d.focus = chipSel; d.goal = goalSel; saveDests(); }
       st.textContent = 'Saved.';
     } else {
-      const n = addDests([{ id: uid(), text: text.slice(0, 90), step: step.slice(0, 120), focus: chipSel, state: 'open', on: '' }]);
+      const n = addDests([{ id: uid(), text: text.slice(0, 90), step: step.slice(0, 120), focus: chipSel, goal: goalSel, state: 'open', on: '' }]);
       if (!n) { st.textContent = 'Five is the most at once: reach or drop one first.'; return; }
       st.textContent = 'Added.';
     }
@@ -1922,8 +1953,8 @@ Immanuel
     else if (act === 'drop') dropDest(id);
     else if (act === 'edit') {
       const d = dests.find(x => x.id === id); if (!d) return;
-      editId = id; chipSel = d.focus || ''; $('destText').value = d.text; $('destStep').value = d.step || ''; $('destStepWrap').hidden = !d.step; $('destStepLink').hidden = !!d.step;
-      $('destAddBtn').textContent = 'Save'; $('destCancel').hidden = false; $('destFormTitle').textContent = 'Edit this destination'; renderDestChips(); $('destStatus').textContent = '';
+      editId = id; chipSel = d.focus || ''; goalSel = d.goal || 0; $('destText').value = d.text; $('destStep').value = d.step || ''; $('destStepWrap').hidden = !d.step; $('destStepLink').hidden = !!d.step;
+      $('destAddBtn').textContent = 'Save'; $('destCancel').hidden = false; $('destFormTitle').textContent = 'Edit this destination'; renderDestChips(); renderDestGoalChips(); $('destStatus').textContent = '';
       $('destText').scrollIntoView({ block: 'center' }); $('destText').focus(); return;
     }
     else if (act === 'reached') { const d = markReached(id); renderDestList(); if (d) { closeSheet('sheetDest'); showReached(d); return; } }
