@@ -287,6 +287,9 @@
   #routineList .fo .fh { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; }
   #routineList .fo .fn { font-size: 1.05rem; font-weight: 700; } #routineList .fo .fm { font-size: 0.8rem; font-weight: 600; color: #8fcf7f; }
   #routineList .fo .fd { font-size: 0.8rem; color: var(--dim); margin-top: 2px; line-height: 1.3; }
+  #routinePick { width: 100%; height: 54px; margin-bottom: 9px; border-radius: 13px; border: 1.5px solid var(--accent); background: color-mix(in srgb, var(--accent) 16%, var(--el2)); color: var(--accent); font-weight: 700; font-size: 1rem; }
+  .ccLinks { flex: none; display: flex; justify-content: center; gap: 22px; }
+  .ccLinks button { background: none; border: 0; color: var(--faint); font-size: 0.9rem; padding: 10px 8px 12px; text-decoration: underline; text-underline-offset: 3px; }
   #routineEdit { width: 100%; background: none; border: 0; color: var(--faint); font-size: 0.88rem; padding: 8px; text-decoration: underline; text-underline-offset: 3px; }
   #doneKeep { width: 100%; height: 42px; margin-bottom: 9px; border-radius: 12px; border: 1px dashed color-mix(in srgb, var(--accent) 60%, transparent); background: none; color: var(--accent); font-weight: 600; font-size: 0.9rem; }
 
@@ -354,7 +357,7 @@
   <section id="coldCard" hidden>
     <div class="ccHead"><span id="ccTitle">Today's plan</span><button id="ccEdit" type="button">Edit</button></div>
     <div id="ccBody"></div>
-    <button id="ccOpenGrid" type="button">Choose something else</button>
+    <div class="ccLinks"><button id="ccRoutine" type="button">Reach for a routine</button><button id="ccOpenGrid" type="button">Choose something else</button></div>
   </section>
 
   <main id="grid"></main>
@@ -391,7 +394,7 @@
   </div>
 </div>
 
-<div id="routineOv"><div id="routineCard"><h4>Pick one to work through</h4><div id="routineList"></div><button id="routineEdit" type="button">Edit routines</button></div></div>
+<div id="routineOv"><div id="routineCard"><h4>Reach for one</h4><button id="routinePick" type="button">Pick for me</button><div id="routineList"></div><button id="routineEdit" type="button">Edit routines</button></div></div>
 
 <!-- where we are headed -->
 <div class="sheet" id="sheetDest">
@@ -460,7 +463,8 @@
     <p class="hint">Steps to work through when it's too much. A routine's name on its own line, then one step per line: minutes, a title, then a dash and a prompt. Put <b>b</b> after the minutes for a breathing cue, <b>w</b> for a place to write (it isn't saved). The minutes are a target, not a limit: finishing early is good, and you can stay as long as you need.</p>
     <textarea class="sInput" id="setRoutines" style="min-height:260px; font-size:15px;" autocapitalize="sentences" spellcheck="true"></textarea>
     <div class="status" id="routinePreview"></div>
-    <div class="srow"><span>Offer in rests and breaks</span><select class="sSel" id="setRestRoutine"></select></div>
+    <div class="srow"><span>Offer in rests</span><select class="sSel" id="setRestRoutine"></select></div>
+    <div class="srow"><span>Offer in breaks</span><select class="sSel" id="setBreakRoutine"></select></div>
     <button class="btn full" id="routineReset" type="button">Reset to the starters</button>
 
     <h3>Focus areas</h3>
@@ -583,7 +587,7 @@
   function parseFocus(str) { const m = String(str).split(/\s+[—–-]\s+|:\s+/); return { name: m[0].trim(), note: m.slice(1).join(' — ').trim() }; }
 
   // ===== state =====
-  const settings = Object.assign({ dayStart: 6, dayEnd: 22, weekStart: 1, chime: true, repeat: true, barHours: 8, restAfter: 60, routinesText: '', restRoutine: 'Breathe', useEnergy: true, energy: '', promptCal: true, words: true, wordsFreq: 'most', wordsMine: '', wordsOnlyMine: false, btnI: 40, dimI: 40, musicWhen: 'off', music: 'calm', musicVol: 80, focuses: FOCUS_DEFAULT, alarm: 'chime', icsUrls: '', icsProxy: '' }, store.get('settings', {}));
+  const settings = Object.assign({ dayStart: 6, dayEnd: 22, weekStart: 1, chime: true, repeat: true, barHours: 8, restAfter: 60, routinesText: '', restRoutine: 'Breathe', breakRoutine: 'Move', useEnergy: true, energy: '', promptCal: true, words: true, wordsFreq: 'most', wordsMine: '', wordsOnlyMine: false, btnI: 40, dimI: 40, musicWhen: 'off', music: 'calm', musicVol: 80, focuses: FOCUS_DEFAULT, alarm: 'chime', icsUrls: '', icsProxy: '' }, store.get('settings', {}));
   if (!settings.barChosen) settings.barHours = 8;   // 8 h is the default; an auto-saved earlier default doesn't count as a choice
   // an unedited earlier default list moves to the current one; a list you edited is left alone. Selected focus and stored tags are renamed with it
   // (note "Care" meant people in v21 and means the body now, so v21's Care becomes Connect).
@@ -1235,7 +1239,8 @@
   // With a destination set, every work step is "toward" it. `cold` = nothing yet today, or 90+ minutes since the last timer.
   function suggestNext() {
     const z = zoneNow(), sg = zoned(baseSuggest(z), z);
-    if ((sg.cat === 'rest' || sg.cat === 'break') && settings.restRoutine) { const rt = routines().find(r => r.name === settings.restRoutine); if (rt) sg.routine = rt.name; }   // a rest can be a guided one
+    const offered = sg.cat === 'break' ? settings.breakRoutine : sg.cat === 'rest' ? settings.restRoutine : '';   // a rest or a break can be a guided one
+    if (offered) { const rt = routines().find(r => r.name === offered); if (rt) sg.routine = rt.name; }
     return sg;
   }
   function baseSuggest(z) {
@@ -1244,7 +1249,7 @@
     const cold = !last || now - last.end > 90 * 60000, streak = workStreakMs(list);
     const lab = k => k, tw = !!d;
     const restMs = restAfterMs() * (zl === 'peak' ? 1.25 : zl === 'low' ? 0.75 : 1);   // rest sooner in low hours, later in peak ones
-    if (!cold && WORK.includes(last.cat) && restMs && streak >= restMs) return { cat: 'rest', min: streak >= restMs * 1.5 ? 15 : 10, k: 'Pace yourself — rest first', guard: true };
+    if (!cold && WORK.includes(last.cat) && restMs && streak >= restMs) return { cat: 'rest', min: streak >= restMs * 1.5 ? 15 : 10, k: 'Time for a rest?', guard: true };
     if (!last) return fitDay({ cat: 'light', min: 3, k: lab('Begin with Him'), first: true, cold: true, toward: tw });
     if (cold) return fitDay({ cat: 'light', min: 3, k: lab('Pick it back up'), cold: true, toward: tw });
     const lm = Math.max(1, Math.round(last.ms / 60000));
@@ -1292,6 +1297,12 @@ Release it
 3w Name what is pressing — One line each. Say it plainly; it doesn't need to be tidy.
 4 Hand it over — Take each one and give it to Him. What is yours to do? What is His? "Cast your burden on the Lord, and he will sustain you."
 2 One small thing — Is there one small thing you can do next, or is it time to rest?
+
+Move
+2 Stretch — Stand up. Reach high, roll your shoulders, unclench your jaw and your hands.
+5 Walk — Walk anywhere: around the house, down the street. Look up, and breathe.
+3 Strength — Ten slow squats or wall push-ups, whatever your body is up for. Stop if anything hurts.
+2 Water — A glass of water. Thank Him for the body that carried you today.
 
 Immanuel
 2b Settle — Breathe slowly. Invite Jesus to be with you.
@@ -1523,6 +1534,16 @@ Immanuel
     $('routineList').innerHTML = list.length ? list.map(r => '<button type="button" class="fo" data-r="' + esc(r.name) + '"><span class="fh"><span class="fn">' + esc(r.name) + '</span><span class="fm">~' + routineMins(r) + ' min</span></span><span class="fd">' + esc(r.steps.map(x => x.title).join(' → ')) + '</span></button>').join('') : '<div class="none">No routines yet. Add some in Settings.</div>';
     $('routineOv').classList.add('show');
   }
+  function pickRoutine() {   // the one you haven't reached for the longest (never = longest), and never the one just done; ties are random
+    const list = routines(); if (!list.length) return '';
+    const last = {}; sessions.forEach(x => { if (x.routine) last[x.routine] = Math.max(last[x.routine] || 0, x.end || 0); });
+    let pool = list; const recent = sessions.filter(x => x.routine).sort((a, b) => b.end - a.end)[0];
+    if (list.length > 1 && recent) pool = list.filter(r => r.name !== recent.routine);
+    const oldest = Math.min(...pool.map(r => last[r.name] || 0)), tied = pool.filter(r => (last[r.name] || 0) === oldest);
+    return tied[Math.floor(Math.random() * tied.length)].name;
+  }
+  $('routinePick').addEventListener('click', () => { const n = pickRoutine(); if (n) startRoutine(n); });
+  $('ccRoutine').addEventListener('click', openRoutinePicker);
   $('btnRoutines').addEventListener('click', openRoutinePicker);
   $('routineList').addEventListener('click', e => { const b = e.target.closest('.fo'); if (b) startRoutine(b.dataset.r); });
   $('routineOv').addEventListener('click', e => { if (e.target.id === 'routineOv') $('routineOv').classList.remove('show'); });
@@ -1925,11 +1946,14 @@ Immanuel
   function renderRoutinePrefs() {
     const list = routines();
     $('routinePreview').textContent = list.length ? list.map(r => r.name + ' (' + r.steps.length + ' step' + (r.steps.length === 1 ? '' : 's') + ', ~' + routineMins(r) + ' min)').join(' · ') : 'No routines understood yet. A name on its own line, then steps like: 3 Settle — Breathe slowly.';
-    $('setRestRoutine').innerHTML = '<option value="">Nothing, just a plain rest</option>' + list.map(r => '<option value="' + esc(r.name) + '">' + esc(r.name) + '</option>').join('');
+    const opts = '<option value="">Nothing, just a plain timer</option>' + list.map(r => '<option value="' + esc(r.name) + '">' + esc(r.name) + '</option>').join('');
+    $('setRestRoutine').innerHTML = opts; $('setBreakRoutine').innerHTML = opts;
     $('setRestRoutine').value = list.some(r => r.name === settings.restRoutine) ? settings.restRoutine : '';
+    $('setBreakRoutine').value = list.some(r => r.name === settings.breakRoutine) ? settings.breakRoutine : '';
   }
   bind('setRoutines', () => { const v = $('setRoutines').value; settings.routinesText = v.trim() === DEFAULT_ROUTINES.trim() ? '' : v; saveSettings(); renderRoutinePrefs(); if (!run) renderNext(); }, 'input');
   bind('setRestRoutine', () => { settings.restRoutine = $('setRestRoutine').value; saveSettings(); if (!run) renderNext(); });
+  bind('setBreakRoutine', () => { settings.breakRoutine = $('setBreakRoutine').value; saveSettings(); if (!run) renderNext(); });
   $('routineReset').addEventListener('click', () => { settings.routinesText = ''; saveSettings(); $('setRoutines').value = DEFAULT_ROUTINES; renderRoutinePrefs(); if (!run) renderNext(); });
   function renderEnergyPreview() {
     const txt = (settings.energy || '').trim(), z = parseZones(settings.energy), L = { peak: 'peak', steady: 'steady', low: 'low' };
