@@ -1,5 +1,5 @@
 // The single source of the app version — Settings reads it back from this cache name.
-const CACHE = 'abidingstep-v20';
+const CACHE = 'abidingstep-v21';
 const ASSETS = ['./', './index.html', './music.js', './manifest.json', './icon.svg', './apple-touch-icon.png', './icon-192.png', './icon-512.png'];
 
 self.addEventListener('install', e => {

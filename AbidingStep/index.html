@@ -451,8 +451,17 @@
     'Tend — admin, money, household, keeping things running',
     'Plan — deciding what\'s next, setting up the day or week',
   ];
-  // ("With Him" is deliberately not a focus: it runs through everything, via the abiding lines. Add it in Settings if you want set-apart time.)
-  const FOCUS_DEFAULT = FOCUS_V18.concat(['Body — exercise, food, sleep']);
+  const FOCUS_V20 = FOCUS_V18.concat(['Body — exercise, food, sleep']);
+  // every focus is an action word. ("With Him" is deliberately not one: it runs through everything, via the abiding lines.)
+  const FOCUS_DEFAULT = [
+    'Make — things that ship, your deliverables',
+    'Reply — inbox, messages, owed answers',
+    'Care — time and attention for specific people',
+    'Learn — research, reading, thinking it through',
+    'Tend — admin, money, household, keeping things running',
+    'Plan — deciding what\'s next, setting up the day or week',
+  ];
+  const FOCUS_ALIAS = { People: 'Care' };   // an earlier name, so today's tally and a selected focus carry over
   const FOCUS_OLD_DEFAULT = ['Deliverables', 'Communications', 'Admin', 'Relationships', 'Research'];
   function parseFocus(str) { const m = String(str).split(/\s+[—–-]\s+|:\s+/); return { name: m[0].trim(), note: m.slice(1).join(' — ').trim() }; }
 
@@ -460,9 +469,10 @@
   const settings = Object.assign({ dayStart: 6, dayEnd: 22, weekStart: 1, chime: true, repeat: true, barHours: 8, words: true, btnI: 40, dimI: 40, musicWhen: 'off', music: 'calm', musicVol: 80, focuses: FOCUS_DEFAULT, alarm: 'chime', icsUrls: '', icsProxy: '' }, store.get('settings', {}));
   if (!settings.barChosen) settings.barHours = 8;   // 8 h is the default; an auto-saved earlier default doesn't count as a choice
   // an unedited earlier default list moves to the current one; a list you edited is left alone
-  if ([FOCUS_OLD_DEFAULT, FOCUS_V18].some(l => JSON.stringify(l) === JSON.stringify(settings.focuses))) {
+  if ([FOCUS_OLD_DEFAULT, FOCUS_V18, FOCUS_V20].some(l => JSON.stringify(l) === JSON.stringify(settings.focuses))) {
     settings.focuses = FOCUS_DEFAULT.slice(); store.set('settings', settings);
-    if (!settings.focuses.some(f => parseFocus(f).name === store.get('focus', ''))) store.set('focus', '');
+    let f = store.get('focus', ''); f = FOCUS_ALIAS[f] || f;
+    store.set('focus', settings.focuses.some(x => parseFocus(x).name === f) ? f : '');
   }
   function applyLook() {
     document.documentElement.style.setProperty('--btnI', (settings.btnI / 100).toFixed(2));
@@ -740,7 +750,7 @@
   $('nextBtn').addEventListener('click', () => { if (!run && sug) startTimer(sug.cat, sug.min); });
   $('focusPill').addEventListener('click', () => {
     const spent = {};   // today's minutes per focus — work only, so rest and breaks don't pad whatever was selected
-    todaysSessions().forEach(x => { if (WORK.includes(x.cat) && x.focus) spent[x.focus] = (spent[x.focus] || 0) + x.ms; });
+    todaysSessions().forEach(x => { const nm = FOCUS_ALIAS[x.focus] || x.focus; if (WORK.includes(x.cat) && nm) spent[nm] = (spent[nm] || 0) + x.ms; });
     $('focusList').innerHTML = settings.focuses.map(parseFocus).filter(f => f.name).map(f => '<button type="button" class="fo' + (f.name === focus ? ' on' : '') + '" data-f="' + esc(f.name) + '"><span class="fh"><span class="fn">' + esc(f.name) + '</span><span class="fm' + (spent[f.name] ? '' : ' zero') + '">' + fmtDur(spent[f.name] || 0) + '</span></span>' + (f.note ? '<span class="fd">' + esc(f.note) + '</span>' : '') + '</button>').join('')
       + '<button type="button" class="fo none' + (!focus ? ' on' : '') + '" data-f=""><span class="fn">No focus</span></button>';
     $('focusOv').classList.add('show');
