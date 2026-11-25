@@ -56,7 +56,9 @@
   #nextEv:empty { display: none; }
 
   /* ===== today's time by category: ten equal blocks that fill as the day's minutes add up ===== */
-  #dayBar { position: relative; height: 7px; border-radius: 4px; background: var(--bd); overflow: hidden; margin: 6px 4px 2px; }
+  #stageRow { display: flex; align-items: center; gap: 8px; margin: 6px 4px 2px; }
+  #stageTxt { flex: none; font-size: 0.66rem; color: var(--dim); font-variant-numeric: tabular-nums; white-space: nowrap; }
+  #dayBar { position: relative; flex: 1; height: 7px; border-radius: 4px; background: var(--bd); overflow: hidden; }
   #dayBarSegs { display: flex; height: 100%; }
   #dayBarSegs i { display: block; height: 100%; }
   #dayBar::after { content: ''; position: absolute; inset: 0;
@@ -75,17 +77,17 @@
   #notesBar { display: flex; align-items: flex-start; gap: 10px; width: 100%; margin: 8px 0 9px; padding: 7px 14px; text-align: left;
     background: var(--el); border: 1px solid var(--bd); border-radius: 14px; }
   #notesBar .lbl { padding-top: 3px; font-size: 0.66rem; font-weight: 700; color: var(--faint); text-transform: uppercase; letter-spacing: 0.08em; flex: none; }
-  #notesBar .txt { flex: 1; min-width: 0; white-space: pre-wrap; word-break: break-word; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 3; overflow: hidden; font-size: 0.92rem; line-height: 1.32; color: var(--tx); }
+  #notesBar .txt { flex: 1; min-width: 0; white-space: pre-wrap; word-break: break-word; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden; font-size: 0.92rem; line-height: 1.32; color: var(--tx); }
   #notesBar .txt.empty { color: var(--faint); }
   
   /* ===== timer grid ===== */
   .cat { display: flex; flex-direction: column; min-height: 0; }
   /* the five rows share whatever height is left under the header + note, so it fits any phone and any note length */
-  #grid { flex: 1 1 auto; display: grid; grid-template-rows: repeat(5, minmax(70px, 1fr)); gap: 8px; min-height: 0; }
-  .catHead { display: flex; align-items: baseline; gap: 8px; margin: 0 3px 4px; font-size: 0.76rem; font-weight: 700; color: var(--c);
+  #grid { flex: 1 1 auto; display: grid; grid-template-rows: repeat(5, minmax(65px, 1fr)); gap: 6px; min-height: 0; }
+  .catHead { display: flex; align-items: baseline; gap: 8px; margin: 0 3px 3px; font-size: 0.76rem; font-weight: 700; color: var(--c);
     text-transform: uppercase; letter-spacing: 0.07em; }
-  .badge { margin-left: auto; padding: 2px 10px; border-radius: 999px; background: color-mix(in srgb, var(--c) 20%, var(--el)); border: 1px solid color-mix(in srgb, var(--c) 50%, transparent);
-    color: var(--c); font-size: 0.78rem; font-weight: 700; letter-spacing: 0; text-transform: none; font-variant-numeric: tabular-nums; }
+  .badge { margin-left: auto; padding: 1px 9px; border-radius: 999px; background: color-mix(in srgb, var(--c) 20%, var(--el)); border: 1px solid color-mix(in srgb, var(--c) 50%, transparent);
+    color: var(--c); font-size: 0.74rem; font-weight: 700; letter-spacing: 0; text-transform: none; font-variant-numeric: tabular-nums; }
   .badge.zero { opacity: 0.4; font-weight: 600; }
   .btns { display: grid; grid-template-columns: repeat(6, 1fr); gap: 6px; flex: 1; min-height: 0; }
   .tbtn { min-height: 44px; max-height: 62px; border-radius: 14px; border: 1.5px solid color-mix(in srgb, var(--c) 55%, transparent);
@@ -105,7 +107,9 @@
     border-radius: 0; color: var(--tx); font: inherit; font-size: 16px; text-align: center; outline: none; }
   #runGoal::placeholder { color: var(--faint); }
   #runGoal:focus { border-bottom-color: var(--c); }
-  .runBar { height: 8px; border-radius: 4px; background: var(--bd); margin: 16px 6px 20px; overflow: hidden; }
+  .runBar { height: 8px; border-radius: 4px; background: var(--bd); margin: 16px 6px 12px; overflow: hidden; }
+  #runFocus { color: var(--dim); font-size: 0.85rem; margin-top: 3px; }
+  #runWord { color: var(--tx); opacity: 0.85; font-size: 0.95rem; font-style: italic; line-height: 1.35; margin: 0 4px 16px; min-height: 1.35em; }
   .runBar div { height: 100%; width: 0; background: var(--c); border-radius: 4px; }
   .runBtns { display: flex; gap: 9px; }
   .runBtns button { flex: 1; height: 54px; border-radius: 14px; border: 1.5px solid var(--bd); background: var(--el2); font-size: 1rem; font-weight: 600; }
@@ -120,7 +124,6 @@
   #bottom button { flex: 1; max-width: 180px; height: 42px; border-radius: 12px; border: 1px solid var(--bd); background: var(--el); font-size: 0.92rem; font-weight: 600; color: var(--dim); }
   #bottom button:active { background: var(--el2); }
   #bottom button { white-space: nowrap; padding: 0 6px; }
-  #btnTrends { flex: 1.4; }
 
   /* ===== sheets ===== */
   .sheet { position: fixed; inset: 0; z-index: 50; background: var(--bg); display: none; flex-direction: column; padding-top: env(safe-area-inset-top); }
@@ -164,31 +167,6 @@
   .btn.full { width: 100%; }
   .btn:active { background: var(--el2); }
 
-  /* trends */
-  .seg { display: flex; gap: 6px; margin-bottom: 4px; }
-  .seg button { flex: 1; height: 38px; border-radius: 10px; border: 1px solid var(--bd); background: var(--el); font-weight: 600; font-size: 0.88rem; color: var(--dim); }
-  .seg button.on { background: var(--accent); border-color: var(--accent); color: #0e1016; }
-  .cards { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
-  .card { background: var(--el); border: 1px solid var(--bd); border-radius: 13px; padding: 11px 13px; }
-  .card .v { font-size: 1.5rem; font-weight: 700; }
-  .card .l { font-size: 0.74rem; color: var(--dim); margin-top: 2px; }
-  .bars { display: flex; align-items: flex-end; gap: 3px; height: 130px; padding-top: 6px; }
-  .bcol { flex: 1; height: 100%; display: flex; flex-direction: column-reverse; min-width: 0; }
-  .bcol .seg1 { width: 100%; }
-  .bcol .seg1:first-child { border-radius: 0 0 3px 3px; }
-  .blab { display: flex; gap: 3px; font-size: 0.6rem; color: var(--faint); margin-top: 4px; }
-  .blab span { flex: 1; text-align: center; min-width: 0; overflow: hidden; }
-  .blab span.today { color: var(--accent); font-weight: 700; }
-  .lgd { display: flex; flex-wrap: wrap; gap: 6px 14px; font-size: 0.74rem; color: var(--dim); margin-top: 10px; }
-  .lgd i { display: inline-block; width: 9px; height: 9px; border-radius: 3px; margin-right: 5px; background: var(--c); }
-  .trow { display: flex; align-items: center; gap: 10px; padding: 9px 12px; background: var(--el); border: 1px solid var(--bd); border-radius: 11px; margin-bottom: 6px; font-size: 0.92rem; }
-  .trow i { width: 10px; height: 10px; border-radius: 3px; background: var(--c); flex: none; }
-  .trow .nm { flex: 1; }
-  .trow .dl { font-size: 0.78rem; color: var(--faint); min-width: 70px; text-align: right; }
-  .trow .dl.up { color: #8fcf7f; } .trow .dl.dn { color: #f08a6b; }
-  .hours { display: flex; align-items: flex-end; gap: 2px; height: 70px; }
-  .hours div { flex: 1; background: #8fa9f5; border-radius: 2px 2px 0 0; min-height: 2px; opacity: 0.85; }
-  .hlab { display: flex; justify-content: space-between; font-size: 0.62rem; color: var(--faint); margin-top: 3px; }
   .hint { font-size: 0.78rem; color: var(--faint); line-height: 1.45; margin: 4px 2px 10px; }
 
   /* settings */
@@ -213,10 +191,42 @@
   #updBar span { flex: 1; }
   #updBar button { height: 36px; padding: 0 14px; border-radius: 10px; border: 0; background: #0e1016; color: var(--accent); font-weight: 700; }
 
+  /* ===== the next step + focus (the stake in the ground) ===== */
+  #actionRow { display: flex; gap: 8px; margin: 0 0 9px; }
+  #focusPill { flex: 0 0 41%; height: 50px; border-radius: 14px; background: var(--el); border: 1.5px solid var(--bd); display: flex; flex-direction: column; align-items: flex-start; justify-content: center; padding: 0 12px; text-align: left; min-width: 0; }
+  #focusPill .k, #nextBtn .k { font-size: 0.62rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--faint); white-space: nowrap; }
+  #focusPill .v { font-size: 0.95rem; font-weight: 600; color: var(--tx); max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  #focusPill.unset { border-color: var(--accent); } #focusPill.unset .v { color: var(--accent); }
+  #nextBtn { flex: 1; height: 50px; border-radius: 14px; border: 2px solid var(--c); background: color-mix(in srgb, var(--c) 22%, var(--el)); color: var(--c);
+    display: flex; flex-direction: column; align-items: flex-start; justify-content: center; padding: 0 14px; text-align: left; min-width: 0; }
+  #nextBtn .k { color: color-mix(in srgb, var(--c) 70%, var(--tx)); }
+  #nextBtn .v { font-size: 1.02rem; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
+  #nextBtn:active { transform: scale(0.98); }
+  #focusOv { position: fixed; inset: 0; z-index: 95; background: rgba(8,9,13,0.8); display: none; align-items: flex-end; justify-content: center; padding: 0 12px calc(12px + env(safe-area-inset-bottom)); }
+  #focusOv.show { display: flex; }
+  #focusCard { width: 100%; max-width: 520px; background: var(--el); border: 1px solid var(--bd); border-radius: 20px; padding: 14px; max-height: 80dvh; overflow-y: auto; }
+  #focusCard h4 { margin: 2px 4px 10px; font-size: 0.78rem; color: var(--faint); text-transform: uppercase; letter-spacing: 0.08em; }
+  #focusList .fo { display: block; width: 100%; height: 50px; margin-bottom: 7px; border-radius: 13px; border: 1.5px solid var(--bd); background: var(--el2); font-size: 1rem; font-weight: 600; text-align: left; padding: 0 16px; }
+  #focusList .fo.on { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 14%, var(--el2)); color: var(--accent); }
+  #focusList .fo.none { color: var(--dim); font-weight: 500; }
+
+  /* ===== stage celebration ===== */
+  #confetti { position: fixed; inset: 0; pointer-events: none; overflow: hidden; z-index: 91; }
+  #confetti i { position: absolute; top: -14px; width: 8px; height: 13px; border-radius: 2px; animation: cf var(--d) ease-in var(--dl) forwards; }
+  @keyframes cf { to { transform: translate3d(var(--x), 108vh, 0) rotate(var(--r)); } }
+  #doneCard.stage { box-shadow: 0 0 0 3px color-mix(in srgb, var(--c) 30%, transparent), 0 0 44px color-mix(in srgb, var(--c) 40%, transparent); }
+  #doneStage { margin: 6px 0 14px; padding: 12px; border-radius: 14px; background: color-mix(in srgb, #ffd36b 14%, var(--el2)); border: 1px solid color-mix(in srgb, #ffd36b 55%, transparent); }
+  #doneStage .sn { font-size: 0.72rem; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: #ffd36b; }
+  #doneStage .sw { font-size: 1.02rem; line-height: 1.4; margin-top: 6px; }
+  #doneStage .st { font-size: 0.82rem; color: var(--dim); margin-top: 6px; }
+  #doneWord { color: var(--dim); font-style: italic; margin: 8px 8px 14px; font-size: 0.95rem; line-height: 1.35; }
+  #doneCard .nx button .k { display: block; font-size: 0.64rem; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; opacity: 0.8; margin-bottom: 2px; }
+  #doneCard .nx button.full { height: 62px; }
+
   /* done overlay */
   #doneOv { position: fixed; inset: 0; z-index: 90; background: rgba(8,9,13,0.88); display: none; align-items: center; justify-content: center; padding: 20px; }
   #doneOv.show { display: flex; }
-  #doneCard { width: 100%; max-width: 380px; background: var(--el); border: 2px solid var(--c); border-radius: 22px; padding: 26px 18px 18px; text-align: center; }
+  #doneCard { width: 100%; max-width: 380px; max-height: calc(100dvh - 40px); overflow-y: auto; background: var(--el); border: 2px solid var(--c); border-radius: 22px; padding: 26px 18px 18px; text-align: center; }
   #doneCard .big { font-size: 1.7rem; font-weight: 700; color: var(--c); }
   #doneCard .goal { color: var(--tx); font-size: 1.05rem; margin: 10px 0 0; word-break: break-word; }
   #doneCard .sub { color: var(--dim); margin: 6px 0 20px; font-size: 0.95rem; }
@@ -243,17 +253,19 @@
     <div id="weekStrip"></div>
     <div class="pills"><div id="pWeek"></div><div id="pDay"></div></div>
     <div id="nextEv"></div>
-    <div id="dayBar" role="img" aria-label="Today's time by category"><div id="dayBarSegs"></div></div>
+    <div id="stageRow"><div id="dayBar" role="img" aria-label="Today's time by category"><div id="dayBarSegs"></div></div><span id="stageTxt"></span></div>
   </header>
 
   <button id="notesBar" type="button"><span class="lbl">Notes</span><span class="txt empty" id="notesTxt">Tap to write — stays until you change it</span></button>
 
   <section id="runPanel" hidden>
     <div id="runCat"></div>
+    <div id="runFocus" hidden></div>
     <input id="runGoal" type="text" maxlength="90" placeholder="Goal for this time (optional)" enterkeyhint="done" autocomplete="off" autocorrect="off" spellcheck="false">
     <div id="runTime">0:00</div>
     <div id="runEnds"></div>
     <div class="runBar"><div id="runFill"></div></div>
+    <div id="runWord"></div>
     <div class="runBtns">
       <button id="runPause" class="main" type="button">Pause</button>
       <button id="runAdd" type="button">+5 min</button>
@@ -261,12 +273,16 @@
     </div>
   </section>
 
+  <div id="actionRow">
+    <button id="focusPill" type="button"><span class="k">Focus</span><span class="v" id="focusVal">pick one</span></button>
+    <button id="nextBtn" type="button"><span class="k" id="nextK">Next step</span><span class="v" id="nextV"></span></button>
+  </div>
+
   <main id="grid"></main>
 </div>
 
 <nav id="bottom">
   <button id="btnCal" type="button">Calendar</button>
-  <button id="btnTrends" type="button">Trends</button>
   <button id="btnSet" type="button">Settings</button>
 </nav>
 
@@ -294,15 +310,6 @@
   </div>
 </div>
 
-<!-- trends -->
-<div class="sheet" id="sheetTrends">
-  <div class="sheetHead"><h2>Trends</h2><button id="trClose" type="button">Close</button></div>
-  <div class="sheetBody">
-    <div class="seg" id="trSeg"><button data-r="7" type="button">7 days</button><button data-r="14" type="button">14 days</button><button data-r="30" type="button">30 days</button></div>
-    <div id="trBody"></div>
-  </div>
-</div>
-
 <!-- settings -->
 <div class="sheet" id="sheetSet">
   <div class="sheetHead"><h2>Settings</h2><button id="setClose" type="button">Close</button></div>
@@ -322,8 +329,21 @@
     <h3>Your day</h3>
     <div class="srow"><span>Day starts</span><select class="sSel" id="setStart"></select></div>
     <div class="srow"><span>Day ends</span><select class="sSel" id="setEnd"></select></div>
-    <div class="srow"><span>Full day bar =</span><select class="sSel" id="setBar"></select></div>
+    <div class="srow"><span>Day goal (last stage)</span><select class="sSel" id="setBar"></select></div>
+    <p class="hint">The bar fills toward the next of ten stages that climb to this goal, and each stage is celebrated. Rest and breaks count.</p>
     <div class="srow"><span>Week starts on</span><select class="sSel" id="setWeek"><option value="1">Monday</option><option value="0">Sunday</option><option value="6">Saturday</option></select></div>
+
+    <h3>Focus areas</h3>
+    <p class="hint">The areas you can plant a stake in, one per line. Pick one on the main screen and it stays until you change it.</p>
+    <textarea class="sInput" id="setFocuses" placeholder="One area per line" autocapitalize="words" spellcheck="false"></textarea>
+    <div class="srow"><span>Short abiding lines (encouragement)</span><input type="checkbox" id="setWords"></div>
+
+    <h3>Focus music</h3>
+    <div class="srow"><span>Play during</span><select class="sSel" id="setMusicWhen"><option value="off">Off</option><option value="work">Work timers</option><option value="all">All timers</option></select></div>
+    <div id="musicList" style="margin-top:6px;"></div>
+    <div class="srow"><span>Volume</span><input type="range" id="setMusicVol" min="10" max="100" step="5" style="flex:1; max-width:210px; accent-color:var(--accent);"></div>
+    <button class="btn full" id="musicStop" type="button">Stop music</button>
+    <p class="hint">Made on the phone, so it works offline and needs no files. It starts when a timer starts and fades out when it ends. Tap a track to choose it and hear it. The ringer switch must be on.</p>
 
     <h3>Alarm</h3>
     <div class="srow"><span>Sound when a timer ends</span><input type="checkbox" id="setChime"></div>
@@ -348,8 +368,13 @@
 </div>
 
 <!-- timer finished -->
-<div id="doneOv"><div id="doneCard"><div class="big" id="doneBig"></div><div class="goal" id="doneGoal" hidden></div><div class="sub" id="doneSub"></div><div class="nx" id="doneNx"></div><button class="close" id="doneClose" type="button">Done</button></div></div>
+<div id="doneOv"><div id="doneCard"><div class="big" id="doneBig"></div><div class="goal" id="doneGoal" hidden></div><div class="sub" id="doneSub" style="margin-bottom:6px;"></div><div id="doneStage" hidden></div><div id="doneWord" hidden></div><div class="nx" id="doneNx"></div><button class="close" id="doneClose" type="button">Done</button></div></div>
 
+<div id="confetti"></div>
+
+<div id="focusOv"><div id="focusCard"><h4>Where is the stake today?</h4><div id="focusList"></div></div></div>
+
+<script src="music.js"></script>
 <script>
 (() => {
   'use strict';
@@ -372,6 +397,7 @@
   const fromKey = k => { const [y, m, d] = k.split('-').map(Number); return new Date(y, m - 1, d); };
   const esc = s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
   const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+  function fmtC(ms) { const m = Math.round(ms / 60000), h = Math.floor(m / 60); return m < 60 ? m + 'm' : (m % 60 ? h + 'h' + pad(m % 60) : h + 'h'); }
   function fmtDur(ms) { const m = Math.round(ms / 60000), h = Math.floor(m / 60); return h ? h + 'h ' + pad(m % 60) + 'm' : m + 'm'; }
   function fmtHour(h) { // decimal hours -> "1:05 pm"
     h = ((h % 24) + 24) % 24; let hh = Math.floor(h), mm = Math.round((h - hh) * 60); if (mm === 60) { hh = (hh + 1) % 24; mm = 0; }
@@ -395,7 +421,7 @@
   const WORK = ['light', 'deep', 'think'];
 
   // ===== state =====
-  const settings = Object.assign({ dayStart: 6, dayEnd: 22, weekStart: 1, chime: true, repeat: true, barHours: 8, alarm: 'chime', icsUrls: '', icsProxy: '' }, store.get('settings', {}));
+  const settings = Object.assign({ dayStart: 6, dayEnd: 22, weekStart: 1, chime: true, repeat: true, barHours: 8, words: true, musicWhen: 'off', music: 'calm', musicVol: 80, focuses: ['Deliverables', 'Communications', 'Admin', 'Relationships', 'Research'], alarm: 'chime', icsUrls: '', icsProxy: '' }, store.get('settings', {}));
   if (!settings.barChosen) settings.barHours = 8;   // 8 h is the default; an auto-saved earlier default doesn't count as a choice
   let sessions = store.get('sessions', []);   // [{id,cat,min,start,end,ms,done}]
   // One running note — no per-day history. (v1 kept a note per date; take the most recent one across.)
@@ -407,6 +433,7 @@
   }
   let cal = store.get('cal', { pulledAt: 0, days: {} });
   let run = store.get('run', null);           // the running timer — survives refresh because it's a clock time
+  let focus = store.get('focus', '');          // the stake in the ground: sticky until you change it
   let dayMapCache = null;
   const saveSettings = () => store.set('settings', settings);
   const saveSessions = () => { store.set('sessions', sessions); dayMapCache = null; };
@@ -571,6 +598,63 @@
     el.classList.toggle('empty', !t);
   }
 
+  // ===== abiding lines — short, optional, in Settings can be switched off. Edit freely. =====
+  const WORDS = {
+    first: "Begin with Him. A few minutes is a faithful start.",
+    start: {
+      light: ["Small, and with Him. That's enough to begin.", "Just the next small thing. He's here in it.", "No big push. Start, and let Him meet you."],
+      deep:  ["Abide, then act. His strength in your hands.", "Work from His presence, not for approval.", "Apart from Him, nothing. With Him, this."],
+      think: ["Be still and think with Him. Wisdom is freely given.", "Ask Him, then listen as you think.", "Let your mind rest in Him while it works."],
+      rest:  ["Rest is abiding too. Nothing to prove.", "He gives rest to the weary. Receive it.", "Let go of the list. You are held."],
+      break: ["Step back. He is as near in the pause.", "A breath, a stretch, and Him with you.", "Look up for a moment."],
+    },
+    done: {
+      work: ["Offered to Him.", "Thank You, Lord.", "Hand it back to Him, and breathe.", "Held by Him, not by your effort."],
+      rest: ["Received.", "Rested in Him.", "Good. Now, with Him, what is next?"],
+    },
+    stage: [
+      "You have begun. He was with you at the start.",
+      "Another stretch given. A branch only has to stay.",
+      "Time with Him, and fruit grows quietly.",
+      "Still abiding. Rest when you need it. It counts.",
+      "Well on your way. He carries what you cannot.",
+      "Steady. The vine does the work; you stay.",
+      "Much of the day offered. Keep it gentle.",
+      "Nearly there. Look up for a moment.",
+      "One more stretch, and you are not doing it alone.",
+      "The day is full. You stayed, and He bore the fruit. Rest well.",
+    ],
+  };
+  const pickWord = arr => arr[Math.floor(Math.random() * arr.length)];
+
+  // ===== ten stages that climb to the day goal; the bar always fills toward the next one =====
+  const STAGE_F = [1 / 32, 1 / 16, 1 / 8, 1 / 5, 3 / 10, 2 / 5, 11 / 20, 7 / 10, 17 / 20, 1];
+  function stageMins() { const G = settings.barHours * 60; let prev = 0; return STAGE_F.map(f => (prev = Math.max(5 * Math.round(G * f / 5), prev + 5))); }
+  function stagesDone(ms) { const m = ms / 60000, st = stageMins(); let i = 0; while (i < st.length && m >= st[i]) i++; return i; }
+  const todayMs = () => (dayMap()[dkey(new Date())] || { ms: 0 }).ms;
+
+  // ===== the engine that picks the next step: small to start, a little bigger each time, rest after a real chunk =====
+  const RUNGS = [3, 5, 10, 15, 25];
+  const rungUp = m => RUNGS.find(x => x > m) || RUNGS[RUNGS.length - 1];
+  const rungDown = m => { const lower = RUNGS.filter(x => x < m); return lower.length ? lower[lower.length - 1] : RUNGS[0]; };
+  function todaysSessions() { const k = dkey(new Date()); return sessions.filter(s => dkey(new Date(s.start)) === k).sort((a, b) => a.start - b.start); }
+  function suggestNext() {
+    const now = Date.now(), list = todaysSessions(), last = list[list.length - 1];
+    if (nowHours() >= settings.dayEnd) return { cat: 'rest', min: 15, k: 'Evening — rest with Him' };
+    if (!last) return { cat: 'light', min: 3, k: 'Begin with Him', first: true };
+    if (now - last.end > 90 * 60000) return { cat: 'light', min: 3, k: 'Pick it back up' };
+    const lm = Math.max(1, Math.round(last.ms / 60000));
+    if (!last.done) return WORK.includes(last.cat) ? { cat: last.cat, min: rungDown(last.min), k: 'A smaller step' } : { cat: last.cat, min: 5, k: 'Settle in' };
+    if (WORK.includes(last.cat)) {
+      if (lm >= 25) return { cat: 'rest', min: 10, k: 'Rest counts too' };
+      if (lm >= 15) return { cat: 'break', min: 5, k: 'A short pause' };
+      return { cat: last.cat === 'light' && lm >= 5 ? 'deep' : last.cat, min: rungUp(lm), k: 'Keep the momentum' };
+    }
+    const w = list.slice().reverse().find(x => WORK.includes(x.cat));   // after rest or a break: back to the last kind of work
+    if (!w) return { cat: 'light', min: 3, k: 'Back, with Him' };
+    return { cat: w.cat, min: Math.min(25, Math.max(5, rungUp(Math.max(0, Math.round(w.ms / 60000) - 1)))), k: 'Back at it, with Him' };
+  }
+
   // ===== timer grid =====
   function buildGrid() {
     $('grid').innerHTML = CATS.map(c =>
@@ -592,27 +676,58 @@
       el.textContent = fmtDur(ms);
       el.classList.toggle('zero', !ms);
     });
-    const full = Math.max(settings.barHours * 3600000, d.ms);   // never overflows; past the goal the scale just stretches
+    // the bar fills toward the NEXT stage (just out of reach); once the day goal is met it simply stays full
+    const st = stageMins(), done = stagesDone(d.ms), reached = done >= st.length;
+    const full = reached ? Math.max(d.ms, st[st.length - 1] * 60000) : st[done] * 60000;
     $('dayBarSegs').innerHTML = CATS.filter(c => d.cats[c.id] && d.cats[c.id].ms).map(c => '<i style="width:' + (100 * d.cats[c.id].ms / full).toFixed(2) + '%;background:' + c.color + '"></i>').join('');
-    $('dayBar').setAttribute('aria-label', 'Today: ' + fmtDur(d.ms) + ' of ' + settings.barHours + ' hours');
-    $('btnTrends').textContent = d.ms ? 'Trends · ' + fmtDur(d.ms).replace(' ', '') : 'Trends';
+    $('stageTxt').textContent = reached ? 'Goal ' + fmtC(d.ms) : fmtC(d.ms) + ' / ' + fmtC(full);
+    $('dayBar').setAttribute('aria-label', 'Today: ' + fmtDur(d.ms) + '. Stage ' + Math.min(done + 1, st.length) + ' of ' + st.length + ', toward ' + fmtDur(full));
   }
+  let sug = null;
+  function renderNext() {
+    sug = suggestNext(); const c = CAT[sug.cat];
+    $('nextBtn').style.setProperty('--c', c.color);
+    $('nextK').textContent = settings.words ? sug.k : (sug.first ? 'Start' : 'Next step');
+    $('nextV').textContent = c.name + ' · ' + sug.min + ' min';
+  }
+  function renderFocus() { $('focusVal').textContent = focus || 'pick one'; $('focusPill').classList.toggle('unset', !focus); }
+  $('nextBtn').addEventListener('click', () => { if (!run && sug) startTimer(sug.cat, sug.min); });
+  $('focusPill').addEventListener('click', () => {
+    $('focusList').innerHTML = settings.focuses.map(f => '<button type="button" class="fo' + (f === focus ? ' on' : '') + '" data-f="' + esc(f) + '">' + esc(f) + '</button>').join('')
+      + '<button type="button" class="fo none' + (!focus ? ' on' : '') + '" data-f="">No focus right now</button>';
+    $('focusOv').classList.add('show');
+  });
+  $('focusList').addEventListener('click', e => {
+    const b = e.target.closest('.fo'); if (!b) return;
+    focus = b.dataset.f; store.set('focus', focus); renderFocus(); $('focusOv').classList.remove('show');
+  });
+  $('focusOv').addEventListener('click', e => { if (e.target.id === 'focusOv') $('focusOv').classList.remove('show'); });
 
   // ===== the running timer =====
   const totalMs = () => run.min * 60000 + run.added;
   const remainingMs = () => run.paused ? run.remaining : run.endsAt - Date.now();
   const saveRun = () => store.set('run', run);
 
+  // ----- focus music: starts with a work timer (inside the tap), fades out when it ends -----
+  const musicWanted = cat => settings.musicWhen === 'all' || (settings.musicWhen === 'work' && WORK.includes(cat));
+  function musicStart() { if (window.StepMusic && run && !run.paused && musicWanted(run.cat)) { StepMusic.setVolume(settings.musicVol / 100); StepMusic.start(settings.music); } }
+  function musicStop() { if (window.StepMusic) StepMusic.fadeOut(1.5); }
+  // after a refresh a running timer has no music until the next tap (the phone requires a tap to start sound)
+  const tapMusic = () => { if (run && !run.paused && window.StepMusic && !StepMusic.playing()) musicStart(); };
+  document.addEventListener('touchend', tapMusic, { passive: true });
+  document.addEventListener('click', tapMusic, { passive: true });
+
   function startTimer(cat, min) {
     unlockAudio();
-    const now = Date.now();
-    run = { id: uid(), cat, min, startedAt: now, endsAt: now + min * 60000, paused: false, remaining: null, added: 0, goal: '' };
-    saveRun(); acquireWake(); renderMain();
+    const now = Date.now(), first = todaysSessions().length === 0;
+    run = { id: uid(), cat, min, startedAt: now, endsAt: now + min * 60000, paused: false, remaining: null, added: 0, goal: '', focus: focus || '',
+            word: settings.words ? ((first && WORK.includes(cat)) ? WORDS.first : pickWord(WORDS.start[cat])) : '' };
+    saveRun(); acquireWake(); renderMain(); musicStart();
   }
   function pauseResume() {
     if (!run) return;
-    if (run.paused) { run.endsAt = Date.now() + run.remaining; run.paused = false; run.remaining = null; acquireWake(); }
-    else { run.remaining = Math.max(0, run.endsAt - Date.now()); run.paused = true; run.endsAt = null; releaseWake(); }
+    if (run.paused) { run.endsAt = Date.now() + run.remaining; run.paused = false; run.remaining = null; acquireWake(); musicStart(); }
+    else { run.remaining = Math.max(0, run.endsAt - Date.now()); run.paused = true; run.endsAt = null; releaseWake(); musicStop(); }
     saveRun(); updateRun();
   }
   function addMinute() {   // +5 min: a single minute does little on a long block
@@ -621,21 +736,25 @@
     if (run.paused) run.remaining += 300000; else run.endsAt += 300000;
     saveRun(); updateRun();
   }
-  function logSession(r, ms, done, endAt) {
-    sessions.push({ id: r.id, cat: r.cat, min: r.min, start: r.startedAt, end: endAt, ms, done });
+  function logSession(r, ms, done, endAt) {   // returns the stage just reached (1..10), or 0 if none
+    const before = stagesDone(todayMs());
+    sessions.push({ id: r.id, cat: r.cat, min: r.min, start: r.startedAt, end: endAt, ms, done, focus: r.focus || '' });
     saveSessions();
+    const after = stagesDone(todayMs());
+    return after > before ? after : 0;
   }
   function stopTimer() {
     if (!run) return;
-    const el = totalMs() - Math.max(0, remainingMs());
-    if (el >= 60000) logSession(run, el, false, Date.now());   // under a minute = a mis-tap, not logged
-    run = null; store.set('run', null); releaseWake(); renderMain();
+    const r = run, el = totalMs() - Math.max(0, remainingMs());
+    const st = el >= 60000 ? logSession(r, el, false, Date.now()) : 0;   // under a minute = a mis-tap, not logged
+    run = null; store.set('run', null); releaseWake(); musicStop(); renderMain();
+    if (st) showDone(r, 0, st, { stopped: true, ms: el });
   }
   function completeTimer(lateMs) {
     const r = run, total = r.min * 60000 + r.added;
-    logSession(r, total, true, r.endsAt);
-    run = null; store.set('run', null); releaseWake(); renderMain();
-    showDone(r, lateMs);
+    const st = logSession(r, total, true, r.endsAt);
+    run = null; store.set('run', null); releaseWake(); musicStop(); renderMain();
+    showDone(r, lateMs, st, {});
   }
   $('runPause').addEventListener('click', pauseResume);
   $('runAdd').addEventListener('click', addMinute);
@@ -659,37 +778,58 @@
     const on = !!run;
     $('hdr').classList.toggle('dim', on); $('notesBar').classList.toggle('dim', on);
     if (!on) $('runGoal').blur();
-    $('runPanel').hidden = !on; $('grid').hidden = on;
+    $('runPanel').hidden = !on; $('grid').hidden = on; $('actionRow').hidden = on;
     if (on) {
       $('runPanel').style.setProperty('--c', CAT[run.cat].color);
       $('runCat').textContent = CAT[run.cat].name + ' · ' + run.min + ' min';
+      $('runFocus').textContent = run.focus || ''; $('runFocus').hidden = !run.focus;
+      $('runWord').textContent = run.word || '';
       $('runGoal').value = run.goal || '';
       updateRun();
-    } else { document.title = 'Abiding Step'; renderCounts(); }
+    } else { document.title = 'Abiding Step'; renderCounts(); renderNext(); renderFocus(); }
     renderNotesBar(); renderHeader();
   }
 
-  // ===== finished overlay =====
+  // ===== finished overlay (+ the stage celebration) =====
   let repeatTimer = null, repeatN = 0;
-  function showDone(r, lateMs) {
-    const c = CAT[r.cat];
-    $('doneCard').style.setProperty('--c', c.color);
-    $('doneBig').textContent = c.name + ' done';
+  function burst(big) {
+    const box = $('confetti'); box.innerHTML = '';
+    const cols = CATS.map(c => c.color).concat(['#ffd36b', '#ffffff']), n = big ? 90 : 44;
+    for (let i = 0; i < n; i++) {
+      const el = document.createElement('i');
+      el.style.cssText = 'left:' + (Math.random() * 100).toFixed(1) + '%;background:' + cols[i % cols.length] + ';--x:' + ((Math.random() - 0.5) * 160).toFixed(0) + 'px;--r:' + (Math.random() * 720 - 360).toFixed(0) + 'deg;--d:' + (2.2 + Math.random() * 1.8).toFixed(2) + 's;--dl:' + (Math.random() * 0.5).toFixed(2) + 's';
+      box.appendChild(el);
+    }
+    setTimeout(() => { box.innerHTML = ''; }, 5200);
+  }
+  function showDone(r, lateMs, stage, info) {
+    const c = CAT[r.cat], stopped = !!info.stopped, st = stageMins();
+    $('doneCard').style.setProperty('--c', c.color); $('doneCard').classList.toggle('stage', !!stage);
+    $('doneBig').textContent = stopped ? c.name + ' · logged' : c.name + ' done';
     $('doneGoal').hidden = !r.goal; $('doneGoal').textContent = r.goal ? '“' + r.goal + '”' : '';
-    const late = lateMs > 20000 ? ' · ended ' + fmtDur(lateMs) + ' ago' : '';
-    $('doneSub').textContent = r.min + ' min' + (r.added ? ' + ' + Math.round(r.added / 60000) : '') + late;
-    const next = WORK.includes(r.cat) ? [['rest', 5], ['break', 5]] : [['light', 5], ['deep', 15]];
-    let h = '<button class="full" style="--c2:' + c.color + '" data-cat="' + r.cat + '" data-min="' + r.min + '" type="button">Again · ' + c.name + ' ' + r.min + ' min</button>';
-    next.forEach(([id, m]) => { h += '<button style="--c2:' + CAT[id].color + '" data-cat="' + id + '" data-min="' + m + '" type="button">' + CAT[id].name + ' ' + m + ' min</button>'; });
-    $('doneNx').innerHTML = h;
+    const late = !stopped && lateMs > 20000 ? ' · ended ' + fmtDur(lateMs) + ' ago' : '';
+    $('doneSub').textContent = (stopped ? fmtDur(info.ms) + ' logged' : r.min + ' min' + (r.added ? ' + ' + Math.round(r.added / 60000) : '')) + (r.focus ? ' · ' + r.focus : '') + late;
+    const w = settings.words ? pickWord(WORK.includes(r.cat) ? WORDS.done.work : WORDS.done.rest) : '';
+    $('doneWord').hidden = !w || !!stage; $('doneWord').textContent = w;
+    $('doneStage').hidden = !stage;
+    if (stage) {
+      const isLast = stage >= st.length;
+      $('doneStage').innerHTML = '<div class="sn">Stage ' + stage + ' of ' + st.length + ' · ' + fmtC(st[stage - 1] * 60000) + '</div>'
+        + '<div class="sw">' + esc(settings.words ? WORDS.stage[stage - 1] : (isLast ? 'The day goal is reached.' : 'Stage reached.')) + '</div>'
+        + '<div class="st">' + (isLast ? 'Anything more is a gift, and rest counts too.' : 'Next stage at ' + fmtC(st[stage] * 60000)) + '</div>';
+      burst(isLast);
+    }
+    const sg = suggestNext(), alt = sg.cat === 'rest' ? ['break', 5] : ['rest', 5];
+    const btn = (cat, min, k, full) => '<button' + (full ? ' class="full"' : '') + ' style="--c2:' + CAT[cat].color + '" data-cat="' + cat + '" data-min="' + min + '" type="button"><span class="k">' + k + '</span>' + CAT[cat].name + (full ? ' · ' + min + ' min' : ' ' + min + 'm') + '</button>';
+    $('doneNx').innerHTML = btn(sg.cat, sg.min, settings.words ? sg.k : 'Next step', true) + btn(r.cat, r.min, 'Again', false) + btn(alt[0], alt[1], 'Or', false);
     $('doneOv').classList.add('show');
     clearTimeout(repeatTimer); repeatN = 0;
-    if (lateMs < 60000) {
+    if (!stopped && lateMs < 60000) {
       const again = len => { if (settings.repeat && ++repeatN <= 5) repeatTimer = setTimeout(() => again(ringAlarm()), (len + 8) * 1000); };
       again(ringAlarm());
     }
   }
-  function closeDone() { clearTimeout(repeatTimer); stopAlarm(); $('doneOv').classList.remove('show'); }
+  function closeDone() { clearTimeout(repeatTimer); stopAlarm(); $('confetti').innerHTML = ''; $('doneOv').classList.remove('show'); }
   $('doneClose').addEventListener('click', closeDone);
   $('doneNx').addEventListener('click', e => {
     const b = e.target.closest('button'); if (!b) return;
@@ -757,64 +897,6 @@
   $('calToday').addEventListener('click', () => openCal());
   $('calClose').addEventListener('click', () => closeSheet('sheetCal'));
   $('btnCal').addEventListener('click', () => openCal());
-
-  // ----- trends sheet -----
-  let trRange = store.get('trRange', 14);
-  function renderTrends() {
-    const dm = dayMap(), today = new Date(); today.setHours(0, 0, 0, 0);
-    const dayAt = i => new Date(today.getFullYear(), today.getMonth(), today.getDate() - i);
-    const sum = (from, to) => { // days [to..from] ago, inclusive; returns {cat:ms}
-      const t = {}; for (let i = to; i <= from; i++) { const x = dm[dkey(dayAt(i))]; if (x) for (const c in x.cats) t[c] = (t[c] || 0) + x.cats[c].ms; } return t;
-    };
-    const cur = sum(trRange - 1, 0), prev = sum(trRange * 2 - 1, trRange);
-    const tot = o => Object.values(o).reduce((a, b) => a + b, 0);
-    const work = WORK.reduce((a, c) => a + (cur[c] || 0), 0), restMs = (cur.rest || 0) + (cur.break || 0);
-    let timers = 0; for (let i = 0; i < trRange; i++) { const x = dm[dkey(dayAt(i))]; if (x) timers += x.n; }
-    // deep streak: consecutive days with a finished deep action / deep think, counting back from today (today may still be open)
-    const deepDays = new Set(sessions.filter(s => s.done && (s.cat === 'deep' || s.cat === 'think')).map(s => dkey(new Date(s.start))));
-    let streak = 0, i0 = deepDays.has(dkey(dayAt(0))) ? 0 : 1;
-    while (deepDays.has(dkey(dayAt(i0 + streak)))) streak++;
-
-    let h = '<div class="cards">' +
-      '<div class="card"><div class="v">' + fmtDur(work) + '</div><div class="l">working · ' + fmtDur(work / trRange) + ' a day</div></div>' +
-      '<div class="card"><div class="v">' + fmtDur(restMs) + '</div><div class="l">rest + break' + (tot(cur) ? ' · ' + Math.round(100 * restMs / tot(cur)) + '% of it' : '') + '</div></div>' +
-      '<div class="card"><div class="v">' + timers + '</div><div class="l">timers finished</div></div>' +
-      '<div class="card"><div class="v">' + streak + '</div><div class="l">day deep streak</div></div></div>';
-
-    // stacked bar per day
-    let max = 1; const cols = [];
-    for (let i = trRange - 1; i >= 0; i--) { const d = dayAt(i), x = dm[dkey(d)], t = x ? x.ms : 0; if (t > max) max = t; cols.push({ d, x, t, i }); }
-    h += '<h3>Minutes per day</h3><div class="bars">' + cols.map(c => {
-      const segs = CATS.filter(k => c.x && c.x.cats[k.id]).map(k => '<div class="seg1" style="height:' + (100 * c.x.cats[k.id].ms / max).toFixed(1) + '%;background:' + k.color + '"></div>').join('');
-      return '<div class="bcol">' + segs + '</div>';
-    }).join('') + '</div><div class="blab">' + cols.map((c, idx) => {
-      const show = trRange <= 14 || idx % 5 === 0 || c.i === 0;
-      return '<span' + (c.i === 0 ? ' class="today"' : '') + '>' + (show ? (trRange <= 14 ? c.d.toLocaleDateString('en-US', { weekday: 'narrow' }) + '<br>' : '') + c.d.getDate() : '') + '</span>';
-    }).join('') + '</div>' +
-      '<div class="lgd">' + CATS.map(c => '<span style="--c:' + c.color + '"><i></i>' + c.name + '</span>').join('') + '</div>';
-
-    // per category vs the previous stretch
-    h += '<h3>Compared with the ' + trRange + ' days before</h3>' + CATS.map(c => {
-      const a = cur[c.id] || 0, b = prev[c.id] || 0, diff = a - b;
-      const dl = !a && !b ? '–' : (diff === 0 ? 'same' : (diff > 0 ? '▲ ' : '▼ ') + fmtDur(Math.abs(diff)));
-      return '<div class="trow" style="--c:' + c.color + '"><i></i><span class="nm">' + c.name + '</span><b>' + fmtDur(a) + '</b><span class="dl ' + (diff > 0 ? 'up' : diff < 0 ? 'dn' : '') + '">' + dl + '</span></div>';
-    }).join('');
-
-    // when deep work happens
-    const hrs = new Array(24).fill(0);
-    for (const s of sessions) {
-      if ((s.cat !== 'deep' && s.cat !== 'think') || s.start < dayAt(trRange - 1).getTime()) continue;
-      hrs[new Date(s.start).getHours()] += s.ms;
-    }
-    const hm = Math.max(1, ...hrs);
-    h += '<h3>When your deep work happens</h3>' + (hm > 1 ? '<div class="hours">' + hrs.map(v => '<div style="height:' + Math.max(3, 100 * v / hm) + '%;' + (v ? '' : 'opacity:0.18') + '"></div>').join('') + '</div><div class="hlab"><span>12a</span><span>6a</span><span>12p</span><span>6p</span><span>12a</span></div>'
-      : '<div class="none">Nothing yet — run a Deep action or Deep think timer.</div>');
-    $('trBody').innerHTML = h;
-    document.querySelectorAll('#trSeg button').forEach(b => b.classList.toggle('on', +b.dataset.r === trRange));
-  }
-  $('trSeg').addEventListener('click', e => { const b = e.target.closest('button'); if (!b) return; trRange = +b.dataset.r; store.set('trRange', trRange); renderTrends(); });
-  $('btnTrends').addEventListener('click', () => { renderTrends(); openSheet('sheetTrends'); $('sheetTrends').querySelector('.sheetBody').scrollTop = 0; });
-  $('trClose').addEventListener('click', () => closeSheet('sheetTrends'));
 
   // ===== calendar import (ICS) — same approach as AbidingSteps, kept in this app's own storage =====
   function loadIcal() {
@@ -915,6 +997,8 @@
     hoursOptions($('setStart'), settings.dayStart); hoursOptions($('setEnd'), settings.dayEnd);
     $('setBar').innerHTML = [2, 3, 4, 5, 6, 8, 10, 12].map(h => '<option value="' + h + '">' + h + ' hours</option>').join(''); $('setBar').value = String(settings.barHours);
     $('setWeek').value = String(settings.weekStart); $('setChime').checked = settings.chime; $('setRepeat').checked = settings.repeat;
+    $('setFocuses').value = settings.focuses.join('\n'); $('setWords').checked = settings.words;
+    $('setMusicWhen').value = settings.musicWhen; $('setMusicVol').value = String(settings.musicVol); renderMusicList();
     renderAlarmList();
     $('icsStatus').textContent = cal.pulledAt ? 'Last pulled ' + new Date(cal.pulledAt).toLocaleString() : '';
     refreshDataStatus(); openSheet('sheetSet');
@@ -942,11 +1026,27 @@
     unlockAudio(); settings.alarm = b.dataset.id; saveSettings(); renderAlarmList(); playAlarm(settings.alarm);
   });
   $('alarmStop').addEventListener('click', stopAlarm);
+  bind('setFocuses', () => { settings.focuses = $('setFocuses').value.split('\n').map(x => x.trim()).filter(Boolean).slice(0, 10); saveSettings(); }, 'input');
+  bind('setWords', () => { settings.words = $('setWords').checked; saveSettings(); renderNext(); });
+  bind('setMusicWhen', () => { settings.musicWhen = $('setMusicWhen').value; saveSettings(); });
+  bind('setMusicVol', () => { settings.musicVol = +$('setMusicVol').value; saveSettings(); if (window.StepMusic) StepMusic.setVolume(settings.musicVol / 100); }, 'input');
+  let previewT = 0;
+  function renderMusicList() {
+    if (!window.StepMusic) { $('musicList').textContent = 'Music is not available here.'; return; }
+    $('musicList').innerHTML = StepMusic.PRESETS.map(x => '<button type="button" class="alarmRow' + (x.id === settings.music ? ' on' : '') + '" data-id="' + x.id + '"><span class="ck">' + (x.id === settings.music ? '✓' : '') + '</span><span class="nm">' + x.name + '</span><span class="ln">' + x.note + '</span></button>').join('');
+  }
+  $('musicList').addEventListener('click', e => {
+    const b = e.target.closest('.alarmRow'); if (!b || !window.StepMusic) return;
+    unlockAudio(); settings.music = b.dataset.id; saveSettings(); renderMusicList();
+    StepMusic.setVolume(settings.musicVol / 100); StepMusic.start(settings.music);
+    clearTimeout(previewT); previewT = setTimeout(() => { if (!(run && !run.paused && musicWanted(run.cat))) StepMusic.fadeOut(1.5); }, 10000);
+  });
+  $('musicStop').addEventListener('click', () => { clearTimeout(previewT); if (window.StepMusic) StepMusic.fadeOut(0.8); });
   $('btnSet').addEventListener('click', openSettings);
   $('setClose').addEventListener('click', () => closeSheet('sheetSet'));
 
   $('expBtn').addEventListener('click', () => {
-    const data = { app: 'abidingstep', version: 1, exportedAt: new Date().toISOString(), sessions, note, settings };
+    const data = { app: 'abidingstep', version: 1, exportedAt: new Date().toISOString(), sessions, note, focus, settings };
     const a = document.createElement('a');
     a.href = URL.createObjectURL(new Blob([JSON.stringify(data, null, 1)], { type: 'application/json' }));
     a.download = 'abiding-step-' + dkey(new Date()) + '.json';
@@ -972,7 +1072,7 @@
   let lastMin = -1;
   function tick() {
     const now = new Date();
-    if (now.getMinutes() !== lastMin) { lastMin = now.getMinutes(); renderHeader(); renderCounts(); }
+    if (now.getMinutes() !== lastMin) { lastMin = now.getMinutes(); renderHeader(); renderCounts(); if (!run) renderNext(); }
     if (run) {
       const rem = remainingMs();
       if (!run.paused && rem <= 0) { completeTimer(-rem); return; }
