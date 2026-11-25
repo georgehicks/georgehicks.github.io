@@ -268,6 +268,13 @@
   .rrow .rsp { flex: 1; }
   .rchip { flex: none; padding: 7px 12px; border-radius: 999px; border: 1.5px solid var(--bd); background: var(--el2); font-size: 0.82rem; font-weight: 600; color: var(--dim); }
   .rchip.on { border-color: var(--accent); color: var(--accent); background: color-mix(in srgb, var(--accent) 14%, var(--el2)); }
+  .fcard { margin-bottom: 10px; }
+  .gchips { flex-wrap: wrap; gap: 6px; } .gl { flex: 0 0 100%; font-size: 0.72rem; font-weight: 700; color: var(--faint); text-transform: uppercase; letter-spacing: 0.07em; }
+  .rcard .gchips { margin: 2px 0 4px; }
+  #ccNudge { flex: none; margin: 6px 2px 0; padding: 10px 12px; border-radius: 12px; background: color-mix(in srgb, var(--accent) 8%, var(--el2)); border: 1px solid var(--bd); font-size: 0.88rem; color: var(--dim); display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+  #ccNudge .ccNb { margin-left: auto; display: flex; gap: 6px; }
+  #ccNudge button { padding: 7px 12px; border-radius: 9px; border: 1px solid var(--bd); background: var(--el2); font-weight: 600; font-size: 0.82rem; color: var(--tx); }
+  #ccNudgeGo { border-color: var(--accent) !important; color: var(--accent) !important; }
   .feRow { display: flex; gap: 6px; margin-bottom: 8px; }
   .feRow input { min-width: 0; margin: 0; } .feRow .fn1 { flex: 0 0 34%; } .feRow .fn2 { flex: 1; }
   .feRow button { flex: none; width: 42px; border-radius: 10px; border: 1px solid var(--bd); background: var(--el2); font-size: 1.15rem; color: var(--dim); }
@@ -376,6 +383,7 @@
   <section id="coldCard" hidden>
     <div class="ccHead"><span id="ccTitle">Today's plan</span><button id="ccEdit" type="button">Edit</button></div>
     <div id="ccBody"></div>
+    <div id="ccNudge" hidden><span id="ccNudgeTxt"></span><span class="ccNb"><button id="ccNudgeGo" type="button"></button><button id="ccNudgeOff" type="button">Not today</button></span></div>
     <div class="ccLinks"><button id="ccRoutine" type="button">Reach for a routine</button><button id="ccOpenGrid" type="button">Choose something else</button></div>
   </section>
 
@@ -467,6 +475,8 @@
     <div class="srow"><span>Day goal (last stage)</span><select class="sSel" id="setBar"></select></div>
     <p class="hint">The bar fills toward the next of ten stages that climb to this goal, and each stage is celebrated. Rest and breaks count.</p>
     <div class="srow"><span>Rest after about</span><select class="sSel" id="setRestAfter"><option value="0">Don't prompt</option><option value="45">45 min of work</option><option value="60">60 min of work</option><option value="75">75 min of work</option><option value="90">90 min of work</option></select></div>
+    <div class="srow"><span>Work days</span></div><div class="chips2" id="workDays"></div>
+    <div class="srow"><span>Gentle week: set weekly targets aside</span><input type="checkbox" id="setGentle"></div>
     <div class="srow"><span>Week starts on</span><select class="sSel" id="setWeek"><option value="1">Monday</option><option value="0">Sunday</option><option value="6">Saturday</option></select></div>
 
     <h3>Energy zones</h3>
@@ -625,7 +635,7 @@
   function parseFocus(str) { const m = String(str).split(/\s+[—–-]\s+|:\s+/); return { name: m[0].trim(), note: m.slice(1).join(' — ').trim() }; }
 
   // ===== state =====
-  const settings = Object.assign({ dayStart: 6, dayEnd: 22, weekStart: 1, chime: true, repeat: true, barHours: 8, restAfter: 60, routinesText: '', restRoutine: 'Breathe', breakRoutine: 'Move', useEnergy: true, energy: '', promptCal: true, words: true, wordsFreq: 'most', wordsMine: '', wordsOnlyMine: false, btnI: 40, dimI: 40, musicWhen: 'off', music: 'dawn', musicSeed: 1, musicVary: 'standard', musicVol: 80, focuses: FOCUS_DEFAULT, alarm: 'chime', icsUrls: '', icsProxy: '' }, store.get('settings', {}));
+  const settings = Object.assign({ dayStart: 6, dayEnd: 22, weekStart: 1, chime: true, repeat: true, barHours: 8, restAfter: 60, focusGoals: {}, routineGoals: {}, workDays: [1, 2, 3, 4, 5], gentleWeek: '', routinesText: '', restRoutine: 'Breathe', breakRoutine: 'Move', useEnergy: true, energy: '', promptCal: true, words: true, wordsFreq: 'most', wordsMine: '', wordsOnlyMine: false, btnI: 40, dimI: 40, musicWhen: 'off', music: 'dawn', musicSeed: 1, musicVary: 'standard', musicVol: 80, focuses: FOCUS_DEFAULT, alarm: 'chime', icsUrls: '', icsProxy: '' }, store.get('settings', {}));
   const MUSIC_MIGRATE = { calm: 'dawn', flow: 'dawn', drive: 'quest', deep: 'water' };   // the old four presets all shared one motif; they map to the nearest family
   if (MUSIC_MIGRATE[settings.music]) settings.music = MUSIC_MIGRATE[settings.music];
   if (!settings.barChosen) settings.barHours = 8;   // 8 h is the default; an auto-saved earlier default doesn't count as a choice
@@ -1279,7 +1289,7 @@
   // With a destination set, every work step is "toward" it. `cold` = nothing yet today, or 90+ minutes since the last timer.
   function suggestNext() {
     const z = zoneNow(), sg = zoned(baseSuggest(z), z);
-    const offered = sg.cat === 'break' ? settings.breakRoutine : sg.cat === 'rest' ? settings.restRoutine : '';   // a rest or a break can be a guided one
+    const offered = routineFor(sg.cat);   // a rest or a break can be a guided one
     if (offered) { const rt = routines().find(r => r.name === offered); if (rt) sg.routine = rt.name; }
     return sg;
   }
@@ -1365,6 +1375,46 @@ Immanuel
   const routines = () => parseRoutines(settings.routinesText || DEFAULT_ROUTINES);
   const routineMins = rt => rt.steps.reduce((a, x) => a + x.min, 0);
 
+  // ===== weekly targets: optional, quiet, never a scoreboard. A target is a budget of attention; what's still open is only ever offered. =====
+  function weekStartMs(d) { const x = new Date((d || new Date()).getFullYear(), (d || new Date()).getMonth(), (d || new Date()).getDate()); x.setDate(x.getDate() - ((x.getDay() - settings.weekStart + 7) % 7)); return x.getTime(); }
+  function workDaysLeft(d) {   // work days left in this week, today included (if it is one)
+    const now = d || new Date(), end = new Date(weekStartMs(now)); end.setDate(end.getDate() + 7);
+    let n = 0; for (const t = new Date(now.getFullYear(), now.getMonth(), now.getDate()); t < end; t.setDate(t.getDate() + 1)) if ((settings.workDays || []).includes(t.getDay())) n++;
+    return n;
+  }
+  const targetsOn = () => settings.gentleWeek !== dkey(new Date(weekStartMs()));   // "gentle week" sets all targets aside until next week
+  function weekFocusMs(name, d) { const ws = weekStartMs(d); let ms = 0; sessions.forEach(x => { if (x.start >= ws && WORK.includes(x.cat) && (FOCUS_ALIAS[x.focus] || x.focus) === name) ms += x.ms; }); return ms; }
+  function weekRoutineCount(name, d) {   // a run counts once, however many of its steps were done, and a routine you reached for and ended early still counts
+    const ws = weekStartMs(d), rows = sessions.filter(x => x.routine === name && x.start >= ws), rids = new Set(rows.filter(x => x.rid).map(x => x.rid));
+    let n = rids.size, prevEnd = -1e15;
+    rows.filter(x => !x.rid).sort((a, b) => a.start - b.start).forEach(x => { if (x.start - prevEnd > 20 * 60000) n++; prevEnd = Math.max(prevEnd, x.end); });   // older steps without a run id: steps close together are one run
+    return n;
+  }
+  function focusNeeds(d) {   // what is still open on the focuses that have a weekly time
+    const goals = settings.focusGoals || {}, left = workDaysLeft(d), out = [];
+    Object.keys(goals).forEach(name => { const g = goals[name]; if (!g) return; const need = g * 60000 - weekFocusMs(name, d); if (need > 0) out.push({ name, need, left, tier: left <= 0 ? 0 : left === 1 ? 2 : left === 2 ? 1 : 0 }); });
+    return out;
+  }
+  // tier 0: silent (plenty of week left)   1: offered as the "Or" on a finish card   2: last work day, also one quiet line on the cold-start screen
+  function dueFocus(d) {
+    if (!targetsOn()) return null;
+    const off = store.get('nudgeOff', {}), today = dkey(d || new Date());
+    const c = focusNeeds(d).filter(n => n.tier >= 1 && off[n.name] !== today);
+    c.sort((a, b) => (b.need / Math.max(1, b.left)) - (a.need / Math.max(1, a.left)));
+    return c[0] || null;
+  }
+  function focusStepFor(n) {   // a normal-sized step, not the whole need at once
+    const m = Math.ceil(n.need / 60000), min = m >= 15 ? [...RUNGS].reverse().find(x => x <= Math.min(m, 25)) : (RUNGS.find(x => x >= m) || 3);
+    return fitDay({ cat: min >= 15 ? 'deep' : 'light', min });
+  }
+  function routineDeficit(r) { const g = (settings.routineGoals || {})[r.name] || 0; return g && targetsOn() ? Math.max(0, g - weekRoutineCount(r.name)) / g : 0; }
+  function routineFor(cat) {   // the routine a rest or break offers: one that is behind its weekly count if there is one (short ones only for a break), else the one you chose
+    if (cat !== 'rest' && cat !== 'break') return '';
+    const list = routines().filter(r => cat === 'rest' || routineMins(r) <= 15), behind = list.filter(r => routineDeficit(r) > 0).sort((a, b) => routineDeficit(b) - routineDeficit(a));
+    if (behind.length) return behind[0].name;
+    const set = cat === 'break' ? settings.breakRoutine : settings.restRoutine; return routines().some(r => r.name === set) ? set : '';
+  }
+
   // ===== timer grid =====
   function buildGrid() {
     $('grid').innerHTML = CATS.map(c =>
@@ -1410,7 +1460,7 @@ Immanuel
   function focusListHtml() {
     const spent = {};   // today's minutes per focus — work only, so rest and breaks don't pad whatever was selected
     todaysSessions().forEach(x => { const nm = FOCUS_ALIAS[x.focus] || x.focus; if (WORK.includes(x.cat) && nm) spent[nm] = (spent[nm] || 0) + x.ms; });
-    return settings.focuses.map(parseFocus).filter(f => f.name).map(f => '<button type="button" class="fo' + (f.name === focus ? ' on' : '') + '" data-f="' + esc(f.name) + '"><span class="fh"><span class="fn">' + esc(f.name) + '</span><span class="fm' + (spent[f.name] ? '' : ' zero') + '">' + fmtDur(spent[f.name] || 0) + '</span></span>' + (f.note ? '<span class="fd">' + esc(f.note) + '</span>' : '') + '</button>').join('')
+    return settings.focuses.map(parseFocus).filter(f => f.name).map(f => '<button type="button" class="fo' + (f.name === focus ? ' on' : '') + '" data-f="' + esc(f.name) + '"><span class="fh"><span class="fn">' + esc(f.name) + '</span><span class="fm' + (spent[f.name] ? '' : ' zero') + '">' + fmtDur(spent[f.name] || 0) + '</span></span>' + (() => { const g = (settings.focusGoals || {})[f.name] || 0, fd = [f.note, g && targetsOn() ? 'this week ' + fmtDur(weekFocusMs(f.name)) + ' of ' + fmtDur(g * 60000) : ''].filter(Boolean).join(' · '); return fd ? '<span class="fd">' + esc(fd) + '</span>' : ''; })() + '</button>').join('')
       + '<button type="button" class="fo none' + (!focus ? ' on' : '') + '" data-f=""><span class="fn">No focus</span></button>';
   }
   function openGoing() {   // your destinations first; a plain focus is the second choice, one tap away
@@ -1469,9 +1519,9 @@ Immanuel
     if (run && run.soft) quietStop();
     unlockAudio();
     // a step toward the destination: the hero and the finish card always are; a grid timer is too unless you've pointed the focus somewhere else
-    const d = WORK.includes(cat) ? curDest() : null;   // your own focus choice stays yours; a destination's tag travels with its steps
+    const d = opt.focusStep ? null : (WORK.includes(cat) ? curDest() : null);   // your own focus choice stays yours; a destination's tag travels with its steps; a focus offer is its own step
     const now = Date.now(), first = todaysSessions().length === 0;
-    run = { id: uid(), cat, min, startedAt: now, endsAt: now + min * 60000, paused: false, remaining: null, added: 0, goal: d && d.step ? d.step : '', focus: d ? (d.focus || '') : (focus || ''),
+    run = { id: uid(), cat, min, startedAt: now, endsAt: now + min * 60000, paused: false, remaining: null, added: 0, goal: d && d.step ? d.step : '', focus: opt.focusStep ? opt.focusStep : d ? (d.focus || '') : (focus || ''),
             dest: d ? d.id : '', word: startWord(cat, first) };
     saveRun(); acquireWake(); renderMain(); musicStart();
   }
@@ -1521,16 +1571,16 @@ Immanuel
     if (run.soft) { if (el >= 15000) logRoutineStep(run, el); } else if (el >= 60000) logSession(run, el, false, Date.now());
     run = null; store.set('run', null); releaseWake(); musicStop();
   }
-  function logRoutineStep(r, ms) { sessions.push({ id: r.id, cat: 'rest', min: r.min, start: r.startedAt, end: Date.now(), ms, done: true, focus: '', dest: '', routine: r.routine.name }); saveSessions(); }
+  function logRoutineStep(r, ms) { sessions.push({ id: r.id, cat: 'rest', min: r.min, start: r.startedAt, end: Date.now(), ms, done: true, focus: '', dest: '', routine: r.routine.name, rid: r.routine.rid || '' }); saveSessions(); }
   function startRoutine(name) {
     const rt = routines().find(r => r.name === name) || routines()[0]; if (!rt) return;
     $('routineOv').classList.remove('show'); closeDone(); quietStop(); gridOpen = false; unlockAudio();
-    beginStep(rt, 0, '', 0, '');
+    beginStep(rt, 0, '', 0, '', uid());
   }
-  function beginStep(rt, i, write, spent, note) {
+  function beginStep(rt, i, write, spent, note, rid) {
     const st = rt.steps[i], now = Date.now();
     run = { id: uid(), cat: 'rest', min: st.min, startedAt: now, endsAt: now + st.min * 60000, paused: false, remaining: null, added: 0, goal: '', focus: '', dest: '', word: '', soft: true, chimed: false,
-            note: note || '', noteUntil: now + 7000, routine: { name: rt.name, steps: rt.steps, i, write: write || '', spent: spent || 0 } };
+            note: note || '', noteUntil: now + 7000, routine: { name: rt.name, steps: rt.steps, i, write: write || '', spent: spent || 0, rid: rid || '' } };
     saveRun(); acquireWake(); renderMain();
   }
   function routineDone() {
@@ -1539,7 +1589,7 @@ Immanuel
     if (el >= 15000) logRoutineStep(r, el);   // a tap straight through is not logged
     let write = rt.write; if (/hand|give|release|cast|lay/i.test(st.title)) write = '';   // once handed over, what you wrote is gone
     const spent = (rt.spent || 0) + el;
-    if (rt.i + 1 < rt.steps.length) { beginStep(rt, rt.i + 1, write, spent, early ? "Done early. That is good: you don't need the whole time." : ''); return; }
+    if (rt.i + 1 < rt.steps.length) { beginStep(rt, rt.i + 1, write, spent, early ? "Done early. That is good: you don't need the whole time." : '', rt.rid); return; }
     run = null; store.set('run', null); releaseWake(); renderMain(); showRoutineDone(rt, spent, write);
   }
   function routineEnd() {   // ended partway: what was done is kept as rest, and what you wrote is not
@@ -1584,16 +1634,20 @@ Immanuel
   // the picker: one tap on Routines, one tap on a routine
   function openRoutinePicker() {
     const list = routines();
-    $('routineList').innerHTML = list.length ? list.map(r => '<button type="button" class="fo" data-r="' + esc(r.name) + '"><span class="fh"><span class="fn">' + esc(r.name) + '</span><span class="fm">~' + routineMins(r) + ' min</span></span><span class="fd">' + esc(r.steps.map(x => x.title).join(' → ')) + '</span></button>').join('') : '<div class="none">No routines yet. Add some in Settings.</div>';
+    $('routineList').innerHTML = list.length ? list.map(r => '<button type="button" class="fo" data-r="' + esc(r.name) + '"><span class="fh"><span class="fn">' + esc(r.name) + '</span><span class="fm">~' + routineMins(r) + ' min</span></span><span class="fd">' + esc(((settings.routineGoals || {})[r.name] && targetsOn() ? 'this week ' + weekRoutineCount(r.name) + ' of ' + settings.routineGoals[r.name] + ' · ' : '') + r.steps.map(x => x.title).join(' → ')) + '</span></button>').join('') : '<div class="none">No routines yet. Add some in Settings.</div>';
     $('routineOv').classList.add('show');
   }
-  function pickRoutine() {   // the one you haven't reached for the longest (never = longest), and never the one just done; ties are random
+  function pickRoutine() {   // a weighted pick: leans to routines behind their weekly count and to ones you haven't reached for in a while; never the one just done
     const list = routines(); if (!list.length) return '';
-    const last = {}; sessions.forEach(x => { if (x.routine) last[x.routine] = Math.max(last[x.routine] || 0, x.end || 0); });
-    let pool = list; const recent = sessions.filter(x => x.routine).sort((a, b) => b.end - a.end)[0];
-    if (list.length > 1 && recent) pool = list.filter(r => r.name !== recent.routine);
-    const oldest = Math.min(...pool.map(r => last[r.name] || 0)), tied = pool.filter(r => (last[r.name] || 0) === oldest);
-    return tied[Math.floor(Math.random() * tied.length)].name;
+    const lastEnd = {}; sessions.forEach(x => { if (x.routine) lastEnd[x.routine] = Math.max(lastEnd[x.routine] || 0, x.end || 0); });
+    const recent = sessions.filter(x => x.routine).sort((a, b) => b.end - a.end)[0], pool = list.length > 1 && recent ? list.filter(r => r.name !== recent.routine) : list, now = Date.now();
+    const w = pool.map(r => {
+      const g = (settings.routineGoals || {})[r.name] || 0, d = routineDeficit(r), days = Math.min(3, (now - (lastEnd[r.name] || 0)) / 86400000);   // never used counts as 3 days
+      return (g && targetsOn() ? (d > 0 ? 1 + 2 * d : 0.4) : 1) * (1 + days);
+    });
+    let x = Math.random() * w.reduce((a, b) => a + b, 0);
+    for (let i = 0; i < pool.length; i++) { x -= w[i]; if (x <= 0) return pool[i].name; }
+    return pool[pool.length - 1].name;
   }
   $('routinePick').addEventListener('click', () => { const n = pickRoutine(); if (n) startRoutine(n); });
   $('ccRoutine').addEventListener('click', openRoutinePicker);
@@ -1628,7 +1682,14 @@ Immanuel
     document.title = txt + ' · ' + CAT[run.cat].name;
     $('lsTime').textContent = CAT[run.cat].name + ' · ' + txt + (run.paused ? ' (paused)' : ' left');
   }
+  function renderNudge() {   // the last work day of the week, with something still open: one quiet line
+    const due = dueFocus(), show = !!due && due.tier >= 2; $('ccNudge').hidden = !show; if (!show) return;
+    const fs = focusStepFor(due); $('ccNudgeTxt').textContent = due.name + ' has ' + fmtDur(due.need) + ' open this week.'; $('ccNudgeGo').textContent = 'Start ' + fs.min + ' min';
+  }
+  $('ccNudgeGo').addEventListener('click', () => { const due = dueFocus(); if (!due) return; const fs = focusStepFor(due); startTimer(fs.cat, fs.min, { focusStep: due.name }); });
+  $('ccNudgeOff').addEventListener('click', () => { const due = dueFocus(); if (!due) return; const off = store.get('nudgeOff', {}); off[due.name] = dkey(new Date()); store.set('nudgeOff', off); renderNudge(); });
   function renderColdCard() {
+    renderNudge();
     const od = openDests(), body = $('ccBody'), cur = curDest();
     $('ccEdit').textContent = od.length ? 'Edit' : 'Name one';
     if (!od.length) {
@@ -1694,7 +1755,7 @@ Immanuel
     return rt ? '<button class="full" style="--c2:' + CAT[sg.cat].color + '" data-routine="' + esc(rt.name) + '" type="button"><span class="k">' + esc(nextLabel(sg)) + '</span>' + esc(rt.name) + ' · ~' + routineMins(rt) + ' min</button>'
               : nxBtn(sg.cat, sg.min, nextLabel(sg), true);
   };
-  const nxBtn = (cat, min, k, full) => '<button' + (full ? ' class="full"' : '') + ' style="--c2:' + CAT[cat].color + '" data-cat="' + cat + '" data-min="' + min + '" type="button"><span class="k">' + esc(k) + '</span>' + CAT[cat].name + (full ? ' · ' + min + ' min' : ' ' + min + 'm') + '</button>';
+  const nxBtn = (cat, min, k, full, label, fs) => '<button' + (full ? ' class="full"' : '') + ' style="--c2:' + CAT[cat].color + '" data-cat="' + cat + '" data-min="' + min + '"' + (fs ? ' data-fs="' + esc(fs) + '"' : '') + ' type="button"><span class="k">' + esc(k) + '</span>' + esc(label || CAT[cat].name) + (full ? ' · ' + min + ' min' : ' ' + min + 'm') + '</button>';
   function showReached(d) {   // arriving somewhere is celebrated, and the next step points to the next place
     clearTimeout(repeatTimer); stopAlarm();
     $('doneCard').style.setProperty('--c', '#ffd36b'); $('doneCard').classList.add('stage');
@@ -1726,7 +1787,8 @@ Immanuel
       burst(isLast);
     }
     const sg = suggestNext(), alt = sg.cat === 'rest' ? ['break', 5] : ['rest', 5];
-    $('doneNx').innerHTML = primaryBtn(sg) + nxBtn(r.cat, r.min, 'Again', false) + nxBtn(alt[0], alt[1], 'Or', false);
+    const due = dueFocus(), fs = due ? focusStepFor(due) : null;   // something still open this week is offered in place of the plain rest, never pushed
+    $('doneNx').innerHTML = primaryBtn(sg) + nxBtn(r.cat, r.min, 'Again', false) + (fs ? nxBtn(fs.cat, fs.min, 'Or', false, due.name, due.name) : nxBtn(alt[0], alt[1], 'Or', false));
     $('doneKeep').hidden = true;
     const rd = r.dest ? dests.find(x => x.id === r.dest && x.state === 'open') : null;   // a gentle "did that get you there?"
     $('doneReached').hidden = !rd; $('doneReached').dataset.id = rd ? rd.id : '';
@@ -1743,7 +1805,7 @@ Immanuel
   $('doneNx').addEventListener('click', e => {
     const b = e.target.closest('button'); if (!b) return;
     if (b.dataset.routine) { startRoutine(b.dataset.routine); return; }
-    closeDone(); startTimer(b.dataset.cat, +b.dataset.min, { toward: !!b.classList.contains('full') });
+    closeDone(); startTimer(b.dataset.cat, +b.dataset.min, { toward: !!b.classList.contains('full'), focusStep: b.dataset.fs || '' });
   });
   $('doneReached').addEventListener('click', () => { const d = markReached($('doneReached').dataset.id); closeDone(); if (d) showReached(d); });
 
@@ -2017,7 +2079,7 @@ Immanuel
     $('setEnergy').value = settings.energy; $('setPromptCal').checked = settings.promptCal; $('setUseEnergy').checked = settings.useEnergy; renderEnergyPreview();
     $('setRestAfter').value = String(settings.restAfter); $('setWeek').value = String(settings.weekStart); $('setChime').checked = settings.chime; $('setRepeat').checked = settings.repeat;
     $('setBtnI').value = String(settings.btnI); $('setDimI').value = String(settings.dimI); $('btnIv').textContent = settings.btnI + '%'; $('dimIv').textContent = settings.dimI + '%';
-    renderFocusEditor(); $('setWords').checked = settings.words; $('setWordsFreq').value = settings.wordsFreq; $('setWordsMine').value = settings.wordsMine; $('setWordsOnlyMine').checked = settings.wordsOnlyMine; renderWordsCount();
+    renderWorkDays(); $('setGentle').checked = !targetsOn(); renderFocusEditor(); $('setWords').checked = settings.words; $('setWordsFreq').value = settings.wordsFreq; $('setWordsMine').value = settings.wordsMine; $('setWordsOnlyMine').checked = settings.wordsOnlyMine; renderWordsCount();
     $('setMusicWhen').value = settings.musicWhen; $('setMusicVol').value = String(settings.musicVol); renderMusicList();
     renderAlarmList();
     $('icsStatus').textContent = cal.pulledAt ? 'Last pulled ' + new Date(cal.pulledAt).toLocaleString() : '';
@@ -2052,13 +2114,13 @@ Immanuel
       + '<button type="button" class="rbtn" data-a="up" aria-label="Move step up">↑</button><button type="button" class="rbtn" data-a="down" aria-label="Move step down">↓</button><button type="button" class="rbtn" data-a="del" aria-label="Remove step">×</button></div></div>';
   }
   function routineHtml(r) {
-    return '<div class="rcard"><div class="rrow"><input class="sInput rnm" type="text" maxlength="40" value="' + esc(r.name) + '" placeholder="Routine name" aria-label="Routine name" autocapitalize="words"><button type="button" class="rbtn" data-a="rup" aria-label="Move routine up">↑</button><button type="button" class="rbtn" data-a="rdel" aria-label="Remove routine">×</button></div>'
+    return '<div class="rcard" data-g="' + (r.g || 0) + '"><div class="rrow"><input class="sInput rnm" type="text" maxlength="40" value="' + esc(r.name) + '" placeholder="Routine name" aria-label="Routine name" autocapitalize="words"><button type="button" class="rbtn" data-a="rup" aria-label="Move routine up">↑</button><button type="button" class="rbtn" data-a="rdel" aria-label="Remove routine">×</button></div><div class="rrow gchips"><span class="gl">Times a week</span>' + goalChips(RGOALS, r.g || 0) + '</div>'
       + r.steps.map(stepHtml).join('') + '<button type="button" class="stepLink" data-a="addstep">+ Add a step</button></div>';
   }
-  function renderRoutineEditor(list) { $('routineEditor').innerHTML = (list || parseRoutines(settings.routinesText || DEFAULT_ROUTINES)).map(routineHtml).join(''); }
+  function renderRoutineEditor(list) { $('routineEditor').innerHTML = (list || parseRoutines(settings.routinesText || DEFAULT_ROUTINES).map(r => ({ ...r, g: (settings.routineGoals || {})[r.name] || 0 }))).map(routineHtml).join(''); }
   function readRoutineEditor() {   // everything in the fields, including half-finished items (so a re-draw never loses what you are typing)
     return [...$('routineEditor').querySelectorAll('.rcard')].map(c => ({
-      name: c.querySelector('.rnm').value,
+      name: c.querySelector('.rnm').value, g: +c.dataset.g || 0,
       steps: [...c.querySelectorAll('.rstep')].map(r => ({ min: Math.max(1, Math.min(120, parseInt(r.querySelector('.rmin').value, 10) || 3)), title: r.querySelector('.rttl').value, prompt: r.querySelector('.rprm').value, b: r.querySelector('[data-t="b"]').classList.contains('on'), w: r.querySelector('[data-t="w"]').classList.contains('on') })),
     }));
   }
@@ -2067,12 +2129,14 @@ Immanuel
       .map(r => r.name + '\n' + r.steps.map(st => st.min + (st.b ? 'b' : '') + (st.w ? 'w' : '') + ' ' + st.title + (st.prompt ? ' — ' + st.prompt : '')).join('\n')).join('\n\n');
   }
   function saveRoutineEditor() {
-    const txt = serializeRoutines(readRoutineEditor());
-    settings.routinesText = txt.trim() === DEFAULT_ROUTINES.trim() ? '' : txt; saveSettings(); renderRoutinePrefs(); if (!run) renderNext();
+    const list = readRoutineEditor(), txt = serializeRoutines(list), goals = {};
+    list.forEach(r => { const n = cleanName(r.name); if (n && r.g && r.steps.some(st => cleanTtl(st.title))) goals[n] = r.g; });
+    settings.routineGoals = goals; settings.routinesText = txt.trim() === DEFAULT_ROUTINES.trim() ? '' : txt; saveSettings(); renderRoutinePrefs(); if (!run) renderNext();
   }
   $('routineEditor').addEventListener('input', saveRoutineEditor);
   $('routineEditor').addEventListener('click', e => {
     const b = e.target.closest('button'); if (!b) return;
+    if (b.dataset.gv !== undefined) { const c = b.closest('.rcard'); c.dataset.g = b.dataset.gv; c.querySelectorAll('.gchips .rchip').forEach(x => x.classList.toggle('on', x === b)); saveRoutineEditor(); return; }
     if (b.dataset.t) { b.classList.toggle('on'); saveRoutineEditor(); return; }
     const list = readRoutineEditor(), cards = [...$('routineEditor').querySelectorAll('.rcard')], ci = cards.indexOf(b.closest('.rcard'));
     const stepEl = b.closest('.rstep'), si = stepEl ? [...cards[ci].querySelectorAll('.rstep')].indexOf(stepEl) : -1, a = b.dataset.a;
@@ -2086,7 +2150,7 @@ Immanuel
     renderRoutineEditor(list); saveRoutineEditor();
   });
   $('routineAddR').addEventListener('click', () => {
-    const list = readRoutineEditor(); list.push({ name: '', steps: [{ min: 3, title: '', prompt: '', b: false, w: false }] });
+    const list = readRoutineEditor(); list.push({ name: '', g: 0, steps: [{ min: 3, title: '', prompt: '', b: false, w: false }] });
     renderRoutineEditor(list); const cards = $('routineEditor').querySelectorAll('.rcard'); cards[cards.length - 1].querySelector('.rnm').focus();
   });
   bind('setRestRoutine', () => { settings.restRoutine = $('setRestRoutine').value; saveSettings(); if (!run) renderNext(); });
@@ -2113,15 +2177,36 @@ Immanuel
     unlockAudio(); settings.alarm = b.dataset.id; saveSettings(); renderAlarmList(); playAlarm(settings.alarm);
   });
   $('alarmStop').addEventListener('click', stopAlarm);
-  const feRowHtml = (name, note) => '<div class="feRow"><input class="sInput fn1" type="text" maxlength="20" value="' + esc(name) + '" placeholder="Name" aria-label="Focus name" autocapitalize="words"><input class="sInput fn2" type="text" maxlength="60" value="' + esc(note) + '" placeholder="Note (optional)" aria-label="Note"><button type="button" aria-label="Remove this focus">×</button></div>';
-  function renderFocusEditor() { $('focusEditor').innerHTML = settings.focuses.map(parseFocus).map(f => feRowHtml(f.name, f.note)).join(''); }
-  function readFocusEditor() {
-    return [...$('focusEditor').querySelectorAll('.feRow')].map(r => { const ins = r.querySelectorAll('input'), name = ins[0].value.replace(/[:→—–]/g, ' ').replace(/\s+/g, ' ').trim(), note = ins[1].value.trim(); return name ? name + (note ? ' — ' + note : '') : ''; }).filter(Boolean).slice(0, 10);
+  const FGOALS = [[0, 'None'], [30, '30m'], [60, '1h'], [120, '2h'], [180, '3h'], [300, '5h']], RGOALS = [[0, 'None'], [1, '1×'], [2, '2×'], [3, '3×'], [5, '5×'], [7, 'Daily']];
+  const goalChips = (arr, g) => arr.map(([v, l]) => '<button type="button" class="rchip' + (v === g ? ' on' : '') + '" data-gv="' + v + '">' + l + '</button>').join('');
+  const feRowHtml = (name, note, g) => '<div class="fcard" data-g="' + (g || 0) + '"><div class="feRow"><input class="sInput fn1" type="text" maxlength="20" value="' + esc(name) + '" placeholder="Name" aria-label="Focus name" autocapitalize="words"><input class="sInput fn2" type="text" maxlength="60" value="' + esc(note) + '" placeholder="Note (optional)" aria-label="Note"><button type="button" class="fx" aria-label="Remove this focus">×</button></div>'
+    + '<div class="rrow gchips"><span class="gl">Weekly time</span>' + goalChips(FGOALS, g || 0) + '</div></div>';
+  function renderFocusEditor() { $('focusEditor').innerHTML = settings.focuses.map(parseFocus).map(f => feRowHtml(f.name, f.note, (settings.focusGoals || {})[f.name] || 0)).join(''); }
+  function saveFocusEditor() {
+    const list = [], goals = {};
+    $('focusEditor').querySelectorAll('.fcard').forEach(c => {
+      const ins = c.querySelectorAll('input'), name = ins[0].value.replace(/[:→—–]/g, ' ').replace(/\s+/g, ' ').trim(), note = ins[1].value.trim();
+      if (!name || list.length >= 10) return; list.push(name + (note ? ' — ' + note : '')); if (+c.dataset.g) goals[name] = +c.dataset.g;
+    });
+    settings.focuses = list; settings.focusGoals = goals; saveSettings();
   }
-  $('focusEditor').addEventListener('input', () => { settings.focuses = readFocusEditor(); saveSettings(); });
-  $('focusEditor').addEventListener('click', e => { const b = e.target.closest('button'); if (!b) return; b.closest('.feRow').remove(); settings.focuses = readFocusEditor(); saveSettings(); });
-  $('focusAdd').addEventListener('click', () => { if ($('focusEditor').children.length >= 10) return; $('focusEditor').insertAdjacentHTML('beforeend', feRowHtml('', '')); $('focusEditor').lastElementChild.querySelector('input').focus(); });
-  $('focusReset').addEventListener('click', () => { settings.focuses = FOCUS_DEFAULT.slice(); saveSettings(); renderFocusEditor(); });
+  $('focusEditor').addEventListener('input', saveFocusEditor);
+  $('focusEditor').addEventListener('click', e => {
+    const b = e.target.closest('button'); if (!b) return;
+    if (b.dataset.gv !== undefined) { const c = b.closest('.fcard'); c.dataset.g = b.dataset.gv; c.querySelectorAll('.rchip').forEach(x => x.classList.toggle('on', x === b)); }
+    else if (b.classList.contains('fx')) b.closest('.fcard').remove(); else return;
+    saveFocusEditor();
+  });
+  $('focusAdd').addEventListener('click', () => { if ($('focusEditor').children.length >= 10) return; $('focusEditor').insertAdjacentHTML('beforeend', feRowHtml('', '', 0)); $('focusEditor').lastElementChild.querySelector('input').focus(); });
+  function renderWorkDays() {
+    $('workDays').innerHTML = [[1, 'Mon'], [2, 'Tue'], [3, 'Wed'], [4, 'Thu'], [5, 'Fri'], [6, 'Sat'], [0, 'Sun']].map(([v, l]) => '<button type="button" class="chip2' + ((settings.workDays || []).includes(v) ? ' on' : '') + '" data-d="' + v + '">' + l + '</button>').join('');
+  }
+  $('workDays').addEventListener('click', e => {
+    const b = e.target.closest('.chip2'); if (!b) return; const v = +b.dataset.d, cur = settings.workDays || [];
+    settings.workDays = cur.includes(v) ? cur.filter(x => x !== v) : cur.concat(v); saveSettings(); renderWorkDays(); if (!run) renderMain();
+  });
+  bind('setGentle', () => { settings.gentleWeek = $('setGentle').checked ? dkey(new Date(weekStartMs())) : ''; saveSettings(); if (!run) renderMain(); });
+  $('focusReset').addEventListener('click', () => { settings.focuses = FOCUS_DEFAULT.slice(); settings.focusGoals = {}; saveSettings(); renderFocusEditor(); });
   bind('setBtnI', () => { settings.btnI = +$('setBtnI').value; $('btnIv').textContent = settings.btnI + '%'; saveSettings(); applyLook(); }, 'input');
   bind('setDimI', () => { settings.dimI = +$('setDimI').value; $('dimIv').textContent = settings.dimI + '%'; saveSettings(); applyLook(); }, 'input');
   function renderWordsCount() { const m = mineLines().length; $('wordsCount').textContent = wordsBuiltIn() + ' lines are built in and rotate from a shuffled deck, so one doesn\'t come back until the rest have been seen' + (m ? ' · ' + m + ' of yours mixed in.' : '.'); }
