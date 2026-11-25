@@ -259,6 +259,15 @@
   .stepLink { background: none; border: 0; color: var(--accent); font-size: 0.9rem; font-weight: 600; padding: 6px 2px 10px; }
   details.dd { border-top: 1px solid var(--bd); margin-top: 16px; }
   details.dd > summary { padding: 14px 2px; color: var(--dim); font-weight: 600; font-size: 0.92rem; cursor: pointer; }
+  .rcard { background: var(--el); border: 1px solid var(--bd); border-radius: 14px; padding: 10px; margin-bottom: 12px; }
+  .rrow { display: flex; gap: 6px; align-items: center; margin-bottom: 6px; }
+  .rrow input, .rrow textarea { margin: 0; min-width: 0; }
+  .rrow .rmin { flex: 0 0 62px; text-align: center; } .rrow .rttl { flex: 1; } .rrow .rnm { flex: 1; font-weight: 700; }
+  .rstep { border-top: 1px solid var(--bd); padding-top: 9px; margin-top: 9px; }
+  .rbtn { flex: none; width: 38px; height: 38px; border-radius: 10px; border: 1px solid var(--bd); background: var(--el2); color: var(--dim); font-size: 1rem; padding: 0; }
+  .rrow .rsp { flex: 1; }
+  .rchip { flex: none; padding: 7px 12px; border-radius: 999px; border: 1.5px solid var(--bd); background: var(--el2); font-size: 0.82rem; font-weight: 600; color: var(--dim); }
+  .rchip.on { border-color: var(--accent); color: var(--accent); background: color-mix(in srgb, var(--accent) 14%, var(--el2)); }
   .feRow { display: flex; gap: 6px; margin-bottom: 8px; }
   .feRow input { min-width: 0; margin: 0; } .feRow .fn1 { flex: 0 0 34%; } .feRow .fn2 { flex: 1; }
   .feRow button { flex: none; width: 42px; border-radius: 10px; border: 1px solid var(--bd); background: var(--el2); font-size: 1.15rem; color: var(--dim); }
@@ -482,8 +491,9 @@
     <div class="srow"><span>Header &amp; notes while timing <b id="dimIv"></b></span><input type="range" id="setDimI" min="15" max="100" step="5" style="flex:1; max-width:150px; accent-color:var(--accent);"></div>
 
     <h3>Routines</h3>
-    <p class="hint">Steps to work through when it's too much. A routine's name on its own line, then one step per line: minutes, a title, then a dash and a prompt. Put <b>b</b> after the minutes for a breathing cue, <b>w</b> for a place to write (it isn't saved). The minutes are a target, not a limit: finishing early is good, and you can stay as long as you need.</p>
-    <textarea class="sInput" id="setRoutines" style="min-height:260px; font-size:15px;" autocapitalize="sentences" spellcheck="true"></textarea>
+    <p class="hint">Steps to work through when it's too much. The minutes are a target, not a limit: finishing early is good, and you can stay as long as you need. Turn on <b>Breathing cue</b> for the slow bloom and verses, or <b>Writing box</b> for a place to write (it isn't saved).</p>
+    <div id="routineEditor"></div>
+    <button class="btn full" id="routineAddR" type="button" style="margin-bottom:8px;">Add a routine</button>
     <div class="status" id="routinePreview"></div>
     <div class="srow"><span>Offer in rests</span><select class="sSel" id="setRestRoutine"></select></div>
     <div class="srow"><span>Offer in breaks</span><select class="sSel" id="setBreakRoutine"></select></div>
@@ -2003,7 +2013,7 @@ Immanuel
     $('icsUrls').value = settings.icsUrls; $('icsProxy').value = settings.icsProxy;
     hoursOptions($('setStart'), settings.dayStart); hoursOptions($('setEnd'), settings.dayEnd);
     $('setBar').innerHTML = [2, 3, 4, 5, 6, 8, 10, 12].map(h => '<option value="' + h + '">' + h + ' hours</option>').join(''); $('setBar').value = String(settings.barHours);
-    $('setRoutines').value = settings.routinesText || DEFAULT_ROUTINES; renderRoutinePrefs();
+    renderRoutineEditor(); renderRoutinePrefs();
     $('setEnergy').value = settings.energy; $('setPromptCal').checked = settings.promptCal; $('setUseEnergy').checked = settings.useEnergy; renderEnergyPreview();
     $('setRestAfter').value = String(settings.restAfter); $('setWeek').value = String(settings.weekStart); $('setChime').checked = settings.chime; $('setRepeat').checked = settings.repeat;
     $('setBtnI').value = String(settings.btnI); $('setDimI').value = String(settings.dimI); $('btnIv').textContent = settings.btnI + '%'; $('dimIv').textContent = settings.dimI + '%';
@@ -2032,10 +2042,56 @@ Immanuel
     $('setRestRoutine').value = list.some(r => r.name === settings.restRoutine) ? settings.restRoutine : '';
     $('setBreakRoutine').value = list.some(r => r.name === settings.breakRoutine) ? settings.breakRoutine : '';
   }
-  bind('setRoutines', () => { const v = $('setRoutines').value; settings.routinesText = v.trim() === DEFAULT_ROUTINES.trim() ? '' : v; saveSettings(); renderRoutinePrefs(); if (!run) renderNext(); }, 'input');
+  // ----- the routines editor: fields and toggles (no dash or flag letters to type). The saved text format is unchanged underneath. -----
+  const cleanTtl = v => v.replace(/\s*[—–]\s*/g, ', ').replace(/\s-\s/g, ' ').replace(/\s+/g, ' ').replace(/,\s*$/, '').trim();
+  const cleanName = v => v.replace(/[—–]/g, ' ').replace(/^\d+\s*/, '').replace(/\s+/g, ' ').trim();
+  function stepHtml(st) {
+    return '<div class="rstep"><div class="rrow"><input class="sInput rmin" type="number" inputmode="numeric" min="1" max="120" value="' + st.min + '" aria-label="Minutes"><input class="sInput rttl" type="text" maxlength="40" value="' + esc(st.title) + '" placeholder="Step title" aria-label="Step title" autocapitalize="sentences"></div>'
+      + '<div class="rrow"><textarea class="sInput rprm" rows="2" maxlength="240" placeholder="What to do or pray (optional)" aria-label="Prompt" autocapitalize="sentences" style="width:100%; min-height:56px; resize:none;">' + esc(st.prompt) + '</textarea></div>'
+      + '<div class="rrow"><button type="button" class="rchip' + (st.b ? ' on' : '') + '" data-t="b">Breathing cue</button><button type="button" class="rchip' + (st.w ? ' on' : '') + '" data-t="w">Writing box</button><span class="rsp"></span>'
+      + '<button type="button" class="rbtn" data-a="up" aria-label="Move step up">↑</button><button type="button" class="rbtn" data-a="down" aria-label="Move step down">↓</button><button type="button" class="rbtn" data-a="del" aria-label="Remove step">×</button></div></div>';
+  }
+  function routineHtml(r) {
+    return '<div class="rcard"><div class="rrow"><input class="sInput rnm" type="text" maxlength="40" value="' + esc(r.name) + '" placeholder="Routine name" aria-label="Routine name" autocapitalize="words"><button type="button" class="rbtn" data-a="rup" aria-label="Move routine up">↑</button><button type="button" class="rbtn" data-a="rdel" aria-label="Remove routine">×</button></div>'
+      + r.steps.map(stepHtml).join('') + '<button type="button" class="stepLink" data-a="addstep">+ Add a step</button></div>';
+  }
+  function renderRoutineEditor(list) { $('routineEditor').innerHTML = (list || parseRoutines(settings.routinesText || DEFAULT_ROUTINES)).map(routineHtml).join(''); }
+  function readRoutineEditor() {   // everything in the fields, including half-finished items (so a re-draw never loses what you are typing)
+    return [...$('routineEditor').querySelectorAll('.rcard')].map(c => ({
+      name: c.querySelector('.rnm').value,
+      steps: [...c.querySelectorAll('.rstep')].map(r => ({ min: Math.max(1, Math.min(120, parseInt(r.querySelector('.rmin').value, 10) || 3)), title: r.querySelector('.rttl').value, prompt: r.querySelector('.rprm').value, b: r.querySelector('[data-t="b"]').classList.contains('on'), w: r.querySelector('[data-t="w"]').classList.contains('on') })),
+    }));
+  }
+  function serializeRoutines(list) {   // only complete routines and steps are saved
+    return list.map(r => ({ name: cleanName(r.name), steps: r.steps.map(st => ({ ...st, title: cleanTtl(st.title), prompt: st.prompt.replace(/\s+/g, ' ').trim() })).filter(st => st.title) })).filter(r => r.name && r.steps.length)
+      .map(r => r.name + '\n' + r.steps.map(st => st.min + (st.b ? 'b' : '') + (st.w ? 'w' : '') + ' ' + st.title + (st.prompt ? ' — ' + st.prompt : '')).join('\n')).join('\n\n');
+  }
+  function saveRoutineEditor() {
+    const txt = serializeRoutines(readRoutineEditor());
+    settings.routinesText = txt.trim() === DEFAULT_ROUTINES.trim() ? '' : txt; saveSettings(); renderRoutinePrefs(); if (!run) renderNext();
+  }
+  $('routineEditor').addEventListener('input', saveRoutineEditor);
+  $('routineEditor').addEventListener('click', e => {
+    const b = e.target.closest('button'); if (!b) return;
+    if (b.dataset.t) { b.classList.toggle('on'); saveRoutineEditor(); return; }
+    const list = readRoutineEditor(), cards = [...$('routineEditor').querySelectorAll('.rcard')], ci = cards.indexOf(b.closest('.rcard'));
+    const stepEl = b.closest('.rstep'), si = stepEl ? [...cards[ci].querySelectorAll('.rstep')].indexOf(stepEl) : -1, a = b.dataset.a;
+    if (a === 'addstep') list[ci].steps.push({ min: 3, title: '', prompt: '', b: false, w: false });
+    else if (a === 'del') list[ci].steps.splice(si, 1);
+    else if (a === 'up' && si > 0) [list[ci].steps[si - 1], list[ci].steps[si]] = [list[ci].steps[si], list[ci].steps[si - 1]];
+    else if (a === 'down' && si < list[ci].steps.length - 1) [list[ci].steps[si + 1], list[ci].steps[si]] = [list[ci].steps[si], list[ci].steps[si + 1]];
+    else if (a === 'rdel') list.splice(ci, 1);
+    else if (a === 'rup' && ci > 0) [list[ci - 1], list[ci]] = [list[ci], list[ci - 1]];
+    else return;
+    renderRoutineEditor(list); saveRoutineEditor();
+  });
+  $('routineAddR').addEventListener('click', () => {
+    const list = readRoutineEditor(); list.push({ name: '', steps: [{ min: 3, title: '', prompt: '', b: false, w: false }] });
+    renderRoutineEditor(list); const cards = $('routineEditor').querySelectorAll('.rcard'); cards[cards.length - 1].querySelector('.rnm').focus();
+  });
   bind('setRestRoutine', () => { settings.restRoutine = $('setRestRoutine').value; saveSettings(); if (!run) renderNext(); });
   bind('setBreakRoutine', () => { settings.breakRoutine = $('setBreakRoutine').value; saveSettings(); if (!run) renderNext(); });
-  $('routineReset').addEventListener('click', () => { settings.routinesText = ''; saveSettings(); $('setRoutines').value = DEFAULT_ROUTINES; renderRoutinePrefs(); if (!run) renderNext(); });
+  $('routineReset').addEventListener('click', () => { settings.routinesText = ''; saveSettings(); renderRoutineEditor(); renderRoutinePrefs(); if (!run) renderNext(); });
   function renderEnergyPreview() {
     const txt = (settings.energy || '').trim(), z = parseZones(settings.energy), L = { peak: 'peak', steady: 'steady', low: 'low' };
     $('energyPreview').textContent = !txt ? '' : z.length ? 'Understood: ' + z.map(x => fmtHM(x.from).replace(':00', '') + '–' + fmtHM(x.to).replace(':00', '') + ' ' + L[x.level]).join(' · ')
