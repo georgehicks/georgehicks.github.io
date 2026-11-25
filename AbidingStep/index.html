@@ -423,7 +423,7 @@
     <div class="srow"><span>Header &amp; notes while timing <b id="dimIv"></b></span><input type="range" id="setDimI" min="15" max="100" step="5" style="flex:1; max-width:150px; accent-color:var(--accent);"></div>
 
     <h3>Focus areas</h3>
-    <p class="hint">What you can focus on for a stretch, one per line, written as "Name — short note". The note shows beside the name when you pick. Pick one on the main screen; it stays until you change it.</p>
+    <p class="hint">The kinds of effort a destination can carry as a tag, and what you choose when you're not heading toward a destination. One per line, written as "Name — short note".</p>
     <textarea class="sInput" id="setFocuses" style="min-height:210px;" placeholder="Name — short note" autocapitalize="sentences" spellcheck="false"></textarea>
 
     <h3>Abiding lines</h3>
@@ -467,7 +467,7 @@
 
 <div id="confetti"></div>
 
-<div id="focusOv"><div id="focusCard"><h4>Focus for now</h4><div id="focusList"></div></div></div>
+<div id="focusOv"><div id="focusCard"><h4 id="focusTitle">Focus for now</h4><div id="focusList"></div></div></div>
 
 <script src="music.js"></script>
 <script>
@@ -1116,7 +1116,7 @@
   store.set('plan', null);   // the earlier timed-block plan is gone
   const saveDests = () => { store.set('dests', dests); store.set('destCur', destCur); };
   const openDests = () => dests.filter(d => d.state === 'open');
-  const curDest = () => { const o = openDests(); return o.find(d => d.id === destCur) || o[0] || null; };
+  const curDest = () => { if (destCur === '-') return null; const o = openDests(); return o.find(d => d.id === destCur) || o[0] || null; };   // '-' = you chose a plain focus, not a destination
   const shortText = (t, n) => t.length > n ? t.slice(0, n - 1).trimEnd() + '…' : t;
   // one per line:  Focus: where we are going → the very next small step   (the focus and the step are both optional)
   function parseDests(text) {
@@ -1131,7 +1131,7 @@
     });
     return out;
   }
-  function addDests(list) { let added = 0; list.forEach(d => { if (openDests().length < 5) { dests.push(d); added++; } }); saveDests(); return added; }   // five is the most held at once
+  function addDests(list) { if (destCur === '-') destCur = ''; let added = 0; list.forEach(d => { if (openDests().length < 5) { dests.push(d); added++; } }); saveDests(); return added; }   // five is the most held at once
   function markReached(id) { const d = dests.find(x => x.id === id); if (!d || d.state !== 'open') return null; d.state = 'reached'; d.on = dkey(new Date()); if (destCur === id) destCur = ''; saveDests(); return d; }
   function dropDest(id) { dests = dests.filter(x => x.id !== id); if (destCur === id) destCur = ''; saveDests(); }
   function destToday(id) { let ms = 0, n = 0; todaysSessions().forEach(x => { if (x.dest === id && WORK.includes(x.cat)) { ms += x.ms; n++; } }); return { ms, n }; }
@@ -1187,7 +1187,7 @@
     if (left > 0 && sg.min > left) sg.min = Math.max(3, Math.floor(left / 5) * 5);
     return sg;
   }
-  const isFunctional = sg => sg.toward || sg.guard;   // these labels say what is happening, so they show even with the abiding lines off
+  const isFunctional = sg => sg.guard;   // these labels say what is happening, so they show even with the abiding lines off
   const nextLabel = sg => (settings.words || isFunctional(sg)) ? sg.k : (sg.first ? 'Start' : 'Next step');
 
   // The next step: guardrails first, then the momentum engine (small to start, a little bigger each time, rest after a real chunk).
@@ -1197,7 +1197,7 @@
     const now = Date.now(), list = todaysSessions(), last = list[list.length - 1], d = curDest(), zl = z ? z.level : '';
     if (nowHours() >= settings.dayEnd) return { cat: 'rest', min: 15, k: 'Evening — rest with Him' };
     const cold = !last || now - last.end > 90 * 60000, streak = workStreakMs(list);
-    const lab = k => d ? '→ ' + shortText(d.text, 24) : k, tw = !!d;
+    const lab = k => k, tw = !!d;
     const restMs = restAfterMs() * (zl === 'peak' ? 1.25 : zl === 'low' ? 0.75 : 1);   // rest sooner in low hours, later in peak ones
     if (!cold && WORK.includes(last.cat) && restMs && streak >= restMs) return { cat: 'rest', min: streak >= restMs * 1.5 ? 15 : 10, k: 'Pace yourself — rest first', guard: true };
     if (!last) return fitDay({ cat: 'light', min: 3, k: lab('Begin with Him'), first: true, cold: true, toward: tw });
@@ -1250,18 +1250,38 @@
     $('nextK').textContent = nextLabel(sug);
     $('nextV').textContent = c.name + ' · ' + sug.min + ' min';
   }
-  function renderFocus() { $('focusVal').textContent = focus || 'pick one'; $('focusPill').classList.toggle('unset', !focus); }
+  function renderFocus() {   // the pill says where you are going; with no destination it is the plain focus, as before
+    const cd = curDest(), k = $('focusPill').querySelector('.k');
+    if (cd) { k.textContent = 'Going to'; $('focusVal').textContent = cd.text; $('focusPill').classList.remove('unset'); }
+    else { k.textContent = 'Focus'; $('focusVal').textContent = focus || 'pick one'; $('focusPill').classList.toggle('unset', !focus); }
+  }
   $('nextBtn').addEventListener('click', () => { if (!run && sug) startTimer(sug.cat, sug.min, { toward: true }); });
-  $('focusPill').addEventListener('click', () => {
+  function focusListHtml() {
     const spent = {};   // today's minutes per focus — work only, so rest and breaks don't pad whatever was selected
     todaysSessions().forEach(x => { const nm = FOCUS_ALIAS[x.focus] || x.focus; if (WORK.includes(x.cat) && nm) spent[nm] = (spent[nm] || 0) + x.ms; });
-    $('focusList').innerHTML = settings.focuses.map(parseFocus).filter(f => f.name).map(f => '<button type="button" class="fo' + (f.name === focus ? ' on' : '') + '" data-f="' + esc(f.name) + '"><span class="fh"><span class="fn">' + esc(f.name) + '</span><span class="fm' + (spent[f.name] ? '' : ' zero') + '">' + fmtDur(spent[f.name] || 0) + '</span></span>' + (f.note ? '<span class="fd">' + esc(f.note) + '</span>' : '') + '</button>').join('')
+    return settings.focuses.map(parseFocus).filter(f => f.name).map(f => '<button type="button" class="fo' + (f.name === focus ? ' on' : '') + '" data-f="' + esc(f.name) + '"><span class="fh"><span class="fn">' + esc(f.name) + '</span><span class="fm' + (spent[f.name] ? '' : ' zero') + '">' + fmtDur(spent[f.name] || 0) + '</span></span>' + (f.note ? '<span class="fd">' + esc(f.note) + '</span>' : '') + '</button>').join('')
       + '<button type="button" class="fo none' + (!focus ? ' on' : '') + '" data-f=""><span class="fn">No focus</span></button>';
-    $('focusOv').classList.add('show');
-  });
+  }
+  function openGoing() {   // your destinations first; a plain focus is the second choice, one tap away
+    const od = openDests(), cur = curDest(), free = destCur === '-';
+    $('focusTitle').textContent = od.length ? 'Going to' : 'Focus for now';
+    let h = '';
+    if (od.length) {
+      h += od.map(d => {
+        const t = destToday(d.id), sub = [d.focus, d.step ? 'first step: ' + d.step : ''].filter(Boolean).join(' · ');
+        return '<button type="button" class="fo' + (cur && cur.id === d.id ? ' on' : '') + '" data-dest="' + d.id + '"><span class="fh"><span class="fn">' + esc(d.text) + '</span><span class="fm' + (t.ms ? '' : ' zero') + '">' + fmtDur(t.ms) + '</span></span>' + (sub ? '<span class="fd">' + esc(sub) + '</span>' : '') + '</button>';
+      }).join('');
+      h += '<button type="button" class="fo none' + (free ? ' on' : '') + '" id="goingFree"><span class="fn">Just a focus for now…</span></button><div id="goingFocus"' + (free ? '' : ' hidden') + '>' + focusListHtml() + '</div>';
+    } else h += focusListHtml();
+    $('focusList').innerHTML = h; $('focusOv').classList.add('show');
+  }
+  $('focusPill').addEventListener('click', openGoing);
   $('focusList').addEventListener('click', e => {
+    if (e.target.closest('#goingFree')) { $('goingFocus').hidden = !$('goingFocus').hidden; return; }
     const b = e.target.closest('.fo'); if (!b) return;
-    focus = b.dataset.f; store.set('focus', focus); renderFocus(); $('focusOv').classList.remove('show');
+    if (b.dataset.dest) { destCur = b.dataset.dest; saveDests(); }
+    else { focus = b.dataset.f; store.set('focus', focus); if (openDests().length) { destCur = '-'; saveDests(); } }
+    $('focusOv').classList.remove('show'); if (!run) renderMain(); else renderFocus();
   });
   $('focusOv').addEventListener('click', e => { if (e.target.id === 'focusOv') $('focusOv').classList.remove('show'); });
 
@@ -1284,10 +1304,9 @@
     opt = opt || {}; gridOpen = false;
     unlockAudio();
     // a step toward the destination: the hero and the finish card always are; a grid timer is too unless you've pointed the focus somewhere else
-    const cd = WORK.includes(cat) ? curDest() : null, d = cd && (opt.toward || !cd.focus || !focus || cd.focus === focus) ? cd : null;
-    if (d && d.focus && opt.toward) { focus = d.focus; store.set('focus', focus); }
+    const d = WORK.includes(cat) ? curDest() : null;   // your own focus choice stays yours; a destination's tag travels with its steps
     const now = Date.now(), first = todaysSessions().length === 0;
-    run = { id: uid(), cat, min, startedAt: now, endsAt: now + min * 60000, paused: false, remaining: null, added: 0, goal: d && d.step ? d.step : '', focus: focus || '',
+    run = { id: uid(), cat, min, startedAt: now, endsAt: now + min * 60000, paused: false, remaining: null, added: 0, goal: d && d.step ? d.step : '', focus: d ? (d.focus || '') : (focus || ''),
             dest: d ? d.id : '', word: startWord(cat, first) };
     saveRun(); acquireWake(); renderMain(); musicStart();
   }
@@ -1372,7 +1391,8 @@
       $('grid').hidden = true; $('coldCard').hidden = true;
       $('runPanel').style.setProperty('--c', CAT[run.cat].color);
       $('runCat').textContent = CAT[run.cat].name + ' · ' + run.min + ' min';
-      $('runFocus').textContent = run.focus || ''; $('runFocus').hidden = !run.focus;
+      const rd = run.dest ? dests.find(x => x.id === run.dest) : null, rl = [rd ? '→ ' + shortText(rd.text, 38) : '', run.focus].filter(Boolean).join(' · ');
+      $('runFocus').textContent = rl; $('runFocus').hidden = !rl;
       $('runWord').textContent = run.word || '';
       $('runGoal').value = run.goal || '';
       updateRun();
