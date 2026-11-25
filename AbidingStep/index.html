@@ -226,6 +226,15 @@
   #doneStage .sn { font-size: 0.72rem; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: #ffd36b; }
   #doneStage .sw { font-size: 1.02rem; line-height: 1.4; margin-top: 6px; }
   #doneStage .st { font-size: 0.82rem; color: var(--dim); margin-top: 6px; }
+  #doneEnough { margin: 6px 0 14px; padding: 12px; border-radius: 14px; background: color-mix(in srgb, var(--accent) 12%, var(--el2)); border: 1px solid color-mix(in srgb, var(--accent) 50%, transparent); }
+  #doneEnough .sn { font-size: 0.72rem; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: var(--accent); }
+  #doneEnough .sw { font-size: 0.98rem; line-height: 1.4; margin-top: 6px; }
+  #loadCard { margin: 0 0 12px; padding: 12px 13px; border-radius: 12px; border: 1px solid var(--bd); background: var(--el); font-size: 0.84rem; line-height: 1.45; color: var(--dim); }
+  #loadCard b { color: var(--tx); font-weight: 600; }
+  .lcRow { display: flex; align-items: center; gap: 8px; margin-top: 8px; }
+  .lcRow .lcn { flex: 1; min-width: 0; color: var(--tx); font-size: 0.88rem; line-height: 1.3; }
+  .lcRow .lcn small { display: block; color: var(--faint); font-size: 0.74rem; margin-top: 1px; }
+  .lcRow button { flex: none; min-height: 34px; padding: 0 12px; border-radius: 10px; border: 1px solid var(--bd); background: var(--el2); font-size: 0.78rem; font-weight: 600; color: var(--dim); }
   #doneWord { color: var(--dim); font-style: italic; margin: 8px 8px 14px; font-size: 0.95rem; line-height: 1.35; }
   #doneCard .nx button .k { display: block; font-size: 0.64rem; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; opacity: 0.8; margin-bottom: 2px; }
   #doneCard .nx button.full { height: 62px; }
@@ -429,6 +438,7 @@
   <div class="sheetHead"><h2>Destinations</h2><button class="primary" id="destClose" type="button">Done</button></div>
   <div class="sheetBody">
     <p class="hint">Where do you want to get to? One to three places. Every step you take here leads toward the one marked <b>now</b>, and a destination stays until you reach it or drop it.</p>
+    <div id="loadCard" hidden></div>
     <div id="destList"></div>
     <h3 id="destFormTitle">Add a destination</h3>
     <input class="sInput" id="destText" type="text" maxlength="90" placeholder="Where do you want to get to?" enterkeyhint="done" autocomplete="off" autocapitalize="sentences">
@@ -559,7 +569,7 @@
 </div>
 
 <!-- timer finished -->
-<div id="doneOv"><div id="doneCard"><div class="big" id="doneBig"></div><div class="goal" id="doneGoal" hidden></div><div class="sub" id="doneSub" style="margin-bottom:6px;"></div><div id="doneStage" hidden></div><div id="doneWord" hidden></div><div class="nx" id="doneNx"></div><button id="doneKeep" type="button" hidden>Keep what I wrote in my note</button><button id="doneReached" type="button" hidden></button><button class="close" id="doneClose" type="button">Done</button></div></div>
+<div id="doneOv"><div id="doneCard"><div class="big" id="doneBig"></div><div class="goal" id="doneGoal" hidden></div><div class="sub" id="doneSub" style="margin-bottom:6px;"></div><div id="doneStage" hidden></div><div id="doneEnough" hidden></div><div id="doneWord" hidden></div><div class="nx" id="doneNx"></div><button id="doneKeep" type="button" hidden>Keep what I wrote in my note</button><button id="doneReached" type="button" hidden></button><button class="close" id="doneClose" type="button">Done</button></div></div>
 
 <div id="confetti"></div>
 
@@ -1235,8 +1245,10 @@
   function destToday(id) { let ms = 0, n = 0; todaysSessions().forEach(x => { if (x.dest === id && WORK.includes(x.cat)) { ms += x.ms; n++; } }); return { ms, n }; }
   // a destination can carry a weekly time (a budget of attention, not a quota): the week's remainder spread over the work days left, with today's share rounded up to 5 minutes and never more than 2 hours
   function weekDestMs(id, d) { const ws = weekStartMs(d); let ms = 0; sessions.forEach(x => { if (x.dest === id && x.start >= ws && WORK.includes(x.cat)) ms += x.ms; }); return ms; }
+  const weekKey = d => dkey(new Date(weekStartMs(d)));
+  const destSkipped = (dst, d) => dst.skipWeek === weekKey(d);   // "not this week": set aside until the next one begins
   function destShare(dst, d) {
-    const goal = (dst.goal || 0) * 60000; if (!goal || !targetsOn()) return null;
+    const goal = (dst.goal || 0) * 60000; if (!goal || !targetsOn() || destSkipped(dst, d)) return null;
     const now = d || new Date(), key = dkey(now), wk = weekDestMs(dst.id, now);
     let todayMs = 0; sessions.forEach(x => { if (x.dest === dst.id && WORK.includes(x.cat) && dkey(new Date(x.start)) === key) todayMs += x.ms; });
     const left = workDaysLeft(now), isWork = (settings.workDays || []).includes(now.getDay()), weekLeft = Math.max(0, goal - wk);
@@ -1244,6 +1256,7 @@
     return { goal, weekMs: wk, weekLeft, todayMs, share, remaining: Math.max(0, share - todayMs) };
   }
   function shareText(dst, d) {   // soft, never "behind": what the week looks like and, when it is a work day, about how much today would keep it comfortable
+    if (dst.goal && targetsOn() && destSkipped(dst, d)) return 'set aside this week';
     const sh = destShare(dst, d); if (!sh) return '';
     const wk = 'this week ' + fmtDur(sh.weekMs) + ' of ' + fmtDur(sh.goal);
     if (sh.weekLeft <= 0) return 'goal met this week';
@@ -1255,6 +1268,44 @@
     const sc = od.map(x => { const sh = destShare(x); return { x, r: sh ? sh.remaining : 0 }; }), max = Math.max(...sc.map(y => y.r));
     let best = max > 0 ? sc.filter(y => y.r === max) : sc; if (best.length > 1 && cur) best = best.filter(y => y.x.id !== cur.id);
     return best[Math.floor(Math.random() * best.length)].x;
+  }
+
+  // ===== load check and "enough for today": gentle arithmetic over the weekly goals, never a verdict =====
+  const dayWorkMs = () => (settings.barHours || 8) * 3600000 * 0.75;   // about three quarters of the day goal is working steps; the rest is rests and breaks
+  function workMsOn(d) { const k = dkey(d || new Date()); let ms = 0; sessions.forEach(x => { if (WORK.includes(x.cat) && dkey(new Date(x.start)) === k) ms += x.ms; }); return ms; }
+  function loadCheck(d) {   // what the week's goals still ask for, against the work time the rest of the week holds
+    const now = d || new Date(); if (!targetsOn()) return null;
+    const left = workDaysLeft(now), isWork = (settings.workDays || []).includes(now.getDay()); if (left <= 0) return null;
+    const per = dayWorkMs(), cap = (isWork ? Math.max(0, per - workMsOn(now)) : 0) + Math.max(0, left - (isWork ? 1 : 0)) * per;
+    let need = 0; const parts = [], skipped = [], tagged = {};
+    openDests().forEach(x => {
+      if (!x.goal) return;
+      if (destSkipped(x, now)) { skipped.push(x); return; }
+      const n = Math.max(0, x.goal * 60000 - weekDestMs(x.id, now)); need += n; if (n) parts.push({ d: x, need: n });
+      if (x.focus) tagged[x.focus] = (tagged[x.focus] || 0) + n;   // its steps carry the focus tag, so a focus time doesn't count that time twice
+    });
+    Object.keys(settings.focusGoals || {}).forEach(name => { const g = settings.focusGoals[name]; if (!g) return; need += Math.max(0, Math.max(0, g * 60000 - weekFocusMs(name, now)) - (tagged[name] || 0)); });
+    return { need, cap, over: need > cap, parts, skipped };
+  }
+  function enoughToday(d) {   // every destination's share for today is done, on a work day, with some real work behind it: an offer to stop, never a stop
+    const now = d || new Date(); if (!targetsOn() || !(settings.workDays || []).includes(now.getDay())) return false;
+    const gs = openDests().map(x => destShare(x, now)).filter(Boolean);
+    return gs.length > 0 && gs.every(g => g.remaining <= 0) && workMsOn(now) >= 60000;
+  }
+  const fmtH = ms => fmtDur(ms).replace(/ 00m$/, '');
+  function renderLoadCard() {
+    const el = $('loadCard'), lc = loadCheck(); if (!lc || (!lc.over && !lc.skipped.length)) { el.hidden = true; return; }
+    let h = '';
+    if (lc.over) {
+      h += 'Together these goals ask for about <b>' + fmtH(lc.need) + '</b>, and about <b>' + fmtH(lc.cap) + '</b> of the week is left for steps. That is more than this week holds. You could set one aside until next week.';
+      lc.parts.forEach(p => { h += '<div class="lcRow"><div class="lcn">' + esc(shortText(p.d.text, 34)) + '<small>' + fmtH(p.need) + ' still open</small></div><button type="button" data-lc="skip" data-id="' + p.d.id + '">Not this week</button></div>'; });
+      if (!lc.parts.length) h += '<br>These come from the weekly times in Settings.';
+    }
+    if (lc.skipped.length) {
+      h += (lc.over ? '<div style="margin-top:10px;"></div>' : '') + 'Set aside until next week:';
+      lc.skipped.forEach(x => { h += '<div class="lcRow"><div class="lcn">' + esc(shortText(x.text, 34)) + '</div><button type="button" data-lc="back" data-id="' + x.id + '">Bring back</button></div>'; });
+    }
+    el.innerHTML = h; el.hidden = false;
   }
 
   // ===== energy zones: "peak 8–11 am, steady 11–2, slump 2–4, second wind 4–7" → hour ranges with a level =====
@@ -1308,13 +1359,14 @@
     if (left > 0 && sg.min > left) sg.min = Math.max(3, Math.floor(left / 5) * 5);
     return sg;
   }
-  const isFunctional = sg => sg.guard;   // these labels say what is happening, so they show even with the abiding lines off
+  const isFunctional = sg => sg.guard || sg.enough;   // these labels say what is happening, so they show even with the abiding lines off
   const nextLabel = sg => (settings.words || isFunctional(sg)) ? sg.k : (sg.first ? 'Start' : 'Next step');
 
   // The next step: guardrails first, then the momentum engine (small to start, a little bigger each time, rest after a real chunk).
   // With a destination set, every work step is "toward" it. `cold` = nothing yet today, or 90+ minutes since the last timer.
   function suggestNext() {
-    const z = zoneNow(), sg = zoned(baseSuggest(z), z);
+    const z = zoneNow(); let sg = zoned(baseSuggest(z), z);
+    if (WORK.includes(sg.cat) && !sg.guard && enoughToday()) sg = { cat: 'rest', min: 10, k: 'Enough for today', enough: true };   // today's share of every goal is done: rest is the offer
     const offered = routineFor(sg.cat);   // a rest or a break can be a guided one
     if (offered) { const rt = routines().find(r => r.name === offered); if (rt) sg.routine = rt.name; }
     return sg;
@@ -1578,15 +1630,16 @@ Immanuel
     if (!run) return;
     if (run.soft) { routineEnd(); return; }
     const r = run, el = totalMs() - Math.max(0, remainingMs());
-    const st = el >= 60000 ? logSession(r, el, false, Date.now()) : 0;   // under a minute = a mis-tap, not logged
+    const was = el >= 60000 && enoughToday(), st = el >= 60000 ? logSession(r, el, false, Date.now()) : 0;   // under a minute = a mis-tap, not logged
+    const en = el >= 60000 && !was && enoughToday();
     run = null; store.set('run', null); releaseWake(); musicStop(); renderMain();
-    if (st) showDone(r, 0, st, { stopped: true, ms: el });
+    if (st || en) showDone(r, 0, st, { stopped: true, ms: el, enough: en });
   }
   function completeTimer(lateMs) {
     const r = run, total = r.min * 60000 + r.added;
-    const st = logSession(r, total, true, r.endsAt);
+    const was = enoughToday(), st = logSession(r, total, true, r.endsAt), en = !was && enoughToday();   // did this step finish today's share?
     run = null; store.set('run', null); releaseWake(); musicStop(); renderMain();
-    showDone(r, lateMs, st, {});
+    showDone(r, lateMs, st, { enough: en });
   }
   // ----- routine runs: each step is a soft timer. Done moves straight on to the next step; past the target is allowed; early is the ideal. -----
   function softChime() {   // one gentle note at the target, and never again
@@ -1814,6 +1867,8 @@ Immanuel
         + '<div class="st">' + (isLast ? 'Anything more is a gift, and rest counts too.' : 'Next stage at ' + fmtC(st[stage] * 60000)) + '</div>';
       burst(isLast);
     }
+    $('doneEnough').hidden = !info.enough;
+    if (info.enough) $('doneEnough').innerHTML = '<div class="sn">Enough for today</div><div class="sw">That is today\'s share of everything you set for this week. It is enough for today. Anything more is a gift.</div>';
     const sg = suggestNext(), alt = sg.cat === 'rest' ? ['break', 5] : ['rest', 5];
     const due = dueFocus(), fs = due ? focusStepFor(due) : null;   // something still open this week is offered in place of the plain rest, never pushed
     $('doneNx').innerHTML = primaryBtn(sg) + nxBtn(r.cat, r.min, 'Again', false) + (fs ? nxBtn(fs.cat, fs.min, 'Or', false, due.name, due.name) : nxBtn(alt[0], alt[1], 'Or', false));
@@ -1909,6 +1964,7 @@ Immanuel
         + '<span class="dt">' + (open ? [d.focus, cur && cur.id === d.id ? 'now' : '', t.n ? 'today ' + fmtDur(t.ms) + ' · ' + t.n + ' step' + (t.n === 1 ? '' : 's') : '', shareText(d)].filter(Boolean).join(' · ') : 'reached today ✓') + '</span></button>'
         + (open ? '<div class="dbtns"><button type="button" data-act="reached">Reached</button><button type="button" data-act="edit">Edit</button><button type="button" data-act="drop">Drop</button></div>' : '') + '</div>';
     }).join('') : '<div class="none">No destinations yet.</div>';
+    renderLoadCard();
   }
   let editId = '', chipSel = '', goalSel = 0;
   const DGOALS = [[0, 'None'], [60, '1h'], [120, '2h'], [180, '3h'], [300, '5h'], [480, '8h']];
@@ -1959,6 +2015,11 @@ Immanuel
     }
     else if (act === 'reached') { const d = markReached(id); renderDestList(); if (d) { closeSheet('sheetDest'); showReached(d); return; } }
     renderDestList();
+  });
+  $('loadCard').addEventListener('click', e => {
+    const b = e.target.closest('[data-lc]'); if (!b) return; const d = dests.find(x => x.id === b.dataset.id); if (!d) return;
+    if (b.dataset.lc === 'skip') d.skipWeek = weekKey(); else delete d.skipWeek;
+    saveDests(); renderDestList();
   });
   $('destPasteBtn').addEventListener('click', () => {
     const list = parseDests($('destPaste').value), st = $('destStatus');
