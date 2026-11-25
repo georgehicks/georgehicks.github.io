@@ -234,6 +234,24 @@
   .lookSample .tbtn { pointer-events: none; height: 50px; }
   .dimSample { padding: 10px 14px; background: var(--el); border: 1px solid var(--bd); border-radius: 14px; font-size: 0.95rem; margin-bottom: 4px; opacity: var(--dimI, 0.4); }
 
+  /* ===== cold start: the plan (or a nudge to make one) instead of the wall of buttons ===== */
+  #coldCard { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; background: var(--el); border: 1px solid var(--bd); border-radius: 18px; padding: 12px 12px 4px; }
+  .ccHead { display: flex; justify-content: space-between; align-items: center; font-size: 0.72rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--faint); margin: 0 2px 8px; }
+  .ccHead button { height: 30px; padding: 0 12px; border-radius: 9px; border: 1px solid var(--bd); background: var(--el2); font-size: 0.78rem; font-weight: 600; color: var(--dim); text-transform: none; letter-spacing: 0; }
+  #ccBody { flex: 1 1 auto; min-height: 0; overflow: hidden; }
+  .cr { display: flex; align-items: center; gap: 10px; padding: 9px 10px; border-radius: 11px; margin-bottom: 5px; font-size: 0.95rem; border: 1px solid transparent; }
+  .cr i { width: 10px; height: 10px; border-radius: 3px; background: var(--c); flex: none; opacity: 0.85; }
+  .cr .cn { flex: 1; font-weight: 600; } .cr .cf { font-size: 0.78rem; color: var(--dim); } .cr .cs { font-size: 0.74rem; color: var(--faint); min-width: 54px; text-align: right; }
+  .cr.next { background: color-mix(in srgb, var(--c) 14%, var(--el2)); border-color: color-mix(in srgb, var(--c) 45%, transparent); }
+  .cr.done { opacity: 0.45; } .cr.done .cn { text-decoration: line-through; } .cr.skip { opacity: 0.35; }
+  .ccEmpty { color: var(--dim); font-size: 0.92rem; line-height: 1.5; margin: 6px 4px 14px; }
+  .ccMore { color: var(--faint); font-size: 0.8rem; margin: 2px 10px; }
+  #ccOpenGrid { flex: none; background: none; border: 0; color: var(--faint); font-size: 0.9rem; padding: 10px 8px 12px; text-decoration: underline; text-underline-offset: 3px; }
+  .prow { width: 100%; display: flex; align-items: center; gap: 10px; padding: 11px 13px; margin-bottom: 6px; background: var(--el); border: 1.5px solid color-mix(in srgb, var(--c) 40%, var(--bd)); border-radius: 12px; text-align: left; font-size: 0.95rem; }
+  .prow i { width: 10px; height: 10px; border-radius: 3px; background: var(--c); flex: none; }
+  .prow .pn { flex: 1; font-weight: 600; } .prow .pf { font-size: 0.8rem; color: var(--dim); } .prow .ps { font-size: 0.74rem; color: var(--faint); min-width: 58px; text-align: right; }
+  .prow.done { opacity: 0.5; } .prow.skip { opacity: 0.4; }
+
   /* done overlay */
   #doneOv { position: fixed; inset: 0; z-index: 90; background: rgba(8,9,13,0.88); display: none; align-items: center; justify-content: center; padding: 20px; }
   #doneOv.show { display: flex; }
@@ -289,11 +307,18 @@
     <button id="nextBtn" type="button"><span class="k" id="nextK">Next step</span><span class="v" id="nextV"></span></button>
   </div>
 
+  <section id="coldCard" hidden>
+    <div class="ccHead"><span id="ccTitle">Today's plan</span><button id="ccEdit" type="button">Edit</button></div>
+    <div id="ccBody"></div>
+    <button id="ccOpenGrid" type="button">Choose something else</button>
+  </section>
+
   <main id="grid"></main>
 </div>
 
 <nav id="bottom">
   <button id="btnCal" type="button">Calendar</button>
+  <button id="btnPlan" type="button">Plan</button>
   <button id="btnSet" type="button">Settings</button>
 </nav>
 
@@ -321,6 +346,22 @@
   </div>
 </div>
 
+<!-- today's plan -->
+<div class="sheet" id="sheetPlan">
+  <div class="sheetHead"><h2>Today's plan</h2><button class="primary" id="planClose" type="button">Done</button></div>
+  <div class="sheetBody">
+    <p class="hint">Plan the day wherever you think best, then bring it here as lines: <b>mode, minutes, and a focus if you like</b>. The app serves it one block at a time, adds rests so you don't run on empty, and clears itself at midnight. Modes: light, deep, think, rest, break.</p>
+    <textarea class="sInput" id="planText" style="min-height:150px;" placeholder="light 3 Plan&#10;deep 45 Make&#10;rest 10&#10;deep 25 Make&#10;light 15 Reply&#10;break 5" autocapitalize="none" autocorrect="off" spellcheck="false"></textarea>
+    <div class="status" id="planStatus"></div>
+    <div id="planList"></div>
+    <p class="hint">Tap a block to skip it (tap again to bring it back).</p>
+    <button class="btn full" id="planCopy" type="button" style="margin-bottom:8px;">Copy a planning prompt for Claude</button>
+    <textarea class="sInput" id="planPromptBox" readonly hidden style="min-height:180px;"></textarea>
+    <div class="status" id="planCopyStatus"></div>
+    <button class="btn full" id="planClear" type="button">Clear today's plan</button>
+  </div>
+</div>
+
 <!-- settings -->
 <div class="sheet" id="sheetSet">
   <div class="sheetHead"><h2>Settings</h2><button id="setClose" type="button">Close</button></div>
@@ -342,6 +383,7 @@
     <div class="srow"><span>Day ends</span><select class="sSel" id="setEnd"></select></div>
     <div class="srow"><span>Day goal (last stage)</span><select class="sSel" id="setBar"></select></div>
     <p class="hint">The bar fills toward the next of ten stages that climb to this goal, and each stage is celebrated. Rest and breaks count.</p>
+    <div class="srow"><span>Rest after about</span><select class="sSel" id="setRestAfter"><option value="0">Don't prompt</option><option value="45">45 min of work</option><option value="60">60 min of work</option><option value="75">75 min of work</option><option value="90">90 min of work</option></select></div>
     <div class="srow"><span>Week starts on</span><select class="sSel" id="setWeek"><option value="1">Monday</option><option value="0">Sunday</option><option value="6">Saturday</option></select></div>
 
     <h3>Quiet levels</h3>
@@ -475,7 +517,7 @@
   function parseFocus(str) { const m = String(str).split(/\s+[—–-]\s+|:\s+/); return { name: m[0].trim(), note: m.slice(1).join(' — ').trim() }; }
 
   // ===== state =====
-  const settings = Object.assign({ dayStart: 6, dayEnd: 22, weekStart: 1, chime: true, repeat: true, barHours: 8, words: true, wordsFreq: 'most', wordsMine: '', wordsOnlyMine: false, btnI: 40, dimI: 40, musicWhen: 'off', music: 'calm', musicVol: 80, focuses: FOCUS_DEFAULT, alarm: 'chime', icsUrls: '', icsProxy: '' }, store.get('settings', {}));
+  const settings = Object.assign({ dayStart: 6, dayEnd: 22, weekStart: 1, chime: true, repeat: true, barHours: 8, restAfter: 60, words: true, wordsFreq: 'most', wordsMine: '', wordsOnlyMine: false, btnI: 40, dimI: 40, musicWhen: 'off', music: 'calm', musicVol: 80, focuses: FOCUS_DEFAULT, alarm: 'chime', icsUrls: '', icsProxy: '' }, store.get('settings', {}));
   if (!settings.barChosen) settings.barHours = 8;   // 8 h is the default; an auto-saved earlier default doesn't count as a choice
   // an unedited earlier default list moves to the current one; a list you edited is left alone. Selected focus and stored tags are renamed with it
   // (note "Care" meant people in v21 and means the body now, so v21's Care becomes Connect).
@@ -1033,21 +1075,81 @@
   const rungUp = m => RUNGS.find(x => x > m) || RUNGS[RUNGS.length - 1];
   const rungDown = m => { const lower = RUNGS.filter(x => x < m); return lower.length ? lower[lower.length - 1] : RUNGS[0]; };
   function todaysSessions() { const k = dkey(new Date()); return sessions.filter(s => dkey(new Date(s.start)) === k).sort((a, b) => a.start - b.start); }
+  // ===== today's plan: made outside the app, served here one block at a time. Today only — it clears itself at midnight. =====
+  let plan = (() => { const p = store.get('plan', null); if (!p || p.date !== dkey(new Date())) { if (p) store.set('plan', null); return null; } p.state = p.state || {}; return p; })();
+  const savePlan = () => store.set('plan', plan);
+  const MODE_RX = /\b(light(?:\s+action)?|deep\s+think|deep(?:\s+action)?|think|rest|break)\b/;
+  const escRx = x => x.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  // one block per line: a mode word, a number of minutes, and (optionally) one of your focus names — anything else on the line is ignored, so notes are fine
+  function parsePlan(text) {
+    const names = settings.focuses.map(parseFocus).map(f => f.name).filter(Boolean), out = [];
+    String(text || '').split('\n').forEach(raw => {
+      if (out.length >= 24) return;
+      let line = raw.trim().toLowerCase(); if (!line) return;
+      line = line.replace(/^\s*(?:[-*•]|\d+[.)])\s+/, '').replace(/\b\d{1,2}:\d{2}\s*(?:am|pm)?/g, ' ');   // a bullet or "1." prefix, and clock times, are not minutes
+      const mm = line.match(MODE_RX); if (!mm) return;
+      const w = mm[1], cat = w.startsWith('light') ? 'light' : (w === 'think' || w === 'deep think') ? 'think' : w.startsWith('deep') ? 'deep' : w;
+      const nm = line.match(/(?:^|[\s(])(\d{1,3})\s*(?:m|min|mins|minutes)?(?=[\s,.;)]|$)/); if (!nm) return;
+      const min = +nm[1]; if (min < 1 || min > 180) return;
+      const f = names.find(n => new RegExp('\\b' + escRx(n.toLowerCase()) + '\\b').test(line));
+      out.push({ cat, min, focus: f || '' });
+    });
+    return out;
+  }
+  const blockKey = (b, i) => i + '|' + b.cat + '|' + b.min + '|' + (b.focus || '');
+  const planBlocks = () => plan ? parsePlan(plan.text) : [];
+  function nextPlanBlock() { const bl = planBlocks(); for (let i = 0; i < bl.length; i++) if (!plan.state[blockKey(bl[i], i)]) return { b: bl[i], i, n: bl.length }; return null; }
+  // a finished block is credited when it was started from the plan, or when it matches the next block (so using the grid doesn't derail the plan)
+  function planCredit(r, ms) {   // true when that was the last block
+    if (!plan) return false;
+    const bl = planBlocks(); let idx = -1;
+    if (r.planIdx != null) { if (bl[r.planIdx] && !plan.state[blockKey(bl[r.planIdx], r.planIdx)] && ms >= bl[r.planIdx].min * 60000 * 0.6) idx = r.planIdx; }
+    else { const np = nextPlanBlock(); if (np && np.b.cat === r.cat && (!np.b.focus || np.b.focus === r.focus) && ms >= np.b.min * 60000 * 0.6) idx = np.i; }
+    if (idx < 0) return false;
+    plan.state[blockKey(bl[idx], idx)] = 'done'; savePlan();
+    return !nextPlanBlock();
+  }
+
+  // ===== guardrails =====
+  const restAfterMs = () => (settings.restAfter || 0) * 60000;
+  function workStreakMs(list) {   // work since the last rest or break (or a gap of half an hour)
+    let ms = 0;
+    for (let i = list.length - 1; i >= 0; i--) { const x = list[i]; if (!WORK.includes(x.cat)) break; if (i < list.length - 1 && list[i + 1].start - x.end > 30 * 60000) break; ms += x.ms; }
+    return ms;
+  }
+  function fitDay(sg) {   // never start a block that would run past the end of the day
+    if (!WORK.includes(sg.cat)) return sg;
+    const left = Math.floor((settings.dayEnd - nowHours()) * 60);
+    if (left > 0 && sg.min > left) sg.min = Math.max(3, Math.floor(left / 5) * 5);
+    return sg;
+  }
+  const isFunctional = sg => sg.plan != null || sg.warm || sg.guard;   // these labels say what is happening, so they show even with the abiding lines off
+  const nextLabel = sg => (settings.words || isFunctional(sg)) ? sg.k : (sg.first ? 'Start' : 'Next step');
+
+  // The next step: guardrails first, then today's plan, then the momentum engine. `cold` = a cold start (nothing yet today, or 90+ minutes since the last timer).
   function suggestNext() {
     const now = Date.now(), list = todaysSessions(), last = list[list.length - 1];
     if (nowHours() >= settings.dayEnd) return { cat: 'rest', min: 15, k: 'Evening — rest with Him' };
-    if (!last) return { cat: 'light', min: 3, k: 'Begin with Him', first: true };
-    if (now - last.end > 90 * 60000) return { cat: 'light', min: 3, k: 'Pick it back up' };
+    const cold = !last || now - last.end > 90 * 60000, streak = workStreakMs(list);
+    if (!cold && WORK.includes(last.cat) && restAfterMs() && streak >= restAfterMs()) return { cat: 'rest', min: streak >= restAfterMs() * 1.5 ? 15 : 10, k: 'Pace yourself — rest first', guard: true };
+    const np = nextPlanBlock();
+    if (np) {
+      const b = np.b;
+      if (cold && WORK.includes(b.cat) && b.min >= 15) return fitDay({ cat: 'light', min: 3, k: 'Warm up → ' + CAT[b.cat].name + ' ' + b.min, cold: true, warm: true, focus: b.focus, first: !last });
+      return fitDay({ cat: b.cat, min: b.min, k: 'Plan ' + (np.i + 1) + '/' + np.n + (b.focus ? ' · ' + b.focus : ''), plan: np.i, focus: b.focus, cold });
+    }
+    if (!last) return fitDay({ cat: 'light', min: 3, k: 'Begin with Him', first: true, cold: true });
+    if (cold) return fitDay({ cat: 'light', min: 3, k: 'Pick it back up', cold: true });
     const lm = Math.max(1, Math.round(last.ms / 60000));
-    if (!last.done) return WORK.includes(last.cat) ? { cat: last.cat, min: rungDown(last.min), k: 'A smaller step' } : { cat: last.cat, min: 5, k: 'Settle in' };
+    if (!last.done) return fitDay(WORK.includes(last.cat) ? { cat: last.cat, min: rungDown(last.min), k: 'A smaller step' } : { cat: last.cat, min: 5, k: 'Settle in' });
     if (WORK.includes(last.cat)) {
       if (lm >= 25) return { cat: 'rest', min: 10, k: 'Rest counts too' };
       if (lm >= 15) return { cat: 'break', min: 5, k: 'A short pause' };
-      return { cat: last.cat === 'light' && lm >= 5 ? 'deep' : last.cat, min: rungUp(lm), k: 'Keep the momentum' };
+      return fitDay({ cat: last.cat === 'light' && lm >= 5 ? 'deep' : last.cat, min: rungUp(lm), k: 'Keep the momentum' });
     }
     const w = list.slice().reverse().find(x => WORK.includes(x.cat));   // after rest or a break: back to the last kind of work
-    if (!w) return { cat: 'light', min: 3, k: 'Back, with Him' };
-    return { cat: w.cat, min: Math.min(25, Math.max(5, rungUp(Math.max(0, Math.round(w.ms / 60000) - 1)))), k: 'Back at it, with Him' };
+    if (!w) return fitDay({ cat: 'light', min: 3, k: 'Back, with Him' });
+    return fitDay({ cat: w.cat, min: Math.min(25, Math.max(5, rungUp(Math.max(0, Math.round(w.ms / 60000) - 1)))), k: 'Back at it, with Him' });
   }
 
   // ===== timer grid =====
@@ -1082,11 +1184,11 @@
   function renderNext() {
     sug = suggestNext(); const c = CAT[sug.cat];
     $('nextBtn').style.setProperty('--c', c.color);
-    $('nextK').textContent = settings.words ? sug.k : (sug.first ? 'Start' : 'Next step');
+    $('nextK').textContent = nextLabel(sug);
     $('nextV').textContent = c.name + ' · ' + sug.min + ' min';
   }
   function renderFocus() { $('focusVal').textContent = focus || 'pick one'; $('focusPill').classList.toggle('unset', !focus); }
-  $('nextBtn').addEventListener('click', () => { if (!run && sug) startTimer(sug.cat, sug.min); });
+  $('nextBtn').addEventListener('click', () => { if (!run && sug) startTimer(sug.cat, sug.min, { plan: sug.plan, focus: sug.focus }); });
   $('focusPill').addEventListener('click', () => {
     const spent = {};   // today's minutes per focus — work only, so rest and breaks don't pad whatever was selected
     todaysSessions().forEach(x => { const nm = FOCUS_ALIAS[x.focus] || x.focus; if (WORK.includes(x.cat) && nm) spent[nm] = (spent[nm] || 0) + x.ms; });
@@ -1114,11 +1216,14 @@
   document.addEventListener('touchend', tapMusic, { passive: true });
   document.addEventListener('click', tapMusic, { passive: true });
 
-  function startTimer(cat, min) {
+  let gridOpen = false;   // the grid is hidden at a cold start; "Choose something else" opens it until the next timer starts
+  function startTimer(cat, min, opt) {
+    opt = opt || {}; gridOpen = false;
     unlockAudio();
+    if (opt.focus && WORK.includes(cat)) { focus = opt.focus; store.set('focus', focus); }   // a plan block sets the focus for you
     const now = Date.now(), first = todaysSessions().length === 0;
     run = { id: uid(), cat, min, startedAt: now, endsAt: now + min * 60000, paused: false, remaining: null, added: 0, goal: '', focus: focus || '',
-            word: startWord(cat, first) };
+            planIdx: opt.plan != null ? opt.plan : null, word: startWord(cat, first) };
     saveRun(); acquireWake(); renderMain(); musicStart();
   }
   function pauseResume() {
@@ -1144,14 +1249,15 @@
     if (!run) return;
     const r = run, el = totalMs() - Math.max(0, remainingMs());
     const st = el >= 60000 ? logSession(r, el, false, Date.now()) : 0;   // under a minute = a mis-tap, not logged
+    if (el >= 60000) planCredit(r, el);
     run = null; store.set('run', null); releaseWake(); musicStop(); renderMain();
     if (st) showDone(r, 0, st, { stopped: true, ms: el });
   }
   function completeTimer(lateMs) {
     const r = run, total = r.min * 60000 + r.added;
-    const st = logSession(r, total, true, r.endsAt);
+    const st = logSession(r, total, true, r.endsAt), planDone = planCredit(r, total);
     run = null; store.set('run', null); releaseWake(); musicStop(); renderMain();
-    showDone(r, lateMs, st, {});
+    showDone(r, lateMs, st, { planDone });
   }
   $('runPause').addEventListener('click', pauseResume);
   $('runAdd').addEventListener('click', addMinute);
@@ -1171,21 +1277,45 @@
     document.title = txt + ' · ' + CAT[run.cat].name;
     $('lsTime').textContent = CAT[run.cat].name + ' · ' + txt + (run.paused ? ' (paused)' : ' left');
   }
+  function renderColdCard() {
+    const bl = planBlocks(), body = $('ccBody');
+    $('ccEdit').textContent = bl.length ? 'Edit' : 'Add a plan';
+    if (!bl.length) {
+      $('ccTitle').textContent = 'No plan yet';
+      body.innerHTML = '<div class="ccEmpty">Think the day through wherever you think best, then bring it here as a few lines. This will serve it one step at a time, and warm you up into it.</div>';
+      return;
+    }
+    const doneN = bl.filter((b, i) => plan.state[blockKey(b, i)] === 'done').length;
+    $('ccTitle').textContent = "Today's plan · " + doneN + ' of ' + bl.length + ' done';
+    const np = nextPlanBlock(), from = Math.max(0, (np ? np.i : bl.length) - 1), shown = bl.slice(from, from + 6);
+    body.innerHTML = shown.map((b, j) => {
+      const i = from + j, st = plan.state[blockKey(b, i)], isNext = np && np.i === i;
+      return '<div class="cr ' + (st || (isNext ? 'next' : '')) + '" style="--c:' + CAT[b.cat].color + '"><i></i><span class="cn">' + CAT[b.cat].name + ' · ' + b.min + ' min</span>'
+        + (b.focus ? '<span class="cf">' + esc(b.focus) + '</span>' : '') + '<span class="cs">' + (st === 'done' ? '✓' : st === 'skip' ? 'skipped' : isNext ? 'next' : '') + '</span></div>';
+    }).join('') + (bl.length > from + 6 ? '<div class="ccMore">+ ' + (bl.length - from - 6) + ' more</div>' : '');
+  }
   function renderMain() {
     const on = !!run;
     $('hdr').classList.toggle('dim', on); $('notesBar').classList.toggle('dim', on);
     if (!on) $('runGoal').blur();
-    $('runPanel').hidden = !on; $('grid').hidden = on; $('actionRow').hidden = on;
+    $('runPanel').hidden = !on; $('actionRow').hidden = on;
     if (on) {
+      $('grid').hidden = true; $('coldCard').hidden = true;
       $('runPanel').style.setProperty('--c', CAT[run.cat].color);
       $('runCat').textContent = CAT[run.cat].name + ' · ' + run.min + ' min';
       $('runFocus').textContent = run.focus || ''; $('runFocus').hidden = !run.focus;
       $('runWord').textContent = run.word || '';
       $('runGoal').value = run.goal || '';
       updateRun();
-    } else { document.title = 'Abiding Step'; renderCounts(); renderNext(); renderFocus(); }
+    } else {
+      document.title = 'Abiding Step'; renderCounts(); renderNext(); renderFocus();
+      const cold = !!(sug && sug.cold) && !gridOpen;   // a cold start gets the plan and ONE next step, not thirty buttons
+      $('grid').hidden = cold; $('coldCard').hidden = !cold;
+      if (cold) renderColdCard();
+    }
     renderNotesBar(); renderHeader();
   }
+  $('ccOpenGrid').addEventListener('click', () => { gridOpen = true; renderMain(); });
 
   // ===== finished overlay (+ the stage celebration) =====
   let repeatTimer = null, repeatN = 0;
@@ -1217,8 +1347,11 @@
       burst(isLast);
     }
     const sg = suggestNext(), alt = sg.cat === 'rest' ? ['break', 5] : ['rest', 5];
-    const btn = (cat, min, k, full) => '<button' + (full ? ' class="full"' : '') + ' style="--c2:' + CAT[cat].color + '" data-cat="' + cat + '" data-min="' + min + '" type="button"><span class="k">' + k + '</span>' + CAT[cat].name + (full ? ' · ' + min + ' min' : ' ' + min + 'm') + '</button>';
-    $('doneNx').innerHTML = btn(sg.cat, sg.min, settings.words ? sg.k : 'Next step', true) + btn(r.cat, r.min, 'Again', false) + btn(alt[0], alt[1], 'Or', false);
+    const btn = (cat, min, k, full, ex) => '<button' + (full ? ' class="full"' : '') + ' style="--c2:' + CAT[cat].color + '" data-cat="' + cat + '" data-min="' + min + '"'
+      + (ex && ex.plan != null ? ' data-plan="' + ex.plan + '"' : '') + (ex && ex.focus ? ' data-focus="' + esc(ex.focus) + '"' : '')
+      + ' type="button"><span class="k">' + esc(k) + '</span>' + CAT[cat].name + (full ? ' · ' + min + ' min' : ' ' + min + 'm') + '</button>';
+    $('doneNx').innerHTML = btn(sg.cat, sg.min, nextLabel(sg), true, sg) + btn(r.cat, r.min, 'Again', false) + btn(alt[0], alt[1], 'Or', false);
+    if (info.planDone) { $('doneWord').hidden = false; $('doneWord').textContent = "That was the last block of today's plan. Well kept."; }
     $('doneOv').classList.add('show');
     clearTimeout(repeatTimer); repeatN = 0;
     if (!stopped && lateMs < 60000) {
@@ -1230,7 +1363,7 @@
   $('doneClose').addEventListener('click', closeDone);
   $('doneNx').addEventListener('click', e => {
     const b = e.target.closest('button'); if (!b) return;
-    closeDone(); startTimer(b.dataset.cat, +b.dataset.min);
+    closeDone(); startTimer(b.dataset.cat, +b.dataset.min, { plan: b.dataset.plan != null ? +b.dataset.plan : undefined, focus: b.dataset.focus });
   });
 
   // ===== sheets =====
@@ -1294,6 +1427,56 @@
   $('calToday').addEventListener('click', () => openCal());
   $('calClose').addEventListener('click', () => closeSheet('sheetCal'));
   $('btnCal').addEventListener('click', () => openCal());
+
+  // ----- the plan sheet -----
+  function renderPlanList() {
+    const bl = planBlocks(), tot = bl.reduce((a, b) => a + b.min, 0);
+    $('planStatus').textContent = bl.length ? bl.length + ' block' + (bl.length === 1 ? '' : 's') + ' understood · ' + fmtDur(tot * 60000) + ' in all' : (plan && plan.text.trim() ? 'No blocks understood yet. One per line, like: deep 45 Make' : '');
+    $('planList').innerHTML = bl.map((b, i) => {
+      const st = plan.state[blockKey(b, i)];
+      return '<button type="button" class="prow ' + (st || '') + '" data-i="' + i + '" style="--c:' + CAT[b.cat].color + '"><i></i><span class="pn">' + CAT[b.cat].name + ' · ' + b.min + ' min</span>'
+        + (b.focus ? '<span class="pf">' + esc(b.focus) + '</span>' : '') + '<span class="ps">' + (st === 'done' ? '✓ done' : st === 'skip' ? 'skipped' : '') + '</span></button>';
+    }).join('');
+  }
+  function openPlan() { $('planText').value = plan ? plan.text : ''; $('planPromptBox').hidden = true; $('planCopyStatus').textContent = ''; renderPlanList(); openSheet('sheetPlan'); $('sheetPlan').querySelector('.sheetBody').scrollTop = 0; }
+  $('planText').addEventListener('input', () => {
+    const t = $('planText').value;
+    if (!t.trim()) { plan = null; store.set('plan', null); }
+    else { if (!plan) plan = { date: dkey(new Date()), text: '', state: {} }; plan.text = t; savePlan(); }
+    renderPlanList();
+  });
+  $('planList').addEventListener('click', e => {
+    const r = e.target.closest('.prow'); if (!r || !plan) return;
+    const bl = planBlocks(), i = +r.dataset.i, k = blockKey(bl[i], i);
+    if (!plan.state[k]) plan.state[k] = 'skip'; else delete plan.state[k];
+    savePlan(); renderPlanList();
+  });
+  $('planClear').addEventListener('click', () => { plan = null; store.set('plan', null); $('planText').value = ''; renderPlanList(); });
+  $('planClose').addEventListener('click', () => { $('planText').blur(); closeSheet('sheetPlan'); gridOpen = false; if (!run) renderMain(); });
+  $('btnPlan').addEventListener('click', openPlan);
+  $('ccEdit').addEventListener('click', openPlan);
+  function planPrompt() {
+    const names = settings.focuses.map(parseFocus).map(f => f.name).filter(Boolean).join(', '), now = new Date();
+    return [
+      "Help me plan today as a sequence of timed blocks for a focus-timer app. If I haven't told you what's on my plate, ask me first. Then reply with ONLY the plan, one block per line, exactly in this form:",
+      '',
+      '<mode> <minutes> <focus>',
+      '',
+      'Modes: light (easy, low-effort action), deep (hard, focused action), think (deep thinking), rest, break.',
+      'Focus (optional; use these exact words): ' + names + '.',
+      'Minutes: whole numbers, usually 3, 5, 10, 15, 25 or 45.',
+      '',
+      'Rules: begin with a light block of 3 to 5 minutes to warm up. Put the hardest work early. Keep deep blocks to 25 or 45 minutes. After about ' + (settings.restAfter || 60) + ' minutes of work add a rest of 10 minutes, and use short breaks between smaller blocks. Fit the day between ' + fmtHour(settings.dayStart) + ' and ' + fmtHour(settings.dayEnd) + ', roughly ' + settings.barHours + ' hours of blocks counting rests. No other text, no explanations, no numbering.',
+      '',
+      "It's " + now.toLocaleDateString('en-US', { weekday: 'long' }) + ' ' + fmtHM(nowHours(now)) + '. Here is what is on my plate today:',
+      '',
+    ].join('\n');
+  }
+  $('planCopy').addEventListener('click', async () => {
+    const txt = planPrompt(), st = $('planCopyStatus'), box = $('planPromptBox');
+    try { await navigator.clipboard.writeText(txt); st.textContent = "Copied. Paste it into Claude, add what's on your plate, then paste its answer above."; box.hidden = true; }
+    catch (e) { box.value = txt; box.hidden = false; box.focus(); box.select(); st.textContent = 'Select all of the text below and copy it.'; }
+  });
 
   // ===== calendar import (ICS) — same approach as AbidingSteps, kept in this app's own storage =====
   function loadIcal() {
@@ -1393,7 +1576,7 @@
     $('icsUrls').value = settings.icsUrls; $('icsProxy').value = settings.icsProxy;
     hoursOptions($('setStart'), settings.dayStart); hoursOptions($('setEnd'), settings.dayEnd);
     $('setBar').innerHTML = [2, 3, 4, 5, 6, 8, 10, 12].map(h => '<option value="' + h + '">' + h + ' hours</option>').join(''); $('setBar').value = String(settings.barHours);
-    $('setWeek').value = String(settings.weekStart); $('setChime').checked = settings.chime; $('setRepeat').checked = settings.repeat;
+    $('setRestAfter').value = String(settings.restAfter); $('setWeek').value = String(settings.weekStart); $('setChime').checked = settings.chime; $('setRepeat').checked = settings.repeat;
     $('setBtnI').value = String(settings.btnI); $('setDimI').value = String(settings.dimI); $('btnIv').textContent = settings.btnI + '%'; $('dimIv').textContent = settings.dimI + '%';
     $('setFocuses').value = settings.focuses.join('\n'); $('setWords').checked = settings.words; $('setWordsFreq').value = settings.wordsFreq; $('setWordsMine').value = settings.wordsMine; $('setWordsOnlyMine').checked = settings.wordsOnlyMine; renderWordsCount();
     $('setMusicWhen').value = settings.musicWhen; $('setMusicVol').value = String(settings.musicVol); renderMusicList();
@@ -1412,6 +1595,7 @@
   bind('setStart', () => { settings.dayStart = +$('setStart').value; saveSettings(); renderHeader(); });
   bind('setEnd', () => { settings.dayEnd = +$('setEnd').value; saveSettings(); renderHeader(); });
   bind('setBar', () => { settings.barHours = +$('setBar').value; settings.barChosen = true; saveSettings(); renderCounts(); });
+  bind('setRestAfter', () => { settings.restAfter = +$('setRestAfter').value; saveSettings(); });
   bind('setWeek', () => { settings.weekStart = +$('setWeek').value; saveSettings(); renderHeader(); });
   bind('setChime', () => { settings.chime = $('setChime').checked; saveSettings(); });
   $('icsPull').addEventListener('click', () => pullCalendar(false));
@@ -1476,7 +1660,7 @@
   let lastMin = -1;
   function tick() {
     const now = new Date();
-    if (now.getMinutes() !== lastMin) { lastMin = now.getMinutes(); renderHeader(); renderCounts(); if (!run) renderNext(); }
+    if (now.getMinutes() !== lastMin) { lastMin = now.getMinutes(); renderHeader(); renderCounts(); if (!run) renderNext(); if (plan && plan.date !== dkey(new Date())) { plan = null; store.set('plan', null); renderMain(); } }
     if (run) {
       const rem = remainingMs();
       if (!run.paused && rem <= 0) { completeTimer(-rem); return; }
