@@ -122,7 +122,7 @@
   #bottom { position: fixed; left: 0; right: 0; bottom: 0; z-index: 20; display: flex; gap: 8px; justify-content: center;
     padding: 7px 14px calc(7px + env(safe-area-inset-bottom)); background: rgba(14,16,22,0.94); border-top: 1px solid var(--bd);
     -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px); }
-  #bottom button { flex: 1; max-width: 180px; height: 42px; border-radius: 12px; border: 1px solid var(--bd); background: var(--el); font-size: 0.92rem; font-weight: 600; color: var(--dim); }
+  #bottom button { flex: 1; max-width: 180px; height: 42px; font-size: 0.84rem; border-radius: 12px; border: 1px solid var(--bd); background: var(--el); font-size: 0.92rem; font-weight: 600; color: var(--dim); }
   #bottom button:active { background: var(--el2); }
   #bottom button { white-space: nowrap; padding: 0 6px; }
 
@@ -265,6 +265,31 @@
   .drow.reached .dmain { opacity: 0.5; }
   #doneReached { width: 100%; height: 42px; margin-bottom: 9px; border-radius: 12px; border: 1px dashed color-mix(in srgb, #ffd36b 60%, transparent); background: none; color: #ffd36b; font-weight: 600; font-size: 0.9rem; }
 
+  /* ===== routines: timed steps where a target is a guide, not a limit ===== */
+  #runPanel.soft { padding: 20px 14px 16px; }
+  #runPanel.soft #runTime { font-size: 3rem; margin: 6px 0 2px; }
+  #runPanel.soft .runBtns button { height: 60px; font-size: 1.05rem; }
+  #runTime.over { color: var(--dim); }
+  #runStep { font-size: 1.3rem; font-weight: 700; margin: 12px 4px 2px; }
+  #runPrompt { color: var(--tx); opacity: 0.9; font-size: 0.98rem; line-height: 1.45; margin: 4px 6px 12px; }
+  #runWritten { white-space: pre-wrap; text-align: left; background: color-mix(in srgb, var(--c) 8%, var(--el2)); border: 1px solid var(--bd); border-radius: 12px; padding: 10px 12px; margin: 0 4px 12px; font-size: 0.95rem; line-height: 1.4; }
+  #routineWrite { display: block; width: calc(100% - 8px); margin: 0 4px 12px; min-height: 84px; background: var(--el2); border: 1px solid var(--bd); border-radius: 12px; color: var(--tx); padding: 10px 12px; font: inherit; font-size: 16px; line-height: 1.4; resize: none; outline: none; }
+  #routineWrite:focus { border-color: var(--c); }
+  .bloom { width: 104px; height: 104px; border-radius: 50%; margin: 4px auto 6px; background: radial-gradient(circle, color-mix(in srgb, var(--c) 60%, transparent) 0%, color-mix(in srgb, var(--c) 20%, transparent) 58%, transparent 72%);
+    box-shadow: 0 0 40px color-mix(in srgb, var(--c) 30%, transparent); animation: breathe 8s ease-in-out infinite; }
+  @keyframes breathe { 0%, 100% { transform: scale(0.6); opacity: 0.65; } 50% { transform: scale(1); opacity: 1; } }
+  #breathCap { min-height: 3.4em; font-size: 0.92rem; font-style: italic; color: var(--dim); line-height: 1.4; margin: 0 8px 8px; transition: opacity 0.5s; }
+  #routineOv { position: fixed; inset: 0; z-index: 95; background: rgba(8,9,13,0.8); display: none; align-items: flex-end; justify-content: center; padding: 0 12px calc(12px + env(safe-area-inset-bottom)); }
+  #routineOv.show { display: flex; }
+  #routineCard { width: 100%; max-width: 520px; background: var(--el); border: 1px solid var(--bd); border-radius: 20px; padding: 14px; max-height: 80dvh; overflow-y: auto; }
+  #routineCard h4 { margin: 2px 4px 10px; font-size: 0.78rem; color: var(--faint); text-transform: uppercase; letter-spacing: 0.08em; }
+  #routineList .fo { display: flex; flex-direction: column; justify-content: center; width: 100%; min-height: 58px; margin-bottom: 7px; border-radius: 13px; border: 1.5px solid color-mix(in srgb, #8fcf7f 40%, var(--bd)); background: var(--el2); text-align: left; padding: 9px 16px; }
+  #routineList .fo .fh { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; }
+  #routineList .fo .fn { font-size: 1.05rem; font-weight: 700; } #routineList .fo .fm { font-size: 0.8rem; font-weight: 600; color: #8fcf7f; }
+  #routineList .fo .fd { font-size: 0.8rem; color: var(--dim); margin-top: 2px; line-height: 1.3; }
+  #routineEdit { width: 100%; background: none; border: 0; color: var(--faint); font-size: 0.88rem; padding: 8px; text-decoration: underline; text-underline-offset: 3px; }
+  #doneKeep { width: 100%; height: 42px; margin-bottom: 9px; border-radius: 12px; border: 1px dashed color-mix(in srgb, var(--accent) 60%, transparent); background: none; color: var(--accent); font-weight: 600; font-size: 0.9rem; }
+
   /* done overlay */
   #doneOv { position: fixed; inset: 0; z-index: 90; background: rgba(8,9,13,0.88); display: none; align-items: center; justify-content: center; padding: 20px; }
   #doneOv.show { display: flex; }
@@ -303,12 +328,18 @@
   <section id="runPanel" hidden>
     <div id="runCat"></div>
     <div id="runFocus" hidden></div>
+    <div id="runStep" hidden></div>
+    <div id="runPrompt" hidden></div>
+    <div id="runBreath" hidden><div class="bloom"></div><div id="breathCap"></div></div>
+    <div id="runWritten" hidden></div>
+    <textarea id="routineWrite" hidden placeholder="Write it here. It stays on this phone only while this routine runs." autocapitalize="sentences"></textarea>
     <input id="runGoal" type="text" maxlength="90" placeholder="Goal for this time (optional)" enterkeyhint="done" autocomplete="off" autocorrect="off" spellcheck="false">
     <div id="runTime">0:00</div>
     <div id="runEnds"></div>
     <div class="runBar"><div id="runFill"></div></div>
     <div id="runWord"></div>
     <div class="runBtns">
+      <button id="runDone" type="button" hidden>Done</button>
       <button id="runPause" class="main" type="button">Pause</button>
       <button id="runAdd" type="button">+5 min</button>
       <button id="runStop" type="button">Stop</button>
@@ -331,7 +362,8 @@
 
 <nav id="bottom">
   <button id="btnCal" type="button">Calendar</button>
-  <button id="btnDest" type="button">Where to</button>
+  <button id="btnDest" type="button">Destination</button>
+  <button id="btnRoutines" type="button">Routines</button>
   <button id="btnSet" type="button">Settings</button>
 </nav>
 
@@ -359,9 +391,11 @@
   </div>
 </div>
 
+<div id="routineOv"><div id="routineCard"><h4>Pick one to work through</h4><div id="routineList"></div><button id="routineEdit" type="button">Edit routines</button></div></div>
+
 <!-- where we are headed -->
 <div class="sheet" id="sheetDest">
-  <div class="sheetHead"><h2>Where we're headed</h2><button class="primary" id="destClose" type="button">Done</button></div>
+  <div class="sheetHead"><h2>Destinations</h2><button class="primary" id="destClose" type="button">Done</button></div>
   <div class="sheetBody">
     <p class="hint">Name where you want to go, one to three places, each with the very next small step. Every step you take here leads toward the one marked <b>now</b>. A destination stays until you reach it or drop it.</p>
     <div id="destList"></div>
@@ -402,13 +436,13 @@
     <div class="srow"><span>Week starts on</span><select class="sSel" id="setWeek"><option value="1">Monday</option><option value="0">Sunday</option><option value="6">Saturday</option></select></div>
 
     <h3>Energy zones</h3>
-    <p class="hint">When your energy is high, steady and low, with times. It shapes the suggestions (lighter steps and earlier rests in low hours, more ambition in peak hours) and goes into the prompt you copy from Where to.</p>
+    <p class="hint">When your energy is high, steady and low, with times. It shapes the suggestions (lighter steps and earlier rests in low hours, more ambition in peak hours) and goes into the prompt you copy from the Destinations sheet.</p>
     <textarea class="sInput" id="setEnergy" style="min-height:84px;" placeholder="e.g. peak 8–11 am, steady 11–2, slump 2–4, second wind 4–7" autocapitalize="sentences" spellcheck="true"></textarea>
     <div class="status" id="energyPreview"></div>
     <div class="srow"><span>Let energy zones shape suggestions</span><input type="checkbox" id="setUseEnergy"></div>
 
     <h3>Working out where to go</h3>
-    <p class="hint">The prompt you copy from the Where to sheet can include today's calendar events as your fixed times.</p>
+    <p class="hint">The prompt you copy from the Destinations sheet can include today's calendar events as your fixed times.</p>
     <div class="srow"><span>Include today's calendar events</span><input type="checkbox" id="setPromptCal"></div>
 
     <h3>Quiet levels</h3>
@@ -421,6 +455,13 @@
     <div class="srow"><span>Timer buttons <b id="btnIv"></b></span><input type="range" id="setBtnI" min="15" max="100" step="5" style="flex:1; max-width:190px; accent-color:var(--accent);"></div>
     <div class="dimSample">Wednesday · 11h 20m left to 10 pm</div>
     <div class="srow"><span>Header &amp; notes while timing <b id="dimIv"></b></span><input type="range" id="setDimI" min="15" max="100" step="5" style="flex:1; max-width:150px; accent-color:var(--accent);"></div>
+
+    <h3>Routines</h3>
+    <p class="hint">Steps to work through when it's too much. A routine's name on its own line, then one step per line: minutes, a title, then a dash and a prompt. Put <b>b</b> after the minutes for a breathing cue, <b>w</b> for a place to write (it isn't saved). The minutes are a target, not a limit: finishing early is good, and you can stay as long as you need.</p>
+    <textarea class="sInput" id="setRoutines" style="min-height:260px; font-size:15px;" autocapitalize="sentences" spellcheck="true"></textarea>
+    <div class="status" id="routinePreview"></div>
+    <div class="srow"><span>Offer in rests and breaks</span><select class="sSel" id="setRestRoutine"></select></div>
+    <button class="btn full" id="routineReset" type="button">Reset to the starters</button>
 
     <h3>Focus areas</h3>
     <p class="hint">The kinds of effort a destination can carry as a tag, and what you choose when you're not heading toward a destination. One per line, written as "Name — short note".</p>
@@ -463,7 +504,7 @@
 </div>
 
 <!-- timer finished -->
-<div id="doneOv"><div id="doneCard"><div class="big" id="doneBig"></div><div class="goal" id="doneGoal" hidden></div><div class="sub" id="doneSub" style="margin-bottom:6px;"></div><div id="doneStage" hidden></div><div id="doneWord" hidden></div><div class="nx" id="doneNx"></div><button id="doneReached" type="button" hidden></button><button class="close" id="doneClose" type="button">Done</button></div></div>
+<div id="doneOv"><div id="doneCard"><div class="big" id="doneBig"></div><div class="goal" id="doneGoal" hidden></div><div class="sub" id="doneSub" style="margin-bottom:6px;"></div><div id="doneStage" hidden></div><div id="doneWord" hidden></div><div class="nx" id="doneNx"></div><button id="doneKeep" type="button" hidden>Keep what I wrote in my note</button><button id="doneReached" type="button" hidden></button><button class="close" id="doneClose" type="button">Done</button></div></div>
 
 <div id="confetti"></div>
 
@@ -542,7 +583,7 @@
   function parseFocus(str) { const m = String(str).split(/\s+[—–-]\s+|:\s+/); return { name: m[0].trim(), note: m.slice(1).join(' — ').trim() }; }
 
   // ===== state =====
-  const settings = Object.assign({ dayStart: 6, dayEnd: 22, weekStart: 1, chime: true, repeat: true, barHours: 8, restAfter: 60, useEnergy: true, energy: '', promptCal: true, words: true, wordsFreq: 'most', wordsMine: '', wordsOnlyMine: false, btnI: 40, dimI: 40, musicWhen: 'off', music: 'calm', musicVol: 80, focuses: FOCUS_DEFAULT, alarm: 'chime', icsUrls: '', icsProxy: '' }, store.get('settings', {}));
+  const settings = Object.assign({ dayStart: 6, dayEnd: 22, weekStart: 1, chime: true, repeat: true, barHours: 8, restAfter: 60, routinesText: '', restRoutine: 'Breathe', useEnergy: true, energy: '', promptCal: true, words: true, wordsFreq: 'most', wordsMine: '', wordsOnlyMine: false, btnI: 40, dimI: 40, musicWhen: 'off', music: 'calm', musicVol: 80, focuses: FOCUS_DEFAULT, alarm: 'chime', icsUrls: '', icsProxy: '' }, store.get('settings', {}));
   if (!settings.barChosen) settings.barHours = 8;   // 8 h is the default; an auto-saved earlier default doesn't count as a choice
   // an unedited earlier default list moves to the current one; a list you edited is left alone. Selected focus and stored tags are renamed with it
   // (note "Care" meant people in v21 and means the body now, so v21's Care becomes Connect).
@@ -1192,7 +1233,11 @@
 
   // The next step: guardrails first, then the momentum engine (small to start, a little bigger each time, rest after a real chunk).
   // With a destination set, every work step is "toward" it. `cold` = nothing yet today, or 90+ minutes since the last timer.
-  function suggestNext() { const z = zoneNow(); return zoned(baseSuggest(z), z); }
+  function suggestNext() {
+    const z = zoneNow(), sg = zoned(baseSuggest(z), z);
+    if ((sg.cat === 'rest' || sg.cat === 'break') && settings.restRoutine) { const rt = routines().find(r => r.name === settings.restRoutine); if (rt) sg.routine = rt.name; }   // a rest can be a guided one
+    return sg;
+  }
   function baseSuggest(z) {
     const now = Date.now(), list = todaysSessions(), last = list[list.length - 1], d = curDest(), zl = z ? z.level : '';
     if (nowHours() >= settings.dayEnd) return { cat: 'rest', min: 15, k: 'Evening — rest with Him' };
@@ -1214,6 +1259,60 @@
     if (!w) return fitDay({ cat: 'light', min: 3, k: lab('Back, with Him'), toward: tw });
     return fitDay({ cat: w.cat, min: Math.min(25, Math.max(5, rungUp(Math.max(0, Math.round(w.ms / 60000) - 1)))), k: lab('Back at it, with Him'), toward: tw });
   }
+
+  // ===== routines =====
+  const BREATH_VERSES = [
+ "Abide in me, and I in you. As the branch cannot bear fruit by itself, unless it abides in the vine, neither can you, unless you abide in me. — John 15:4",
+ "Be still, and know that I am God. — Psalm 46:10",
+ "Come to me, all who are weary, and I will give you rest. — Matthew 11:28",
+ "The Lord is my shepherd; I shall not want. — Psalm 23:1",
+ "You keep him in perfect peace whose mind is stayed on you. — Isaiah 26:3",
+ "Do not be anxious about anything, but in everything, by prayer, present your requests to God. — Philippians 4:6",
+ "And the peace of God, which surpasses all understanding, will guard your heart. — Philippians 4:7",
+ "Peace I leave with you; my peace I give to you. — John 14:27",
+ "Be still before the Lord and wait patiently for him. — Psalm 37:7",
+ "The Lord is near to the brokenhearted and saves the crushed in spirit. — Psalm 34:18",
+ "Fear not, for I am with you; be not dismayed, for I am your God. — Isaiah 41:10",
+ "My grace is sufficient for you, for my power is made perfect in weakness. — 2 Corinthians 12:9",
+ "He who dwells in the shelter of the Most High will rest in the shadow of the Almighty. — Psalm 91:1",
+ "Do not be anxious about tomorrow, for tomorrow will be anxious for itself. — Matthew 6:34",
+ "Cast your burden on the Lord, and he will sustain you. — Psalm 55:22",
+ "And we know that in all things God works for the good of those who love him. — Romans 8:28",
+ "His mercies never come to an end; they are new every morning. — Lamentations 3:22-23",
+ "In peace I will lie down and sleep, for you alone, Lord, make me dwell in safety. — Psalm 4:8",
+ "The Lord your God is with you; he will quiet you with his love. — Zephaniah 3:17",
+ "The Lord is good, a stronghold in the day of trouble. — Nahum 1:7",
+ "For God alone my soul waits in silence. — Psalm 62:1"
+];
+  const DEFAULT_ROUTINES = `Breathe
+5b Slow breath — In through the nose, out slowly. Let each verse settle as it comes.
+
+Release it
+2b Breathe — In through the nose, out slowly. Let the verses settle you.
+3w Name what is pressing — One line each. Say it plainly; it doesn't need to be tidy.
+4 Hand it over — Take each one and give it to Him. What is yours to do? What is His? "Cast your burden on the Lord, and he will sustain you."
+2 One small thing — Is there one small thing you can do next, or is it time to rest?
+
+Immanuel
+2b Settle — Breathe slowly. Invite Jesus to be with you.
+3 Something good — Bring to mind one thing you are thankful for, or a moment you felt close to Him. Stay there.
+8 Listen — Ask: "Lord Jesus, where are You in this? What do You want me to know?" Then be quiet and notice what comes. Don't force it or fix it.
+3w Write what came — In plain words, as it came. Don't explain it yet.
+2 Thank Him — Thank Him, and give the rest back to Him.`;
+  // a name on its own line, then steps:  <minutes>[b][w] <title> — <prompt>     (b = breathing cue, w = a place to write)
+  function parseRoutines(text) {
+    const out = []; let cur = null;
+    String(text || '').split('\n').forEach(raw => {
+      const line = raw.trim();
+      if (!line) { cur = null; return; }
+      const m = line.match(/^(\d{1,3})([wb]*)\s+(.+?)(?:\s+[—–-]\s+(.+))?$/i);
+      if (m) { if (cur) cur.steps.push({ min: +m[1], w: /w/i.test(m[2]), b: /b/i.test(m[2]), title: m[3].trim(), prompt: (m[4] || '').trim() }); return; }
+      cur = { name: line.slice(0, 40), steps: [] }; out.push(cur);
+    });
+    return out.filter(r => r.steps.length);
+  }
+  const routines = () => parseRoutines(settings.routinesText || DEFAULT_ROUTINES);
+  const routineMins = rt => rt.steps.reduce((a, x) => a + x.min, 0);
 
   // ===== timer grid =====
   function buildGrid() {
@@ -1248,14 +1347,15 @@
     sug = suggestNext(); const c = CAT[sug.cat];
     $('nextBtn').style.setProperty('--c', c.color);
     $('nextK').textContent = nextLabel(sug);
-    $('nextV').textContent = c.name + ' · ' + sug.min + ' min';
+    const rt = sug.routine ? routines().find(r => r.name === sug.routine) : null;
+    $('nextV').textContent = rt ? rt.name + ' · ~' + routineMins(rt) + ' min' : c.name + ' · ' + sug.min + ' min';
   }
   function renderFocus() {   // the pill says where you are going; with no destination it is the plain focus, as before
     const cd = curDest(), k = $('focusPill').querySelector('.k');
-    if (cd) { k.textContent = 'Going to'; $('focusVal').textContent = cd.text; $('focusPill').classList.remove('unset'); }
+    if (cd) { k.textContent = 'Destination'; $('focusVal').textContent = cd.text; $('focusPill').classList.remove('unset'); }
     else { k.textContent = 'Focus'; $('focusVal').textContent = focus || 'pick one'; $('focusPill').classList.toggle('unset', !focus); }
   }
-  $('nextBtn').addEventListener('click', () => { if (!run && sug) startTimer(sug.cat, sug.min, { toward: true }); });
+  $('nextBtn').addEventListener('click', () => { if (run || !sug) return; if (sug.routine) startRoutine(sug.routine); else startTimer(sug.cat, sug.min, { toward: true }); });
   function focusListHtml() {
     const spent = {};   // today's minutes per focus — work only, so rest and breaks don't pad whatever was selected
     todaysSessions().forEach(x => { const nm = FOCUS_ALIAS[x.focus] || x.focus; if (WORK.includes(x.cat) && nm) spent[nm] = (spent[nm] || 0) + x.ms; });
@@ -1264,7 +1364,7 @@
   }
   function openGoing() {   // your destinations first; a plain focus is the second choice, one tap away
     const od = openDests(), cur = curDest(), free = destCur === '-';
-    $('focusTitle').textContent = od.length ? 'Going to' : 'Focus for now';
+    $('focusTitle').textContent = od.length ? 'Destination' : 'Focus for now';
     let h = '';
     if (od.length) {
       h += od.map(d => {
@@ -1292,7 +1392,7 @@
 
   // ----- focus music: starts with a work timer (inside the tap), fades out when it ends -----
   const musicWanted = cat => settings.musicWhen === 'all' || (settings.musicWhen === 'work' && WORK.includes(cat));
-  function musicStart() { if (window.StepMusic && run && !run.paused && musicWanted(run.cat)) { StepMusic.setVolume(settings.musicVol / 100); StepMusic.start(settings.music); } }
+  function musicStart() { if (window.StepMusic && run && !run.paused && !run.soft && musicWanted(run.cat)) { StepMusic.setVolume(settings.musicVol / 100); StepMusic.start(settings.music); } }
   function musicStop() { if (window.StepMusic) StepMusic.fadeOut(1.5); }
   // after a refresh a running timer has no music until the next tap (the phone requires a tap to start sound)
   const tapMusic = () => { if (run && !run.paused && window.StepMusic && !StepMusic.playing()) musicStart(); };
@@ -1302,6 +1402,7 @@
   let gridOpen = false;   // the grid is hidden at a cold start; "Choose something else" opens it until the next timer starts
   function startTimer(cat, min, opt) {
     opt = opt || {}; gridOpen = false;
+    if (run && run.soft) quietStop();
     unlockAudio();
     // a step toward the destination: the hero and the finish card always are; a grid timer is too unless you've pointed the focus somewhere else
     const d = WORK.includes(cat) ? curDest() : null;   // your own focus choice stays yours; a destination's tag travels with its steps
@@ -1313,7 +1414,7 @@
   function pauseResume() {
     if (!run) return;
     if (run.paused) { run.endsAt = Date.now() + run.remaining; run.paused = false; run.remaining = null; acquireWake(); musicStart(); }
-    else { run.remaining = Math.max(0, run.endsAt - Date.now()); run.paused = true; run.endsAt = null; releaseWake(); musicStop(); }
+    else { run.remaining = run.soft ? run.endsAt - Date.now() : Math.max(0, run.endsAt - Date.now()); run.paused = true; run.endsAt = null; releaseWake(); musicStop(); }
     saveRun(); updateRun();
   }
   function addMinute() {   // +5 min: a single minute does little on a long block
@@ -1333,6 +1434,7 @@
   }
   function stopTimer() {
     if (!run) return;
+    if (run.soft) { routineEnd(); return; }
     const r = run, el = totalMs() - Math.max(0, remainingMs());
     const st = el >= 60000 ? logSession(r, el, false, Date.now()) : 0;   // under a minute = a mis-tap, not logged
     run = null; store.set('run', null); releaseWake(); musicStop(); renderMain();
@@ -1344,6 +1446,87 @@
     run = null; store.set('run', null); releaseWake(); musicStop(); renderMain();
     showDone(r, lateMs, st, {});
   }
+  // ----- routine runs: each step is a soft timer. Done moves straight on to the next step; past the target is allowed; early is the ideal. -----
+  function softChime() {   // one gentle note at the target, and never again
+    if (!settings.chime || !actx) return;
+    try { const out = actx.createGain(); out.connect(actx.destination); tone(actx, out, 659.25, actx.currentTime + 0.02, 2.6, 0.2, 0.05); tone(actx, out, 987.77, actx.currentTime + 0.02, 1.8, 0.07, 0.05); } catch (e) {}
+  }
+  function quietStop() {   // another thing begins: end whatever was running without ceremony
+    if (!run) return;
+    const el = run.soft ? Math.max(0, totalMs() - remainingMs()) : totalMs() - Math.max(0, remainingMs());
+    if (run.soft) { if (el >= 15000) logRoutineStep(run, el); } else if (el >= 60000) logSession(run, el, false, Date.now());
+    run = null; store.set('run', null); releaseWake(); musicStop();
+  }
+  function logRoutineStep(r, ms) { sessions.push({ id: r.id, cat: 'rest', min: r.min, start: r.startedAt, end: Date.now(), ms, done: true, focus: '', dest: '', routine: r.routine.name }); saveSessions(); }
+  function startRoutine(name) {
+    const rt = routines().find(r => r.name === name) || routines()[0]; if (!rt) return;
+    $('routineOv').classList.remove('show'); closeDone(); quietStop(); gridOpen = false; unlockAudio();
+    beginStep(rt, 0, '', 0, '');
+  }
+  function beginStep(rt, i, write, spent, note) {
+    const st = rt.steps[i], now = Date.now();
+    run = { id: uid(), cat: 'rest', min: st.min, startedAt: now, endsAt: now + st.min * 60000, paused: false, remaining: null, added: 0, goal: '', focus: '', dest: '', word: '', soft: true, chimed: false,
+            note: note || '', noteUntil: now + 7000, routine: { name: rt.name, steps: rt.steps, i, write: write || '', spent: spent || 0 } };
+    saveRun(); acquireWake(); renderMain();
+  }
+  function routineDone() {
+    if (!run || !run.soft) return;
+    const r = run, rt = r.routine, el = Math.max(0, totalMs() - remainingMs()), early = el < r.min * 60000 - 15000, st = rt.steps[rt.i];
+    if (el >= 15000) logRoutineStep(r, el);   // a tap straight through is not logged
+    let write = rt.write; if (/hand|give|release|cast|lay/i.test(st.title)) write = '';   // once handed over, what you wrote is gone
+    const spent = (rt.spent || 0) + el;
+    if (rt.i + 1 < rt.steps.length) { beginStep(rt, rt.i + 1, write, spent, early ? "Done early. That is good: you don't need the whole time." : ''); return; }
+    run = null; store.set('run', null); releaseWake(); renderMain(); showRoutineDone(rt, spent, write);
+  }
+  function routineEnd() {   // ended partway: what was done is kept as rest, and what you wrote is not
+    const r = run, el = Math.max(0, totalMs() - remainingMs());
+    if (el >= 15000) logRoutineStep(r, el);
+    run = null; store.set('run', null); releaseWake(); renderMain();
+  }
+  $('runDone').addEventListener('click', routineDone);
+  $('routineWrite').addEventListener('input', () => { if (run && run.soft) { run.routine.write = $('routineWrite').value; saveRun(); } });
+  let breathT = null, breathI = 0;
+  function stopBreathCaptions() { clearInterval(breathT); breathT = null; }
+  function startBreathCaptions() {   // a verse every 24 seconds, three of the 8-second breaths each
+    stopBreathCaptions(); const cap = $('breathCap'); breathI = 0; cap.style.opacity = 1; cap.textContent = BREATH_VERSES[breathI++ % BREATH_VERSES.length];
+    breathT = setInterval(() => { cap.style.opacity = 0; setTimeout(() => { cap.textContent = BREATH_VERSES[breathI++ % BREATH_VERSES.length]; cap.style.opacity = 1; }, 500); }, 24000);
+  }
+  function renderRunMode() {   // the panel for a routine step is different from a timer's: the step, its prompt, and Done
+    const soft = !!run.soft, rt = soft ? run.routine : null, st = soft ? rt.steps[rt.i] : null;
+    $('runPanel').classList.toggle('soft', soft);
+    $('runGoal').hidden = soft; $('runAdd').hidden = soft; $('runWord').hidden = soft;
+    $('runDone').hidden = !soft; $('runDone').classList.toggle('main', soft); $('runPause').classList.toggle('main', !soft); $('runStop').textContent = soft ? 'End' : 'Stop';
+    if (!soft) { ['runStep', 'runPrompt', 'runBreath', 'runWritten', 'routineWrite'].forEach(id => { $(id).hidden = true; }); stopBreathCaptions(); return; }
+    $('runCat').textContent = rt.name + ' · step ' + (rt.i + 1) + ' of ' + rt.steps.length; $('runFocus').hidden = true;
+    $('runStep').hidden = false; $('runStep').textContent = st.title;
+    $('runPrompt').hidden = !st.prompt; $('runPrompt').textContent = st.prompt;
+    $('runBreath').hidden = !st.b; if (st.b) startBreathCaptions(); else stopBreathCaptions();
+    $('routineWrite').hidden = !st.w; if (st.w) $('routineWrite').value = rt.write;
+    const handing = /hand|give|release|cast|lay/i.test(st.title) && rt.write.trim();
+    $('runWritten').hidden = !handing; $('runWritten').textContent = rt.write;
+  }
+  function showRoutineDone(rt, spent, write) {
+    clearTimeout(repeatTimer); stopAlarm();
+    $('doneCard').style.setProperty('--c', CAT.rest.color); $('doneCard').classList.remove('stage');
+    $('doneBig').textContent = rt.name; $('doneGoal').hidden = true; $('doneStage').hidden = true; $('doneReached').hidden = true;
+    $('doneSub').textContent = (spent < 60000 ? Math.round(spent / 1000) + ' s' : fmtDur(spent)) + (spent < routineMins(rt) * 60000 - 30000 ? ' · early is good' : '');
+    const w = settings.words ? drawLine('done.rest', WORDS.done.rest, true) : 'Done.';
+    $('doneWord').hidden = !w; $('doneWord').textContent = w;
+    $('doneKeep').hidden = !write.trim(); $('doneKeep').dataset.text = write;
+    const sg = suggestNext(); $('doneNx').innerHTML = primaryBtn(sg);
+    $('doneOv').classList.add('show');
+  }
+  $('doneKeep').addEventListener('click', () => { const t = $('doneKeep').dataset.text || ''; if (t.trim()) { note = (note.trim() ? note.replace(/\s+$/, '') + '\n' : '') + t.trim(); saveNote(); renderNotesBar(); } $('doneKeep').hidden = true; });
+  // the picker: one tap on Routines, one tap on a routine
+  function openRoutinePicker() {
+    const list = routines();
+    $('routineList').innerHTML = list.length ? list.map(r => '<button type="button" class="fo" data-r="' + esc(r.name) + '"><span class="fh"><span class="fn">' + esc(r.name) + '</span><span class="fm">~' + routineMins(r) + ' min</span></span><span class="fd">' + esc(r.steps.map(x => x.title).join(' → ')) + '</span></button>').join('') : '<div class="none">No routines yet. Add some in Settings.</div>';
+    $('routineOv').classList.add('show');
+  }
+  $('btnRoutines').addEventListener('click', openRoutinePicker);
+  $('routineList').addEventListener('click', e => { const b = e.target.closest('.fo'); if (b) startRoutine(b.dataset.r); });
+  $('routineOv').addEventListener('click', e => { if (e.target.id === 'routineOv') $('routineOv').classList.remove('show'); });
+  $('routineEdit').addEventListener('click', () => { $('routineOv').classList.remove('show'); openSettings(); setTimeout(() => { const b = $('sheetSet').querySelector('.sheetBody'), h = [...b.querySelectorAll('h3')].find(x => x.textContent === 'Routines'); if (h) b.scrollTop = h.offsetTop - 70; }, 300); });
   $('runPause').addEventListener('click', pauseResume);
   $('runAdd').addEventListener('click', addMinute);
   $('runStop').addEventListener('click', stopTimer);
@@ -1353,6 +1536,15 @@
 
   function updateRun() {
     if (!run) { document.title = 'Abiding Step'; $('lsTime').textContent = ''; return; }
+    if (run.soft) {   // a routine step: the time is a target; past it, the clock simply counts up
+      const raw = remainingMs(), over = raw < 0, sec = Math.ceil(Math.abs(raw) / 1000), txt = (over ? '+' : '') + Math.floor(sec / 60) + ':' + pad(sec % 60);
+      $('runTime').textContent = txt; $('runTime').classList.toggle('over', over);
+      $('runFill').style.width = over ? '100%' : (100 * (1 - raw / totalMs())).toFixed(1) + '%';
+      $('runEnds').textContent = run.paused ? 'Paused' : over ? 'Past the target. Take the time you need.' : (run.note && Date.now() < run.noteUntil ? run.note : 'Target ' + run.min + ' min · done early is good');
+      $('runPause').textContent = run.paused ? 'Resume' : 'Pause';
+      document.title = txt + ' · ' + run.routine.name; $('lsTime').textContent = run.routine.name + ' · ' + txt + (run.paused ? ' (paused)' : '');
+      return;
+    }
     const rem = Math.max(0, remainingMs()), s = Math.ceil(rem / 1000);
     const txt = Math.floor(s / 60) + ':' + pad(s % 60);
     $('runTime').textContent = txt;
@@ -1366,11 +1558,11 @@
     const od = openDests(), body = $('ccBody'), cur = curDest();
     $('ccEdit').textContent = od.length ? 'Edit' : 'Name one';
     if (!od.length) {
-      $('ccTitle').textContent = 'Where are we headed?';
+      $('ccTitle').textContent = 'No destination yet';
       body.innerHTML = '<div class="ccEmpty">Name where you want to go, one to three places, each with the very next small step. Then every step here leads toward it.</div>';
       return;
     }
-    $('ccTitle').textContent = "Where we're headed";
+    $('ccTitle').textContent = 'Destinations';
     body.innerHTML = dests.slice(0, 6).map(d => {
       const t = destToday(d.id), isCur = cur && cur.id === d.id;
       return '<div class="cr ' + (d.state === 'reached' ? 'done' : isCur ? 'next' : '') + '" data-id="' + d.id + '" style="--c:var(--accent)"><i></i><span class="cn">' + esc(shortText(d.text, 34)) + '</span>'
@@ -1384,17 +1576,22 @@
   });
   function renderMain() {
     const on = !!run;
-    $('hdr').classList.toggle('dim', on); $('notesBar').classList.toggle('dim', on);
+    const soft = on && !!run.soft;   // a routine gets the whole screen: no clock, no notes, just the step
+    $('hdr').hidden = soft; $('notesBar').hidden = soft;
+    $('hdr').classList.toggle('dim', on && !soft); $('notesBar').classList.toggle('dim', on && !soft);
     if (!on) $('runGoal').blur();
     $('runPanel').hidden = !on; $('actionRow').hidden = on;
     if (on) {
       $('grid').hidden = true; $('coldCard').hidden = true;
-      $('runPanel').style.setProperty('--c', CAT[run.cat].color);
-      $('runCat').textContent = CAT[run.cat].name + ' · ' + run.min + ' min';
-      const rd = run.dest ? dests.find(x => x.id === run.dest) : null, rl = [rd ? '→ ' + shortText(rd.text, 38) : '', run.focus].filter(Boolean).join(' · ');
-      $('runFocus').textContent = rl; $('runFocus').hidden = !rl;
-      $('runWord').textContent = run.word || '';
-      $('runGoal').value = run.goal || '';
+      $('runPanel').style.setProperty('--c', CAT[run.cat].color);   // (a routine step is rest-coloured)
+      renderRunMode();
+      if (!run.soft) {
+        $('runCat').textContent = CAT[run.cat].name + ' · ' + run.min + ' min';
+        const rd = run.dest ? dests.find(x => x.id === run.dest) : null, rl = [rd ? '→ ' + shortText(rd.text, 38) : '', run.focus].filter(Boolean).join(' · ');
+        $('runFocus').textContent = rl; $('runFocus').hidden = !rl;
+        $('runWord').textContent = run.word || '';
+        $('runGoal').value = run.goal || '';
+      }
       updateRun();
     } else {
       document.title = 'Abiding Step'; renderCounts(); renderNext(); renderFocus();
@@ -1418,6 +1615,11 @@
     }
     setTimeout(() => { box.innerHTML = ''; }, 5200);
   }
+  const primaryBtn = sg => {   // the suggested next step: a guided routine or a plain timer
+    const rt = sg.routine ? routines().find(r => r.name === sg.routine) : null;
+    return rt ? '<button class="full" style="--c2:' + CAT[sg.cat].color + '" data-routine="' + esc(rt.name) + '" type="button"><span class="k">' + esc(nextLabel(sg)) + '</span>' + esc(rt.name) + ' · ~' + routineMins(rt) + ' min</button>'
+              : nxBtn(sg.cat, sg.min, nextLabel(sg), true);
+  };
   const nxBtn = (cat, min, k, full) => '<button' + (full ? ' class="full"' : '') + ' style="--c2:' + CAT[cat].color + '" data-cat="' + cat + '" data-min="' + min + '" type="button"><span class="k">' + esc(k) + '</span>' + CAT[cat].name + (full ? ' · ' + min + ' min' : ' ' + min + 'm') + '</button>';
   function showReached(d) {   // arriving somewhere is celebrated, and the next step points to the next place
     clearTimeout(repeatTimer); stopAlarm();
@@ -1429,7 +1631,7 @@
     $('doneStage').innerHTML = '<div class="sn">Destination reached</div><div class="sw">' + esc(settings.words ? drawLine('reached', WORDS.reached, false) : 'Well done.') + '</div>'
       + '<div class="st">' + (nx ? 'Next, toward: ' + esc(nx.text) : 'Name the next place when you are ready.') + '</div>';
     const sg = suggestNext();
-    $('doneNx').innerHTML = nxBtn(sg.cat, sg.min, nextLabel(sg), true);
+    $('doneNx').innerHTML = primaryBtn(sg); $('doneKeep').hidden = true;
     burst(true); $('doneOv').classList.add('show'); renderMain();
   }
   function showDone(r, lateMs, stage, info) {
@@ -1450,7 +1652,8 @@
       burst(isLast);
     }
     const sg = suggestNext(), alt = sg.cat === 'rest' ? ['break', 5] : ['rest', 5];
-    $('doneNx').innerHTML = nxBtn(sg.cat, sg.min, nextLabel(sg), true) + nxBtn(r.cat, r.min, 'Again', false) + nxBtn(alt[0], alt[1], 'Or', false);
+    $('doneNx').innerHTML = primaryBtn(sg) + nxBtn(r.cat, r.min, 'Again', false) + nxBtn(alt[0], alt[1], 'Or', false);
+    $('doneKeep').hidden = true;
     const rd = r.dest ? dests.find(x => x.id === r.dest && x.state === 'open') : null;   // a gentle "did that get you there?"
     $('doneReached').hidden = !rd; $('doneReached').dataset.id = rd ? rd.id : '';
     if (rd) $('doneReached').textContent = 'Reached “' + shortText(rd.text, 28) + '”?';
@@ -1465,6 +1668,7 @@
   $('doneClose').addEventListener('click', closeDone);
   $('doneNx').addEventListener('click', e => {
     const b = e.target.closest('button'); if (!b) return;
+    if (b.dataset.routine) { startRoutine(b.dataset.routine); return; }
     closeDone(); startTimer(b.dataset.cat, +b.dataset.min, { toward: !!b.classList.contains('full') });
   });
   $('doneReached').addEventListener('click', () => { const d = markReached($('doneReached').dataset.id); closeDone(); if (d) showReached(d); });
@@ -1697,6 +1901,7 @@
     $('icsUrls').value = settings.icsUrls; $('icsProxy').value = settings.icsProxy;
     hoursOptions($('setStart'), settings.dayStart); hoursOptions($('setEnd'), settings.dayEnd);
     $('setBar').innerHTML = [2, 3, 4, 5, 6, 8, 10, 12].map(h => '<option value="' + h + '">' + h + ' hours</option>').join(''); $('setBar').value = String(settings.barHours);
+    $('setRoutines').value = settings.routinesText || DEFAULT_ROUTINES; renderRoutinePrefs();
     $('setEnergy').value = settings.energy; $('setPromptCal').checked = settings.promptCal; $('setUseEnergy').checked = settings.useEnergy; renderEnergyPreview();
     $('setRestAfter').value = String(settings.restAfter); $('setWeek').value = String(settings.weekStart); $('setChime').checked = settings.chime; $('setRepeat').checked = settings.repeat;
     $('setBtnI').value = String(settings.btnI); $('setDimI').value = String(settings.dimI); $('btnIv').textContent = settings.btnI + '%'; $('dimIv').textContent = settings.dimI + '%';
@@ -1717,6 +1922,15 @@
   bind('setStart', () => { settings.dayStart = +$('setStart').value; saveSettings(); renderHeader(); });
   bind('setEnd', () => { settings.dayEnd = +$('setEnd').value; saveSettings(); renderHeader(); });
   bind('setBar', () => { settings.barHours = +$('setBar').value; settings.barChosen = true; saveSettings(); renderCounts(); });
+  function renderRoutinePrefs() {
+    const list = routines();
+    $('routinePreview').textContent = list.length ? list.map(r => r.name + ' (' + r.steps.length + ' step' + (r.steps.length === 1 ? '' : 's') + ', ~' + routineMins(r) + ' min)').join(' · ') : 'No routines understood yet. A name on its own line, then steps like: 3 Settle — Breathe slowly.';
+    $('setRestRoutine').innerHTML = '<option value="">Nothing, just a plain rest</option>' + list.map(r => '<option value="' + esc(r.name) + '">' + esc(r.name) + '</option>').join('');
+    $('setRestRoutine').value = list.some(r => r.name === settings.restRoutine) ? settings.restRoutine : '';
+  }
+  bind('setRoutines', () => { const v = $('setRoutines').value; settings.routinesText = v.trim() === DEFAULT_ROUTINES.trim() ? '' : v; saveSettings(); renderRoutinePrefs(); if (!run) renderNext(); }, 'input');
+  bind('setRestRoutine', () => { settings.restRoutine = $('setRestRoutine').value; saveSettings(); if (!run) renderNext(); });
+  $('routineReset').addEventListener('click', () => { settings.routinesText = ''; saveSettings(); $('setRoutines').value = DEFAULT_ROUTINES; renderRoutinePrefs(); if (!run) renderNext(); });
   function renderEnergyPreview() {
     const txt = (settings.energy || '').trim(), z = parseZones(settings.energy), L = { peak: 'peak', steady: 'steady', low: 'low' };
     $('energyPreview').textContent = !txt ? '' : z.length ? 'Understood: ' + z.map(x => fmtHM(x.from).replace(':00', '') + '–' + fmtHM(x.to).replace(':00', '') + ' ' + L[x.level]).join(' · ')
@@ -1793,6 +2007,7 @@
     if (now.getMinutes() !== lastMin) { lastMin = now.getMinutes(); renderHeader(); renderCounts(); if (!run) renderNext(); if (dests.some(d => d.state === 'reached' && d.on !== dkey(new Date()))) { dests = dests.filter(d => d.state === 'open' || d.on === dkey(new Date())); saveDests(); renderMain(); } }
     if (run) {
       const rem = remainingMs();
+      if (run.soft) { if (!run.paused && rem <= 0 && !run.chimed) { run.chimed = true; saveRun(); softChime(); } updateRun(); return; }
       if (!run.paused && rem <= 0) { completeTimer(-rem); return; }
       updateRun();
     }
