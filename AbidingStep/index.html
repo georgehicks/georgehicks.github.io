@@ -459,11 +459,12 @@
     'Reply — inbox, messages, owed answers',
     'Connect — time and attention for specific people',
     'Learn — research, reading, thinking it through',
-    'Tend — admin, money, household, keeping things running',
+    'Handle — admin, money, household, getting it off your plate',
     'Plan — deciding what\'s next, setting up the day or week',
     'Care — your body and health: exercise, food, sleep',
   ];
-  const FOCUS_ALIAS = { People: 'Connect', Body: 'Care' };   // earlier names, for today's tally
+  const FOCUS_V22 = FOCUS_DEFAULT.map(x => x.startsWith('Handle') ? 'Tend — admin, money, household, keeping things running' : x);
+  const FOCUS_ALIAS = { People: 'Connect', Body: 'Care', Tend: 'Handle' };   // earlier names, for today's tally
   const FOCUS_OLD_DEFAULT = ['Deliverables', 'Communications', 'Admin', 'Relationships', 'Research'];
   function parseFocus(str) { const m = String(str).split(/\s+[—–-]\s+|:\s+/); return { name: m[0].trim(), note: m.slice(1).join(' — ').trim() }; }
 
@@ -472,7 +473,7 @@
   if (!settings.barChosen) settings.barHours = 8;   // 8 h is the default; an auto-saved earlier default doesn't count as a choice
   // an unedited earlier default list moves to the current one; a list you edited is left alone. Selected focus and stored tags are renamed with it
   // (note "Care" meant people in v21 and means the body now, so v21's Care becomes Connect).
-  const FOCUS_FROM = [[FOCUS_OLD_DEFAULT, { People: 'Connect' }], [FOCUS_V18, { People: 'Connect' }], [FOCUS_V20, { People: 'Connect', Body: 'Care' }], [FOCUS_V21, { Care: 'Connect' }]];
+  const FOCUS_FROM = [[FOCUS_OLD_DEFAULT, { People: 'Connect' }], [FOCUS_V18, { People: 'Connect', Tend: 'Handle' }], [FOCUS_V20, { People: 'Connect', Body: 'Care', Tend: 'Handle' }], [FOCUS_V21, { Care: 'Connect', Tend: 'Handle' }], [FOCUS_V22, { Tend: 'Handle' }]];
   const focusHit = FOCUS_FROM.find(([l]) => JSON.stringify(l) === JSON.stringify(settings.focuses));
   if (focusHit) {
     const ren = focusHit[1];
