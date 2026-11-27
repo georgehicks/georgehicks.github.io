@@ -3,7 +3,7 @@
 (function () {
   'use strict';
   var C = window.MannaContent, T = window.MannaText, PL = window.MannaPlaces, E = window.MannaEngine, A = window.MannaArt, G = window.MannaGames;
-  var VERSION = 'v32';
+  var VERSION = 'v33';
   var V = window.MannaVoice, K = window.MannaClips, R = window.MannaRelease, Mu = window.MannaMusic;
   var KEY = 'manna.state', SKEY = 'manna.session', PKEY = 'manna.paused';
 
@@ -18,10 +18,11 @@
   function catLabel(id) { var c = C.CATS.filter(function (x) { return x.id === id; })[0]; return c ? c.label : id; }
 
   // ---------- state ----------
-  var S = { mins: 15, cats: [], mood: null, kept: [], mine: [], math: E.newMath(), seen: {}, log: [], dim: 0.38, mathInput: 'pad', photos: true, voiceOn: false, gameTimer: true, autoRead: false, relGuide: true, music: true };
+  var S = { mins: 15, cats: [], mood: null, kept: [], mine: [], math: E.newMath(), seen: {}, log: [], dim: 0.38, mathInput: 'pad', photos: true, voiceOn: false, gameTimer: true, autoRead: false, relGuide: true, music: true, musicStyle: 'vary' };
   try { var raw = JSON.parse(localStorage.getItem(KEY) || 'null'); if (raw) { for (var k in raw) S[k] = raw[k]; } } catch (e) {}
   E.SKILLS.forEach(function (k) { if (!S.math[k]) S.math[k] = E.newMath()[k]; });
   function save() { try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) {} }
+  if (Mu && Mu.setStyle) Mu.setStyle(S.musicStyle);
 
   var artFiles = [];
   try { fetch('art/manifest.json').then(function (r) { return r.ok ? r.json() : []; }).then(function (a) { if (Array.isArray(a)) artFiles = a; }).catch(function () {}); } catch (e) {}
@@ -131,6 +132,12 @@
     [[true, 'Counts down'], [false, 'No timer']].forEach(function (o) { var b = el('button', 'chip' + ((S.gameTimer !== false) === o[0] ? ' on' : ''), o[1]); b.type = 'button'; b.onclick = function () { S.gameTimer = o[0]; save(); renderSettings(); }; gt.appendChild(b); });
     var mc2 = $('musicChips'); mc2.innerHTML = '';
     [[true, 'Music on'], [false, 'Music off']].forEach(function (o) { var b = el('button', 'chip' + (S.music !== false === o[0] ? ' on' : ''), o[1]); b.type = 'button'; b.onclick = function () { S.music = o[0]; save(); if (!o[0] && Mu) Mu.fadeOut(0.5); renderSettings(); }; mc2.appendChild(b); });
+    var ms = $('musicStyleChips'); ms.innerHTML = '';
+    [['vary', 'Changes each game']].concat(Mu ? Mu.FAMILIES.map(function (f) { return [f.id, f.name]; }) : []).forEach(function (o) {
+      var b = el('button', 'chip' + ((S.musicStyle || 'vary') === o[0] ? ' on' : ''), o[1]); b.type = 'button';
+      b.onclick = function () { S.musicStyle = o[0]; save(); if (Mu) { Mu.setStyle(o[0]); if (S.music !== false) Mu.preview(o[0] === 'vary' ? null : o[0]); } renderSettings(); }; ms.appendChild(b);
+    });
+    var mh = $('musicHear'); if (mh) mh.onclick = function () { if (Mu && S.music !== false) { Mu.preview(S.musicStyle && S.musicStyle !== 'vary' ? S.musicStyle : null); } };
     var pc = $('photoChips');
     [[true, 'Show photos'], [false, 'Drawn art only']].forEach(function (o) { var b = el('button', 'chip' + (S.photos === o[0] ? ' on' : ''), o[1]); b.type = 'button'; b.onclick = function () { S.photos = o[0]; save(); renderSettings(); }; pc.appendChild(b); });
   }
