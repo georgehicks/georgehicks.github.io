@@ -3,7 +3,7 @@
 (function () {
   'use strict';
   var C = window.MannaContent, T = window.MannaText, PL = window.MannaPlaces, E = window.MannaEngine, A = window.MannaArt, G = window.MannaGames;
-  var VERSION = 'v34';
+  var VERSION = 'v35';
   var V = window.MannaVoice, K = window.MannaClips, R = window.MannaRelease, Mu = window.MannaMusic;
   var KEY = 'manna.state', SKEY = 'manna.session', PKEY = 'manna.paused';
 

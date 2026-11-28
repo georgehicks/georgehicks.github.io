@@ -51,35 +51,6 @@
     raf = requestAnimationFrame(tick);
     return function () { on = false; cancelAnimationFrame(raf); };
   };
-  // A celebration: petals and sparks burst up from the bottom and drift down over the game, with a soft chime if the music is playing.
-  // It sits on top of the game, ignores touches, and removes itself. n is how many pieces (a big win uses more).
-  K.confetti = function (host, n) {
-    var r = host.getBoundingClientRect(), W = Math.max(120, r.width), H = Math.max(160, r.height), cv = document.createElement('canvas'), d = Math.min(2, root.devicePixelRatio || 1);
-    cv.width = W * d; cv.height = H * d; cv.style.cssText = 'position:absolute;left:0;top:0;width:' + W + 'px;height:' + H + 'px;pointer-events:none;z-index:7';
-    host.appendChild(cv); var g = cv.getContext('2d'), P = [], cols = ['#F2C879', '#F6A6B8', '#FFF1D0', '#9BE8B5', '#8EC9F2', '#D9A0FF'], i, t = 0;
-    g.setTransform(d, 0, 0, d, 0, 0);
-    n = n || 110;
-    for (i = 0; i < n; i++) {
-      var left = i % 2 === 0, ang = (left ? -1.05 : -2.1) + (Math.random() - 0.5) * 0.9, sp = 360 + Math.random() * 520;
-      P.push({ x: left ? W * 0.12 : W * 0.88, y: H * 0.96, vx: Math.cos(ang) * sp * (left ? 1 : 1), vy: Math.sin(ang) * sp, a: Math.random() * 6.3, va: (Math.random() - 0.5) * 9, c: cols[i % cols.length], s: 4 + Math.random() * 5, star: Math.random() < 0.22, w: Math.random() * 6.3, delay: Math.random() * 0.35 });
-    }
-    // a second, slower shower from the top
-    for (i = 0; i < Math.round(n * 0.5); i++) P.push({ x: Math.random() * W, y: -10 - Math.random() * H * 0.4, vx: (Math.random() - 0.5) * 30, vy: 40 + Math.random() * 60, a: Math.random() * 6.3, va: (Math.random() - 0.5) * 5, c: cols[i % cols.length], s: 3.5 + Math.random() * 4, star: Math.random() < 0.2, w: Math.random() * 6.3, delay: 0.5 + Math.random() * 1.4 });
-    if (root.MannaMusic && root.MannaMusic.chime) { try { root.MannaMusic.chime(); } catch (e) {} }
-    var stop = K.loop(function (dt) {
-      t += dt; g.clearRect(0, 0, W, H);
-      P.forEach(function (p) {
-        if (t < p.delay) return;
-        p.vy += 520 * dt; p.vx *= (1 - 0.9 * dt); if (p.vy > 150) p.vy -= (p.vy - 150) * 2.2 * dt; p.x += p.vx * dt + Math.sin(t * 2 + p.w) * 14 * dt; p.y += p.vy * dt; p.a += p.va * dt;
-        var al = Math.max(0, Math.min(1, (4.6 - t) / 1.2)); if (al <= 0 || p.y > H + 20) return;
-        g.globalAlpha = al; g.fillStyle = p.c;
-        if (p.star) { g.save(); g.translate(p.x, p.y); g.rotate(p.a); g.beginPath(); for (var k = 0; k < 8; k++) { var rr2 = k % 2 ? p.s * 0.35 : p.s * 1.1, an = k * Math.PI / 4; g.lineTo(Math.cos(an) * rr2, Math.sin(an) * rr2); } g.closePath(); g.fill(); g.restore(); }
-        else { g.save(); g.translate(p.x, p.y); g.rotate(p.a); g.scale(1, 0.45 + 0.55 * Math.abs(Math.cos(p.w + t * 4))); g.beginPath(); g.ellipse(0, 0, p.s * 1.1, p.s * 0.6, 0, 0, 7); g.fill(); g.restore(); }
-      });
-      g.globalAlpha = 1;
-      if (t > 5 || !cv.isConnected) { stop(); if (cv.parentNode) cv.parentNode.removeChild(cv); }
-    });
-  };
   var styled = {};
   K.css = function (id, text) { if (styled[id]) return; styled[id] = 1; var s = document.createElement('style'); s.textContent = text; document.head.appendChild(s); };
 
@@ -140,14 +111,14 @@
         status: function (t) { mid.textContent = t || ''; },
         best: function () { return K.best(def.id, l); },
         setBest: function (v, low) { return K.setBest(def.id, l, v, low); },
-        // A small cheer for a win the game carries on from (a puzzle solved, a hole holed): a shower of petals and a chime, no card.
-        cheer: function (n) { K.confetti(host, n || 55); },
-        // A proper win. Petals and a chime right away, then (after a breath, so the moment is seen) a card:
-        // o = { title, sub, stars (0-3), buttons: [{ label, fn, pri }], again: 'Play again' label, noAgain, noLevel, look (adds 'Look at the board'), big, delay (seconds) }
+        // A small celebration that belongs to this game alone (see cheers.js: one per game, each different). name = the game's own; arg is passed through.
+        cheer: function (name, arg) { var C = root.MannaCheer; if (C && C[name]) { try { C[name](host, arg); } catch (e) {} } },
+        // A proper win. The game's own celebration (o.cheer names it, o.arg goes to it) starts right away, then (after a breath, so the moment is seen) a card:
+        // o = { cheer, arg, title, sub, stars (0-3), buttons: [{ label, fn, pri }], again: 'Play again' label, noAgain, noLevel, look (adds 'Look at the board'), delay (seconds) }
         // Buttons run after the card closes. Returns the card element (it is in the page straight away, hidden until its moment).
         win: function (o) {
           o = o || {}; var old = host.querySelector('.kit-win'); if (old) old.remove();
-          K.confetti(host, o.big ? 190 : 120);
+          if (o.cheer) api.cheer(o.cheer, o.arg);
           var w = K.el('div', 'kit-win'), c = K.el('div', 'kit-wc');
           w.style.setProperty('--wd', (o.delay != null ? o.delay : 0.9) + 's');
           function close() { if (w.parentNode) w.parentNode.removeChild(w); }

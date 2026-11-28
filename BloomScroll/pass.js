@@ -536,18 +536,18 @@
       // ---- the win / lose card ----
       function closeCard() { if (card && card.parentNode) card.parentNode.removeChild(card); card = null; }
       function goEndless(again) {
-        if (again) fresh(); closeCard(); endless = true; lives = maxLives; phase = 'break'; breakT = again ? 9 : 10; if (!again) gold += 60; selT = null;
-        msg = 'Endless — hold as long as you can'; msgT = 3; paintBar();
+        if (again) fresh(); closeCard(); endless = true; phase = 'break'; breakT = again ? 9 : 10; if (!again) gold += 60; selT = null;
+        msg = 'Endless — until your lives run out'; msgT = 3; paintBar();
       }
       function showCard(won, st) {
         closeCard(); var next = LEVELS[def.id] && def.id !== 'r' ? LEVELS[def.id] : null, bt = [];
         if (won) {
           if (next) bt.push({ label: 'Next: ' + next.name, pri: true, fn: function () { start(next); } });
           if (def.id === 'r') bt.push({ label: 'Another random place', pri: true, fn: function () { start(randomPlace()); } });
-          bt.push({ label: '∞  Endless — keep defending', pri: !next && def.id !== 'r', fn: function () { goEndless(false); } });
+          bt.push({ label: '∞  Endless — until your lives run out', pri: !next && def.id !== 'r', fn: function () { goEndless(false); } });
           bt.push({ label: 'Play it again', fn: function () { fresh(); paintBar(); } });
           bt.push({ label: 'All places', fn: showSelect });
-          card = api.win({ title: 'The pass holds', stars: st, sub: def.name + ' — all ' + def.N + ' waves, ' + lives + ' of ' + maxLives + ' lives left.', buttons: bt, noAgain: true, noLevel: true, big: true, delay: 1.2 });
+          card = api.win({ title: 'The pass holds', stars: st, sub: def.name + ' — all ' + def.N + ' waves, ' + lives + ' of ' + maxLives + ' lives left.', buttons: bt, noAgain: true, noLevel: true, cheer: 'pass', arg: { x: keepP[0], y: keepP[1] }, delay: 1.4 });
           return;
         }
         var held = Math.max(0, wave - 1), eb = endBest(diff, def.id);

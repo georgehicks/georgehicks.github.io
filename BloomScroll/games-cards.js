@@ -136,7 +136,7 @@
       else if (st.stock.length || st.waste.length) api.say('Turn over the stock', 1500); else api.say('No moves left — try Undo or New game', 2200);
     }
     function total() { return st.found.reduce(function (a, p) { return a + p.length; }, 0); }
-    function checkWin() { if (total() === 52 && !over) { over = true; wins++; api.setBest(wins); api.win({ title: 'Every card home', sub: 'Beautifully done.', big: true, look: true }); buttons(); info(); } }
+    function checkWin() { if (total() === 52 && !over) { over = true; wins++; api.setBest(wins); api.win({ cheer: 'solitaire', title: 'Every card home', sub: 'Beautifully done.', look: true, delay: 1.6 }); buttons(); info(); } }
     function autoFinish() {
       if (over) return; clearInterval(autoT);
       autoT = setInterval(function () {

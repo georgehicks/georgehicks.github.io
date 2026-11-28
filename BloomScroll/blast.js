@@ -101,7 +101,7 @@
         var e = enemies[i], ep = pos(e); if (flameAt(Math.round(ep.x), Math.round(ep.y))) { spark(px(ep.x), py(ep.y), '#b58cff', 14, 100); enemies.splice(i, 1); kills++; continue; }
         if (Math.hypot(ep.x - pp.x, ep.y - pp.y) < 0.62) hurt();
       }
-      if (st === 'play' && !enemies.length) { st = 'clear'; stT = 2.2; msg = 'Stage cleared'; msgT = 2.2; api.cheer(60); }
+      if (st === 'play' && !enemies.length) { st = 'clear'; stT = 2.2; msg = 'Stage cleared'; msgT = 2.2; api.cheer('blast'); }
     }
 
     // ---- drawing ----

@@ -163,7 +163,7 @@
     }
     function tap(r, c) { press(r, c); hist.push([r, c]); moves++; hintCell = -1; draw(); if (done()) won(); }
     function won() {
-      solved++; api.setBest(solved); api.cheer(moves <= par ? 90 : 50); var rating = moves <= par ? 'Perfect' : moves <= par + 2 ? 'Nicely done' : 'All dark'; info.textContent = rating + '. Again…'; board.style.opacity = '.4';
+      solved++; api.setBest(solved); api.cheer('lights', moves <= par); var rating = moves <= par ? 'Perfect' : moves <= par + 2 ? 'Nicely done' : 'All dark'; info.textContent = rating + '. Again…'; board.style.opacity = '.4';
       setTimeout(function () { if (!alive) return; board.style.opacity = ''; fresh(); }, 1000);
     }
     var alive = true; fresh();

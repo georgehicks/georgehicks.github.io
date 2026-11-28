@@ -97,12 +97,12 @@
     }
     function sunk() {
       st = 'sink'; sinkT = 0.5; ball.vx = ball.vy = 0; var s = strokes, d = s - par, name = s === 1 ? 'Hole in one!' : d <= -2 ? 'Eagle!' : d === -1 ? 'Birdie' : d === 0 ? 'Par' : d === 1 ? 'Bogey' : '+' + d;
-      msg = name + ' — ' + s; msgT = 1.8; api.cheer(s === 1 || d <= -2 ? 110 : d <= 0 ? 45 : 18); for (var i = 0; i < 16; i++) { var a = Math.random() * 6.3; parts.push({ x: cup.x, y: cup.y, vx: Math.cos(a) * 90, vy: Math.sin(a) * 90 - 40, t: 0.7, col: ['#ffe9a8', '#fff', '#9be8b5'][i % 3], r: 2 }); }
+      msg = name + ' — ' + s; msgT = 1.8; api.cheer('putt', s === 1 ? 6 : d <= -2 ? 4 : d <= -1 ? 2 : 1); for (var i = 0; i < 16; i++) { var a = Math.random() * 6.3; parts.push({ x: cup.x, y: cup.y, vx: Math.cos(a) * 90, vy: Math.sin(a) * 90 - 40, t: 0.7, col: ['#ffe9a8', '#fff', '#9be8b5'][i % 3], r: 2 }); }
     }
     function pickUp() { if (strokes >= par + P.pick) { msg = 'Pick it up — ' + strokes; msgT = 1.5; finishHole(strokes); } }
     function finishHole(strk) {
       card.push(strk); total += strk; parTotal += par; hole++;
-      if (hole >= P.holes) { var diff = total - parTotal; msg = 'Round done: ' + total + (diff ? (diff > 0 ? ' (+' : ' (') + diff + ')' : ' (level par)'); msgT = 3; st = 'end'; stT = 1e9; var rec = api.setBest(total, true); api.win({ title: 'Round done', sub: total + ' strokes' + (diff ? (diff > 0 ? ' (+' : ' (') + diff + ')' : ' (level par)') + (rec ? ' — your best' : ''), again: 'Another round', stars: diff <= -2 ? 3 : diff <= 2 ? 2 : 1, delay: 1.4 }); }
+      if (hole >= P.holes) { var diff = total - parTotal; msg = 'Round done: ' + total + (diff ? (diff > 0 ? ' (+' : ' (') + diff + ')' : ' (level par)'); msgT = 3; st = 'end'; stT = 1e9; var rec = api.setBest(total, true); api.win({ cheer: 'putt', arg: 5, title: 'Round done', sub: total + ' strokes' + (diff ? (diff > 0 ? ' (+' : ' (') + diff + ')' : ' (level par)') + (rec ? ' — your best' : ''), again: 'Another round', stars: diff <= -2 ? 3 : diff <= 2 ? 2 : 1, delay: 1.4 }); }
       else { st = 'next'; stT = 1.5; }
     }
 
