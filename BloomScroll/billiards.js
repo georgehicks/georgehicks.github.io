@@ -127,7 +127,7 @@
         if (!moving()) {
           refresh();
           if (scratched) { scratched = false; shots++; placeCue(); msg = 'Scratch: the white is back, one shot added'; msgT = 2.4; }
-          if (!balls.some(function (b) { return b.n && b.alive; })) { st = 'won'; nextT = 3.2; var rec = api.setBest(shots, true); msg = 'Table cleared in ' + shots + (shots === 1 ? ' shot' : ' shots') + (rec ? ' — your best' : ''); msgT = 3.2; }
+          if (!balls.some(function (b) { return b.n && b.alive; })) { st = 'won'; nextT = 3.6; api.cheer(shots <= 6 ? 100 : 60); var rec = api.setBest(shots, true); msg = 'Table cleared in ' + shots + (shots === 1 ? ' shot' : ' shots') + (rec ? ' — your best' : ''); msgT = 3.2; }
           else st = 'aim';
         }
       } else if (st === 'won') { nextT -= dt; if (nextT <= 0) rack(); }

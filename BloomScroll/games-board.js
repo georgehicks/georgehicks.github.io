@@ -122,11 +122,11 @@
     function finish(m, l) {
       var capped = m.steps[0].c >= 0, wasMan = Math.abs(b[m.steps[0].f]) === 1; b = m.board; last = l; sel = null; cands = null; work = null; prog = 0; quiet = (capped || wasMan) ? 0 : quiet + 1;
       turn = -1; draw();
-      if (!seqs(b, -1).length) { over = true; draw(); api.status('You won'); api.say('You won — well played', 2600); api.setBest((api.best() || 0) + 1); return; }
+      if (!seqs(b, -1).length) { over = true; draw(); api.status('You won'); api.setBest((api.best() || 0) + 1); api.win({ title: 'You won', sub: 'Well played.', look: true }); return; }
       if (quiet >= 40) { over = true; api.status('A quiet draw'); api.say('A quiet draw', 2200); return; }
       busy = true; status();
       timer = setTimeout(function () {
-        if (!alive) return; var am = aiMove(); if (!am) { busy = false; over = true; draw(); api.say('You won', 2400); return; }
+        if (!alive) return; var am = aiMove(); if (!am) { busy = false; over = true; draw(); api.status('You won'); api.setBest((api.best() || 0) + 1); api.win({ title: 'You won', sub: 'They have no move left.', look: true }); return; }
         var cap = am.steps[0].c >= 0, man = Math.abs(b[am.steps[0].f]) === 1, l2 = {}; am.steps.forEach(function (x) { l2[x.f] = 1; l2[x.t] = 1; });
         b = am.board; last = l2; quiet = (cap || man) ? 0 : quiet + 1; busy = false; turn = 1; draw();
         if (!seqs(b, 1).length) { over = true; api.status('Not this time'); api.say('Not this time — again?', 2600); return; }
@@ -232,7 +232,7 @@
     }
     function win() {
       over = true; clearInterval(tick); var sec = Math.max(1, Math.floor((Date.now() - t0) / 1000)); cells.forEach(function (c, j) { if (c.m && !c.f) { c.f = true; paint(j); } });
-      frame.classList.add('win'); api.setBest(sec, true); updateStatus(); api.say('Cleared — ' + fmtT(sec), 2600);
+      frame.classList.add('win'); var rec = api.setBest(sec, true); updateStatus(); api.win({ title: 'Cleared', sub: fmtT(sec) + (rec ? ' — your best' : ''), look: true });
     }
     newGame();
     return { stop: function () { alive = false; clearInterval(tick); clearTimeout(holdT); }, restart: newGame, peek: function () { return { cells: cells, over: over, started: started, opened: opened, P: P }; } };
@@ -325,7 +325,7 @@
       if (target < 0) return; hints--; selI = target; val[target] = sol[target]; notes[target] = 0; giv[target] = true; refresh(); if (val.every(function (v, k) { return v === sol[k]; })) win();
     }
     function check() { if (over) return; var bad = 0; val.forEach(function (v, i) { if (v && v !== sol[i]) bad++; }); api.say(bad ? bad + (bad === 1 ? ' square is' : ' squares are') + ' off' : 'All correct so far', 1700); }
-    function win() { over = true; clearInterval(tick); var sec = Math.max(1, Math.floor((Date.now() - t0) / 1000)); api.setBest(sec, true); api.status('Solved in ' + fmtT(sec)); api.say('Solved — ' + fmtT(sec), 2600); selI = -1; refresh(); }
+    function win() { over = true; clearInterval(tick); var sec = Math.max(1, Math.floor((Date.now() - t0) / 1000)); var rec = api.setBest(sec, true); api.status('Solved in ' + fmtT(sec)); selI = -1; refresh(); api.win({ title: 'Solved', sub: fmtT(sec) + (rec ? ' — your best' : ''), look: true }); }
     newGame();
     return { stop: function () { alive = false; clearTimeout(genT); clearInterval(tick); }, restart: newGame };
   }

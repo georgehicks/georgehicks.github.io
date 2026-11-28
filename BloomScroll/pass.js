@@ -18,6 +18,9 @@
   function setStars(diff, id, n) { var o = loadS(); o[diff] = o[diff] || {}; if ((o[diff][id] || 0) < n) o[diff][id] = n; try { localStorage.setItem(SK, JSON.stringify(o)); } catch (e) {} var c = 0; for (var k in o[diff]) if (o[diff][k] > 0) c++; return c; }
   // the old endless game kept "best wave" numbers under the same name; they mean something else now, so they are cleared once
   (function () { try { var o = loadS(); if (!o.v2) { var b = JSON.parse(localStorage.getItem('manna.gbest') || '{}'); ['easy', 'normal', 'hard'].forEach(function (l) { delete b['pass.' + l]; }); localStorage.setItem('manna.gbest', JSON.stringify(b)); o.v2 = 1; localStorage.setItem(SK, JSON.stringify(o)); } } catch (e) {} })();
+  var EK = 'manna.pass.endless';
+  function endBest(diff, id) { try { var o = JSON.parse(localStorage.getItem(EK) || '{}') || {}; return (o[diff] && o[diff][id]) || 0; } catch (e) { return 0; } }
+  function setEndBest(diff, id, w) { try { var o = JSON.parse(localStorage.getItem(EK) || '{}') || {}; o[diff] = o[diff] || {}; if ((o[diff][id] || 0) < w) { o[diff][id] = w; localStorage.setItem(EK, JSON.stringify(o)); return true; } } catch (e) {} return false; }
   function cleared(diff) { var o = loadS()[diff] || {}, c = 0; for (var k in o) if (o[k] > 0) c++; return c; }
 
   // ---------- places ----------
@@ -281,7 +284,7 @@
       var grid = K.el('div', 'ps-grid'); sel.appendChild(grid);
       LEVELS.forEach(function (d) {
         var s = stars(diff, d.id), b = K.el('button', 'ps-lv'); b.type = 'button'; b.appendChild(mapThumb(d));
-        var t = K.el('div', '', '<b>' + d.id + '. ' + d.name + '</b><span>' + d.N + ' waves' + (d.boss ? ' · a boss' : '') + '</span><i>' + '★★★'.slice(0, s) + '<u style="text-decoration:none;opacity:.3">' + '★★★'.slice(0, 3 - s) + '</u></i>'); b.appendChild(t);
+        var t = K.el('div', '', '<b>' + d.id + '. ' + d.name + '</b><span>' + d.N + ' waves' + (d.boss ? ' · a boss' : '') + '</span><i>' + '★★★'.slice(0, s) + '<u style="text-decoration:none;opacity:.3">' + '★★★'.slice(0, 3 - s) + '</u>' + (endBest(diff, d.id) ? ' <small style="letter-spacing:0;color:#a2a9be">∞ ' + endBest(diff, d.id) + '</small>' : '') + '</i>'); b.appendChild(t);
         b.onclick = function () { start(d); }; grid.appendChild(b);
       });
       var rb = K.btn('ps-rand', '🎲  A random place', function () { start(randomPlace()); }); sel.appendChild(rb);
@@ -317,13 +320,13 @@
         return [cx(a[0]) + (b[0] - a[0]) * f * cs, cy(a[1]) + (b[1] - a[1]) * f * cs];
       }
       var gateP = gpos(-0.5), keepP = gpos(path.length - 1), FL = Math.max(3, Math.hypot(keepP[0] - gateP[0], keepP[1] - gateP[1]) / cs), plast = path.length - 1;
-      var gold, lives, wave, towers, enemies, bullets, rays, arcs, booms, parts, floats, queue, wclock, breakT, phase, pick, selT, fast, flash, clock, msg, msgT, goldT, hudBtns = [];
+      var gold, lives, wave, towers, enemies, bullets, rays, arcs, booms, parts, floats, queue, wclock, breakT, phase, pick, selT, fast, flash, clock, msg, msgT, goldT, endless = false, hudBtns = [];
       function fresh() {
         gold = P.gold + (def.L - 1) * 20; lives = P.lives; wave = 0; towers = {}; enemies = []; bullets = []; rays = []; arcs = []; booms = []; parts = []; floats = []; queue = []; wclock = 0; breakT = 9; phase = 'break';
-        pick = 'bolt'; selT = null; fast = 1; flash = 0; clock = 0; msg = def.name; msgT = 3; goldT = 0; closeCard();
+        pick = 'bolt'; selT = null; fast = 1; flash = 0; clock = 0; msg = def.name; msgT = 3; goldT = 0; endless = false; closeCard();
       }
       var maxLives = P.lives;
-      if (snap) { var s0 = snap; gold = s0.gold; lives = s0.lives; wave = s0.wave; towers = s0.towers; enemies = s0.enemies; bullets = []; rays = []; arcs = []; booms = []; parts = []; floats = []; queue = s0.queue; wclock = s0.wclock; breakT = s0.breakT; phase = s0.phase; pick = s0.pick; selT = null; fast = s0.fast; flash = 0; clock = s0.clock; msg = ''; msgT = 0; goldT = 0; enemies.forEach(locate); }
+      if (snap) { var s0 = snap; gold = s0.gold; lives = s0.lives; wave = s0.wave; towers = s0.towers; enemies = s0.enemies; bullets = []; rays = []; arcs = []; booms = []; parts = []; floats = []; queue = s0.queue; wclock = s0.wclock; breakT = s0.breakT; phase = s0.phase; pick = s0.pick; selT = null; fast = s0.fast; flash = 0; clock = s0.clock; msg = ''; msgT = 0; goldT = 0; endless = !!s0.endless; enemies.forEach(locate); }
       else fresh();
 
       // ---- the ground, painted once ----
@@ -453,7 +456,11 @@
       }
 
       // ---- the run of a place ----
-      function startWave() { wave++; queue = plan(def, wave, rng(def.id === 'r' ? wave * 7 + 3 : def.id * 100 + wave)); wclock = 0; phase = 'wave'; msg = wave === def.N ? 'The last wave' : 'Wave ' + wave + ' of ' + def.N; msgT = 1.8; }
+      function startWave() {
+        wave++; queue = plan(def, wave, rng(def.id === 'r' ? wave * 7 + 3 : def.id * 100 + wave)); wclock = 0; phase = 'wave';
+        if (endless) { var big = wave > def.N && (wave - def.N) % 5 === 0; if (big) queue.unshift({ t: 'boss', at: 0 }); msg = big ? 'Endless · wave ' + wave + ' — a boss' : 'Endless · wave ' + wave; }
+        else msg = wave === def.N ? 'The last wave' : 'Wave ' + wave + ' of ' + def.N; msgT = 1.8;
+      }
       function finish(won) {
         phase = won ? 'won' : 'lost'; var st = 0;
         if (won) { st = lives >= maxLives ? 3 : lives >= maxLives * 0.6 ? 2 : 1; if (def.id !== 'r') { var n = setStars(diff, def.id, st); api.setBest(n); } }
@@ -467,7 +474,9 @@
           wclock += dt; while (queue.length && queue[0].at <= wclock) spawn(queue.shift().t);
           if (!queue.length && !enemies.length) {
             var bonus = 10 + wave * 2 + Math.round(P.inc * 2); gold += bonus; floats.push({ x: W / 2, y: oy + ROWS * cs * 0.4, t: 1.4, txt: 'Wave clear +' + bonus, big: 1 });
-            if (wave >= def.N) { finish(true); return; } phase = 'break'; breakT = 7;
+            if (endless) { var nb = setEndBest(diff, def.id, wave); if (nb && wave > def.N && (wave - def.N) % 5 === 0) floats.push({ x: W / 2, y: oy + ROWS * cs * 0.55, t: 1.6, txt: 'Your furthest yet', big: 1 }); }
+            else if (wave >= def.N) { finish(true); return; }
+            phase = 'break'; breakT = 7;
           }
         }
         enemies.forEach(function (e) {
@@ -526,13 +535,27 @@
 
       // ---- the win / lose card ----
       function closeCard() { if (card && card.parentNode) card.parentNode.removeChild(card); card = null; }
+      function goEndless(again) {
+        if (again) fresh(); closeCard(); endless = true; lives = maxLives; phase = 'break'; breakT = again ? 9 : 10; if (!again) gold += 60; selT = null;
+        msg = 'Endless — hold as long as you can'; msgT = 3; paintBar();
+      }
       function showCard(won, st) {
-        closeCard(); card = K.el('div', 'ps-card'); var next = LEVELS[def.id] && def.id !== 'r' ? LEVELS[def.id] : null;
-        if (won) card.innerHTML = '<h3>The pass holds</h3><div class="st">' + '★★★'.slice(0, st) + '<span style="opacity:.25">' + '★★★'.slice(0, 3 - st) + '</span></div><p>' + def.name + ' — all ' + def.N + ' waves, ' + lives + ' of ' + maxLives + ' lives left.</p>';
+        closeCard(); var next = LEVELS[def.id] && def.id !== 'r' ? LEVELS[def.id] : null, bt = [];
+        if (won) {
+          if (next) bt.push({ label: 'Next: ' + next.name, pri: true, fn: function () { start(next); } });
+          if (def.id === 'r') bt.push({ label: 'Another random place', pri: true, fn: function () { start(randomPlace()); } });
+          bt.push({ label: '∞  Endless — keep defending', pri: !next && def.id !== 'r', fn: function () { goEndless(false); } });
+          bt.push({ label: 'Play it again', fn: function () { fresh(); paintBar(); } });
+          bt.push({ label: 'All places', fn: showSelect });
+          card = api.win({ title: 'The pass holds', stars: st, sub: def.name + ' — all ' + def.N + ' waves, ' + lives + ' of ' + maxLives + ' lives left.', buttons: bt, noAgain: true, noLevel: true, big: true, delay: 1.2 });
+          return;
+        }
+        var held = Math.max(0, wave - 1), eb = endBest(diff, def.id);
+        card = K.el('div', 'ps-card');
+        if (endless) card.innerHTML = '<h3>The pass fell</h3><p>You held through ' + held + ' waves' + (eb && eb >= held ? (eb === held ? ' — your furthest yet.' : ' (your furthest: ' + eb + ').') : '.') + '</p>';
         else card.innerHTML = '<h3>The pass fell</h3><p>On wave ' + wave + ' of ' + def.N + '. Try again — you keep what you learned.</p>';
-        if (won && next) card.appendChild(K.btn('pri', 'Next: ' + next.name, function () { start(next); }));
-        if (won && def.id === 'r') card.appendChild(K.btn('pri', 'Another random place', function () { start(randomPlace()); }));
-        card.appendChild(K.btn(won && !next && def.id !== 'r' ? 'pri' : '', won ? 'Play it again' : 'Try again', function () { fresh(); paintBar(); }));
+        if (endless) card.appendChild(K.btn('pri', '∞  Endless again', function () { goEndless(true); }));
+        card.appendChild(K.btn(endless ? '' : 'pri', endless ? 'Play it again' : 'Try again', function () { fresh(); paintBar(); }));
         card.appendChild(K.btn('', 'All places', showSelect)); host.appendChild(card);
       }
 
@@ -601,7 +624,7 @@
         hudBtns = []; ctx.font = '600 12.5px -apple-system,sans-serif';
         pill(8, hud1, 78, 22); ctx.fillStyle = '#f2c879'; ctx.beginPath(); ctx.arc(24, hud1 + 11, 6, 0, 7); ctx.fill(); ctx.fillStyle = '#b8903f'; ctx.beginPath(); ctx.arc(24, hud1 + 11, 3, 0, 7); ctx.fill();
         ctx.fillStyle = '#ece8dc'; ctx.textAlign = 'left'; ctx.fillText(Math.floor(gold), 37, hud1 + 15.5);
-        var left = enemies.length + queue.length, wl = phase === 'break' ? (wave ? 'Next wave in ' + Math.ceil(breakT) + 's' : 'First wave in ' + Math.ceil(breakT) + 's') : 'Wave ' + wave + '/' + def.N + (left ? ' · ' + left + ' left' : ''), ww = Math.max(120, wl.length * 7 + 22);
+        var left = enemies.length + queue.length, wl = phase === 'break' ? (wave ? 'Next wave in ' + Math.ceil(breakT) + 's' : 'First wave in ' + Math.ceil(breakT) + 's') : (endless ? '∞ Wave ' + wave : 'Wave ' + wave + '/' + def.N) + (left ? ' · ' + left + ' left' : ''), ww = Math.max(120, wl.length * 7 + 22);
         if (phase === 'won' || phase === 'lost') wl = def.name;
         pill(W / 2 - ww / 2, hud1, ww, 22); ctx.fillStyle = '#c5cad8'; ctx.textAlign = 'center'; ctx.fillText(wl, W / 2, hud1 + 15.5);
         pill(W - 78, hud1, 70, 22); heartAt(W - 62, hud1 + 10, 5.2, lives <= 3 ? '#ff6b6b' : '#e5383b'); ctx.fillStyle = '#ece8dc'; ctx.textAlign = 'left'; ctx.fillText(lives, W - 50, hud1 + 15.5);
@@ -618,7 +641,7 @@
       return {
         stop: function () {
           stopLoop();
-          if (phase !== 'won' && phase !== 'lost') KEEP = { t: Date.now(), diff: diff, def: def, st: { gold: gold, lives: lives, wave: wave, towers: towers, enemies: enemies, queue: queue, wclock: wclock, breakT: breakT, phase: phase, pick: pick, fast: fast, clock: clock } }; else KEEP = null;
+          if (phase !== 'won' && phase !== 'lost') KEEP = { t: Date.now(), diff: diff, def: def, st: { gold: gold, lives: lives, wave: wave, towers: towers, enemies: enemies, queue: queue, wclock: wclock, breakT: breakT, phase: phase, pick: pick, fast: fast, clock: clock, endless: endless } }; else KEEP = null;
         },
         restart: function () { fresh(); paintBar(); },
         peek: function () { return { def: def.name, id: def.id, wave: wave, N: def.N, gold: gold, lives: lives, phase: phase, towers: Object.keys(towers).length, enemies: enemies.length, queue: queue.length, cs: cs, path: path,

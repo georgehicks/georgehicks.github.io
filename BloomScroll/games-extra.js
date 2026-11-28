@@ -42,7 +42,7 @@
       if (!moved && !dead.length) return; hist.push(before); if (hist.length > 30) hist.shift();
       score += gained; var all = []; for (var r2 = 0; r2 < N; r2++) for (var c2 = 0; c2 < N; c2++) if (grid[r2][c2]) all.push(grid[r2][c2]);
       all.concat(dead).forEach(place); dead.forEach(function (t) { setTimeout(function () { t.e.remove(); }, 130); });
-      all.forEach(function (t) { if (t.m) { t.m = false; t.e.classList.remove('m'); void t.e.offsetWidth; t.e.classList.add('m'); if (t.v === 2048 && !won) { won = true; api.say('2048 — and you can keep going', 2400); } } });
+      all.forEach(function (t) { if (t.m) { t.m = false; t.e.classList.remove('m'); void t.e.offsetWidth; t.e.classList.add('m'); if (t.v === 2048 && !won) { won = true; api.win({ title: '2048', sub: 'And you can keep going.', big: true, buttons: [{ label: 'Keep going', pri: true }], noLevel: true, delay: 0.7 }); } } });
       setTimeout(function () { if (!alive) return; spawn(); paint(); if (!canMove()) { over = true; api.say('No more moves — try again?', 2600); } }, 110); paint(); drawBar();
     }
     function canMove() { for (var r = 0; r < N; r++) for (var c = 0; c < N; c++) { var t = grid[r][c]; if (!t) return true; if (c + 1 < N && grid[r][c + 1] && grid[r][c + 1].v === t.v) return true; if (r + 1 < N && grid[r + 1][c] && grid[r + 1][c].v === t.v) return true; } return false; }
@@ -99,7 +99,7 @@
         }
       });
       balls = balls.filter(function (b) { return b.y < H + 20; });
-      if (!bricksL.length) { lvl++; api.setBest(score); caps = []; build(); serve(); status(); return; }
+      if (!bricksL.length) { api.cheer(80); lvl++; api.setBest(score); caps = []; build(); serve(); status(); msg = 'Level ' + (lvl - 1) + ' cleared'; msgT = 2; return; }
       if (!balls.length) { lives--; if (lives <= 0) { st = 'rest'; stT = 2.8; msg = 'Rest a moment — score ' + score; msgT = 2.8; api.setBest(score); } else { wide = 0; serve(); msg = lives + ' ball' + (lives === 1 ? '' : 's') + ' left'; msgT = 1.2; } }
     }
     function rr(x, y, w, h, r) { ctx.beginPath(); ctx.moveTo(x + r, y); ctx.arcTo(x + w, y, x + w, y + h, r); ctx.arcTo(x + w, y + h, x, y + h, r); ctx.arcTo(x, y + h, x, y, r); ctx.arcTo(x, y, x + w, y, r); ctx.closePath(); }
@@ -140,7 +140,7 @@
     }
     function drop(col, who) {
       var r = rowFor(cells, col); if (r < 0) return false; cells[r * COLS + col] = who; drops.push({ col: col, row: r, who: who, y: by - cs, vy: 0, done: false });
-      var w = winner(cells); if (w) { over = true; win = w; ws[w.v === 1 ? 'you' : 'cpu']++; w.line.forEach(function (p) { for (var z = 0; z < 8; z++) sparks.push({ x: bx + p[1] * cs + cs / 2, y: by + p[0] * cs + cs / 2, vx: (Math.random() - 0.5) * 90, vy: -Math.random() * 60, t: 0.6 + Math.random() * 0.7, r: 1.5 + Math.random() * 2, c: w.v === 1 ? '#ffe3a0' : '#ffb0c0' }); }); if (w.v === 1) { api.setBest((api.best() || 0) + 1); } msg = w.v === 1 ? 'Four in a row — you win!' : 'Four for the computer — again?'; msgT = 3; nextT = 3.2; status(); }
+      var w = winner(cells); if (w) { over = true; win = w; ws[w.v === 1 ? 'you' : 'cpu']++; w.line.forEach(function (p) { for (var z = 0; z < 8; z++) sparks.push({ x: bx + p[1] * cs + cs / 2, y: by + p[0] * cs + cs / 2, vx: (Math.random() - 0.5) * 90, vy: -Math.random() * 60, t: 0.6 + Math.random() * 0.7, r: 1.5 + Math.random() * 2, c: w.v === 1 ? '#ffe3a0' : '#ffb0c0' }); }); if (w.v === 1) { api.setBest((api.best() || 0) + 1); } msg = w.v === 1 ? 'Four in a row — you win!' : 'Four for the computer — again?'; msgT = 3; nextT = w.v === 1 ? 1e9 : 3.2; status(); if (w.v === 1) api.win({ title: 'Four in a row', sub: 'You win — ' + (api.best() || 1) + ' so far.', again: 'Play again', delay: 1.1 }); }
       else if (cells.every(Boolean)) { over = true; msg = 'A full board — a draw'; msgT = 2.5; nextT = 2.8; }
       return true;
     }

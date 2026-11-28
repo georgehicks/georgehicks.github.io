@@ -51,6 +51,35 @@
     raf = requestAnimationFrame(tick);
     return function () { on = false; cancelAnimationFrame(raf); };
   };
+  // A celebration: petals and sparks burst up from the bottom and drift down over the game, with a soft chime if the music is playing.
+  // It sits on top of the game, ignores touches, and removes itself. n is how many pieces (a big win uses more).
+  K.confetti = function (host, n) {
+    var r = host.getBoundingClientRect(), W = Math.max(120, r.width), H = Math.max(160, r.height), cv = document.createElement('canvas'), d = Math.min(2, root.devicePixelRatio || 1);
+    cv.width = W * d; cv.height = H * d; cv.style.cssText = 'position:absolute;left:0;top:0;width:' + W + 'px;height:' + H + 'px;pointer-events:none;z-index:7';
+    host.appendChild(cv); var g = cv.getContext('2d'), P = [], cols = ['#F2C879', '#F6A6B8', '#FFF1D0', '#9BE8B5', '#8EC9F2', '#D9A0FF'], i, t = 0;
+    g.setTransform(d, 0, 0, d, 0, 0);
+    n = n || 110;
+    for (i = 0; i < n; i++) {
+      var left = i % 2 === 0, ang = (left ? -1.05 : -2.1) + (Math.random() - 0.5) * 0.9, sp = 360 + Math.random() * 520;
+      P.push({ x: left ? W * 0.12 : W * 0.88, y: H * 0.96, vx: Math.cos(ang) * sp * (left ? 1 : 1), vy: Math.sin(ang) * sp, a: Math.random() * 6.3, va: (Math.random() - 0.5) * 9, c: cols[i % cols.length], s: 4 + Math.random() * 5, star: Math.random() < 0.22, w: Math.random() * 6.3, delay: Math.random() * 0.35 });
+    }
+    // a second, slower shower from the top
+    for (i = 0; i < Math.round(n * 0.5); i++) P.push({ x: Math.random() * W, y: -10 - Math.random() * H * 0.4, vx: (Math.random() - 0.5) * 30, vy: 40 + Math.random() * 60, a: Math.random() * 6.3, va: (Math.random() - 0.5) * 5, c: cols[i % cols.length], s: 3.5 + Math.random() * 4, star: Math.random() < 0.2, w: Math.random() * 6.3, delay: 0.5 + Math.random() * 1.4 });
+    if (root.MannaMusic && root.MannaMusic.chime) { try { root.MannaMusic.chime(); } catch (e) {} }
+    var stop = K.loop(function (dt) {
+      t += dt; g.clearRect(0, 0, W, H);
+      P.forEach(function (p) {
+        if (t < p.delay) return;
+        p.vy += 520 * dt; p.vx *= (1 - 0.9 * dt); if (p.vy > 150) p.vy -= (p.vy - 150) * 2.2 * dt; p.x += p.vx * dt + Math.sin(t * 2 + p.w) * 14 * dt; p.y += p.vy * dt; p.a += p.va * dt;
+        var al = Math.max(0, Math.min(1, (4.6 - t) / 1.2)); if (al <= 0 || p.y > H + 20) return;
+        g.globalAlpha = al; g.fillStyle = p.c;
+        if (p.star) { g.save(); g.translate(p.x, p.y); g.rotate(p.a); g.beginPath(); for (var k = 0; k < 8; k++) { var rr2 = k % 2 ? p.s * 0.35 : p.s * 1.1, an = k * Math.PI / 4; g.lineTo(Math.cos(an) * rr2, Math.sin(an) * rr2); } g.closePath(); g.fill(); g.restore(); }
+        else { g.save(); g.translate(p.x, p.y); g.rotate(p.a); g.scale(1, 0.45 + 0.55 * Math.abs(Math.cos(p.w + t * 4))); g.beginPath(); g.ellipse(0, 0, p.s * 1.1, p.s * 0.6, 0, 0, 7); g.fill(); g.restore(); }
+      });
+      g.globalAlpha = 1;
+      if (t > 5 || !cv.isConnected) { stop(); if (cv.parentNode) cv.parentNode.removeChild(cv); }
+    });
+  };
   var styled = {};
   K.css = function (id, text) { if (styled[id]) return; styled[id] = 1; var s = document.createElement('style'); s.textContent = text; document.head.appendChild(s); };
 
@@ -70,6 +99,16 @@
     '.kit-lv span{display:block;color:var(--ink-muted,#A2A9BE);font-size:.88rem;margin-top:.1rem}' +
     '.kit-lv.last{border-color:var(--gold,#F2C879)}' +
     '.kit-msg{position:absolute;left:0;right:0;top:38%;text-align:center;pointer-events:none;font-family:var(--serif,Georgia,serif);font-size:1.4rem;color:var(--ink,#EDE8DC);text-shadow:0 2px 14px #000}' +
+    '@keyframes kitWin{from{opacity:0;transform:translateY(14px) scale(.94);visibility:hidden}1%{visibility:visible}to{opacity:1;transform:none;visibility:visible}}' +
+    '@keyframes kitGlow{0%,100%{text-shadow:0 0 14px rgba(242,200,121,.35)}50%{text-shadow:0 0 26px rgba(242,200,121,.75)}}' +
+    '@keyframes kitStar{from{opacity:0;transform:scale(.2) rotate(-40deg)}to{opacity:1;transform:none}}' +
+    '.kit-win{position:absolute;inset:0;z-index:6;display:flex;align-items:center;justify-content:center;background:radial-gradient(circle at 50% 45%,rgba(30,26,12,.55),rgba(4,6,14,.78));animation:kitWin .7s ease-out both;animation-delay:var(--wd,.9s)}' +
+    '.kit-wc{width:min(86%,340px);display:flex;flex-direction:column;gap:.55rem;text-align:center;padding:1.2rem 1rem;border-radius:20px;border:1px solid rgba(242,200,121,.45);background:rgba(14,18,34,.94);box-shadow:0 12px 44px rgba(0,0,0,.65),0 0 40px rgba(242,200,121,.12)}' +
+    '.kit-wc h3{margin:0;font-family:var(--serif,Georgia,serif);font-weight:normal;font-size:1.6rem;color:var(--gold,#F2C879);animation:kitGlow 2.6s ease-in-out infinite}' +
+    '.kit-wc p{margin:0;color:var(--ink-muted,#A2A9BE);font-family:var(--serif,Georgia,serif);font-style:italic}' +
+    '.kit-ws{font-size:2rem;letter-spacing:.2em;color:var(--gold,#F2C879)}.kit-ws b{display:inline-block;font-weight:normal;animation:kitStar .5s ease-out both}.kit-ws i{font-style:normal;opacity:.25}' +
+    '.kit-wc button{min-height:46px;border-radius:12px;border:1px solid var(--border,#2B3252);background:var(--surface,#171B2E);color:var(--ink,#EDE8DC);font-size:1rem}' +
+    '.kit-wc button.pri{border-color:var(--gold,#F2C879);color:var(--gold,#F2C879);background:rgba(60,52,24,.55)}.kit-wc button.quiet{border-color:transparent;background:none;color:var(--ink-muted,#A2A9BE);min-height:38px;font-size:.9rem}' +
     '.kit-bar{display:flex;gap:.45rem;justify-content:center;padding:.5rem;flex:none}' +
     '.kit-bar button{flex:1;max-width:9rem;min-height:44px;border:1px solid var(--border,#2B3252);background:var(--surface,#171B2E);color:var(--ink,#EDE8DC);border-radius:12px;font-size:.95rem}' +
     '.kit-bar button.on{border-color:var(--gold,#F2C879);background:var(--surface-2,#1F2440)}' +
@@ -94,13 +133,34 @@
     function play(l) {
       clear(); level = l; var o = jget(LK); o[def.id] = l; jset(LK, o);
       var strip = K.el('div', 'kit-strip'), mid = K.el('div', 'kit-mid'), host = K.el('div', 'kit-host');
-      var lb = K.btn('', NM[l] + ' ▾', picker), nb = K.btn('', 'New game', function () { if (cur && cur.restart) cur.restart(); });
+      var lb = K.btn('', NM[l] + ' ▾', picker), nb = K.btn('', 'New game', function () { var wc = host.querySelector('.kit-win'); if (wc) wc.remove(); if (cur && cur.restart) cur.restart(); });
       strip.appendChild(lb); strip.appendChild(mid); strip.appendChild(nb); wrap.appendChild(strip); wrap.appendChild(host);
       var api = {
         level: l, mid: mid, host: host,
         status: function (t) { mid.textContent = t || ''; },
         best: function () { return K.best(def.id, l); },
         setBest: function (v, low) { return K.setBest(def.id, l, v, low); },
+        // A small cheer for a win the game carries on from (a puzzle solved, a hole holed): a shower of petals and a chime, no card.
+        cheer: function (n) { K.confetti(host, n || 55); },
+        // A proper win. Petals and a chime right away, then (after a breath, so the moment is seen) a card:
+        // o = { title, sub, stars (0-3), buttons: [{ label, fn, pri }], again: 'Play again' label, noAgain, noLevel, look (adds 'Look at the board'), big, delay (seconds) }
+        // Buttons run after the card closes. Returns the card element (it is in the page straight away, hidden until its moment).
+        win: function (o) {
+          o = o || {}; var old = host.querySelector('.kit-win'); if (old) old.remove();
+          K.confetti(host, o.big ? 190 : 120);
+          var w = K.el('div', 'kit-win'), c = K.el('div', 'kit-wc');
+          w.style.setProperty('--wd', (o.delay != null ? o.delay : 0.9) + 's');
+          function close() { if (w.parentNode) w.parentNode.removeChild(w); }
+          c.appendChild(K.el('h3', '', o.title || 'Well done'));
+          if (o.stars != null) { var sh = ''; for (var s = 0; s < 3; s++) sh += s < o.stars ? '<b style="animation-delay:' + (1.1 + s * 0.28) + 's">★</b>' : '<i>★</i>'; c.appendChild(K.el('div', 'kit-ws', sh)); }
+          if (o.sub) c.appendChild(K.el('p', '', o.sub));
+          var list = (o.buttons || []).slice();
+          if (!o.noAgain && cur && cur.restart) list.push({ label: o.again || 'Play again', fn: function () { cur.restart(); }, pri: !list.length });
+          if (!o.noLevel) list.push({ label: 'Change level', fn: picker });
+          if (o.look) list.push({ label: 'Look at it a moment', quiet: true });
+          list.forEach(function (b) { c.appendChild(K.btn((b.pri ? 'pri' : '') + (b.quiet ? ' quiet' : ''), b.label, function () { close(); if (b.fn) b.fn(); })); });
+          w.appendChild(c); host.appendChild(w); return w;
+        },
         say: function (t, ms) { var m = K.el('div', 'kit-msg', t); host.appendChild(m); setTimeout(function () { if (m.parentNode) m.parentNode.removeChild(m); }, ms || 1600); }
       };
       // Games that draw on a canvas work out their layout once, from the size of their area. On a phone that area changes while you

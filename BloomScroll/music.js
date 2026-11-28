@@ -249,6 +249,18 @@
     clearTimeout(stopT); stopT = setTimeout(M.stop, secs * 1000 + 300);
   };
   M.stop = function () { clearTimeout(stopT); clearTimeout(pvT); fading = false; token++; playing = false; if (src) { src.stop(); src = null; } if (timer) { clearInterval(timer); timer = 0; } if (ctx && master) master.gain.setValueAtTime(0, ctx.currentTime); };
+  // A soft rising chime for a win. Only when the music is on and playing (so the sound switch is respected).
+  M.chime = function () {
+    if (!ctx || !playing || fading || ctx.state !== 'running') return false;
+    var t0 = ctx.currentTime + 0.05, out = ctx.createGain(); out.gain.value = 0.9; out.connect(ctx.destination);
+    [523.25, 659.25, 783.99, 1046.5, 1318.5].forEach(function (f, i) {
+      var t = t0 + i * 0.13, o = ctx.createOscillator(), o2 = ctx.createOscillator(), g = ctx.createGain();
+      o.type = 'sine'; o.frequency.value = f; o2.type = 'triangle'; o2.frequency.value = f * 2.005;
+      g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(0.16, t + 0.015); g.gain.exponentialRampToValueAtTime(0.0001, t + 1.5);
+      var g2 = ctx.createGain(); g2.gain.value = 0.18; o2.connect(g2); g2.connect(g); o.connect(g); g.connect(out); o.start(t); o2.start(t); o.stop(t + 1.6); o2.stop(t + 1.6);
+    });
+    setTimeout(function () { try { out.disconnect(); } catch (e) {} }, 2600); return true;
+  };
   M.playing = function () { return playing; };
   M.hasTracks = function () { return !!(tracks && tracks.length); };
   M.probe = loadManifest;

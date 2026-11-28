@@ -1,4 +1,4 @@
-const CACHE = 'bloomscroll-v33';
+const CACHE = 'bloomscroll-v34';
 const ASSETS = ['./', './index.html', './app.js', './engine.js', './content.js', './text.js', './places.js', './art.js', './gamekit.js', './games.js', './pass.js', './games-board.js', './games-cards.js', './papertoss.js', './rally.js', './blast.js', './putt.js', './billiards.js', './mathcmd.js', './games-extra.js', './music.js', './release.js', './treasuring.js', './clips.js', './voice.js', './voice/manifest.json', './manifest.json', './icon.svg', './apple-touch-icon.png', './icon-192.png', './icon-512.png'];
 
 self.addEventListener('install', e => {
